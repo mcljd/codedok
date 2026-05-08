@@ -23,6 +23,60 @@
 <body>
 
 <!-- ════════════════════════════════════
+  ADMIN DESKTOP SIDEBAR — Joseph's workspace as the platform owner.
+  Visible only when body.desktop-admin.
+  Lets him work through queued SMS submissions, edit them and send back.
+════════════════════════════════════ -->
+<aside class="ad-sidebar" id="ad-sidebar" aria-hidden="true">
+  <div class="ad-sb-brand">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#7c3aed,#3b5fff);display:flex;align-items:center;justify-content:center">
+        <span style="font-size:14px;font-weight:800;color:white;letter-spacing:-.5px">cO</span>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:white;letter-spacing:-.2px">CodedOK</div>
+        <div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.12em">Admin workspace</div>
+      </div>
+    </div>
+  </div>
+  <nav class="ad-sb-nav">
+    <button class="ad-sb-item" data-tab="inbox" onclick="setAdminTab('inbox')">
+      <span class="ad-sb-ic">📥</span><span class="ad-sb-lbl">Inbox</span>
+      <span class="ad-sb-count" id="ad-sb-inbox-count" style="display:none">0</span>
+    </button>
+    <button class="ad-sb-item" data-tab="active" onclick="setAdminTab('active')">
+      <span class="ad-sb-ic">✏️</span><span class="ad-sb-lbl">In progress</span>
+    </button>
+    <button class="ad-sb-item" data-tab="delivered" onclick="setAdminTab('delivered')">
+      <span class="ad-sb-ic">✓</span><span class="ad-sb-lbl">Delivered</span>
+    </button>
+    <button class="ad-sb-item" data-tab="customers" onclick="setAdminTab('customers')">
+      <span class="ad-sb-ic">👥</span><span class="ad-sb-lbl">Customers</span>
+    </button>
+  </nav>
+  <div class="ad-sb-foot">
+    <div class="ad-sb-user" id="ad-sb-user"></div>
+    <button class="ad-sb-exit" onclick="exitAdminMode()">↩ Sign out</button>
+  </div>
+</aside>
+
+<!-- ════════════════════════════════════
+  S-ADMIN-HOME — Inbox / In progress / Delivered tabs
+════════════════════════════════════ -->
+<div class="shell" id="s-admin-home">
+  <div class="sb sb-cd"></div>
+  <div class="scroll" id="ad-home-scroll"></div>
+</div>
+
+<!-- ════════════════════════════════════
+  S-ADMIN-REVIEW — Section walkthrough editor for one SMS submission
+════════════════════════════════════ -->
+<div class="shell" id="s-admin-review">
+  <div class="sb sb-cd"></div>
+  <div class="scroll" id="ad-review-scroll"></div>
+</div>
+
+<!-- ════════════════════════════════════
   SURVEYOR DESKTOP SIDEBAR — visible only when body.desktop-surveyor
   Active on viewports ≥1024px while in surveyor mode.
 ════════════════════════════════════ -->

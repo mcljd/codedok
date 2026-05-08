@@ -352,6 +352,8 @@
     if (id === 's-surveyor-job')       renderSurveyorJob();
     if (id === 's-surveyor-quote')     renderSurveyorQuote();
     if (id === 's-invoice-view')       renderInvoiceView();
+    if (id === 's-admin-home')         renderAdminHome();
+    if (id === 's-admin-review')       renderAdminReview();
   }
   window.go = go;
 
@@ -449,8 +451,418 @@
 
   // Re-apply on resize (so rotating to landscape on iPad triggers desktop layout)
   window.addEventListener('resize', () => {
-    if (Store && Store.getMode() === 'surveyor') applyDesktopSurveyor();
+    if (!Store) return;
+    if (Store.getMode() === 'surveyor') applyDesktopSurveyor();
+    if (Store.getMode() === 'admin') applyDesktopAdmin();
   });
+
+  // ---------- Admin workspace (Joe's CodedOK admin) ----------
+  // Joe sees customer SMS submissions, walks through section-by-section,
+  // edits the polished version, adds notes, sends back to the operator.
+
+  let adminTab = 'inbox';
+  let activeReviewDocId = null;
+  let activeReviewSectionIdx = 0;
+
+  function applyDesktopAdmin() {
+    const isAdmin = Store && Store.getMode() === 'admin';
+    const wide = window.innerWidth >= DESKTOP_SURVEYOR_MIN;
+    document.body.classList.toggle('desktop-admin', isAdmin && wide);
+    refreshAdminSidebar();
+  }
+
+  function refreshAdminSidebar() {
+    if (!Store) return;
+    const me = Store.getCurrentUser();
+    if (!me || me.kind !== 'admin') return;
+    const userEl = document.getElementById('ad-sb-user');
+    if (userEl) userEl.textContent = `${me.name} · ${me.email}`;
+    const inbox = Store.smsSubmissions('submitted');
+    const cnt = document.getElementById('ad-sb-inbox-count');
+    if (cnt) {
+      if (inbox.length > 0) { cnt.style.display = ''; cnt.textContent = inbox.length; }
+      else cnt.style.display = 'none';
+    }
+    document.querySelectorAll('.ad-sb-item').forEach((el) => {
+      el.classList.toggle('on', el.dataset.tab === adminTab);
+    });
+  }
+
+  function enterAdminMode() {
+    if (!window.Store) return;
+    Store.setMode('admin');
+    applyDesktopAdmin();
+    go('s-admin-home');
+  }
+  window.enterAdminMode = enterAdminMode;
+
+  function exitAdminMode() {
+    document.body.classList.remove('desktop-admin');
+    if (Store) Store.setMode('operator');
+    clearSession();
+    renderDemoBadge();
+    go('s-login');
+  }
+  window.exitAdminMode = exitAdminMode;
+
+  function setAdminTab(tab) {
+    adminTab = tab;
+    if (!document.getElementById('s-admin-home').classList.contains('on')) {
+      go('s-admin-home');
+      return;
+    }
+    renderAdminHome();
+    refreshAdminSidebar();
+  }
+  window.setAdminTab = setAdminTab;
+
+  function renderAdminHome() {
+    const wrap = document.getElementById('ad-home-scroll');
+    if (!wrap) return;
+
+    const submitted = Store.smsSubmissions('submitted');
+    const inProgress = Store.smsSubmissions('in_progress');
+    const delivered = Store.smsSubmissions('delivered');
+
+    const counts = { inbox: submitted.length, active: inProgress.length, delivered: delivered.length };
+    const list = adminTab === 'inbox' ? submitted
+                : adminTab === 'active' ? inProgress
+                : adminTab === 'delivered' ? delivered
+                : [];
+
+    let html = `
+      <div style="background:white;border-bottom:1px solid var(--bdr);padding:24px 32px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div>
+            <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em">CodedOK · Admin workspace</div>
+            <div style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.4px;margin-top:2px">${adminTab === 'inbox' ? 'Inbox' : adminTab === 'active' ? 'In progress' : adminTab === 'delivered' ? 'Delivered' : 'Customers'}</div>
+          </div>
+          <div style="display:flex;gap:14px">
+            <div style="text-align:right"><div style="font-size:18px;font-weight:800">${counts.inbox}</div><div style="font-size:10px;color:var(--lt);text-transform:uppercase;letter-spacing:.07em">In inbox</div></div>
+            <div style="text-align:right"><div style="font-size:18px;font-weight:800;color:var(--amber)">${counts.active}</div><div style="font-size:10px;color:var(--lt);text-transform:uppercase;letter-spacing:.07em">Active</div></div>
+            <div style="text-align:right"><div style="font-size:18px;font-weight:800;color:var(--green)">${counts.delivered}</div><div style="font-size:10px;color:var(--lt);text-transform:uppercase;letter-spacing:.07em">Delivered</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:24px 32px">`;
+
+    if (adminTab === 'customers') {
+      const orgs = Store.snapshot().organizations || [];
+      html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px">`;
+      orgs.forEach((o) => {
+        const opvessels = Store.snapshot().vessels.filter((v) => v.org_id === o.id);
+        const docs = (Store.snapshot().sms_documents || []).filter((d) => d.org_id === o.id);
+        html += `
+          <div class="card" style="padding:18px">
+            <div style="font-size:14px;font-weight:700;color:var(--text)">${escapeHtml(o.name)}</div>
+            <div style="font-size:11px;color:var(--lt);margin-top:2px">Plan: ${escapeHtml(o.plan)} · ${opvessels.length} vessel${opvessels.length === 1 ? '' : 's'}</div>
+            <div style="margin-top:10px;font-size:11px;color:var(--mid)">${docs.length} SMS document${docs.length === 1 ? '' : 's'}</div>
+          </div>`;
+      });
+      html += `</div>`;
+    } else if (list.length === 0) {
+      const blurb = adminTab === 'inbox' ? 'When operators submit an SMS for review, it lands here.'
+                  : adminTab === 'active' ? 'Reviews you\'ve started but not yet delivered show here.'
+                  : 'Sent reviews are archived here.';
+      html += `<div class="empty"><div class="empty-art">${adminTab === 'inbox' ? '📥' : adminTab === 'active' ? '✏️' : '✓'}</div><div class="empty-h">Nothing ${adminTab === 'inbox' ? 'in inbox' : adminTab === 'active' ? 'in progress' : 'delivered yet'}</div><div class="empty-sub">${blurb}</div></div>`;
+    } else {
+      html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:12px">`;
+      list.forEach((d) => {
+        const v = Store.getVessel(d.vessel_id);
+        const op = Store.snapshot().users.find((u) => u.id === (d.submitted_by_user_id || 'u_jm')) || { name: 'Operator' };
+        const sectionsFilled = d.sections ? Object.keys(d.sections).filter((k) => Object.values(d.sections[k] || {}).some((v) => v && String(v).trim())).length : 0;
+        const totalSections = (window.Codes && window.Codes.SMS_SCHEMA) ? window.Codes.SMS_SCHEMA.length : 11;
+        const submittedAt = d.submitted_at || d.last_reviewed_at;
+        html += `
+          <div class="card" style="padding:18px;cursor:pointer;border-radius:12px" onclick="openAdminReview('${d.id}')">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+              <div style="min-width:0">
+                <div style="font-size:14px;font-weight:700;color:var(--text)">${escapeHtml(d.title || 'Safety Management System')}</div>
+                <div style="font-size:11px;color:var(--lt);margin-top:2px">${escapeHtml(v ? v.name : '—')} · ${escapeHtml(v ? v.category : '')}</div>
+              </div>
+              <span class="chip ${d.status === 'submitted' ? 'chip-bl' : d.status === 'in_progress' ? 'chip-am' : 'chip-ok'}">${escapeHtml(d.status)}</span>
+            </div>
+            <div style="font-size:11px;color:var(--lt);margin-bottom:12px">${escapeHtml(op.name)} · ${submittedAt ? 'submitted ' + fmtDate(submittedAt) : ''}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--lt);margin-bottom:4px">
+              <span>${sectionsFilled}/${totalSections} sections completed</span>
+              <span style="font-weight:700;color:${sectionsFilled === totalSections ? 'var(--green)' : 'var(--amber)'}">${Math.round(sectionsFilled / totalSections * 100)}%</span>
+            </div>
+            <div class="prog"><div class="prog-fill ${sectionsFilled === totalSections ? 'ok' : 'am'}" style="width:${sectionsFilled / totalSections * 100}%"></div></div>
+            <div style="margin-top:14px;font-size:12px;font-weight:600;color:var(--purp)">${d.status === 'submitted' ? 'Open & start review →' : d.status === 'in_progress' ? 'Resume editing →' : 'View delivered →'}</div>
+          </div>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+    wrap.innerHTML = html;
+    refreshAdminSidebar();
+  }
+
+  function openAdminReview(docId) {
+    activeReviewDocId = docId;
+    activeReviewSectionIdx = 0;
+    // If submitted, mark in_progress so we know Joe started.
+    const d = Store.snapshot().sms_documents.find((x) => x.id === docId);
+    if (d && d.status === 'submitted') {
+      Store.updateSmsDocument(docId, { status: 'in_progress' });
+    }
+    go('s-admin-review');
+  }
+  window.openAdminReview = openAdminReview;
+
+  function renderAdminReview() {
+    const wrap = document.getElementById('ad-review-scroll');
+    if (!wrap) return;
+    const d = Store.snapshot().sms_documents.find((x) => x.id === activeReviewDocId);
+    if (!d || !window.Codes) {
+      wrap.innerHTML = '<div class="empty"><div class="empty-h">Document not found</div><button class="btn btn-sm btn-out" onclick="go(\'s-admin-home\')">Back to inbox</button></div>';
+      return;
+    }
+    const v = Store.getVessel(d.vessel_id);
+    const schema = window.Codes.SMS_SCHEMA;
+    const section = schema[activeReviewSectionIdx];
+
+    // Build the section list pane
+    const sectionListHtml = schema.map((sec, i) => {
+      const opSec = (d.sections || {})[sec.id] || {};
+      const opFilled = Object.values(opSec).some((v) => v && String(v).trim());
+      const polished = ((d.polished_sections || {})[sec.id] || {});
+      const polFilled = Object.values(polished).some((v) => v && String(v).trim());
+      const isActive = i === activeReviewSectionIdx;
+      return `
+        <button class="ad-section-item ${isActive ? 'on' : ''} ${polFilled ? 'done' : ''}" onclick="setAdminSection(${i})">
+          <div class="ic">${polFilled ? '✓' : sec.icon}</div>
+          <div class="body">
+            <div class="ttl">${i + 1}. ${escapeHtml(sec.title)}</div>
+            <div class="ref">${opFilled ? 'Operator answered' : 'Empty'}</div>
+          </div>
+        </button>`;
+    }).join('');
+
+    // Build the editor pane
+    const opSec = (d.sections || {})[section.id] || {};
+    const polishedSec = (d.polished_sections || {})[section.id] || {};
+    let editorFieldsHtml = '';
+    section.fields.forEach((f) => {
+      const opVal = opSec[f.id] || '';
+      const polVal = polishedSec[f.id] || opVal;  // pre-fill with operator answer if no polish yet
+      const noteVal = (polishedSec.__notes || {})[f.id] || '';
+      editorFieldsHtml += `
+        <div style="margin-bottom:24px">
+          <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">${escapeHtml(f.label)}</div>
+          ${opVal ? `
+            <div style="font-size:10px;color:var(--lt);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Operator wrote</div>
+            <div class="ad-input-readonly">${escapeHtml(opVal)}</div>` : `
+            <div style="font-size:11px;color:var(--lt);font-style:italic;margin-bottom:8px">Operator left this blank.</div>`}
+          <div style="font-size:10px;color:var(--purp);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Your polished version</div>
+          <textarea class="ad-textarea" id="ad-pol-${section.id}-${f.id}">${escapeHtml(polVal)}</textarea>
+          <div style="margin-top:8px">
+            <div style="font-size:10px;color:var(--amber);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Note for operator (optional)</div>
+            <textarea class="ad-notes" id="ad-note-${section.id}-${f.id}" placeholder="e.g. consider expanding this for your specific area">${escapeHtml(noteVal)}</textarea>
+          </div>
+        </div>`;
+    });
+
+    // Two-pane on desktop, stacked on mobile
+    const sectionsFilled = schema.filter((sec) => {
+      const ps = (d.polished_sections || {})[sec.id];
+      return ps && Object.values(ps).some((v) => v && String(v).trim() && v !== ((d.sections || {})[sec.id] || {})[Object.keys(ps)[0]]);
+    }).length;
+    const overallNotes = d.admin_notes || '';
+
+    wrap.innerHTML = `
+      <div class="ad-editor-grid">
+        <!-- LEFT: Section list -->
+        <div class="col" style="background:#fafbfc">
+          <div style="padding:18px 20px 6px;border-bottom:1px solid var(--bdr)">
+            <button class="btn btn-xs btn-out" onclick="go('s-admin-home')" style="margin-bottom:10px">‹ Back to inbox</button>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(d.title || 'SMS')}</div>
+            <div style="font-size:11px;color:var(--lt);margin-top:1px">${escapeHtml(v ? v.name : '')} · ${escapeHtml(v ? v.category : '')}</div>
+            <div style="font-size:10px;color:var(--purp);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:8px">${sectionsFilled}/${schema.length} sections polished</div>
+          </div>
+          <div class="ad-section-list">${sectionListHtml}</div>
+        </div>
+
+        <!-- CENTER: Editor for active section -->
+        <div class="col">
+          <div class="ad-pane">
+            <div style="font-size:10px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em">Section ${activeReviewSectionIdx + 1} of ${schema.length} · ${escapeHtml(section.ref)}</div>
+            <h1>${section.icon} ${escapeHtml(section.title)}</h1>
+            <div style="font-size:13px;color:var(--mid);line-height:1.6;margin:6px 0 18px">${escapeHtml(section.blurb)}</div>
+
+            <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+              <button class="btn btn-sm" style="height:34px;font-size:12px;background:linear-gradient(135deg,#7c3aed,#3b5fff);color:white;border:none;font-weight:700" onclick="generateAiVersion()">✨ Generate AI version</button>
+              <button class="btn btn-sm btn-out" style="height:34px;font-size:12px" onclick="copyOperatorAnswer()">↩ Copy operator's answer</button>
+              <button class="btn btn-sm btn-out" style="height:34px;font-size:12px" onclick="saveAdminProgress()">💾 Save progress</button>
+            </div>
+
+            ${editorFieldsHtml}
+
+            <div style="display:flex;justify-content:space-between;margin-top:24px">
+              <button class="btn btn-out" onclick="navAdminSection(-1)" ${activeReviewSectionIdx === 0 ? 'disabled style="opacity:.4"' : ''}>‹ Previous</button>
+              ${activeReviewSectionIdx < schema.length - 1
+                ? `<button class="btn btn-sea" onclick="navAdminSection(1)">Save &amp; next →</button>`
+                : `<button class="btn btn-sea" onclick="goToFinalReview()">Review &amp; send →</button>`}
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Vessel info + actions -->
+        <div class="col" style="background:#fafbfc">
+          <div style="padding:18px 20px">
+            <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Submission</div>
+            ${v ? `
+              <div class="card" style="padding:14px;margin-bottom:14px">
+                <div style="font-size:14px;font-weight:700;color:var(--text)">${escapeHtml(v.name)}</div>
+                <div style="font-size:11px;color:var(--lt);margin-top:2px">${escapeHtml(v.category)} · ${escapeHtml(v.type)}</div>
+                <div style="margin-top:8px;font-size:11px;color:var(--mid);line-height:1.7">
+                  SSR: ${escapeHtml(v.ssr || '—')}<br>
+                  Persons: ${v.persons || '—'}<br>
+                  Port: ${escapeHtml(v.port || '—')}<br>
+                  Length: ${v.length ? v.length + 'm' : '—'}
+                </div>
+              </div>` : ''}
+
+            <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Status</div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:16px">${escapeHtml(d.status)} · ${d.submitted_at ? 'submitted ' + fmtDate(d.submitted_at) : ''}</div>
+
+            <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Overall notes for operator</div>
+            <textarea class="ad-textarea" id="ad-overall-notes" style="min-height:120px;font-size:13px" placeholder="A short message that goes with the delivered document — e.g. 'Polished and tightened. Pay attention to the cyber-security section, you'll want to review with your IT support.'">${escapeHtml(overallNotes)}</textarea>
+
+            <div style="margin-top:14px">
+              <button class="btn btn-sea btn-full" onclick="sendDelivery()" style="background:linear-gradient(135deg,#7c3aed,#3b5fff);border:none">📤 Send polished SMS to operator</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function snapshotAdminSection() {
+    if (!window.Codes) return;
+    const schema = window.Codes.SMS_SCHEMA;
+    const section = schema[activeReviewSectionIdx];
+    if (!section) return;
+    const d = Store.snapshot().sms_documents.find((x) => x.id === activeReviewDocId);
+    if (!d) return;
+    const polished = d.polished_sections || {};
+    if (!polished[section.id]) polished[section.id] = {};
+    if (!polished[section.id].__notes) polished[section.id].__notes = {};
+    section.fields.forEach((f) => {
+      const polEl = document.getElementById(`ad-pol-${section.id}-${f.id}`);
+      const noteEl = document.getElementById(`ad-note-${section.id}-${f.id}`);
+      if (polEl) polished[section.id][f.id] = polEl.value;
+      if (noteEl) polished[section.id].__notes[f.id] = noteEl.value;
+    });
+    const overallEl = document.getElementById('ad-overall-notes');
+    Store.updateSmsDocument(activeReviewDocId, {
+      polished_sections: polished,
+      admin_notes: overallEl ? overallEl.value : (d.admin_notes || '')
+    });
+  }
+
+  function setAdminSection(idx) {
+    snapshotAdminSection();
+    activeReviewSectionIdx = idx;
+    renderAdminReview();
+  }
+  window.setAdminSection = setAdminSection;
+
+  function navAdminSection(delta) {
+    snapshotAdminSection();
+    activeReviewSectionIdx += delta;
+    if (activeReviewSectionIdx < 0) activeReviewSectionIdx = 0;
+    if (window.Codes && activeReviewSectionIdx >= window.Codes.SMS_SCHEMA.length) activeReviewSectionIdx = window.Codes.SMS_SCHEMA.length - 1;
+    renderAdminReview();
+  }
+  window.navAdminSection = navAdminSection;
+
+  function copyOperatorAnswer() {
+    if (!window.Codes) return;
+    const schema = window.Codes.SMS_SCHEMA;
+    const section = schema[activeReviewSectionIdx];
+    const d = Store.snapshot().sms_documents.find((x) => x.id === activeReviewDocId);
+    if (!d || !section) return;
+    const opSec = (d.sections || {})[section.id] || {};
+    section.fields.forEach((f) => {
+      const polEl = document.getElementById(`ad-pol-${section.id}-${f.id}`);
+      if (polEl && opSec[f.id]) polEl.value = opSec[f.id];
+    });
+  }
+  window.copyOperatorAnswer = copyOperatorAnswer;
+
+  // Mock AI generation — wraps the operator's answer with a polished frame.
+  // Production will call Anthropic API with the section context + operator answers.
+  function generateAiVersion() {
+    if (!window.Codes) return;
+    const schema = window.Codes.SMS_SCHEMA;
+    const section = schema[activeReviewSectionIdx];
+    const d = Store.snapshot().sms_documents.find((x) => x.id === activeReviewDocId);
+    if (!d || !section) return;
+    const v = Store.getVessel(d.vessel_id);
+    const opSec = (d.sections || {})[section.id] || {};
+
+    section.fields.forEach((f) => {
+      const polEl = document.getElementById(`ad-pol-${section.id}-${f.id}`);
+      if (!polEl) return;
+      const opVal = opSec[f.id] || '';
+      // Build a "polished" version: take operator's text, add a structured frame.
+      const polished = polishField(section, f, opVal, v);
+      polEl.value = polished;
+    });
+  }
+  window.generateAiVersion = generateAiVersion;
+
+  function polishField(section, field, opText, vessel) {
+    const v = vessel || {};
+    if (field.type === 'date') return opText || new Date().toISOString().slice(0, 10);
+    if (field.type === 'short') return opText || (field.default || '').replace(/\[VESSEL_NAME\]/g, v.name || 'the vessel');
+
+    const baseTemplate = (field.default || '').replace(/\[VESSEL_NAME\]/g, v.name || 'the vessel').replace(/\[CATEGORY\]/g, v.category || '');
+
+    if (!opText || opText.trim().length < 30) {
+      // Operator left it blank or sparse — return the polished template
+      return baseTemplate || `[CodedOK Pro draft — please tailor to ${v.name || 'your vessel'} and your operation]`;
+    }
+    // Otherwise: take operator's answer and frame it as a polished SMS paragraph
+    return [
+      `On ${v.name || 'this vessel'} (${v.category || ''}, ${v.type || 'commercial'}):`,
+      '',
+      opText.trim(),
+      '',
+      'This procedure has been reviewed against the SPV Code 2025 / Workboat Code Edition 3 requirements. The Master is responsible for implementing it on board. Reviewed by CodedOK.'
+    ].join('\n');
+  }
+
+  function saveAdminProgress() {
+    snapshotAdminSection();
+    const btn = event && event.target;
+    if (btn) {
+      const o = btn.textContent;
+      btn.textContent = '✓ Saved';
+      setTimeout(() => { btn.textContent = o; }, 1200);
+    }
+  }
+  window.saveAdminProgress = saveAdminProgress;
+
+  function goToFinalReview() {
+    snapshotAdminSection();
+    sendDelivery();
+  }
+  window.goToFinalReview = goToFinalReview;
+
+  function sendDelivery() {
+    snapshotAdminSection();
+    const d = Store.snapshot().sms_documents.find((x) => x.id === activeReviewDocId);
+    if (!d) return;
+    if (!confirm(`Send the polished SMS to the operator?\n\nThey'll get a notification on their next open. Status will become "delivered" and your work archived.`)) return;
+    Store.deliverSmsToOperator(d.id, d.polished_sections || {}, d.admin_notes || '');
+    alert('Delivered. The operator will see it on their home screen.');
+    activeReviewDocId = null;
+    adminTab = 'delivered';
+    go('s-admin-home');
+  }
+  window.sendDelivery = sendDelivery;
 
   // ---------- Home (operator) ----------
 
@@ -610,9 +1022,19 @@
     if (smsCardEl) {
       const draft = (function () { try { return JSON.parse(localStorage.getItem('codedok-sms-draft-v1') || 'null'); } catch (e) { return null; }})();
       const smsDocs = Store.snapshot().sms_documents || [];
+      const smsDelivered = smsDocs.find((d) => d.status === 'delivered');
+      const smsSubmitted = smsDocs.find((d) => d.status === 'submitted' || d.status === 'in_progress');
       const smsActive = smsDocs.find((d) => d.status === 'signed') || smsDocs.find((d) => d.status === 'active');
       let cta, line, color, icon;
-      if (smsActive && smsActive.status === 'signed') {
+      if (smsDelivered) {
+        icon = '✨'; color = 'var(--purp)';
+        line = `Polished SMS ready · delivered ${fmtDate(smsDelivered.delivered_at)} by CodedOK`;
+        cta = 'Open my SMS →';
+      } else if (smsSubmitted) {
+        icon = '⏳'; color = 'var(--amber)';
+        line = `With CodedOK · submitted ${fmtDate(smsSubmitted.submitted_at || smsSubmitted.last_reviewed_at)} · we'll be in touch`;
+        cta = 'View status →';
+      } else if (smsActive && smsActive.status === 'signed') {
         icon = '✓'; color = 'var(--green)';
         line = `Signed${smsActive.signed_by_user_id ? ' by your surveyor' : ''} · in your inspection pack`;
         cta  = 'View signed SMS →';
@@ -627,7 +1049,7 @@
         cta  = 'Resume SMS →';
       } else {
         icon = '🛡️'; color = 'var(--purp)';
-        line = 'MCA-aligned in 11 guided sections · £29 to generate';
+        line = 'MCA-aligned in 11 guided sections · submit to CodedOK for AI polish';
         cta  = 'Build your SMS →';
       }
       smsCardEl.innerHTML = `
@@ -3101,16 +3523,30 @@
 
       ${!purchased ? `
         <div style="padding:0 16px 6px">
+          <div style="background:white;border:1px solid var(--bdr);border-radius:14px;padding:14px;margin-bottom:14px">
+            <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Quick downloads</div>
+            <div class="qa-tile" onclick="downloadSmsAsWordFromDraft()" style="margin-bottom:6px">
+              <div class="qa-icon bl">📄</div>
+              <div style="flex:1"><div class="qa-title">Download my draft as Word</div><div class="qa-sub">Your answers, exported as a Word document</div></div>
+              <span class="chev">›</span>
+            </div>
+            <div class="qa-tile" onclick="downloadSmsAsPdf()">
+              <div class="qa-icon ok">🖨️</div>
+              <div style="flex:1"><div class="qa-title">Print or save as PDF</div><div class="qa-sub">Branded cover + sign-off block</div></div>
+              <span class="chev">›</span>
+            </div>
+          </div>
+
           <div class="hero" style="padding:18px;border-radius:14px;color:white">
             <div style="position:relative;z-index:1">
-              <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Generate &amp; download</div>
-              <div style="font-size:15px;font-weight:700;margin-bottom:4px">Unlock your finished SMS</div>
-              <div style="font-size:12px;color:rgba(255,255,255,.65);line-height:1.6;margin-bottom:14px">A one-off fee unlocks your Word and PDF download forever, and lets you send it to a surveyor for review. CodedOK keeps your SMS version-controlled with annual review reminders.</div>
-              <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px">
-                <div><div style="font-size:28px;font-weight:800;letter-spacing:-.5px">£${SMS_GEN_FEE}</div><div style="font-size:11px;color:rgba(255,255,255,.5)">one-off · per vessel</div></div>
-                <div style="text-align:right;font-size:11px;color:rgba(255,255,255,.65);max-width:180px;line-height:1.5">Includes Word + PDF · revision history · annual reminder</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                <span style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.07em">Premium</span>
+                <span style="background:linear-gradient(135deg,#7c3aed,#3b5fff);color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px">AI-written</span>
               </div>
-              <button class="btn btn-sea btn-full" onclick="payToGenerateSms('${doc.id}')">💷 Generate for £${SMS_GEN_FEE}</button>
+              <div style="font-size:16px;font-weight:700;margin-bottom:4px">Submit to CodedOK for a polished SMS</div>
+              <div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.6;margin-bottom:14px">We'll take your answers and produce a full, AI-written, MCA-aligned Safety Management System tailored to your vessel. You'll be able to edit it and send it to a surveyor for sign-off when it's back. Typical turnaround 5 working days.</div>
+              <button class="btn btn-sea btn-full" onclick="submitSmsForAdminReview('${doc.id}')">📤 Submit for review</button>
+              <div style="font-size:11px;color:rgba(255,255,255,.5);text-align:center;margin-top:10px">No payment in app yet — we'll be in touch with pricing when we receive your draft.</div>
             </div>
           </div>
         </div>` : `
@@ -3177,25 +3613,21 @@
     return html;
   }
 
-  function payToGenerateSms(docId) {
-    showCheckoutSheet({
-      title: 'Generate SMS document',
-      price: '£' + SMS_GEN_FEE,
-      lineItems: [
-        ['SMS Word + PDF unlock', '£' + SMS_GEN_FEE],
-        ['VAT (incl.)', '—']
-      ],
-      onConfirm: () => {
-        const docs = Store.snapshot().sms_documents;
-        const d = docs.find((x) => x.id === docId);
-        if (d) { d.paid_at = new Date().toISOString().slice(0, 10); d.status = 'active'; }
-        // Re-render the finish screen now that doc is paid.
-        const draft = loadSmsDraft();
-        if (d && draft) showSmsFinishSheet(d, draft);
-      }
+  // Submit to CodedOK admin queue (Joe). No payment yet.
+  function submitSmsForAdminReview(docId) {
+    const draft = loadSmsDraft();
+    const sections = draft ? draft.sections : {};
+    Store.updateSmsDocument(docId, {
+      status: 'submitted',
+      submitted_at: new Date().toISOString().slice(0, 10),
+      submitted_by_user_id: 'u_jm',
+      sections: sections   // preserve operator's section data on the doc itself
     });
+    alert('Submitted to CodedOK. We\'ll be in touch within 5 working days with your polished SMS and pricing.');
+    clearSmsDraft();
+    go('s-sms');
   }
-  window.payToGenerateSms = payToGenerateSms;
+  window.submitSmsForAdminReview = submitSmsForAdminReview;
 
   function sendSmsToSurveyor(docId, vesselId, surveyorUserId) {
     const v = Store.getVessel(vesselId);
@@ -3847,11 +4279,22 @@ ${sectionsHtml}
   }
   window.resetLoginStep = resetLoginStep;
 
+  // Admin emails route into the admin workspace; everything else → operator.
+  function isAdminEmail(email) {
+    if (!email) return false;
+    const e = email.toLowerCase();
+    return e === 'admin@codedok.com' || e === 'joe@codedok.com' || e.startsWith('admin@') || e.startsWith('joe+admin@');
+  }
+
   function mockMagicLinkArrived() {
     const email = (document.getElementById('login-email') || {}).value || 'joseph@codedok.com';
     saveSession({ mode: 'live', email, signed_in_at: new Date().toISOString() });
     renderDemoBadge();
-    go('s-home');
+    if (isAdminEmail(email)) {
+      enterAdminMode();
+    } else {
+      go('s-home');
+    }
   }
   window.mockMagicLinkArrived = mockMagicLinkArrived;
 
@@ -3894,6 +4337,9 @@ ${sectionsHtml}
     if (Store.getMode() === 'surveyor') {
       applyDesktopSurveyor();
       go('s-surveyor-home');
+    } else if (Store.getMode() === 'admin') {
+      applyDesktopAdmin();
+      go('s-admin-home');
     } else {
       go('s-home');
     }

@@ -627,6 +627,231 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .sheet-act.danger { color: var(--red); }
 
 /* ═══════════════════════════════════════════════════════════════
+   ADMIN DESKTOP MODE — Joe's workspace.
+   Same desktop pattern as the surveyor view but purple-themed
+   (CodedOK platform owner, not McCollam Marine).
+   ═══════════════════════════════════════════════════════════════ */
+
+.ad-sidebar { display: none; }
+
+@media (min-width: 1024px) {
+  body.desktop-admin {
+    display: block !important;
+    padding: 0 !important;
+    background: var(--page);
+    overflow: hidden;
+  }
+  body.desktop-admin .shell {
+    width: 100vw !important;
+    max-width: none !important;
+    min-height: 100vh !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding-left: 240px;
+    overflow: hidden;
+  }
+  body.desktop-admin .shell.on { display: flex !important; flex-direction: column; }
+  body.desktop-admin .scroll { overflow-y: auto; }
+  body.desktop-admin .bnav { display: none !important; }
+  body.desktop-admin .sb { display: none !important; }
+
+  body.desktop-admin .ad-sidebar {
+    display: flex !important;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 240px;
+    background: #0E0B1A;
+    background-image:
+      radial-gradient(circle at 0% 0%, rgba(124,58,237,.30) 0%, transparent 60%),
+      radial-gradient(circle at 100% 100%, rgba(59,95,255,.18) 0%, transparent 60%);
+    color: white;
+    flex-direction: column;
+    padding: 22px 14px;
+    z-index: 100;
+    border-right: 1px solid rgba(255,255,255,.06);
+  }
+
+  .ad-sb-brand {
+    padding: 0 8px 18px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    margin-bottom: 14px;
+  }
+
+  .ad-sb-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .ad-sb-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    background: transparent; border: none;
+    color: rgba(255,255,255,.7);
+    font-family: var(--fn);
+    font-size: 13px; font-weight: 500;
+    text-align: left; border-radius: 9px;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+    position: relative;
+    width: 100%;
+  }
+  .ad-sb-item:hover { background: rgba(255,255,255,.06); color: white; }
+  .ad-sb-item.on {
+    background: rgba(124,58,237,.4); color: white; font-weight: 600;
+  }
+  .ad-sb-item.on::before {
+    content: ''; position: absolute;
+    left: -14px; top: 8px; bottom: 8px; width: 3px;
+    background: #a78bfa; border-radius: 0 2px 2px 0;
+  }
+  .ad-sb-ic { font-size: 16px; line-height: 1; flex-shrink: 0; width: 18px; text-align: center; }
+  .ad-sb-lbl { flex: 1; }
+  .ad-sb-count {
+    background: #7c3aed; color: white;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 8px;
+  }
+  .ad-sb-foot {
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding-top: 12px;
+  }
+  .ad-sb-user {
+    font-size: 11px; color: rgba(255,255,255,.5);
+    padding: 0 12px 8px;
+  }
+  .ad-sb-exit {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.12);
+    color: rgba(255,255,255,.75);
+    font-family: var(--fn);
+    font-size: 12px; font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .12s ease;
+  }
+  .ad-sb-exit:hover { background: rgba(255,255,255,.06); color: white; }
+
+  /* Admin workspace pages */
+  body.desktop-admin #ad-home-scroll,
+  body.desktop-admin #ad-review-scroll {
+    padding: 0 !important;
+    height: 100vh !important;
+  }
+
+  /* Two-pane editor layout */
+  .ad-editor-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .ad-editor-grid > .col {
+    overflow-y: auto;
+    border-right: 1px solid var(--bdr);
+  }
+  .ad-editor-grid > .col:last-child { border-right: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN editor — works on mobile too, single-column there.
+   ═══════════════════════════════════════════════════════════════ */
+
+.ad-section-list {
+  display: flex; flex-direction: column;
+  padding: 16px;
+}
+.ad-section-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--fn);
+  margin-bottom: 4px;
+  display: flex; align-items: center; gap: 10px;
+  transition: background .12s ease, border-color .12s ease;
+}
+.ad-section-item:hover { background: var(--slate); }
+.ad-section-item.on {
+  background: rgba(124,58,237,.10);
+  border-color: rgba(124,58,237,.35);
+}
+.ad-section-item .ic {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--slate);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.ad-section-item.done .ic { background: var(--grnp); color: var(--green); }
+.ad-section-item .body { flex: 1; min-width: 0; }
+.ad-section-item .ttl { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ad-section-item .ref { font-size: 10px; color: var(--lt); margin-top: 1px; }
+
+.ad-pane {
+  padding: 24px 28px;
+}
+.ad-pane h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -.4px; margin-bottom: 4px; }
+.ad-pane h2 { font-size: 14px; font-weight: 700; color: var(--text); margin: 16px 0 6px; }
+
+.ad-input-readonly {
+  background: var(--slate);
+  border: 1px solid var(--bdr);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-family: var(--fn);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--mid);
+  white-space: pre-wrap;
+  margin-bottom: 12px;
+}
+
+.ad-textarea {
+  width: 100%;
+  min-height: 220px;
+  background: white;
+  border: 1.5px solid var(--bdr);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-family: var(--fn);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.ad-textarea:focus {
+  border-color: var(--purp);
+  box-shadow: 0 0 0 4px rgba(124,58,237,.10);
+}
+
+.ad-notes {
+  width: 100%;
+  min-height: 70px;
+  background: rgba(217,119,6,.04);
+  border: 1.5px solid rgba(217,119,6,.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: var(--fn);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--mid);
+  outline: none;
+  resize: vertical;
+}
+
+.ad-action-bar {
+  position: sticky; bottom: 0;
+  background: var(--card);
+  border-top: 1px solid var(--bdr);
+  padding: 12px 16px;
+  display: flex; gap: 10px;
+  z-index: 10;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    SURVEYOR DESKTOP MODE — full-viewport workspace with left sidebar.
    Activated on body when surveyor mode is on AND viewport ≥1024px.
    Mobile / tablet falls back to the standard phone-frame layout.
