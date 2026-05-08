@@ -23,6 +23,35 @@
 <body>
 
 <!-- ════════════════════════════════════
+  SURVEYOR DESKTOP SIDEBAR — visible only when body.desktop-surveyor
+  Active on viewports ≥1024px while in surveyor mode.
+════════════════════════════════════ -->
+<aside class="sv-sidebar" id="sv-sidebar" aria-hidden="true">
+  <div class="sv-sb-brand">
+    <div class="mm-mark" id="sv-sb-mark"></div>
+  </div>
+  <nav class="sv-sb-nav">
+    <button class="sv-sb-item" data-tab="inbox" onclick="setSurveyorTab('inbox')">
+      <span class="sv-sb-ic">📥</span><span class="sv-sb-lbl">Inbox</span>
+      <span class="sv-sb-count" id="sv-sb-inbox-count" style="display:none">0</span>
+    </button>
+    <button class="sv-sb-item" data-tab="jobs" onclick="setSurveyorTab('jobs')">
+      <span class="sv-sb-ic">🛠️</span><span class="sv-sb-lbl">Jobs</span>
+    </button>
+    <button class="sv-sb-item" data-tab="vessels" onclick="setSurveyorTab('vessels')">
+      <span class="sv-sb-ic">⛵</span><span class="sv-sb-lbl">Vessels</span>
+    </button>
+    <button class="sv-sb-item" data-tab="earnings" onclick="setSurveyorTab('earnings')">
+      <span class="sv-sb-ic">💷</span><span class="sv-sb-lbl">Earnings</span>
+    </button>
+  </nav>
+  <div class="sv-sb-foot">
+    <div class="sv-sb-user" id="sv-sb-user"></div>
+    <button class="sv-sb-exit" onclick="exitSurveyorMode()">↩ Exit surveyor mode</button>
+  </div>
+</aside>
+
+<!-- ════════════════════════════════════
   S-LOGIN — Stunning auth entry
 ════════════════════════════════════ -->
 <div class="shell on auth-shell" id="s-login">

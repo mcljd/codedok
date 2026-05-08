@@ -627,6 +627,187 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .sheet-act.danger { color: var(--red); }
 
 /* ═══════════════════════════════════════════════════════════════
+   SURVEYOR DESKTOP MODE — full-viewport workspace with left sidebar.
+   Activated on body when surveyor mode is on AND viewport ≥1024px.
+   Mobile / tablet falls back to the standard phone-frame layout.
+   ═══════════════════════════════════════════════════════════════ */
+
+.sv-sidebar { display: none; }
+
+@media (min-width: 1024px) {
+  body.desktop-surveyor {
+    display: block !important;
+    padding: 0 !important;
+    background: var(--page);
+    overflow: hidden;
+  }
+  body.desktop-surveyor .shell {
+    width: 100vw !important;
+    max-width: none !important;
+    min-height: 100vh !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding-left: 240px;
+    overflow: hidden;
+  }
+  body.desktop-surveyor .shell.on {
+    display: flex !important;
+    flex-direction: column;
+  }
+  body.desktop-surveyor .scroll {
+    overflow-y: auto;
+  }
+  body.desktop-surveyor .bnav { display: none !important; }
+  body.desktop-surveyor .sb { display: none !important; }
+
+  /* Sidebar */
+  body.desktop-surveyor .sv-sidebar {
+    display: flex !important;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 240px;
+    background: var(--mm-navy);
+    background-image:
+      radial-gradient(circle at 0% 0%, rgba(30,64,175,.25) 0%, transparent 60%),
+      radial-gradient(circle at 100% 100%, rgba(8,145,178,.10) 0%, transparent 60%);
+    color: white;
+    flex-direction: column;
+    padding: 22px 14px;
+    z-index: 100;
+    border-right: 1px solid rgba(255,255,255,.06);
+  }
+
+  .sv-sb-brand {
+    padding: 0 8px 18px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    margin-bottom: 14px;
+  }
+  .sv-sb-brand .mm-mark { gap: 8px; }
+  .sv-sb-brand .mm-mark-name { font-size: 14px; }
+  .sv-sb-brand .mm-mark-tag { font-size: 8px; }
+
+  .sv-sb-nav {
+    display: flex; flex-direction: column;
+    gap: 2px; flex: 1;
+  }
+  .sv-sb-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,.7);
+    font-family: var(--fn);
+    font-size: 13px; font-weight: 500;
+    text-align: left;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+    position: relative;
+    width: 100%;
+  }
+  .sv-sb-item:hover {
+    background: rgba(255,255,255,.06);
+    color: white;
+  }
+  .sv-sb-item.on {
+    background: rgba(30,64,175,.4);
+    color: white;
+    font-weight: 600;
+  }
+  .sv-sb-item.on::before {
+    content: ''; position: absolute;
+    left: -14px; top: 8px; bottom: 8px; width: 3px;
+    background: var(--mm-blue-soft);
+    border-radius: 0 2px 2px 0;
+  }
+  .sv-sb-ic { font-size: 16px; line-height: 1; flex-shrink: 0; width: 18px; text-align: center; }
+  .sv-sb-lbl { flex: 1; }
+  .sv-sb-count {
+    background: var(--mm-blue);
+    color: white;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 8px;
+  }
+
+  .sv-sb-foot {
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding-top: 12px;
+  }
+  .sv-sb-user {
+    font-size: 11px; color: rgba(255,255,255,.5);
+    padding: 0 12px 8px;
+  }
+  .sv-sb-exit {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.12);
+    color: rgba(255,255,255,.75);
+    font-family: var(--fn);
+    font-size: 12px; font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  .sv-sb-exit:hover { background: rgba(255,255,255,.06); color: white; }
+
+  /* Surveyor home hero on desktop — clean banner instead of cramped header */
+  body.desktop-surveyor #s-surveyor-home > div[style*="background:var(--ink)"] {
+    padding: 24px 32px !important;
+    border-bottom: 1px solid var(--bdr);
+  }
+  body.desktop-surveyor #s-surveyor-home .h-display { font-size: 26px !important; }
+  body.desktop-surveyor #s-surveyor-home .tile { padding: 12px 16px; }
+  body.desktop-surveyor #s-surveyor-home .tile-num { font-size: 22px; }
+  body.desktop-surveyor #s-surveyor-home > div[style*="background:var(--ink)"] > div:first-child {
+    margin: 0 0 16px !important;
+  }
+  body.desktop-surveyor #s-surveyor-home > div[style*="background:var(--ink)"] > div:nth-child(2) {
+    margin-bottom: 0 !important;
+  }
+
+  /* Cap content width nicely on wide desktops */
+  body.desktop-surveyor #sv-home-scroll,
+  body.desktop-surveyor #sv-vessel-scroll,
+  body.desktop-surveyor #sv-job-scroll,
+  body.desktop-surveyor #sv-quote-scroll,
+  body.desktop-surveyor #sv-insp-scroll {
+    padding: 8px 32px 32px;
+  }
+
+  /* Vessels grid on desktop — 2 columns */
+  body.desktop-surveyor #sv-home-scroll [style*="display:flex;flex-direction:column;gap:10px"] {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 12px !important;
+  }
+
+  /* Inbox cards on desktop — 2 columns */
+  body.desktop-surveyor #sv-home-scroll > div[style*="padding:0 16px"]:has(.card) {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 12px !important;
+    padding: 0 0 !important;
+  }
+
+  /* Surveyor branded hero on individual screens — desktop variant */
+  body.desktop-surveyor .hero-mm {
+    padding: 24px 32px !important;
+    border-radius: 0 !important;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  body.desktop-surveyor .hero-mm .h-display { font-size: 26px !important; }
+
+  /* Surveyor screens: hide the back buttons inside heroes (sidebar is the nav) */
+  body.desktop-surveyor #s-surveyor-vessel .hero-mm > div:first-child .back,
+  body.desktop-surveyor #s-surveyor-job .hero-mm > div:first-child .back {
+    display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    MOBILE COMPACTION — tighten heroes, tiles and headers below 520px
    so above-the-fold content shows actions, not just decoration.
    ═══════════════════════════════════════════════════════════════ */

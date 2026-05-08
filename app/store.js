@@ -27,7 +27,8 @@
       users: [
         { id: 'u_jm',  email: 'joseph@codedok.com',     name: 'Joseph McLaughlin', initials: 'JM', kind: 'operator' },
         { id: 'u_sv1', email: 'mccollam@example.com',   name: 'McCollam Marine',   initials: 'MM', kind: 'surveyor',
-          surveyor: { qualifications: ['MCA-recognised surveyor', 'Naval Architect MRINA'], certifying_bodies: ['YDSA'], regions: ['Northern Ireland', 'Irish Sea'], company: 'McCollam Marine', phone: '+44 28 9012 3456' } }
+          surveyor: { qualifications: ['MCA-recognised surveyor', 'Naval Architect MRINA'], certifying_bodies: ['YDSA'], regions: ['Northern Ireland', 'Irish Sea'], company: 'McCollam Marine', phone: '+44 28 9012 3456' } },
+        { id: 'u_admin', email: 'admin@codedok.com',    name: 'Joe (CodedOK)',     initials: 'JD', kind: 'admin' }
       ],
 
       // Organisations & memberships.
@@ -256,17 +257,47 @@
   }
 
   function setMode(mode) {
-    if (mode !== 'operator' && mode !== 'surveyor') return;
-    if (mode === 'surveyor') {
-      // Switch to the surveyor user for demo purposes.
-      const surveyor = state.users.find((u) => u.kind === 'surveyor');
-      if (surveyor) state.session.user_id = surveyor.id;
-    } else {
-      const operator = state.users.find((u) => u.kind === 'operator');
-      if (operator) state.session.user_id = operator.id;
-    }
+    if (!['operator', 'surveyor', 'admin'].includes(mode)) return;
+    const user = state.users.find((u) => u.kind === mode);
+    if (user) state.session.user_id = user.id;
     state.session.mode = mode;
     save(state);
+  }
+
+  function smsSubmissions(statusFilter) {
+    let list = (state.sms_documents || []).filter((d) => d.type === 'full_sms' || d.type === 'risk_assess' || d.status === 'submitted' || d.status === 'in_progress' || d.status === 'delivered');
+    if (statusFilter) list = list.filter((d) => d.status === statusFilter);
+    return list.sort((a, b) => (b.submitted_at || b.last_reviewed_at || '').localeCompare(a.submitted_at || a.last_reviewed_at || ''));
+  }
+
+  function updateSmsDocument(docId, patch) {
+    const d = (state.sms_documents || []).find((x) => x.id === docId);
+    if (!d) return;
+    Object.assign(d, patch || {});
+    save(state);
+    return d;
+  }
+
+  function deliverSmsToOperator(docId, polished_sections, notes, polished_body) {
+    const d = updateSmsDocument(docId, {
+      status: 'delivered',
+      polished_sections: polished_sections,
+      polished_body: polished_body || '',
+      admin_notes: notes || '',
+      delivered_at: isoOffset(0),
+      version: ((state.sms_documents.find((x) => x.id === docId) || {}).version || 1) + 1
+    });
+    if (d) {
+      logAction('sms.delivered', 'sms', d.id, { vessel_id: d.vessel_id });
+      state.audit_log.unshift({
+        id: uid('a'), org_id: d.org_id, actor_user_id: 'u_admin',
+        action: 'sms.delivered', target_type: 'sms', target_id: d.id,
+        at: isoOffset(0),
+        metadata: { vessel_id: d.vessel_id, title: d.title }
+      });
+      save(state);
+    }
+    return d;
   }
 
   function complianceScore(vesselId) {
@@ -1037,6 +1068,9 @@
     inviteSurveyor,
     revokeSurveyor,
     addSmsDocument,
+    smsSubmissions,
+    updateSmsDocument,
+    deliverSmsToOperator,
     createJob,
     getJob,
     jobsForSurveyor,

@@ -385,9 +385,56 @@
 
   // ---------- Mode switching ----------
 
+  // ---------- Desktop surveyor layout ----------
+  // When in surveyor mode AND the viewport is wide (≥1024px), we add
+  // body.desktop-surveyor which swaps the phone-frame for a full-viewport
+  // workspace with a left sidebar. Sidebar HTML lives in index.html.
+
+  const DESKTOP_SURVEYOR_MIN = 1024;
+
+  function applyDesktopSurveyor() {
+    const isSurveyor = Store && Store.getMode() === 'surveyor';
+    const wideEnough = window.innerWidth >= DESKTOP_SURVEYOR_MIN;
+    document.body.classList.toggle('desktop-surveyor', isSurveyor && wideEnough);
+    refreshSurveyorSidebar();
+  }
+
+  function refreshSurveyorSidebar() {
+    if (!Store) return;
+    const me = Store.getCurrentUser();
+    if (!me || me.kind !== 'surveyor') return;
+
+    // Brand mark (inline)
+    const markEl = document.getElementById('sv-sb-mark');
+    if (markEl && typeof mmMark === 'function') {
+      markEl.innerHTML = `${mmMark(28)}
+        <div class="mm-mark-words">
+          <div class="mm-mark-name">McCollam Marine</div>
+          <div class="mm-mark-tag">Naval Architects · Marine Surveyors</div>
+        </div>`;
+    }
+
+    // Footer user line
+    const userEl = document.getElementById('sv-sb-user');
+    if (userEl) userEl.textContent = `${me.name} · ${me.surveyor && me.surveyor.regions ? me.surveyor.regions[0] : ''}`;
+
+    // Active tab + inbox count
+    const inbox = Store.jobsForSurveyor(me.id, 'requested');
+    const cnt = document.getElementById('sv-sb-inbox-count');
+    if (cnt) {
+      if (inbox.length > 0) { cnt.style.display = ''; cnt.textContent = inbox.length; }
+      else cnt.style.display = 'none';
+    }
+    document.querySelectorAll('.sv-sb-item').forEach((el) => {
+      const t = el.dataset.tab;
+      el.classList.toggle('on', t === surveyorTab);
+    });
+  }
+
   function enterSurveyorMode() {
     if (!window.Store) return;
     Store.setMode('surveyor');
+    applyDesktopSurveyor();
     go('s-surveyor-home');
   }
   window.enterSurveyorMode = enterSurveyorMode;
@@ -395,9 +442,15 @@
   function exitSurveyorMode() {
     if (!window.Store) return;
     Store.setMode('operator');
+    document.body.classList.remove('desktop-surveyor');
     go('s-home');
   }
   window.exitSurveyorMode = exitSurveyorMode;
+
+  // Re-apply on resize (so rotating to landscape on iPad triggers desktop layout)
+  window.addEventListener('resize', () => {
+    if (Store && Store.getMode() === 'surveyor') applyDesktopSurveyor();
+  });
 
   // ---------- Home (operator) ----------
 
@@ -1750,7 +1803,13 @@
   let surveyorTab = 'inbox';  // default landing tab for surveyors
   function setSurveyorTab(tab) {
     surveyorTab = tab;
+    // If we're not on the surveyor home, navigate there.
+    if (!document.getElementById('s-surveyor-home').classList.contains('on')) {
+      go('s-surveyor-home');
+      return;
+    }
     renderSurveyorHome();
+    refreshSurveyorSidebar();
   }
   window.setSurveyorTab = setSurveyorTab;
 
@@ -3833,6 +3892,7 @@ ${sectionsHtml}
       return;
     }
     if (Store.getMode() === 'surveyor') {
+      applyDesktopSurveyor();
       go('s-surveyor-home');
     } else {
       go('s-home');
