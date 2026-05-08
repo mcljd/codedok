@@ -1,0 +1,125 @@
+/* Print stylesheet — used when the user generates the inspection pack PDF.
+   Hides every shell except the inspection-pack print view, prints A4-friendly. */
+
+@page {
+  size: A4;
+  margin: 18mm 16mm;
+}
+
+@media print {
+  html, body {
+    background: #fff !important;
+    color: #0f172a !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Hide all app chrome */
+  .shell { display: none !important; }
+  .sb, .tbar, .bnav, .bdrop, .tabbar { display: none !important; }
+  body > *:not(.print-pack) { display: none !important; }
+
+  /* Show only the print pack */
+  .print-pack {
+    display: block !important;
+    background: white !important;
+    box-shadow: none !important;
+    color: #0f172a !important;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-pack .pp-head {
+    border-bottom: 2px solid #0a1628;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+
+  .print-pack h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0a1628;
+    margin: 0 0 4px 0;
+    letter-spacing: -.3px;
+  }
+
+  .print-pack h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0a1628;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin: 18px 0 8px 0;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 4px;
+    page-break-after: avoid;
+  }
+
+  .print-pack .pp-meta {
+    color: #475569;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .print-pack .pp-status-ok    { color: #16a34a; font-weight: 700; }
+  .print-pack .pp-status-warn  { color: #d97706; font-weight: 700; }
+  .print-pack .pp-status-bad   { color: #dc2626; font-weight: 700; }
+
+  .print-pack table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+
+  .print-pack table th,
+  .print-pack table td {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+  }
+
+  .print-pack table th {
+    background: #f8fafc;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-size: 10px;
+    color: #475569;
+  }
+
+  .print-pack .pp-banner-bad {
+    background: rgba(220,38,38,.08);
+    border: 1px solid rgba(220,38,38,.3);
+    border-radius: 4px;
+    padding: 10px 12px;
+    margin: 10px 0 16px;
+  }
+
+  .print-pack .pp-banner-ok {
+    background: rgba(22,163,74,.08);
+    border: 1px solid rgba(22,163,74,.3);
+    border-radius: 4px;
+    padding: 10px 12px;
+    margin: 10px 0 16px;
+  }
+
+  .print-pack .pp-foot {
+    margin-top: 24px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: center;
+  }
+
+  .print-pack .pp-section { page-break-inside: avoid; }
+}
+
+/* When NOT printing, the print-pack must be hidden in the live app. */
+@media screen {
+  .print-pack { display: none !important; }
+}

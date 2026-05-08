@@ -1,0 +1,7 @@
+# Force Unix line endings on text files so cross-platform diffs stay clean.
+* text=auto eol=lf
+*.png binary
+*.webp binary
+*.jpg binary
+*.pdf binary
+*.woff2 binary

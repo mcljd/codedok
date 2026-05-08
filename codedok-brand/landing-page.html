@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CodedOK — MCA Compliance for Coded Vessels</title>
+<meta name="description" content="Track certs, ENG1s, surveys and inspection packs for every MCA-coded vessel you run. Never miss a renewal. Free 14-day trial — no card.">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#0a1628; --ink2:#1a3560; --ink3:#1e3454;
+  --sea:#0891b2; --seal:#06b6d4; --seap:rgba(8,145,178,.12);
+  --green:#16a34a; --grnp:rgba(22,163,74,.12);
+  --amber:#d97706; --ampp:rgba(217,119,6,.13);
+  --red:#dc2626; --redp:rgba(220,38,38,.12);
+  --white:#fff; --slate:#f1f5f9; --bdr:#e2e8f0;
+  --text:#0f172a; --mid:#475569; --lt:#94a3b8;
+  --card:#fff; --page:#f8fafc;
+  --fn:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.08);
+  --shlg:0 20px 60px rgba(0,0,0,.35);
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--fn);background:var(--page);color:var(--text);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased;}
+a{color:var(--sea);text-decoration:none;}
+img,svg{display:block;max-width:100%;}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px;}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--bdr);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 0;}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;color:var(--text);letter-spacing:-.3px;}
+.logo-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--sea),var(--seal));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;}
+.nav-links{display:flex;gap:28px;align-items:center;}
+.nav-links a{color:var(--mid);font-weight:500;font-size:14px;}
+.nav-links a:hover{color:var(--text);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:10px;font-family:var(--fn);font-weight:600;font-size:14px;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;}
+.btn-sea{background:var(--sea);color:#fff;}
+.btn-sea:hover{background:#0b7a96;transform:translateY(-1px);}
+.btn-ink{background:var(--ink);color:#fff;}
+.btn-ink:hover{background:#0d1d38;}
+.btn-out{background:transparent;color:var(--text);border:1.5px solid var(--bdr);}
+.btn-out:hover{border-color:var(--text);}
+.btn-lg{padding:16px 28px;font-size:15px;border-radius:12px;}
+.btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.3);}
+.btn-ghost:hover{border-color:#fff;}
+@media(max-width:720px){.nav-links a:not(.btn){display:none;}}
+
+/* HERO */
+.hero{background:var(--ink);color:#fff;padding:72px 0 80px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(8,145,178,.25),transparent 70%);pointer-events:none;}
+.hero::after{content:'';position:absolute;bottom:-300px;left:-200px;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.12),transparent 70%);pointer-events:none;}
+.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:20px;background:rgba(8,145,178,.15);border:1px solid rgba(8,145,178,.3);color:var(--seal);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:22px;}
+.hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--seal);box-shadow:0 0 8px var(--seal);}
+.hero h1{font-size:52px;line-height:1.05;letter-spacing:-1.2px;font-weight:800;margin-bottom:20px;}
+.hero h1 em{font-style:normal;color:var(--seal);}
+.hero-sub{font-size:18px;line-height:1.55;color:rgba(255,255,255,.72);margin-bottom:32px;max-width:540px;}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;}
+.hero-trust{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:rgba(255,255,255,.55);}
+.hero-trust span{display:inline-flex;align-items:center;gap:6px;}
+.hero-trust .tick{color:var(--green);font-weight:700;}
+
+/* HERO MOCKUP */
+.phone{width:340px;height:690px;border-radius:40px;background:var(--page);margin:0 auto;box-shadow:var(--shlg),0 0 0 1px rgba(255,255,255,.1);overflow:hidden;display:flex;flex-direction:column;position:relative;}
+.ph-sb{height:36px;background:var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:11px;font-weight:600;color:rgba(255,255,255,.7);}
+.ph-header{background:var(--ink);padding:8px 18px 18px;color:#fff;}
+.ph-greet{font-size:11px;color:rgba(255,255,255,.4);}
+.ph-title{font-size:18px;font-weight:700;letter-spacing:-.2px;margin-top:1px;}
+.ph-score{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;align-items:center;gap:14px;margin-top:14px;}
+.ph-ring{position:relative;width:72px;height:72px;flex-shrink:0;}
+.ph-ring-val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ph-ring-pct{font-size:18px;font-weight:800;color:#fff;}
+.ph-ring-lbl{font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;}
+.ph-insp{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:14px;font-size:10px;font-weight:700;background:var(--ampp);color:var(--amber);margin-bottom:6px;}
+.ph-insp-sub{font-size:11px;color:rgba(255,255,255,.5);line-height:1.4;}
+.ph-body{flex:1;overflow:hidden;background:var(--page);}
+.ph-sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--lt);padding:14px 16px 6px;}
+.ph-act{margin:0 16px 8px;background:#fff;border:1px solid var(--bdr);border-left:3px solid var(--red);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;}
+.ph-act.am{border-left-color:var(--amber);}
+.ph-act-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.ph-act-ic.rd{background:var(--redp);}
+.ph-act-ic.am{background:var(--ampp);}
+.ph-act-body{flex:1;min-width:0;}
+.ph-act-title{font-size:11px;font-weight:700;color:var(--text);}
+.ph-act-sub{font-size:10px;color:var(--lt);margin-top:1px;}
+.ph-act-btn{font-size:10px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--red);color:#fff;border:none;}
+.ph-act-btn.out{background:transparent;color:var(--text);border:1px solid var(--bdr);}
+.ph-vessel{margin:8px 16px 0;background:#fff;border:1px solid var(--bdr);border-radius:12px;padding:12px;}
+.ph-vessel-top{display:flex;align-items:center;gap:10px;}
+.ph-vessel-ic{width:36px;height:36px;background:var(--ink2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.ph-vessel-name{font-size:12px;font-weight:700;color:var(--text);}
+.ph-vessel-sub{font-size:10px;color:var(--lt);}
+.ph-vessel-chip{margin-left:auto;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--redp);color:var(--red);}
+.ph-vessel-chip.ok{background:var(--grnp);color:var(--green);}
+.ph-bar{height:5px;border-radius:3px;background:var(--bdr);overflow:hidden;margin-top:10px;}
+.ph-bar-fill{height:100%;border-radius:3px;}
+.ph-bar-fill.am{background:var(--amber);}
+.ph-bar-fill.ok{background:var(--green);}
+@media(max-width:900px){
+  .hero-inner{grid-template-columns:1fr;gap:48px;}
+  .hero h1{font-size:38px;}
+  .hero-sub{font-size:16px;}
+  .phone{width:300px;height:610px;}
+}
+
+/* LOGO STRIP */
+.strip{padding:32px 0;background:#fff;border-bottom:1px solid var(--bdr);}
+.strip-label{text-align:center;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--lt);margin-bottom:18px;}
+.strip-logos{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:40px;opacity:.7;}
+.strip-logos span{font-weight:700;color:var(--mid);font-size:15px;letter-spacing:-.3px;}
+
+/* SECTION */
+.sec{padding:88px 0;}
+.sec-head{text-align:center;max-width:720px;margin:0 auto 56px;}
+.sec-tag{display:inline-block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--sea);margin-bottom:14px;}
+.sec-title{font-size:38px;line-height:1.15;letter-spacing:-.8px;font-weight:800;margin-bottom:14px;}
+.sec-sub{font-size:17px;color:var(--mid);line-height:1.55;}
+@media(max-width:720px){.sec{padding:64px 0;}.sec-title{font-size:28px;}}
+
+/* VALUE GRID */
+.vgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+@media(max-width:720px){.vgrid{grid-template-columns:1fr;}}
+.vcard{background:#fff;border:1px solid var(--bdr);border-radius:16px;padding:28px;box-shadow:var(--sh);}
+.vcard-ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px;}
+.vcard-ic.sea{background:var(--seap);}
+.vcard-ic.grn{background:var(--grnp);}
+.vcard-ic.am{background:var(--ampp);}
+.vcard-ic.pu{background:rgba(124,58,237,.12);}
+.vcard-title{font-size:19px;font-weight:700;letter-spacing:-.3px;margin-bottom:8px;color:var(--text);}
+.vcard-body{font-size:15px;color:var(--mid);line-height:1.55;}
+
+/* HOW */
+.how{background:var(--ink);color:#fff;}
+.how .sec-title,.how .sec-sub{color:#fff;}
+.how .sec-sub{color:rgba(255,255,255,.7);}
+.how .sec-tag{color:var(--seal);}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;position:relative;}
+@media(max-width:720px){.how-grid{grid-template-columns:1fr;}}
+.how-step{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:28px;}
+.how-num{width:36px;height:36px;border-radius:10px;background:var(--sea);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;margin-bottom:16px;}
+.how-title{font-size:18px;font-weight:700;margin-bottom:8px;}
+.how-body{font-size:14px;color:rgba(255,255,255,.65);line-height:1.55;}
+
+/* CATEGORIES */
+.cats{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:36px;}
+.cat{background:var(--slate);border:1px solid var(--bdr);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;color:var(--text);}
+.cat strong{color:var(--sea);}
+
+/* SOCIAL PROOF */
+.quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+@media(max-width:900px){.quotes{grid-template-columns:1fr;}}
+.quote{background:#fff;border:1px solid var(--bdr);border-radius:16px;padding:28px;box-shadow:var(--sh);}
+.quote-stars{color:var(--amber);font-size:14px;letter-spacing:2px;margin-bottom:14px;}
+.quote-body{font-size:15px;color:var(--text);line-height:1.55;margin-bottom:20px;font-style:italic;}
+.quote-att{display:flex;align-items:center;gap:12px;}
+.quote-av{width:40px;height:40px;border-radius:50%;background:var(--ink2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;}
+.quote-name{font-size:14px;font-weight:700;color:var(--text);}
+.quote-role{font-size:12px;color:var(--lt);}
+
+/* STAT BAR */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:56px;padding:40px;background:var(--slate);border-radius:20px;}
+@media(max-width:720px){.stats{grid-template-columns:1fr;gap:24px;}}
+.stat{text-align:center;}
+.stat-num{font-size:42px;font-weight:800;color:var(--sea);letter-spacing:-1px;line-height:1;}
+.stat-lbl{font-size:13px;color:var(--mid);margin-top:8px;font-weight:500;}
+
+/* PARTNERS */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+@media(max-width:820px){.pgrid{grid-template-columns:1fr;}}
+.pcard{background:#fff;border:1px solid var(--bdr);border-radius:18px;padding:32px;box-shadow:var(--sh);display:flex;flex-direction:column;}
+.plogo-box{height:90px;display:flex;align-items:center;justify-content:flex-start;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bdr);}
+.plogo-img{max-height:68px;max-width:320px;width:auto;height:auto;object-fit:contain;}
+.pname{font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--text);margin-bottom:4px;}
+.pkind{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--sea);margin-bottom:14px;}
+.pbody{font-size:15px;color:var(--mid);line-height:1.55;margin-bottom:18px;}
+.plist{list-style:none;padding:0;margin:0 0 20px;}
+.plist li{font-size:14px;color:var(--text);padding:8px 0 8px 26px;position:relative;line-height:1.5;border-top:1px solid var(--bdr);}
+.plist li:first-child{border-top:none;padding-top:0;}
+.plist li::before{content:'✓';position:absolute;left:0;top:8px;color:var(--sea);font-weight:800;font-size:14px;}
+.plist li:first-child::before{top:0;}
+.plink{margin-top:auto;font-size:14px;font-weight:600;color:var(--sea);display:inline-flex;align-items:center;gap:6px;}
+.plink:hover{gap:10px;transition:gap .15s;}
+
+/* FAQ */
+.faq{max-width:760px;margin:0 auto;}
+.q{background:#fff;border:1px solid var(--bdr);border-radius:12px;margin-bottom:10px;overflow:hidden;}
+.q summary{padding:20px 24px;cursor:pointer;font-size:16px;font-weight:600;color:var(--text);display:flex;justify-content:space-between;align-items:center;list-style:none;gap:16px;}
+.q summary::-webkit-details-marker{display:none;}
+.q summary::after{content:'+';font-size:22px;color:var(--lt);font-weight:400;transition:transform .2s;flex-shrink:0;}
+.q[open] summary::after{transform:rotate(45deg);}
+.q-body{padding:0 24px 20px;color:var(--mid);font-size:15px;line-height:1.6;}
+
+/* CTA BANNER */
+.cta{background:linear-gradient(135deg,var(--ink) 0%,var(--ink2) 100%);color:#fff;border-radius:24px;padding:64px 48px;text-align:center;margin:0 24px 88px;position:relative;overflow:hidden;}
+.cta::before{content:'';position:absolute;top:-150px;right:-150px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(8,145,178,.3),transparent 70%);}
+.cta-inner{position:relative;z-index:2;max-width:640px;margin:0 auto;}
+.cta h2{font-size:36px;font-weight:800;letter-spacing:-.6px;margin-bottom:14px;line-height:1.15;}
+.cta p{font-size:17px;color:rgba(255,255,255,.75);margin-bottom:28px;line-height:1.55;}
+.cta-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+@media(max-width:720px){.cta{padding:48px 28px;margin:0 16px 64px;}.cta h2{font-size:26px;}}
+
+/* FOOTER */
+.ft{background:var(--ink);color:rgba(255,255,255,.6);padding:48px 0 32px;font-size:14px;}
+.ft-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:32px;margin-bottom:40px;}
+@media(max-width:720px){.ft-top{grid-template-columns:1fr 1fr;}}
+.ft-brand{max-width:320px;}
+.ft-brand p{margin-top:14px;line-height:1.5;font-size:13px;color:rgba(255,255,255,.5);}
+.ft h4{color:#fff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;}
+.ft ul{list-style:none;}
+.ft ul li{margin-bottom:8px;}
+.ft ul a{color:rgba(255,255,255,.55);font-size:14px;}
+.ft ul a:hover{color:#fff;}
+.ft-bot{border-top:1px solid rgba(255,255,255,.08);padding-top:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px;color:rgba(255,255,255,.4);}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a href="#" class="logo"><span class="logo-mark">C</span>CodedOK</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#partners">Partners</a>
+      <a href="#faq">FAQ</a>
+      <a href="#" class="btn btn-out">Log in</a>
+      <a href="#cta" class="btn btn-sea">Start free</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap hero-inner">
+    <div>
+      <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>Built for MCA-coded skippers</div>
+      <h1>Your coded vessel.<br><em>Inspection-ready.</em><br>Every day of the season.</h1>
+      <p class="hero-sub">CodedOK tracks every cert, survey, ENG1 and pyro expiry across your fleet. One app. One compliance score per vessel. One button to generate the pack your surveyor actually asks for.</p>
+      <div class="hero-ctas">
+        <a href="#cta" class="btn btn-sea btn-lg">Start free — 14 days, no card</a>
+        <a href="#how" class="btn btn-ghost btn-lg">See how it works</a>
+      </div>
+      <div class="hero-trust">
+        <span><span class="tick">✓</span> Cat 2 through Cat 6</span>
+        <span><span class="tick">✓</span> No card to start</span>
+        <span><span class="tick">✓</span> Works offline at sea</span>
+      </div>
+    </div>
+    <div>
+      <!-- Mini app mockup -->
+      <div class="phone">
+        <div class="ph-sb"><span>9:41</span><span>●●● ▲</span></div>
+        <div class="ph-header">
+          <div class="ph-greet">Good morning, Joseph</div>
+          <div class="ph-title">Fleet Status</div>
+          <div class="ph-score">
+            <div class="ph-ring">
+              <svg width="72" height="72" viewBox="0 0 72 72">
+                <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="6"/>
+                <circle cx="36" cy="36" r="30" fill="none" stroke="#16a34a" stroke-width="6" stroke-dasharray="188.4" stroke-dashoffset="47.1" stroke-linecap="round" transform="rotate(-90 36 36)"/>
+              </svg>
+              <div class="ph-ring-val"><div class="ph-ring-pct">78%</div><div class="ph-ring-lbl">fleet</div></div>
+            </div>
+            <div style="flex:1">
+              <div class="ph-insp">⚠ Not inspection-ready</div>
+              <div class="ph-insp-sub">2 items need urgent attention before your next MCA visit.</div>
+            </div>
+          </div>
+        </div>
+        <div class="ph-body">
+          <div class="ph-sec">Top actions today</div>
+          <div class="ph-act">
+            <div class="ph-act-ic rd">🚨</div>
+            <div class="ph-act-body">
+              <div class="ph-act-title">Replace flares — Silver Sands</div>
+              <div class="ph-act-sub">Cat C pyrotechnics expired 3 days ago</div>
+            </div>
+            <button class="ph-act-btn">Fix</button>
+          </div>
+          <div class="ph-act am">
+            <div class="ph-act-ic am">📋</div>
+            <div class="ph-act-body">
+              <div class="ph-act-title">Book annual survey</div>
+              <div class="ph-act-sub">Silver Sands — due in 18 days</div>
+            </div>
+            <button class="ph-act-btn out">Book</button>
+          </div>
+          <div class="ph-sec">My vessels</div>
+          <div class="ph-vessel">
+            <div class="ph-vessel-top">
+              <div class="ph-vessel-ic">⛵</div>
+              <div>
+                <div class="ph-vessel-name">Silver Sands</div>
+                <div class="ph-vessel-sub">Cat 2 · Motor Charter</div>
+              </div>
+              <div class="ph-vessel-chip">2 overdue</div>
+            </div>
+            <div class="ph-bar"><div class="ph-bar-fill am" style="width:68%"></div></div>
+          </div>
+          <div class="ph-vessel" style="margin-top:8px;margin-bottom:16px">
+            <div class="ph-vessel-top">
+              <div class="ph-vessel-ic">🚤</div>
+              <div>
+                <div class="ph-vessel-name">Cormorant</div>
+                <div class="ph-vessel-sub">Cat 3 · Angling</div>
+              </div>
+              <div class="ph-vessel-chip ok">All clear</div>
+            </div>
+            <div class="ph-bar"><div class="ph-bar-fill ok" style="width:94%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LOGO STRIP / TRUST -->
+<section class="strip">
+  <div class="wrap">
+    <div class="strip-label">Trusted by skippers running charters, angling trips, dive boats and workboats</div>
+    <div class="strip-logos">
+      <span>CHARTER UK</span>
+      <span>North Coast Angling</span>
+      <span>Atlantic Dive Co.</span>
+      <span>Workboat Ltd</span>
+      <span>Cushendall Marine</span>
+    </div>
+  </div>
+</section>
+
+<!-- VALUE PROPS -->
+<section class="sec" id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">Features</div>
+      <h2 class="sec-title">Built around MCA coding.<br>Not around compliance theatre.</h2>
+      <p class="sec-sub">Every feature exists because a skipper lost a day to it. No generic "regulatory solutions" — just the paperwork the MCA actually asks for.</p>
+    </div>
+    <div class="vgrid">
+      <div class="vcard">
+        <div class="vcard-ic sea">📋</div>
+        <h3 class="vcard-title">Inspection pack in one tap</h3>
+        <p class="vcard-body">When your surveyor asks for the file, you hand them a file. Certs, schedules, crew records, safety equipment log — generated as a single PDF pack in the order the MCA expects. No hunting through WhatsApp or the filing cabinet.</p>
+      </div>
+      <div class="vcard">
+        <div class="vcard-ic am">⏰</div>
+        <h3 class="vcard-title">Never miss a renewal</h3>
+        <p class="vcard-body">Annual survey. ENG1. Pyrotechnics. VHF licence. Liferaft service. MMSI. Radio survey. CodedOK knows what's coming due on each vessel and each crew member — and flags it in the order that matters.</p>
+      </div>
+      <div class="vcard">
+        <div class="vcard-ic grn">⛵</div>
+        <h3 class="vcard-title">One dashboard, whole fleet</h3>
+        <p class="vcard-body">One compliance score per vessel. One rolled-up score for the fleet. If you run two boats in Cushendall and one in Bangor, you see them side by side — not as three separate spreadsheets.</p>
+      </div>
+      <div class="vcard">
+        <div class="vcard-ic pu">🎯</div>
+        <h3 class="vcard-title">Category-aware</h3>
+        <p class="vcard-body">Cat 2 motor charter. Cat 3 angling. Cat 4 workboat. CodedOK knows the requirements differ and only shows what applies to the vessel you're looking at. No scrolling past certs you'll never need.</p>
+      </div>
+    </div>
+    <div class="cats">
+      <div class="cat"><strong>Cat 2</strong> Motor Charter</div>
+      <div class="cat"><strong>Cat 3</strong> Angling</div>
+      <div class="cat"><strong>Cat 4</strong> Workboat</div>
+      <div class="cat"><strong>Cat 5</strong> Inshore</div>
+      <div class="cat"><strong>Cat 6</strong> To 3nm</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="sec how" id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">How it works</div>
+      <h2 class="sec-title">Three steps. Roughly an afternoon.</h2>
+      <p class="sec-sub">Add your vessel, photograph your certs, and you're running a compliant fleet from your phone.</p>
+    </div>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <h3 class="how-title">Add your vessel</h3>
+        <p class="how-body">Enter the SSR number. CodedOK pulls category, class and the base cert requirements for how you're coded — so you're not starting from a blank sheet.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <h3 class="how-title">Upload what you have</h3>
+        <p class="how-body">Photograph certs with your phone. CodedOK reads the expiry date and slots each one into the right tray. Keep going until your compliance score stops moving.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <h3 class="how-title">Get through the season</h3>
+        <p class="how-body">Green means go. Amber means book it. Red means fix before you sail. When the surveyor shows up, tap "Inspection pack" and hand over the phone.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PARTNERS -->
+<section class="sec" id="partners" style="background:var(--page);">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">Partnerships</div>
+      <h2 class="sec-title">Built with the people who build<br>the boats and sign the paperwork.</h2>
+      <p class="sec-sub">CodedOK doesn't live in a vacuum. We work with the builders and surveyors skippers on this coast already trust — so your vessel, your data, and your compliance story all line up.</p>
+    </div>
+
+    <div class="pgrid">
+
+      <!-- REDBAY -->
+      <div class="pcard">
+        <div class="plogo-box">
+          <img class="plogo-img" src="partners/redbay.png" alt="Redbay Boats">
+        </div>
+        <div class="pname">Redbay Boats</div>
+        <div class="pkind">Commercial RIB Builder · Cushendall</div>
+        <p class="pbody">Redbay build high-performance rigid inflatable boats trusted by commercial operators, pilots, dive schools and enforcement agencies. Every new Redbay delivered to a CodedOK customer arrives with its compliance profile pre-loaded — saving the buyer an afternoon of setup and a year of guesswork.</p>
+        <ul class="plist">
+          <li>New-build RIBs delivered with category and cert requirements pre-configured in CodedOK</li>
+          <li>Factory stability data, equipment manifest and build records imported at handover</li>
+          <li>Ongoing warranty and refit records synced into the vessel's compliance history</li>
+          <li>Priority onboarding for Redbay owners stepping into coded commercial use</li>
+        </ul>
+        <a href="#" class="plink">About Redbay Boats →</a>
+      </div>
+
+      <!-- MCCOLLAM MARINE -->
+      <div class="pcard">
+        <div class="plogo-box">
+          <img class="plogo-img" src="partners/mccollam.webp" alt="McCollam Marine — Naval Architects and Marine Surveyors">
+        </div>
+        <div class="pname">McCollam Marine</div>
+        <div class="pkind">Naval Architects · Marine Surveyors</div>
+        <p class="pbody">McCollam Marine provide the naval architecture and survey work that sits behind an MCA-coded vessel. When their reports land in CodedOK, they arrive as structured data — not a PDF you have to interpret. That means your stability letter, survey findings and recommendations feed straight into your compliance score.</p>
+        <ul class="plist">
+          <li>MCA coding surveys and renewals under the Small Commercial Vessel and Workboat Codes</li>
+          <li>Stability assessments, load line, tonnage and incline experiments</li>
+          <li>Pre-purchase, damage, insurance and condition surveys</li>
+          <li>Survey reports and recommendations delivered directly into CodedOK, mapped against your cert tray</li>
+        </ul>
+        <a href="#" class="plink">About McCollam Marine →</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL PROOF -->
+<section class="sec" style="background:#fff;">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">What skippers say</div>
+      <h2 class="sec-title">Replaces the shoebox.<br>Keeps the seat at the table.</h2>
+    </div>
+    <div class="quotes">
+      <div class="quote">
+        <div class="quote-stars">★★★★★</div>
+        <p class="quote-body">"I used to spend a full evening every month checking what was about to expire. Now I open the app over my first coffee and I know."</p>
+        <div class="quote-att">
+          <div class="quote-av">JM</div>
+          <div>
+            <div class="quote-name">[Placeholder — owner-operator]</div>
+            <div class="quote-role">Cat 2 Motor Charter · 1 vessel</div>
+          </div>
+        </div>
+      </div>
+      <div class="quote">
+        <div class="quote-stars">★★★★★</div>
+        <p class="quote-body">"The inspection pack saves me a day of admin every survey. My surveyor asked what software it was."</p>
+        <div class="quote-att">
+          <div class="quote-av">SK</div>
+          <div>
+            <div class="quote-name">[Placeholder — fleet operator]</div>
+            <div class="quote-role">Cat 3 Angling · 4 vessels</div>
+          </div>
+        </div>
+      </div>
+      <div class="quote">
+        <div class="quote-stars">★★★★★</div>
+        <p class="quote-body">"Clean, accurate, and it uses the right terminology. That's rarer than you'd think in this space."</p>
+        <div class="quote-att">
+          <div class="quote-av">RW</div>
+          <div>
+            <div class="quote-name">[Placeholder — commercial surveyor]</div>
+            <div class="quote-role">Certifying Authority representative</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-num">[X]</div><div class="stat-lbl">Vessels tracked</div></div>
+      <div class="stat"><div class="stat-num">[Y]</div><div class="stat-lbl">Certs never expired</div></div>
+      <div class="stat"><div class="stat-num">[Z]</div><div class="stat-lbl">Inspection packs generated</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">FAQ</div>
+      <h2 class="sec-title">Questions skippers actually ask.</h2>
+    </div>
+    <div class="faq">
+      <details class="q">
+        <summary>Which MCA categories does CodedOK support?</summary>
+        <div class="q-body">Cat 2, Cat 3, Cat 4, Cat 5 and Cat 6. Motor charter, angling, dive, workboat. If you're coded under the Workboat Code or the Small Commercial Vessel Code, you're supported.</div>
+      </details>
+      <details class="q">
+        <summary>Is this a replacement for my Authorised Person's audit?</summary>
+        <div class="q-body">No — and nothing will be. CodedOK keeps your paperwork audit-ready so that when your Certifying Authority comes round, the conversation is about the boat, not about where your ENG1 went.</div>
+      </details>
+      <details class="q">
+        <summary>Does it work offline at sea?</summary>
+        <div class="q-body">Yes. Once your data is synced, you can view certs, crew records and the inspection pack without signal. Changes sync when you're back in range.</div>
+      </details>
+      <details class="q">
+        <summary>I only have one vessel — is this overkill?</summary>
+        <div class="q-body">No. The single-vessel plan is priced for owner-operators, and the time saved on tracking renewals usually pays for the year in the first month.</div>
+      </details>
+      <details class="q">
+        <summary>Can my deckhand or mate access the app?</summary>
+        <div class="q-body">Yes — crew members get a read-only view of their own certs (ENG1, STCW, licences) and can upload updates for you to approve.</div>
+      </details>
+      <details class="q">
+        <summary>What happens to my data if I stop paying?</summary>
+        <div class="q-body">You can export everything as a PDF archive at any time. If your subscription lapses, your data is held for 90 days before deletion so you can reactivate without losing anything.</div>
+      </details>
+      <details class="q">
+        <summary>What does the surveyor actually see?</summary>
+        <div class="q-body">A single ordered PDF pack containing the vessel declaration, current certs, crew records, safety equipment log and survey schedule. The same documents you'd have in a binder — just in the order the MCA expects.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<section id="cta">
+  <div class="cta">
+    <div class="cta-inner">
+      <h2>Ready to pass the next one?</h2>
+      <p>Fourteen days free. No card. Add your first vessel in under three minutes.</p>
+      <div class="cta-ctas">
+        <a href="#" class="btn btn-sea btn-lg">Start free trial</a>
+        <a href="#" class="btn btn-ghost btn-lg">Talk to a skipper</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="ft">
+  <div class="wrap">
+    <div class="ft-top">
+      <div class="ft-brand">
+        <a href="#" class="logo" style="color:#fff"><span class="logo-mark">C</span>CodedOK</a>
+        <p>MCA compliance tooling for skippers of small commercial vessels. Built in Cushendall.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#">Pricing</a></li>
+          <li><a href="#">Changelog</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="#">Cat 2 checklist</a></li>
+          <li><a href="#">Cat 3 checklist</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Support</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Contact</a></li>
+          <li><a href="#">Privacy</a></li>
+          <li><a href="#">Terms</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="ft-bot">
+      <div>© 2026 CodedOK. Not affiliated with the Maritime and Coastguard Agency.</div>
+      <div>Made for skippers.</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

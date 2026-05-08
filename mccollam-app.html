@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>McCollam Marine</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --navy:      #1e2d5a;
+  --navy-2:    #243352;
+  --navy-3:    #2e3f63;
+  --navy-4:    #162248;
+  --steel:     #64748b;
+  --steel-l:   #94a3b8;
+  --steel-p:   rgba(100,116,139,.12);
+  --codedok:   #0891b2;
+  --codedok-p: rgba(8,145,178,.12);
+  --green:     #16a34a;
+  --green-p:   rgba(22,163,74,.12);
+  --amber:     #d97706;
+  --amber-p:   rgba(217,119,6,.12);
+  --red:       #dc2626;
+  --red-p:     rgba(220,38,38,.12);
+  --white:     #ffffff;
+  --off:       #f4f6fb;
+  --border:    #e2e8f0;
+  --text:      #0f172a;
+  --mid:       #475569;
+  --light:     #94a3b8;
+  --card:      #ffffff;
+  --page:      #f4f6fb;
+  --fn: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --r:   14px;
+  --r-sm: 9px;
+  --safe: env(safe-area-inset-bottom, 16px);
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.07);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+}
+
+html, body { font-family: var(--fn); background: var(--off); color: var(--text); height: 100vh; overflow: hidden; font-size: 14px; line-height: 1.5; }
+
+/* ════════════════════════════════
+   DESKTOP LAYOUT  (≥ 720px)
+════════════════════════════════ */
+@media (min-width: 720px) {
+  .app { display: grid; grid-template-columns: 220px 1fr; grid-template-rows: 56px 1fr; height: 100vh; }
+  .topbar { grid-column: 1 / -1; }
+  .sidebar { display: flex; }
+  .main-desktop { display: block; overflow-y: auto; }
+  .main-desktop::-webkit-scrollbar { width: 5px; }
+  .main-desktop::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  /* hide mobile elements */
+  .mobile-only { display: none !important; }
+  .drive-overlay { position: fixed; }
+}
+
+/* ════════════════════════════════
+   MOBILE LAYOUT  (< 720px)
+════════════════════════════════ */
+@media (max-width: 719px) {
+  html, body { overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { display: none; }
+  .sidebar { display: none; }
+  .main-desktop { display: none; }
+  .mobile-app { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+  .drive-overlay { position: fixed; }
+}
+
+/* ── TOPBAR (desktop) ── */
+.topbar { background: var(--navy); display: flex; align-items: center; padding: 0 20px; gap: 16px; border-bottom: 1px solid rgba(255,255,255,.06); z-index: 100; flex-shrink: 0; }
+.topbar-logo img { height: 28px; filter: brightness(0) invert(1); opacity: .9; }
+.topbar-logo-text { display: flex; align-items: center; gap: 8px; }
+.topbar-divider { width: 1px; height: 24px; background: rgba(255,255,255,.12); }
+.topbar-sub { font-size: 14px; font-weight: 600; color: rgba(255,255,255,.55); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.topbar-btn { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.8); padding: 6px 14px; border-radius: 7px; font-family: var(--fn); font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; }
+.topbar-btn:hover { background: rgba(255,255,255,.14); }
+.topbar-btn.steel { background: var(--steel); border-color: var(--steel); color: white; }
+
+/* ── SIDEBAR (desktop) ── */
+.sidebar { background: var(--navy-2); border-right: 1px solid rgba(255,255,255,.06); flex-direction: column; overflow-y: auto; }
+.sidebar::-webkit-scrollbar { display: none; }
+.sidebar-section { padding: 16px 12px 4px; }
+.sidebar-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: rgba(255,255,255,.28); padding: 0 8px 6px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; cursor: pointer; color: rgba(255,255,255,.5); font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px; border: none; background: none; font-family: var(--fn); width: 100%; text-align: left; }
+.nav-item:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.85); }
+.nav-item.on { background: rgba(100,116,139,.2); color: var(--steel-l); }
+.nav-icon { font-size: 15px; width: 18px; text-align: center; }
+.nav-badge { margin-left: auto; background: var(--red); color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
+.nav-badge.steel { background: var(--steel); }
+.sidebar-tip { margin: auto 12px 12px; background: rgba(100,116,139,.12); border-radius: 8px; padding: 12px; }
+
+/* ── DESKTOP PANELS ── */
+.panel { display: none; padding: 24px; min-height: 100%; }
+.panel.on { display: block; }
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -.3px; }
+.page-sub { font-size: 13px; color: var(--light); margin-top: 2px; }
+
+/* ── SHARED BUTTONS ── */
+.btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 8px; font-family: var(--fn); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+.btn-steel { background: var(--steel); color: white; }
+.btn-steel:hover { background: var(--steel-l); }
+.btn-navy { background: var(--navy); color: white; }
+.btn-navy:hover { background: var(--navy-3); }
+.btn-out  { background: white; color: var(--text); border: 1.5px solid var(--border); }
+.btn-out:hover { border-color: var(--steel-l); }
+.btn-ghost { background: none; color: var(--mid); border: none; font-size: 12px; padding: 6px 10px; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-full { width: 100%; justify-content: center; }
+
+/* ── SHARED CARDS ── */
+.card { background: var(--card); border-radius: var(--r); border: 1px solid var(--border); box-shadow: var(--shadow); }
+.card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.card-body { padding: 14px 18px; }
+.mx { margin: 0 16px; }
+
+/* ── STAT GRID ── */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: var(--card); border-radius: var(--r); border: 1px solid var(--border); padding: 14px 16px; box-shadow: var(--shadow); }
+.stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--light); margin-bottom: 5px; }
+.stat-val { font-size: 26px; font-weight: 700; line-height: 1; }
+.stat-val.steel { color: var(--steel); }
+.stat-val.ok    { color: var(--green); }
+.stat-val.warn  { color: var(--amber); }
+.stat-val.blue  { color: var(--codedok); }
+.stat-sub { font-size: 11px; color: var(--light); margin-top: 4px; }
+.stat-change { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; margin-top: 4px; }
+.stat-change.up { color: var(--green); background: var(--green-p); }
+.stat-change.dn { color: var(--red); background: var(--red-p); }
+
+/* ── GRID LAYOUTS ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-65-35 { display: grid; grid-template-columns: 1.85fr 1fr; gap: 16px; }
+
+/* ── TABLE ── */
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--light); padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--border); background: var(--off); }
+.tbl td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); color: var(--text); }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: var(--off); }
+.tbl td.light { color: var(--light); }
+.tbl td.strong { font-weight: 600; }
+
+/* ── CHIPS (shared) ── */
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.chip-ok    { background: var(--green-p);    color: var(--green); }
+.chip-warn  { background: var(--amber-p);    color: var(--amber); }
+.chip-bad   { background: var(--red-p);      color: var(--red); }
+.chip-steel { background: var(--steel-p);    color: var(--steel); }
+.chip-blue  { background: var(--codedok-p);  color: var(--codedok); }
+.chip-navy  { background: rgba(30,45,90,.1); color: var(--navy); }
+.chip-dot   { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+/* ── DESKTOP GRIDS ── */
+.portfolio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.portfolio-card { background: var(--card); border-radius: var(--r); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); transition: all .2s; position: relative; }
+.portfolio-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.portfolio-card-img { width: 100%; height: 150px; background: linear-gradient(135deg, var(--navy-2), var(--navy-3)); display: flex; align-items: center; justify-content: center; font-size: 36px; }
+.portfolio-card-body { padding: 14px; }
+.portfolio-card-title { font-size: 14px; font-weight: 700; }
+.portfolio-card-sub { font-size: 12px; color: var(--light); margin-top: 3px; }
+.portfolio-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.portfolio-add-card { border: 2px dashed var(--border); border-radius: var(--r); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 240px; cursor: pointer; transition: all .15s; background: none; font-family: var(--fn); color: var(--light); }
+.portfolio-add-card:hover { border-color: var(--steel); color: var(--steel); background: var(--steel-p); }
+.portfolio-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; opacity: 0; transition: opacity .15s; }
+.portfolio-card:hover .portfolio-actions { opacity: 1; }
+.pa-btn { background: rgba(0,0,0,.55); border: none; border-radius: 6px; color: white; padding: 4px 8px; font-size: 12px; cursor: pointer; font-family: var(--fn); }
+
+/* ── REPORT EDITOR ── */
+.report-editor { display: grid; grid-template-columns: 240px 1fr; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; background: white; max-height: calc(100vh - 180px); }
+.report-sidebar { border-right: 1px solid var(--border); background: var(--off); overflow-y: auto; padding: 14px; }
+.report-section-btn { width: 100%; text-align: left; padding: 8px 10px; border-radius: 7px; background: none; border: none; font-family: var(--fn); font-size: 12px; font-weight: 500; color: var(--mid); cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.report-section-btn:hover { background: var(--border); }
+.report-section-btn.on { background: var(--steel-p); color: var(--steel); font-weight: 700; }
+.report-main { padding: 22px; overflow-y: auto; }
+.report-tab { display: none; }
+.report-tab.on { display: block; }
+.report-field { margin-bottom: 14px; }
+.report-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--light); margin-bottom: 5px; display: block; }
+.report-input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--fn); font-size: 13px; color: var(--text); background: white; outline: none; }
+.report-input:focus { border-color: var(--steel); box-shadow: 0 0 0 3px var(--steel-p); }
+.report-textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--fn); font-size: 13px; color: var(--text); background: white; outline: none; resize: vertical; min-height: 90px; line-height: 1.6; }
+.report-textarea:focus { border-color: var(--steel); box-shadow: 0 0 0 3px var(--steel-p); }
+.deficiency-row { background: var(--red-p); border: 1px solid rgba(220,38,38,.2); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10px; }
+
+/* ── WEBSITE PREVIEW ── */
+.website-preview { background: white; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.browser-bar { background: var(--off); border-bottom: 1px solid var(--border); padding: 8px 14px; display: flex; align-items: center; gap: 10px; }
+.browser-dots { display: flex; gap: 5px; }
+.browser-dot { width: 10px; height: 10px; border-radius: 50%; }
+.browser-url { flex: 1; background: white; border: 1px solid var(--border); border-radius: 5px; padding: 4px 10px; font-size: 11px; color: var(--mid); }
+
+/* ── SHARED MISC ── */
+.divider { height: 1px; background: var(--border); }
+.alert { border-radius: 8px; padding: 11px 14px; display: flex; gap: 10px; border-left: 3px solid; }
+.alert.info { background: var(--codedok-p); border-color: var(--codedok); }
+.alert.warn { background: var(--amber-p); border-color: var(--amber); }
+.alert-title { font-size: 12px; font-weight: 700; color: var(--text); }
+.alert-body  { font-size: 12px; color: var(--mid); margin-top: 1px; }
+.row-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.row-item:last-child { border: none; }
+.row-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tag { background: var(--off); border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px; font-size: 11px; color: var(--mid); }
+.prog { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 3px; }
+.spacer { height: 20px; }
+.text-sm { font-size: 12px; }
+.text-light { color: var(--light); }
+.fw7 { font-weight: 700; }
+.mt8 { margin-top: 8px; }
+.mt12 { margin-top: 12px; }
+.mt16 { margin-top: 16px; }
+.mb8 { margin-bottom: 8px; }
+.mb14 { margin-bottom: 14px; }
+
+/* ── FORM (shared) ── */
+.fg { margin-bottom: 12px; }
+.fl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--light); margin-bottom: 5px; display: block; }
+.fi, .fs { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--fn); font-size: 14px; color: var(--text); background: var(--off); outline: none; -webkit-appearance: none; }
+.fi:focus, .fs:focus { border-color: var(--steel); background: white; box-shadow: 0 0 0 3px var(--steel-p); }
+.ftextarea { min-height: 90px; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border); font-family: var(--fn); font-size: 14px; color: var(--text); background: var(--off); outline: none; width: 100%; resize: none; line-height: 1.5; }
+.ftextarea:focus { border-color: var(--steel); background: white; box-shadow: 0 0 0 3px var(--steel-p); }
+
+/* ── AVATAR ── */
+.avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--steel); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+
+/* ═══════════════════════════════════
+   MOBILE-ONLY STYLES
+═══════════════════════════════════ */
+.mobile-app { background: var(--page); }
+.screen { display: none; flex-direction: column; background: var(--page); flex: 1; overflow: hidden; }
+.screen.active { display: flex; }
+.sb { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.sb-dark  { background: var(--navy); color: rgba(255,255,255,.7); }
+.sb-light { background: var(--page); color: var(--text); }
+.sb-card  { background: var(--card); color: var(--text); }
+.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.scroll::-webkit-scrollbar { display: none; }
+.tbar { background: var(--card); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.tbar-title { font-size: 17px; font-weight: 700; color: var(--text); }
+.back-btn { display: flex; align-items: center; gap: 3px; color: var(--steel); font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; font-family: var(--fn); }
+.bnav { background: var(--card); border-top: 1px solid var(--border); display: flex; padding: 8px 0 calc(8px + var(--safe)); flex-shrink: 0; }
+.bni { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; border: none; background: none; font-family: var(--fn); padding: 2px 0; }
+.bni-icon { font-size: 20px; line-height: 1; position: relative; }
+.bni-label { font-size: 10px; font-weight: 500; color: var(--light); }
+.bni.on .bni-label { color: var(--steel); }
+.bni.on .bni-icon::after { content: ''; position: absolute; bottom: -3px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--steel); }
+.mrow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
+.mrow:last-child { border-bottom: none; }
+.mrow:active { background: var(--off); }
+.mrow-icon { width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.mrow-icon.steel { background: var(--steel-p); }
+.mrow-icon.blue  { background: var(--codedok-p); }
+.mrow-icon.ok    { background: var(--green-p); }
+.mrow-icon.warn  { background: var(--amber-p); }
+.mrow-icon.bad   { background: var(--red-p); }
+.mrow-body { flex: 1; min-width: 0; }
+.mrow-name { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mrow-sub  { font-size: 12px; color: var(--light); margin-top: 1px; }
+.mrow-right { text-align: right; flex-shrink: 0; }
+.mrow-val  { font-size: 13px; font-weight: 600; }
+.mrow-val.ok   { color: var(--green); }
+.mrow-val.warn { color: var(--amber); }
+.mrow-val.bad  { color: var(--red); }
+.mrow-val.steel{ color: var(--steel); }
+.chev { color: var(--light); font-size: 18px; flex-shrink: 0; }
+.slabel { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--light); padding: 16px 18px 8px; }
+.sgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 14px; }
+.scard { background: var(--card); border-radius: var(--r-sm); border: 1px solid var(--border); padding: 12px 14px; box-shadow: var(--shadow); }
+.scard-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--light); margin-bottom: 4px; }
+.scard-val { font-size: 26px; font-weight: 700; line-height: 1; }
+.scard-val.steel { color: var(--steel); }
+.scard-val.ok    { color: var(--green); }
+.scard-val.warn  { color: var(--amber); }
+.scard-val.blue  { color: var(--codedok); }
+.scard-sub { font-size: 11px; color: var(--light); margin-top: 3px; }
+.fab { position: absolute; bottom: calc(74px + var(--safe)); right: 16px; width: 52px; height: 52px; border-radius: 50%; background: var(--steel); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 16px rgba(100,116,139,.4); cursor: pointer; border: none; z-index: 40; transition: transform .15s; font-family: var(--fn); }
+.fab:active { transform: scale(.9); }
+.tabbar { display: flex; overflow-x: auto; padding: 0 14px; gap: 2px; border-bottom: 1px solid var(--border); background: var(--card); flex-shrink: 0; }
+.tabbar::-webkit-scrollbar { display: none; }
+.tab { padding: 11px 12px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; border: none; background: none; color: var(--light); border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: var(--fn); }
+.tab.on { color: var(--steel); border-bottom-color: var(--steel); }
+.tc { display: none; }
+.tc.on { display: block; }
+.tl { padding: 14px; display: flex; flex-direction: column; }
+.tli { display: flex; gap: 12px; padding-bottom: 16px; position: relative; }
+.tli::before { content: ''; position: absolute; left: 8px; top: 18px; bottom: 0; width: 1.5px; background: var(--border); }
+.tli:last-child::before { display: none; }
+.tli-dot { width: 17px; height: 17px; border-radius: 50%; flex-shrink: 0; margin-top: 1px; border: 2px solid var(--border); background: white; z-index: 1; }
+.tli-dot.ok   { border-color: var(--green); background: var(--green-p); }
+.tli-dot.warn { border-color: var(--steel); background: var(--steel-p); }
+.tli-dot.up   { border-color: var(--navy-3); background: var(--navy-3); }
+.tli-title { font-size: 13px; font-weight: 500; color: var(--text); }
+.tli-date  { font-size: 12px; color: var(--light); margin-top: 1px; }
+
+/* ── SHEET ── */
+.backdrop { position: fixed; inset: 0; background: rgba(10,15,30,.55); z-index: 100; display: none; align-items: flex-end; backdrop-filter: blur(2px); }
+.backdrop.on { display: flex; }
+.sheet { background: var(--card); width: 100%; border-radius: 22px 22px 0 0; max-height: 88vh; overflow-y: auto; animation: sheetup .25s cubic-bezier(.32,.72,0,1); }
+@keyframes sheetup { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-pull { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 12px auto 0; }
+.sheet-head { padding: 12px 18px 14px; display: flex; align-items: center; justify-content: space-between; }
+.sheet-title { font-size: 17px; font-weight: 700; }
+.sheet-x { background: var(--off); border: none; width: 28px; height: 28px; border-radius: 50%; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--mid); }
+
+/* ── MODAL (desktop) ── */
+.modal-bg { position: fixed; inset: 0; background: rgba(10,15,30,.5); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+.modal-bg.on { display: flex; }
+.modal { background: white; border-radius: 16px; width: 540px; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+.modal-head { padding: 18px 20px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.modal-title { font-size: 16px; font-weight: 700; }
+.modal-x { background: var(--off); border: none; width: 28px; height: 28px; border-radius: 50%; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--mid); }
+.modal-body { padding: 18px 20px; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+/* ── DRIVING OVERLAY ── */
+.drive-overlay { inset: 0; background: var(--navy-4); z-index: 1000; display: none; flex-direction: column; }
+.drive-overlay.on { display: flex; }
+.drive-time { font-size: 80px; font-weight: 700; color: white; letter-spacing: -3px; text-align: center; line-height: 1; }
+.drive-card { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 14px 18px; }
+.drive-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.drive-action { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 14px 10px; text-align: center; cursor: pointer; }
+.drive-action:hover, .drive-action:active { background: rgba(255,255,255,.12); }
+.drive-action-icon { font-size: 26px; margin-bottom: 5px; }
+.drive-action-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.65); }
+.voice-ring { width: 72px; height: 72px; border-radius: 50%; background: var(--steel); display: flex; align-items: center; justify-content: center; font-size: 32px; cursor: pointer; margin: 0 auto; animation: pulse 2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(100,116,139,.35); } 70% { box-shadow: 0 0 0 14px rgba(100,116,139,0); } 100% { box-shadow: 0 0 0 0 rgba(100,116,139,0); } }
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- McCollam SVG symbol -->
+<svg style="display:none">
+  <symbol id="mm" viewBox="0 0 36 36">
+    <path d="M4,28 L18,8 L32,28 Z" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M8,28 L28,28" stroke="rgba(255,255,255,.7)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M18,8 L18,4" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+    <line x1="6" y1="22" x2="30" y2="22" stroke="#94a3b8" stroke-width="1" opacity="0.4"/>
+  </symbol>
+</svg>
+
+<!-- ════════════════════════════════
+  DESKTOP APP
+════════════════════════════════ -->
+<div class="app" id="desktop-app">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-logo-text">
+      <svg width="26" height="26" viewBox="0 0 36 36"><use href="#mm"/></svg>
+      <span style="font-size:15px;font-weight:700;color:white;letter-spacing:-.2px">McCollam Marine</span>
+      <span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Naval Architects · Surveyors</span>
+    </div>
+    <div class="topbar-divider"></div>
+    <span class="topbar-sub">Business Hub</span>
+    <div class="topbar-right">
+      <button class="topbar-btn" onclick="openDriving()">🚗 Driving Mode</button>
+      <button class="topbar-btn steel">+ New Job</button>
+      <div class="avatar">JM</div>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Overview</div>
+      <button class="nav-item on" onclick="dshow('dashboard',this)"><span class="nav-icon">🏠</span>Dashboard</button>
+      <button class="nav-item" onclick="dshow('jobs',this)"><span class="nav-icon">📋</span>Jobs<span class="nav-badge">8</span></button>
+      <button class="nav-item" onclick="dshow('vessels',this)"><span class="nav-icon">⛵</span>Vessels</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Reports</div>
+      <button class="nav-item" onclick="dshow('report-editor',this)"><span class="nav-icon">✍️</span>Report Editor</button>
+      <button class="nav-item" onclick="dshow('reports',this)"><span class="nav-icon">📄</span>All Reports</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Business</div>
+      <button class="nav-item" onclick="dshow('finance',this)"><span class="nav-icon">💷</span>Finance</button>
+      <button class="nav-item" onclick="dshow('clients',this)"><span class="nav-icon">👤</span>Clients</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Website</div>
+      <button class="nav-item" onclick="dshow('portfolio',this)"><span class="nav-icon">🖼️</span>Portfolio Editor</button>
+      <button class="nav-item" onclick="dshow('website',this)"><span class="nav-icon">🌐</span>Website Preview</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Integration</div>
+      <button class="nav-item" onclick="dshow('codedok',this)"><span class="nav-icon">🔗</span>CodedOK Sync<span class="nav-badge steel">3</span></button>
+    </div>
+    <div class="sidebar-tip">
+      <div style="font-size:11px;font-weight:700;color:var(--steel-l);margin-bottom:3px">🚗 On the road?</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.35);line-height:1.5">Tap Driving Mode for hands-free job management.</div>
+    </div>
+  </nav>
+
+  <!-- Main desktop content -->
+  <main class="main-desktop">
+
+    <!-- DASHBOARD -->
+    <div class="panel on" id="p-dashboard">
+      <div class="page-header">
+        <div><div class="page-title">Good morning, Joe 👋</div><div class="page-sub">Tuesday 15 April 2025 — 3 jobs this week</div></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-out btn-sm">📅 Calendar</button>
+          <button class="btn btn-steel btn-sm">+ New Job</button>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-label">Active Jobs</div><div class="stat-val steel">8</div><div class="stat-sub">3 due this week</div></div>
+        <div class="stat-card"><div class="stat-label">Unpaid Invoices</div><div class="stat-val warn">£2,400</div><div class="stat-sub">3 outstanding</div><div class="stat-change dn">⚠ 1 overdue</div></div>
+        <div class="stat-card"><div class="stat-label">CodedOK Vessels</div><div class="stat-val blue">12</div><div class="stat-sub">3 need surveys</div></div>
+      </div>
+      <div class="grid-65-35">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Today</div><button class="btn btn-ghost btn-sm" onclick="dshow('jobs',document.querySelector('[onclick*=jobs]'))">View all →</button></div>
+            <table class="tbl">
+              <thead><tr><th>Job</th><th>Client</th><th>Location</th><th>Time</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                <tr><td class="strong">Silver Sands — Annual Survey</td><td>J. McLaughlin</td><td class="light">Cushendall</td><td class="light">09:00</td><td><span class="chip chip-warn">In progress</span></td><td><button class="btn btn-out btn-sm" onclick="dshow('report-editor',document.querySelector('[onclick*=report-editor]'))">Report</button></td></tr>
+                <tr><td class="strong">Morvern — Design Review</td><td>P. Doherty</td><td class="light">Ballycastle</td><td class="light">14:00</td><td><span class="chip chip-ok">Confirmed</span></td><td><button class="btn btn-out btn-sm">Details</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="alert info">
+            <span style="font-size:18px;flex-shrink:0">🔗</span>
+            <div><div class="alert-title">3 CodedOK vessels due surveys</div><div class="alert-body">Silver Sands (overdue), Morvern (47 days), Grey Seal (new coding survey)</div></div>
+            <button class="btn btn-sm" style="margin-left:auto;background:var(--codedok);color:white;flex-shrink:0" onclick="dshow('codedok',document.querySelector('[onclick*=codedok]'))">View →</button>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">This Week</div></div>
+            <table class="tbl">
+              <thead><tr><th>Job</th><th>Day</th><th>Fee</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td class="strong">Grey Seal — MCA Coding</td><td class="light">Wed 17 Apr</td><td class="strong">£800</td><td><span class="chip chip-steel">Scheduled</span></td></tr>
+                <tr><td class="strong">Cormorant — Stability Report</td><td class="light">Due Thu</td><td class="strong">—</td><td><span class="chip chip-warn">Draft</span></td></tr>
+                <tr><td class="strong">Invoice #0042 — Doherty</td><td class="light">Due Fri</td><td class="strong">£1,150</td><td><span class="chip chip-bad">Overdue</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card" style="background:var(--navy);border-color:var(--navy-3)">
+            <div class="card-body" style="padding:16px">
+              <div style="font-size:11px;font-weight:700;color:var(--steel-l);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">🚗 On the Road</div>
+              <div style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:10px;line-height:1.6">Driving Mode gives you hands-free access to your schedule, one-tap call, and voice notes.</div>
+              <button class="btn btn-steel btn-full" onclick="openDriving()">Launch Driving Mode</button>
+              <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px"><div style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Next job</div><div style="font-size:13px;color:white;font-weight:600;margin-top:3px">Silver Sands</div><div style="font-size:11px;color:rgba(255,255,255,.35)">Cushendall · 09:00</div></div>
+                <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px"><div style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Drive time</div><div style="font-size:13px;color:white;font-weight:600;margin-top:3px">~24 min</div><div style="font-size:11px;color:rgba(255,255,255,.35)">from Ballycastle</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Recent Reports</div><button class="btn btn-ghost btn-sm" onclick="dshow('reports',document.querySelector('[onclick*=reports]'))">All →</button></div>
+            <div class="card-body" style="padding:10px 14px">
+              <div class="row-item"><div class="row-icon" style="background:var(--amber-p)">📝</div><div style="flex:1"><div style="font-size:13px;font-weight:500">Silver Sands — Annual Survey</div><div class="text-sm text-light">AI draft · Today</div></div><span class="chip chip-warn">Draft</span></div>
+              <div class="row-item"><div class="row-icon" style="background:var(--green-p)">📄</div><div style="flex:1"><div style="font-size:13px;font-weight:500">Cormorant — Annual Survey</div><div class="text-sm text-light">10 Apr</div></div><span class="chip chip-ok">Sent</span></div>
+              <div class="row-item"><div class="row-icon" style="background:var(--green-p)">📄</div><div style="flex:1"><div style="font-size:13px;font-weight:500">Dawn Mist — Coding Survey</div><div class="text-sm text-light">28 Mar</div></div><span class="chip chip-ok">Sent</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Finance</div><button class="btn btn-ghost btn-sm" onclick="dshow('finance',document.querySelector('[onclick*=finance]'))">All →</button></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;justify-content:space-between"><span class="text-sm">#0044 — McLaughlin</span><span style="font-size:13px;font-weight:600;color:var(--amber)">£450 · Pending</span></div>
+                <div style="display:flex;justify-content:space-between"><span class="text-sm">#0043 — Hanna</span><span style="font-size:13px;font-weight:600;color:var(--amber)">£800 · Sent</span></div>
+                <div style="display:flex;justify-content:space-between"><span class="text-sm">#0042 — Doherty</span><span style="font-size:13px;font-weight:600;color:var(--red)">£1,150 · Overdue</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+
+    <!-- JOBS -->
+    <div class="panel" id="p-jobs">
+      <div class="page-header"><div><div class="page-title">Jobs</div><div class="page-sub">8 active · 12 completed this year</div></div><button class="btn btn-steel">+ New Job</button></div>
+      <div class="card">
+        <div class="card-header" style="gap:10px"><div style="display:flex;gap:8px"><button class="btn btn-navy btn-sm">Active (8)</button><button class="btn btn-out btn-sm">Upcoming</button><button class="btn btn-out btn-sm">Complete</button></div><input style="margin-left:auto;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--fn);font-size:12px;width:200px;outline:none" placeholder="🔍 Search jobs…"></div>
+        <table class="tbl">
+          <thead><tr><th>Job</th><th>Vessel</th><th>Client</th><th>Date</th><th>Fee</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="strong">Annual Survey</td><td>Silver Sands</td><td>J. McLaughlin</td><td class="light">Today 09:00</td><td class="strong">£450</td><td><span class="chip chip-warn">In progress</span></td><td><button class="btn btn-out btn-sm" onclick="dshow('report-editor',document.querySelector('[onclick*=report-editor]'))">Report</button></td></tr>
+            <tr><td class="strong">Design Review</td><td>Morvern</td><td>P. Doherty</td><td class="light">Today 14:00</td><td class="strong">£650</td><td><span class="chip chip-ok">Confirmed</span></td><td><button class="btn btn-out btn-sm">Details</button></td></tr>
+            <tr><td class="strong">MCA Coding Survey</td><td>Grey Seal</td><td>T. Hanna</td><td class="light">Wed 17 Apr</td><td class="strong">£800</td><td><span class="chip chip-steel">Scheduled</span></td><td><button class="btn btn-out btn-sm">Details</button></td></tr>
+            <tr><td class="strong">Stability Report</td><td>Cormorant</td><td>D. McAuley</td><td class="light">Due Thu</td><td class="strong">£300</td><td><span class="chip chip-warn">Draft</span></td><td><button class="btn btn-out btn-sm">Report</button></td></tr>
+            <tr><td class="strong">Damage Survey</td><td>Rathlin Queen</td><td>Rathlin Ferry</td><td class="light">Fri 19 Apr</td><td class="strong">£950</td><td><span class="chip chip-steel">Scheduled</span></td><td><button class="btn btn-out btn-sm">Details</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- REPORT EDITOR -->
+    <div class="panel" id="p-report-editor">
+      <div class="page-header"><div><div class="page-title">Report Editor</div><div class="page-sub">Silver Sands — MCA Annual Survey · 15 April 2025</div></div><div style="display:flex;gap:8px"><button class="btn btn-out btn-sm">Save draft</button><button class="btn btn-out btn-sm" onclick="openModal('modal-ai')">🤖 AI Generate</button><button class="btn btn-steel btn-sm">📄 Export PDF</button></div></div>
+      <div class="report-editor">
+        <div class="report-sidebar">
+          <div style="font-size:10px;font-weight:700;color:var(--light);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Sections</div>
+          <button class="report-section-btn on" onclick="switchRSection(this,'rs-overview')">📋 Overview</button>
+          <button class="report-section-btn" onclick="switchRSection(this,'rs-hull')">⚓ Hull &amp; Structure</button>
+          <button class="report-section-btn" onclick="switchRSection(this,'rs-safety')">🦺 Safety Equipment</button>
+          <button class="report-section-btn" onclick="switchRSection(this,'rs-machinery')">⚙️ Machinery</button>
+          <button class="report-section-btn" onclick="switchRSection(this,'rs-deficiencies')">🚨 Deficiencies</button>
+          <button class="report-section-btn" onclick="switchRSection(this,'rs-conclusion')">✅ Conclusion</button>
+          <div class="divider" style="margin:12px 0"></div>
+          <div style="background:var(--red-p);border:1px solid rgba(220,38,38,.2);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--red);font-weight:600">⚠ 1 deficiency noted</div>
+          <div style="margin-top:12px"><div style="font-size:10px;font-weight:700;color:var(--light);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Completion</div><div class="prog" style="height:6px"><div class="prog-fill" style="width:65%;background:var(--steel)"></div></div><div style="font-size:11px;color:var(--light);margin-top:4px">65% · 5 of 8 sections</div></div>
+        </div>
+        <div class="report-main">
+          <div id="rs-overview" class="report-tab on">
+            <div class="grid-2 mb14">
+              <div class="report-field"><label class="report-label">Survey type</label><input class="report-input" value="MCA Annual Survey Renewal"></div>
+              <div class="report-field"><label class="report-label">Survey date</label><input class="report-input" type="date" value="2025-04-15"></div>
+              <div class="report-field"><label class="report-label">Vessel name</label><input class="report-input" value="Silver Sands"></div>
+              <div class="report-field"><label class="report-label">SSR / Official No.</label><input class="report-input" value="SSR 987654"></div>
+              <div class="report-field"><label class="report-label">Location</label><input class="report-input" value="Cushendall Harbour, Co. Antrim"></div>
+              <div class="report-field"><label class="report-label">Category</label><input class="report-input" value="Category 2 — Motor Vessel"></div>
+            </div>
+            <div class="report-field"><label class="report-label">General condition notes</label><textarea class="report-textarea">The vessel was presented afloat at Cushendall Harbour for annual MCA inspection. GRP motor vessel, approximately 9.5m LOA, used for commercial charter operations. Overall condition satisfactory for vessel of this age and type.</textarea></div>
+            <div class="report-field"><label class="report-label">Surveyor</label><input class="report-input" value="Joseph McCollam BEng(Hons) — McCollam Marine, Naval Architects & Marine Surveyors"></div>
+          </div>
+          <div id="rs-hull" class="report-tab"><div class="report-field"><label class="report-label">Hull inspection notes</label><textarea class="report-textarea" style="min-height:120px">GRP laminate in good condition with no significant crazing, osmosis or delamination. Through-hull fittings and sea cocks in operational condition. Deck hardware and fittings secure.</textarea></div></div>
+          <div id="rs-safety" class="report-tab">
+            <div class="report-field"><label class="report-label">Safety equipment</label><textarea class="report-textarea">Lifejackets: 14 no. 150N — satisfactory, serviced Sep 2024. Life raft: 8-person, serviced Aug 2024. Fire extinguishers x4 — within service dates.</textarea></div>
+            <div style="margin-bottom:14px"><div style="font-size:11px;font-weight:700;color:var(--light);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Deficiencies</div>
+              <div class="deficiency-row"><span style="font-size:16px;flex-shrink:0">⚠️</span><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--red)">Category C Pyrotechnics — Expired</div><div style="font-size:12px;color:var(--mid);margin-top:3px">Expiry March 2025. Must not return to commercial use until replaced.</div></div><select style="font-size:12px;border:1px solid rgba(220,38,38,.3);border-radius:6px;padding:4px 8px;color:var(--red);background:white;font-family:var(--fn)"><option>Major</option><option>Minor</option></select></div>
+            </div>
+          </div>
+          <div id="rs-deficiencies" class="report-tab"><div class="deficiency-row"><span style="font-size:16px;flex-shrink:0">⚠️</span><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--red)">Category C Pyrotechnics — Expired</div><div style="font-size:12px;color:var(--mid);margin-top:3px">Safety Equipment section. Must be replaced before return to commercial service.</div></div><span class="chip chip-bad">Major</span></div></div>
+          <div id="rs-conclusion" class="report-tab">
+            <div class="report-field"><label class="report-label">Overall conclusion</label><textarea class="report-textarea" style="min-height:120px">Silver Sands (SSR 987654) surveyed 15 April 2025 and found generally satisfactory for continued coded vessel use in Category 2 waters, subject to: replacement of expired Category C pyrotechnics prior to return to commercial service.</textarea></div>
+            <div class="report-field"><label class="report-label">Certificate recommendation</label><select class="report-input" style="appearance:auto"><option>Recommend renewal — conditions attached</option><option>Recommend renewal — no conditions</option><option>Do not recommend renewal</option></select></div>
+            <div style="background:var(--navy);border-radius:var(--r);padding:14px;margin-top:4px"><div style="font-size:12px;font-weight:700;color:var(--steel-l);margin-bottom:8px">🤖 AI Draft Ready</div><div style="font-size:12px;color:rgba(255,255,255,.55);line-height:1.6;margin-bottom:10px">Full report drafted in McCollam Marine house style. Review all sections then export or send.</div><div style="display:flex;gap:8px"><button class="btn btn-steel btn-sm">📧 Send to client</button><button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:white">📄 Export PDF</button><button class="btn btn-sm" style="background:var(--codedok);color:white">🔗 Sync to CodedOK</button></div></div>
+          </div>
+          <div id="rs-machinery" class="report-tab"><div class="report-field"><label class="report-label">Machinery notes</label><textarea class="report-textarea">Inboard diesel engine inspected — operational. Engine room clean. Bilge pump operational and tested during survey.</textarea></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PORTFOLIO -->
+    <div class="panel" id="p-portfolio">
+      <div class="page-header"><div><div class="page-title">Portfolio Editor</div><div class="page-sub">Projects publish directly to mccollammarine.com</div></div><div style="display:flex;gap:8px"><button class="btn btn-out btn-sm" onclick="dshow('website',document.querySelector('[onclick*=website]'))">🌐 Preview site</button><button class="btn btn-steel btn-sm" onclick="openModal('modal-portfolio')">+ Add project</button></div></div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"><button class="btn btn-navy btn-sm">All (14)</button><button class="btn btn-out btn-sm">Survey Reports</button><button class="btn btn-out btn-sm">Naval Architecture</button><button class="btn btn-out btn-sm">Stability Studies</button></div>
+      <div class="portfolio-grid">
+        <div class="portfolio-card"><div class="portfolio-card-img">⛵</div><div class="portfolio-card-body"><div class="portfolio-card-title">Silver Sands — MCA Coding</div><div class="portfolio-card-sub">Motor Charter · Cat 2 · 2022</div><div class="tag-list"><span class="tag">Survey</span><span class="tag">MCA Coding</span></div><div class="portfolio-card-footer"><span class="chip chip-ok">Published</span><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-sm">Edit</button><button class="btn btn-ghost btn-sm">Hide</button></div></div></div><div class="portfolio-actions"><button class="pa-btn">✏️ Edit</button><button class="pa-btn">🚫 Hide</button></div></div>
+        <div class="portfolio-card"><div class="portfolio-card-img" style="background:linear-gradient(135deg,#1e3f63,#243352)">🏗️</div><div class="portfolio-card-body"><div class="portfolio-card-title">Rathlin Queen — Stability Study</div><div class="portfolio-card-sub">Ferry · Roll period analysis · 2024</div><div class="tag-list"><span class="tag">Naval Architecture</span><span class="tag">Stability</span></div><div class="portfolio-card-footer"><span class="chip chip-ok">Published</span><button class="btn btn-ghost btn-sm">Edit</button></div></div><div class="portfolio-actions"><button class="pa-btn">✏️ Edit</button><button class="pa-btn">🚫 Hide</button></div></div>
+        <div class="portfolio-card"><div class="portfolio-card-img" style="background:linear-gradient(135deg,#2e3f63,#1e2d5a)">🔧</div><div class="portfolio-card-body"><div class="portfolio-card-title">Cormorant — Damage Survey</div><div class="portfolio-card-sub">Angling boat · Insurance · 2023</div><div class="tag-list"><span class="tag">Damage Survey</span><span class="tag">Insurance</span></div><div class="portfolio-card-footer"><span class="chip chip-warn">Draft</span><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-sm">Edit</button><button class="btn btn-steel btn-sm">Publish</button></div></div></div><div class="portfolio-actions"><button class="pa-btn">✏️ Edit</button><button class="pa-btn">🌐 Publish</button></div></div>
+        <div class="portfolio-card"><div class="portfolio-card-img" style="background:linear-gradient(135deg,#162248,#1e3f63)">⚓</div><div class="portfolio-card-body"><div class="portfolio-card-title">Lady Patricia — 5yr Renewal</div><div class="portfolio-card-sub">Passenger vessel · Full survey · 2024</div><div class="tag-list"><span class="tag">Survey</span><span class="tag">5yr Renewal</span></div><div class="portfolio-card-footer"><span class="chip chip-ok">Published</span><button class="btn btn-ghost btn-sm">Edit</button></div></div><div class="portfolio-actions"><button class="pa-btn">✏️ Edit</button><button class="pa-btn">🚫 Hide</button></div></div>
+        <div class="portfolio-card"><div class="portfolio-card-img" style="background:linear-gradient(135deg,#243352,#2e4570)">📐</div><div class="portfolio-card-body"><div class="portfolio-card-title">Custom RIB — Naval Architecture</div><div class="portfolio-card-sub">Design commission · 2023</div><div class="tag-list"><span class="tag">Naval Architecture</span><span class="tag">Design</span></div><div class="portfolio-card-footer"><span class="chip chip-ok">Published</span><button class="btn btn-ghost btn-sm">Edit</button></div></div><div class="portfolio-actions"><button class="pa-btn">✏️ Edit</button><button class="pa-btn">🚫 Hide</button></div></div>
+        <button class="portfolio-add-card" onclick="openModal('modal-portfolio')"><span style="font-size:32px">+</span><div style="font-size:13px;font-weight:600">Add project</div><div style="font-size:12px">Publishes to your website</div></button>
+      </div>
+      <div class="spacer"></div>
+    </div>
+
+    <!-- WEBSITE PREVIEW -->
+    <div class="panel" id="p-website">
+      <div class="page-header"><div><div class="page-title">Website Preview</div><div class="page-sub">mccollammarine.com — portfolio edits push here automatically</div></div><div style="display:flex;gap:8px"><button class="btn btn-out btn-sm" onclick="dshow('portfolio',document.querySelector('[onclick*=portfolio]'))">✏️ Edit</button><button class="btn btn-steel btn-sm">🚀 Publish</button></div></div>
+      <div class="website-preview">
+        <div class="browser-bar"><div class="browser-dots"><div class="browser-dot" style="background:#fc5f57"></div><div class="browser-dot" style="background:#fdbd2e"></div><div class="browser-dot" style="background:#27c840"></div></div><div class="browser-url">mccollammarine.com</div><button class="btn btn-steel btn-sm" style="padding:3px 10px;font-size:11px">Publish ↑</button></div>
+        <div><div style="background:white;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;justify-content:space-between"><div style="font-size:14px;font-weight:700;color:var(--navy)">McCollam Marine</div><div style="display:flex;gap:16px;font-size:12px;color:var(--mid)"><span>Services</span><span>Portfolio</span><span>About</span><span>Contact</span></div></div>
+        <div style="background:var(--navy);padding:32px 24px;display:flex;align-items:center;justify-content:space-between"><div><h1 style="font-size:22px;font-weight:700;color:white;line-height:1.2;margin-bottom:8px">Naval Architects<br>&amp; Marine Surveyors</h1><p style="font-size:12px;color:rgba(255,255,255,.5)">NI &amp; Irish Sea Region · MCA Coding · Stability · Design</p><div style="display:flex;gap:8px;margin-top:14px"><div style="background:var(--steel);color:white;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600">Get in touch</div><div style="background:rgba(255,255,255,.1);color:white;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.2)">Portfolio</div></div></div><svg width="70" height="70" viewBox="0 0 36 36" opacity=".25"><path d="M4,28 L18,8 L32,28 Z" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round"/><path d="M8,28 L28,28" stroke="white" stroke-width="2"/></svg></div>
+        <div style="padding:20px 24px"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px">Recent Work</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"><div style="background:var(--off);border-radius:8px;overflow:hidden"><div style="height:70px;background:linear-gradient(135deg,var(--navy-2),var(--navy-3));display:flex;align-items:center;justify-content:center;font-size:24px">⛵</div><div style="padding:8px 10px"><div style="font-size:11px;font-weight:700;color:var(--text)">Silver Sands — MCA</div><div style="font-size:10px;color:var(--light)">Motor Charter · 2022</div></div></div><div style="background:var(--off);border-radius:8px;overflow:hidden"><div style="height:70px;background:linear-gradient(135deg,#1e3f63,#243352);display:flex;align-items:center;justify-content:center;font-size:24px">🏗️</div><div style="padding:8px 10px"><div style="font-size:11px;font-weight:700">Rathlin Queen</div><div style="font-size:10px;color:var(--light)">Stability · 2024</div></div></div><div style="background:var(--off);border-radius:8px;overflow:hidden"><div style="height:70px;background:linear-gradient(135deg,#243352,#2e4570);display:flex;align-items:center;justify-content:center;font-size:24px">📐</div><div style="padding:8px 10px"><div style="font-size:11px;font-weight:700">Custom RIB</div><div style="font-size:10px;color:var(--light)">Naval Architecture</div></div></div></div></div>
+        <div style="padding:14px 24px;background:var(--navy);display:flex;justify-content:space-between"><div style="font-size:11px;color:rgba(255,255,255,.35)">© 2025 McCollam Marine</div><div style="font-size:11px;color:rgba(255,255,255,.35)">Cushendall, Co. Antrim</div></div></div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+
+    <!-- CODEDOK -->
+    <div class="panel" id="p-codedok">
+      <div class="page-header"><div><div class="page-title">CodedOK Integration</div><div class="page-sub">12 linked vessels · Last sync 3 min ago</div></div><div style="display:flex;align-items:center;gap:8px;background:var(--green-p);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:6px 12px"><div style="width:7px;height:7px;border-radius:50%;background:var(--green)"></div><span style="font-size:12px;font-weight:600;color:var(--green)">Live sync</span></div></div>
+      <div class="grid-2">
+        <div>
+          <div class="card mb14"><div class="card-header"><div class="card-title">Vessels needing your attention</div><span class="chip chip-bad">3 urgent</span></div>
+            <table class="tbl"><thead><tr><th>Vessel</th><th>Owner</th><th>Issue</th><th>Days</th><th></th></tr></thead><tbody>
+              <tr><td class="strong">Silver Sands</td><td>McLaughlin</td><td><span class="chip chip-bad">Overdue</span></td><td style="color:var(--red);font-weight:600">-19 days</td><td><button class="btn btn-steel btn-sm">Book</button></td></tr>
+              <tr><td class="strong">Morvern</td><td>Doherty</td><td><span class="chip chip-warn">Due soon</span></td><td class="light">47 days</td><td><button class="btn btn-out btn-sm">Contact</button></td></tr>
+              <tr><td class="strong">Grey Seal</td><td>Hanna</td><td><span class="chip chip-steel">New coding</span></td><td class="light">New</td><td><button class="btn btn-steel btn-sm">Schedule</button></td></tr>
+            </tbody></table>
+          </div>
+          <div class="card"><div class="card-header"><div class="card-title">All linked vessels</div></div>
+            <table class="tbl"><thead><tr><th>Vessel</th><th>Owner</th><th>Status</th><th>Next survey</th></tr></thead><tbody>
+              <tr><td class="strong">Silver Sands</td><td>McLaughlin</td><td><span class="chip chip-bad">Overdue</span></td><td style="color:var(--red)">Overdue</td></tr>
+              <tr><td class="strong">Morvern</td><td>Doherty</td><td><span class="chip chip-ok">Current</span></td><td class="light">Jun 2025</td></tr>
+              <tr><td class="strong">Grey Seal</td><td>Hanna</td><td><span class="chip chip-steel">New</span></td><td class="light">—</td></tr>
+              <tr><td class="strong">Cormorant</td><td>McAuley</td><td><span class="chip chip-ok">Current</span></td><td class="light">Apr 2026</td></tr>
+              <tr><td class="strong">Lady Patricia</td><td>Carey</td><td><span class="chip chip-ok">Current</span></td><td class="light">May 2026</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+        <div>
+          <div class="card mb14"><div class="card-header"><div class="card-title">Preferred Provider</div><span class="chip chip-ok">Active</span></div>
+            <div class="card-body"><div class="alert info mb8"><span style="font-size:16px">📍</span><div><div class="alert-title">Recommended surveyor for NI operators</div><div class="alert-body">McCollam Marine shown when any NI vessel survey is due. 3 referrals this month.</div></div></div>
+            <div style="display:flex;flex-direction:column;gap:9px"><div style="display:flex;justify-content:space-between"><span class="text-sm">Referrals this month</span><span class="fw7" style="color:var(--steel)">3</span></div><div style="display:flex;justify-content:space-between"><span class="text-sm">Jobs via CodedOK this year</span><span class="fw7">7</span></div><div style="display:flex;justify-content:space-between"><span class="text-sm">Revenue from leads</span><span class="fw7" style="color:var(--green)">£3,850</span></div></div></div>
+          </div>
+          <div class="card"><div class="card-header"><div class="card-title">What syncs automatically</div></div>
+            <div class="card-body"><div style="display:flex;flex-direction:column;gap:9px">
+              <div class="row-item" style="padding:5px 0"><div class="row-icon" style="background:var(--green-p);width:28px;height:28px;font-size:13px">✓</div><div><div style="font-size:13px;font-weight:500">Job complete → client record</div><div class="text-sm text-light">Mark done here, CodedOK updates</div></div></div>
+              <div class="row-item" style="padding:5px 0"><div class="row-icon" style="background:var(--green-p);width:28px;height:28px;font-size:13px">✓</div><div><div style="font-size:13px;font-weight:500">Vessel cert data → your jobs</div><div class="text-sm text-light">See status before you arrive</div></div></div>
+              <div class="row-item" style="padding:5px 0"><div class="row-icon" style="background:var(--amber-p);width:28px;height:28px;font-size:13px">🔜</div><div><div style="font-size:13px;font-weight:500">Engine hours → reminders</div><div class="text-sm text-light">V2 — instrument integration</div></div></div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FINANCE -->
+    <div class="panel" id="p-finance">
+      <div class="page-header"><div><div class="page-title">Finance</div><div class="page-sub">April 2025 — £3,850 invoiced</div></div><button class="btn btn-steel">+ Create Invoice</button></div>
+      <div class="stat-grid"><div class="stat-card"><div class="stat-label">This month</div><div class="stat-val steel">£3,850</div><div class="stat-sub">4 invoices</div></div><div class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-val warn">£2,400</div><div class="stat-sub">3 unpaid</div></div><div class="stat-card"><div class="stat-label">Avg job value</div><div class="stat-val steel">£520</div><div class="stat-sub">Last 12 months</div></div></div>
+      <div class="card"><div class="card-header"><div class="card-title">Invoices</div></div>
+        <table class="tbl"><thead><tr><th>#</th><th>Client</th><th>Job</th><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
+          <tr><td class="light">#0044</td><td class="strong">McLaughlin</td><td>Silver Sands — Annual Survey</td><td class="light">15 Apr</td><td class="strong">£450</td><td><span class="chip chip-warn">Pending</span></td><td><button class="btn btn-out btn-sm">Send</button></td></tr>
+          <tr><td class="light">#0043</td><td class="strong">Hanna</td><td>Grey Seal — Coding Survey</td><td class="light">14 Apr</td><td class="strong">£800</td><td><span class="chip chip-steel">Sent</span></td><td><button class="btn btn-out btn-sm">Chase</button></td></tr>
+          <tr><td class="light">#0042</td><td class="strong">Doherty</td><td>Morvern — Design Review</td><td class="light">12 Apr</td><td class="strong">£1,150</td><td><span class="chip chip-bad">Overdue</span></td><td><button class="btn btn-steel btn-sm">Chase now</button></td></tr>
+          <tr><td class="light">#0041</td><td class="strong">McAuley</td><td>Cormorant — Annual Survey</td><td class="light">10 Apr</td><td class="strong">£650</td><td><span class="chip chip-ok">Paid</span></td><td></td></tr>
+        </tbody></table>
+      </div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div class="panel" id="p-clients">
+      <div class="page-header"><div><div class="page-title">Clients</div><div class="page-sub">18 clients · 26 vessels surveyed</div></div><button class="btn btn-steel">+ Add client</button></div>
+      <div class="card"><table class="tbl"><thead><tr><th>Name</th><th>Vessels</th><th>Last job</th><th>Total spend</th><th>Status</th></tr></thead><tbody>
+        <tr><td class="strong">J. McLaughlin</td><td>Silver Sands</td><td class="light">Today</td><td class="strong">£1,850</td><td><span class="chip chip-blue">CodedOK</span></td></tr>
+        <tr><td class="strong">P. Doherty</td><td>Morvern</td><td class="light">12 Apr</td><td class="strong">£3,200</td><td><span class="chip chip-blue">CodedOK</span></td></tr>
+        <tr><td class="strong">T. Hanna</td><td>Grey Seal</td><td class="light">14 Apr</td><td class="strong">£800</td><td><span class="chip chip-steel">New</span></td></tr>
+        <tr><td class="strong">D. McAuley</td><td>Cormorant</td><td class="light">10 Apr</td><td class="strong">£2,100</td><td><span class="chip chip-ok">Active</span></td></tr>
+      </tbody></table></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="panel" id="p-reports">
+      <div class="page-header"><div><div class="page-title">Reports</div><div class="page-sub">2 drafts · 12 sent this year</div></div><button class="btn btn-steel btn-sm" onclick="dshow('report-editor',document.querySelector('[onclick*=report-editor]'))">+ New Report</button></div>
+      <div class="card"><table class="tbl"><thead><tr><th>Report</th><th>Type</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody>
+        <tr><td class="strong">Silver Sands — Annual Survey</td><td class="light">MCA Annual</td><td class="light">15 Apr 2025</td><td><span class="chip chip-warn">Draft</span></td><td><button class="btn btn-out btn-sm" onclick="dshow('report-editor',document.querySelector('[onclick*=report-editor]'))">Edit</button></td></tr>
+        <tr><td class="strong">Cormorant — Stability Report</td><td class="light">Stability</td><td class="light">Due Thu</td><td><span class="chip chip-warn">Draft</span></td><td><button class="btn btn-out btn-sm">Edit</button></td></tr>
+        <tr><td class="strong">Cormorant — Annual Survey</td><td class="light">MCA Annual</td><td class="light">10 Apr 2025</td><td><span class="chip chip-ok">Accepted</span></td><td><button class="btn btn-ghost btn-sm">PDF</button></td></tr>
+        <tr><td class="strong">Dawn Mist — Coding Survey</td><td class="light">MCA Coding</td><td class="light">28 Mar 2025</td><td><span class="chip chip-ok">Accepted</span></td><td><button class="btn btn-ghost btn-sm">PDF</button></td></tr>
+      </tbody></table></div>
+    </div>
+
+    <!-- VESSELS -->
+    <div class="panel" id="p-vessels">
+      <div class="page-header"><div><div class="page-title">Vessels</div><div class="page-sub">16 vessels · 12 linked to CodedOK</div></div><button class="btn btn-steel btn-sm">+ Add vessel</button></div>
+      <div class="card"><table class="tbl"><thead><tr><th>Vessel</th><th>Owner</th><th>Type</th><th>Port</th><th>CodedOK</th><th>Next survey</th></tr></thead><tbody>
+        <tr><td class="strong">Silver Sands</td><td>McLaughlin</td><td class="light">Motor Charter</td><td class="light">Cushendall</td><td><span class="chip chip-blue">Linked</span></td><td style="color:var(--red);font-weight:600">Overdue</td></tr>
+        <tr><td class="strong">Morvern</td><td>Doherty</td><td class="light">Sailing Yacht</td><td class="light">Ballycastle</td><td><span class="chip chip-blue">Linked</span></td><td class="light">Jun 2025</td></tr>
+        <tr><td class="strong">Grey Seal</td><td>Hanna</td><td class="light">Angling</td><td class="light">Larne</td><td><span class="chip chip-blue">Linked</span></td><td class="light">New coding</td></tr>
+        <tr><td class="strong">Cormorant</td><td>McAuley</td><td class="light">Angling</td><td class="light">Ballycastle</td><td><span class="chip chip-blue">Linked</span></td><td class="light">Apr 2026</td></tr>
+        <tr><td class="strong">Rathlin Queen</td><td>Rathlin Ferry</td><td class="light">Ferry</td><td class="light">Ballycastle</td><td><span class="chip chip-navy">Manual</span></td><td class="light">May 2026</td></tr>
+      </tbody></table></div>
+    </div>
+
+  </main>
+</div><!-- /desktop-app -->
+
+
+<!-- ════════════════════════════════
+  MOBILE APP  (< 720px only)
+════════════════════════════════ -->
+<div class="mobile-app mobile-only">
+
+  <!-- SCREEN: DASHBOARD -->
+  <div class="screen active" id="ms-dash">
+    <div class="sb sb-dark"></div>
+    <div style="background:var(--navy);padding:0 18px 18px;flex-shrink:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg width="28" height="28" viewBox="0 0 36 36"><use href="#mm"/></svg>
+          <div><div style="font-size:16px;font-weight:700;color:white">McCollam Marine</div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Naval Architects · Surveyors</div></div>
+        </div>
+        <div class="avatar">JM</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="background:rgba(255,255,255,.07);border-radius:9px;padding:11px 12px"><div style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Active jobs</div><div style="font-size:24px;font-weight:700;color:var(--steel-l)">8</div></div>
+        <div style="background:rgba(255,255,255,.07);border-radius:9px;padding:11px 12px"><div style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Due this week</div><div style="font-size:24px;font-weight:700;color:white">3</div></div>
+        <div style="background:rgba(255,255,255,.07);border-radius:9px;padding:11px 12px"><div style="font-size:9px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Unpaid</div><div style="font-size:24px;font-weight:700;color:var(--amber)">£2,400</div></div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div style="padding:12px 14px 0">
+        <div class="alert info"><div style="font-size:16px;flex-shrink:0">🔗</div><div><div class="alert-title">3 CodedOK vessels due surveys</div><div class="alert-body">Silver Sands overdue · Morvern 47 days · Grey Seal new</div></div></div>
+      </div>
+      <div class="slabel">Today</div>
+      <div class="card mx">
+        <div class="mrow" onclick="mgo('ms-job-detail')"><div class="mrow-icon warn">📋</div><div class="mrow-body"><div class="mrow-name">Silver Sands — Annual Survey</div><div class="mrow-sub">Cushendall Harbour · 09:00</div></div><span class="chip chip-warn" style="font-size:10px">In progress</span><span class="chev">›</span></div>
+        <div class="mrow"><div class="mrow-icon ok">📐</div><div class="mrow-body"><div class="mrow-name">Morvern — Design Review</div><div class="mrow-sub">Ballycastle · 14:00</div></div><span class="chip chip-ok" style="font-size:10px">Confirmed</span><span class="chev">›</span></div>
+      </div>
+      <div class="slabel">This Week</div>
+      <div class="card mx">
+        <div class="mrow"><div class="mrow-icon warn">⚓</div><div class="mrow-body"><div class="mrow-name">Grey Seal — MCA Coding</div><div class="mrow-sub">Larne · Wed 17 Apr</div></div><div class="mrow-right"><div class="mrow-val warn">Wed</div></div><span class="chev">›</span></div>
+        <div class="mrow"><div class="mrow-icon steel">📄</div><div class="mrow-body"><div class="mrow-name">Cormorant — Stability Report</div><div class="mrow-sub">Due Thursday</div></div><div class="mrow-right"><div class="mrow-val warn">Thu</div></div><span class="chev">›</span></div>
+        <div class="mrow"><div class="mrow-icon bad">💷</div><div class="mrow-body"><div class="mrow-name">Invoice #0042 — Doherty</div><div class="mrow-sub">£1,150 overdue</div></div><div class="mrow-right"><div class="mrow-val bad">Overdue</div></div><span class="chev">›</span></div>
+      </div>
+      <div class="slabel" style="display:flex;align-items:center;justify-content:space-between;padding-right:18px"><span>CodedOK — Vessels Due</span><span style="font-size:10px;color:var(--codedok);font-weight:600">LINKED</span></div>
+      <div class="card mx">
+        <div class="mrow" onclick="mgo('ms-vessel')"><div class="mrow-icon blue">⛵</div><div class="mrow-body"><div class="mrow-name">Silver Sands</div><div class="mrow-sub">J. McLaughlin · Survey overdue</div></div><div class="mrow-right"><div class="mrow-val bad">Overdue</div></div><span class="chev">›</span></div>
+        <div class="mrow"><div class="mrow-icon blue">🚤</div><div class="mrow-body"><div class="mrow-name">Morvern</div><div class="mrow-sub">P. Doherty · Annual cert</div></div><div class="mrow-right"><div class="mrow-val warn">47 days</div></div><span class="chev">›</span></div>
+        <div class="mrow"><div class="mrow-icon blue">⛵</div><div class="mrow-body"><div class="mrow-name">Grey Seal</div><div class="mrow-sub">T. Hanna · New coding</div></div><div class="mrow-right"><div class="mrow-val steel">New</div></div><span class="chev">›</span></div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+    <button class="fab" onclick="mgo('ms-new-job')" style="position:relative;bottom:auto;right:auto;margin:8px 14px 0 auto;border-radius:26px;width:auto;padding:0 16px;font-size:14px;gap:6px;height:44px">+ New job</button>
+    <nav class="bnav">
+      <button class="bni on" onclick="mgo('ms-dash')"><div class="bni-icon">🏠</div><div class="bni-label">Home</div></button>
+      <button class="bni" onclick="mgo('ms-jobs')"><div class="bni-icon">📋</div><div class="bni-label">Jobs</div></button>
+      <button class="bni" onclick="mgo('ms-vessels')"><div class="bni-icon">⛵</div><div class="bni-label">Vessels</div></button>
+      <button class="bni" onclick="mgo('ms-reports')"><div class="bni-icon">📄</div><div class="bni-label">Reports</div></button>
+      <button class="bni" onclick="mgo('ms-finance')"><div class="bni-icon">💷</div><div class="bni-label">Finance</div></button>
+    </nav>
+  </div>
+
+  <!-- SCREEN: JOBS -->
+  <div class="screen" id="ms-jobs">
+    <div class="sb sb-card"></div>
+    <div class="tbar"><div class="tbar-title">Jobs</div><button class="btn btn-steel btn-sm" onclick="mgo('ms-new-job')">+ New</button></div>
+    <div class="tabbar"><button class="tab on" onclick="mstab(this,'mjt-active')">Active (8)</button><button class="tab" onclick="mstab(this,'mjt-upcoming')">Upcoming</button><button class="tab" onclick="mstab(this,'mjt-complete')">Complete</button></div>
+    <div class="scroll">
+      <div id="mjt-active" class="tc on" style="padding-top:10px">
+        <div class="card mx">
+          <div class="mrow" onclick="mgo('ms-job-detail')"><div class="mrow-icon warn">📋</div><div class="mrow-body"><div class="mrow-name">Silver Sands — Annual Survey</div><div class="mrow-sub">J. McLaughlin · Today 09:00</div></div><span class="chip chip-warn" style="font-size:10px">In progress</span><span class="chev">›</span></div>
+          <div class="mrow"><div class="mrow-icon steel">⚓</div><div class="mrow-body"><div class="mrow-name">Grey Seal — MCA Coding</div><div class="mrow-sub">T. Hanna · Wed 17 Apr</div></div><span class="chip chip-steel" style="font-size:10px">Scheduled</span><span class="chev">›</span></div>
+          <div class="mrow"><div class="mrow-icon ok">📐</div><div class="mrow-body"><div class="mrow-name">Morvern — Design Review</div><div class="mrow-sub">P. Doherty · Today 14:00</div></div><span class="chip chip-ok" style="font-size:10px">Confirmed</span><span class="chev">›</span></div>
+          <div class="mrow"><div class="mrow-icon warn">📄</div><div class="mrow-body"><div class="mrow-name">Cormorant — Stability Report</div><div class="mrow-sub">D. McAuley · Due Thu</div></div><span class="chip chip-warn" style="font-size:10px">Draft</span><span class="chev">›</span></div>
+        </div>
+        <div style="height:16px"></div>
+      </div>
+      <div id="mjt-upcoming" class="tc" style="padding-top:10px"><div class="card mx"><div class="mrow"><div class="mrow-icon steel">📋</div><div class="mrow-body"><div class="mrow-name">Lady Patricia — 5yr Renewal</div><div class="mrow-sub">Carnlough · May 2025</div></div><div class="mrow-right"><div class="mrow-val steel">3 wks</div></div><span class="chev">›</span></div></div></div>
+      <div id="mjt-complete" class="tc" style="padding-top:10px"><div class="card mx">
+        <div class="mrow"><div class="mrow-icon ok">✓</div><div class="mrow-body"><div class="mrow-name">Cormorant — Annual Survey</div><div class="mrow-sub">D. McAuley · 10 Apr</div></div><div class="mrow-right"><div class="mrow-val ok">Paid</div></div><span class="chev">›</span></div>
+        <div class="mrow"><div class="mrow-icon ok">✓</div><div class="mrow-body"><div class="mrow-name">Dawn Mist — Coding Survey</div><div class="mrow-sub">C. Murray · 28 Mar</div></div><div class="mrow-right"><div class="mrow-val ok">Paid</div></div><span class="chev">›</span></div>
+      </div></div>
+    </div>
+    <nav class="bnav"><button class="bni" onclick="mgo('ms-dash')"><div class="bni-icon">🏠</div><div class="bni-label">Home</div></button><button class="bni on"><div class="bni-icon">📋</div><div class="bni-label">Jobs</div></button><button class="bni" onclick="mgo('ms-vessels')"><div class="bni-icon">⛵</div><div class="bni-label">Vessels</div></button><button class="bni" onclick="mgo('ms-reports')"><div class="bni-icon">📄</div><div class="bni-label">Reports</div></button><button class="bni" onclick="mgo('ms-finance')"><div class="bni-icon">💷</div><div class="bni-label">Finance</div></button></nav>
+  </div>
+
+  <!-- SCREEN: JOB DETAIL -->
+  <div class="screen" id="ms-job-detail">
+    <div class="sb sb-dark"></div>
+    <div style="background:var(--navy);padding:10px 16px 16px;flex-shrink:0">
+      <button class="back-btn" onclick="mgo('ms-jobs')" style="color:rgba(255,255,255,.55);font-size:13px;margin-bottom:8px">‹ Jobs</button>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div><div style="font-size:20px;font-weight:700;color:white">Silver Sands</div><div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:2px">Annual Survey · Today · Cushendall</div></div>
+        <span class="chip chip-warn">In progress</span>
+      </div>
+      <div style="margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+        <div style="background:rgba(255,255,255,.07);border-radius:7px;padding:9px 10px"><div style="font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Client</div><div style="font-size:12px;color:white;font-weight:500;margin-top:2px">J. McLaughlin</div></div>
+        <div style="background:rgba(255,255,255,.07);border-radius:7px;padding:9px 10px"><div style="font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Type</div><div style="font-size:12px;color:white;font-weight:500;margin-top:2px">MCA Annual</div></div>
+        <div style="background:rgba(255,255,255,.07);border-radius:7px;padding:9px 10px"><div style="font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Fee</div><div style="font-size:12px;color:var(--steel-l);font-weight:600;margin-top:2px">£450</div></div>
+      </div>
+    </div>
+    <div class="tabbar" style="background:var(--navy);border-bottom-color:rgba(255,255,255,.1)">
+      <button class="tab on" style="color:var(--steel-l);border-bottom-color:var(--steel)" onclick="mstab(this,'mjd-checklist')">Checklist</button>
+      <button class="tab" style="color:rgba(255,255,255,.4)" onclick="mstab(this,'mjd-report')">AI Report</button>
+      <button class="tab" style="color:rgba(255,255,255,.4)" onclick="mstab(this,'mjd-notes')">Notes</button>
+      <button class="tab" style="color:rgba(255,255,255,.4)" onclick="mstab(this,'mjd-docs')">Docs</button>
+    </div>
+    <div class="scroll">
+      <div id="mjd-checklist" class="tc on">
+        <div style="padding:12px 14px 6px;display:flex;align-items:center;justify-content:space-between"><div style="font-size:12px;color:var(--mid)">MCA Annual Survey — Cat 2</div><div style="font-size:12px;font-weight:600;color:var(--steel)">14 / 22</div></div>
+        <div style="padding:0 14px 10px"><div class="prog"><div class="prog-fill" style="width:64%;background:var(--steel)"></div></div></div>
+        <div class="card mx">
+          <div style="padding:8px 14px;background:var(--off);border-bottom:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em">Hull &amp; Structure</div></div>
+          <div class="mrow" onclick="toggleCheck(this)"><div style="width:20px;height:20px;border-radius:50%;background:var(--green-p);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:10px;color:var(--green);font-weight:700">✓</span></div><div class="mrow-body"><div class="mrow-name" style="color:var(--light);text-decoration:line-through">Hull integrity — visual</div></div></div>
+          <div class="mrow" onclick="toggleCheck(this)"><div style="width:20px;height:20px;border-radius:50%;background:var(--green-p);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:10px;color:var(--green);font-weight:700">✓</span></div><div class="mrow-body"><div class="mrow-name" style="color:var(--light);text-decoration:line-through">Through-hull fittings</div></div></div>
+          <div class="mrow" onclick="toggleCheck(this)"><div style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0"></div><div class="mrow-body"><div class="mrow-name">Deck equipment &amp; fittings</div></div><span class="chev">›</span></div>
+          <div style="padding:8px 14px;background:var(--off);border-bottom:1px solid var(--border);border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em">Safety Equipment</div></div>
+          <div class="mrow" onclick="toggleCheck(this)"><div style="width:20px;height:20px;border-radius:50%;background:var(--green-p);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:10px;color:var(--green);font-weight:700">✓</span></div><div class="mrow-body"><div class="mrow-name" style="color:var(--light);text-decoration:line-through">Lifejackets</div></div></div>
+          <div class="mrow" style="background:var(--red-p)" onclick="toggleCheck(this)"><div style="width:20px;height:20px;border-radius:50%;border:2px solid var(--red);flex-shrink:0;background:var(--red-p)"></div><div class="mrow-body"><div class="mrow-name" style="color:var(--red)">Cat C Pyrotechnics</div><div class="mrow-sub" style="color:var(--red);opacity:.7">Expired — replace before use</div></div><span style="font-size:14px">⚠️</span></div>
+          <div class="mrow" onclick="toggleCheck(this)"><div style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0"></div><div class="mrow-body"><div class="mrow-name">Life raft</div></div><span class="chev">›</span></div>
+        </div>
+        <div style="padding:14px;display:flex;gap:10px"><button class="btn btn-out btn-sm" style="flex:1">Add finding</button><button class="btn btn-steel btn-sm" style="flex:1">🤖 Generate report</button></div>
+      </div>
+      <div id="mjd-report" class="tc">
+        <div style="padding:14px"><div style="background:var(--navy);border-radius:var(--r);padding:16px"><div style="font-size:11px;font-weight:700;color:var(--steel-l);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🤖 AI Report Writer</div><div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.55;margin-bottom:12px">Complete the checklist then tap Generate. AI drafts the full report in McCollam Marine style — you review and sign off.</div><button class="btn btn-steel btn-full" style="height:42px;font-size:13px">Generate report →</button></div></div>
+      </div>
+      <div id="mjd-notes" class="tc"><div style="padding:12px 14px"><textarea class="ftextarea" style="height:130px">Vessel at Cushendall Harbour. Hull in good condition. Notable: Cat C pyrotechnics expired March 2025. Owner informed. Engine room clean. Bilge pump operational.</textarea><div style="margin-top:8px;display:flex;gap:8px"><button class="btn btn-out btn-sm">📷 Photo</button><button class="btn btn-steel btn-sm" style="flex:1">Save notes</button></div></div></div>
+      <div id="mjd-docs" class="tc" style="padding-top:8px"><div class="card mx"><div class="mrow"><div class="mrow-icon ok">📄</div><div class="mrow-body"><div class="mrow-name">Silver Sands — Stability Book</div><div class="mrow-sub">Uploaded via CodedOK</div></div><span class="chip chip-blue" style="font-size:10px">Synced</span></div><div class="mrow"><div class="mrow-icon ok">📜</div><div class="mrow-body"><div class="mrow-name">Certificate of Registry</div><div class="mrow-sub">SSR 987654</div></div><span class="chip chip-ok" style="font-size:10px">Valid</span></div></div></div>
+    </div>
+    <nav class="bnav"><button class="bni" onclick="mgo('ms-dash')"><div class="bni-icon">🏠</div><div class="bni-label">Home</div></button><button class="bni on"><div class="bni-icon">📋</div><div class="bni-label">Jobs</div></button><button class="bni" onclick="mgo('ms-vessels')"><div class="bni-icon">⛵</div><div class="bni-label">Vessels</div></button><button class="bni" onclick="mgo('ms-reports')"><div class="bni-icon">📄</div><div class="bni-label">Reports</div></button><button class="bni" onclick="mgo('ms-finance')"><div class="bni-icon">💷</div><div class="bni-label">Finance</div></button></nav>
+  </div>
+
+  <!-- SCREEN: VESSELS -->
+  <div class="screen" id="ms-vessels">
+    <div class="sb sb-card"></div>
+    <div class="tbar"><div class="tbar-title">Vessels</div><button class="btn btn-steel btn-sm">+ Add</button></div>
+    <div class="scroll">
+      <div style="height:10px"></div>
+      <div class="card mx">
+        <div class="mrow" onclick="mgo('ms-vessel')"><div class="mrow-icon blue">⛵</div><div class="mrow-body"><div class="mrow-name">Silver Sands</div><div class="mrow-sub">McLaughlin · Motor Charter · Cushendall</div></div><div class="mrow-right"><div class="mrow-val bad">Overdue</div></div><span class="chev">›</span></div>
+        <div class="mrow"><div class="mrow-icon blue">🚤</div><div class="mrow-body"><div class="mrow-name">Morvern</div><div class="mrow-sub">Doherty · Sailing Yacht · Ballycastle</div></div><div class="mrow-right"><div class="mrow-val ok">Current</div></div><span class="chev">›</span></div>
+        <div class="mrow"><div class="mrow-icon blue">⛵</div><div class="mrow-body"><div class="mrow-name">Grey Seal</div><div class="mrow-sub">Hanna · Angling · Larne</div></div><div class="mrow-right"><div class="mrow-val steel">New</div></div><span class="chev">›</span></div>
+        <div class="mrow"><div class="mrow-icon ok">⛵</div><div class="mrow-body"><div class="mrow-name">Cormorant</div><div class="mrow-sub">McAuley · Angling · Ballycastle</div></div><div class="mrow-right"><div class="mrow-val ok">Current</div></div><span class="chev">›</span></div>
+      </div>
+      <div style="padding:12px 14px"><div style="background:var(--codedok-p);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:10px"><span style="font-size:18px">🔗</span><div><div style="font-size:13px;font-weight:600;color:var(--codedok)">12 vessels via CodedOK</div><div style="font-size:12px;color:var(--mid)">Compliance data syncs automatically</div></div></div></div>
+      <div class="spacer"></div>
+    </div>
+    <nav class="bnav"><button class="bni" onclick="mgo('ms-dash')"><div class="bni-icon">🏠</div><div class="bni-label">Home</div></button><button class="bni" onclick="mgo('ms-jobs')"><div class="bni-icon">📋</div><div class="bni-label">Jobs</div></button><button class="bni on"><div class="bni-icon">⛵</div><div class="bni-label">Vessels</div></button><button class="bni" onclick="mgo('ms-reports')"><div class="bni-icon">📄</div><div class="bni-label">Reports</div></button><button class="bni" onclick="mgo('ms-finance')"><div class="bni-icon">💷</div><div class="bni-label">Finance</div></button></nav>
+  </div>
+
+  <!-- SCREEN: VESSEL DETAIL -->
+  <div class="screen" id="ms-vessel">
+    <div class="sb sb-dark"></div>
+    <div style="background:var(--navy);padding:10px 16px 16px;flex-shrink:0">
+      <button class="back-btn" onclick="mgo('ms-vessels')" style="color:rgba(255,255,255,.55);font-size:13px;margin-bottom:8px">‹ Vessels</button>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px"><div><div style="font-size:22px;font-weight:700;color:white">Silver Sands</div><div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:2px">Motor Charter · Cat 2 · SSR 987654</div></div><span class="chip chip-blue" style="font-size:10px">CodedOK</span></div>
+    </div>
+    <div class="scroll">
+      <div class="slabel">Survey History</div>
+      <div class="card mx"><div class="tl"><div class="tli"><div class="tli-dot ok"></div><div><div class="tli-title">Initial Coding Survey — Passed</div><div class="tli-date">June 2022</div></div></div><div class="tli"><div class="tli-dot ok"></div><div><div class="tli-title">Annual Survey — Passed</div><div class="tli-date">June 2023</div></div></div><div class="tli"><div class="tli-dot ok"></div><div><div class="tli-title">Annual Survey — Passed</div><div class="tli-date">June 2024</div></div></div><div class="tli"><div class="tli-dot warn"></div><div><div class="tli-title">Annual Survey — In progress</div><div class="tli-date" style="color:var(--steel);font-weight:600">Today · Flares deficiency</div></div></div></div></div>
+      <div class="slabel">CodedOK Compliance</div>
+      <div class="card mx"><div style="padding:12px 14px"><div style="font-size:12px;color:var(--mid);margin-bottom:5px">Compliance score</div><div class="prog"><div class="prog-fill warn" style="width:78%;background:var(--amber)"></div></div><div style="display:flex;justify-content:space-between;margin-top:4px"><span style="font-size:11px;color:var(--light)">78%</span><span style="font-size:11px;color:var(--amber);font-weight:600">2 issues</span></div></div><div class="mrow"><div class="mrow-icon bad">🚨</div><div class="mrow-body"><div class="mrow-name">Flares expired</div><div class="mrow-sub">Replace immediately</div></div><div class="mrow-right"><div class="mrow-val bad">Expired</div></div></div><div class="mrow"><div class="mrow-icon warn">⏰</div><div class="mrow-body"><div class="mrow-name">Annual cert renewal</div><div class="mrow-sub">YDSA · Schedule now</div></div><div class="mrow-right"><div class="mrow-val warn">47 days</div></div></div></div>
+      <div style="padding:14px;display:flex;gap:8px"><button class="btn btn-out btn-sm" style="flex:1">View in CodedOK</button><button class="btn btn-steel btn-sm" style="flex:1" onclick="mgo('ms-new-job')">Book survey</button></div>
+      <div class="spacer"></div>
+    </div>
+    <nav class="bnav"><button class="bni" onclick="mgo('ms-dash')"><div class="bni-icon">🏠</div><div class="bni-label">Home</div></button><button class="bni" onclick="mgo('ms-jobs')"><div class="bni-icon">📋</div><div class="bni-label">Jobs</div></button><button class="bni on"><div class="bni-icon">⛵</div><div class="bni-label">Vessels</div></button><button class="bni" onclick="mgo('ms-reports')"><div class="bni-icon">📄</div><div class="bni-label">Reports</div></button><button class="bni" onclick="mgo('ms-finance')"><div class="bni-icon">💷</div><div class="bni-label">Finance</div></button></nav>
+  </div>
+
+  <!-- SCREEN: REPORTS -->
+  <div class="screen" id="ms-reports">
+    <div class="sb sb-card"></div>
+    <div class="tbar"><div class="tbar-title">Reports</div><button class="btn btn-steel btn-sm">🤖 New</button></div>
+    <div class="tabbar"><button class="tab on" onclick="mstab(this,'mrt-drafts')">Drafts (2)</button><button class="tab" onclick="mstab(this,'mrt-sent')">Sent</button><button class="tab" onclick="mstab(this,'mrt-templates')">Templates</button></div>
+    <div class="scroll">
+      <div id="mrt-drafts" class="tc on" style="padding-top:10px"><div class="card mx"><div class="mrow"><div class="mrow-icon warn">📝</div><div class="mrow-body"><div class="mrow-name">Silver Sands — Annual Survey</div><div class="mrow-sub">AI draft · Today</div></div><span class="chip chip-warn" style="font-size:10px">Draft</span><span class="chev">›</span></div><div class="mrow"><div class="mrow-icon warn">📝</div><div class="mrow-body"><div class="mrow-name">Cormorant — Stability Report</div><div class="mrow-sub">Due Thursday</div></div><span class="chip chip-warn" style="font-size:10px">Draft</span><span class="chev">›</span></div></div></div>
+      <div id="mrt-sent" class="tc" style="padding-top:10px"><div class="card mx"><div class="mrow"><div class="mrow-icon ok">📄</div><div class="mrow-body"><div class="mrow-name">Cormorant — Annual Survey</div><div class="mrow-sub">D. McAuley · 10 Apr</div></div><span class="chip chip-ok" style="font-size:10px">Accepted</span><span class="chev">›</span></div><div class="mrow"><div class="mrow-icon ok">📄</div><div class="mrow-body"><div class="mrow-name">Dawn Mist — Coding Survey</div><div class="mrow-sub">C. Murray · 28 Mar</div></div><span class="chip chip-ok" style="font-size:10px">Accepted</span><span class="chev">›</span></div></div></div>
+      <div id="mrt-templates" class="tc" style="padding-top:10px"><div class="card mx"><div class="mrow"><div class="mrow-icon steel">📋</div><div class="mrow-body"><div class="mrow-name">MCA Annual Survey</div><div class="mrow-sub">Cat 2 Motor Vessel · YDSA</div></div><span class="chev">›</span></div><div class="mrow"><div class="mrow-icon steel">📋</div><div class="mrow-body"><div class="mrow-name">MCA Coding Survey</div><div class="mrow-sub">New / 5yr renewal</div></div><span class="chev">›</span></div><div class="mrow"><div class="mrow-icon steel">📐</div><div class="mrow-body"><div class="mrow-name">Stability Calculation</div><div class="mrow-sub">Naval architecture template</div></div><span class="chev">›</span></div><div class="mrow"><div class="mrow-icon steel">🔍</div><div class="mrow-body"><div class="mrow-name">Damage Survey</div><div class="mrow-sub">Insurance / claim format</div></div><span class="chev">›</span></div></div></div>
+    </div>
+    <nav class="bnav"><button class="bni" onclick="mgo('ms-dash')"><div class="bni-icon">🏠</div><div class="bni-label">Home</div></button><button class="bni" onclick="mgo('ms-jobs')"><div class="bni-icon">📋</div><div class="bni-label">Jobs</div></button><button class="bni" onclick="mgo('ms-vessels')"><div class="bni-icon">⛵</div><div class="bni-label">Vessels</div></button><button class="bni on"><div class="bni-icon">📄</div><div class="bni-label">Reports</div></button><button class="bni" onclick="mgo('ms-finance')"><div class="bni-icon">💷</div><div class="bni-label">Finance</div></button></nav>
+  </div>
+
+  <!-- SCREEN: FINANCE -->
+  <div class="screen" id="ms-finance">
+    <div class="sb sb-card"></div>
+    <div class="tbar"><div class="tbar-title">Finance</div><button class="btn btn-steel btn-sm">+ Invoice</button></div>
+    <div class="scroll">
+      <div style="height:10px"></div>
+      <div class="sgrid">
+        <div class="scard"><div class="scard-label">This month</div><div class="scard-val steel">£3,850</div><div class="scard-sub">4 invoices</div></div>
+        <div class="scard"><div class="scard-label">Unpaid</div><div class="scard-val warn">£2,400</div><div class="scard-sub">3 outstanding</div></div>
+      </div>
+      <div class="slabel">Invoices</div>
+      <div class="card mx">
+        <div class="mrow"><div class="mrow-icon warn">💷</div><div class="mrow-body"><div class="mrow-name">#0044 — McLaughlin</div><div class="mrow-sub">Silver Sands Annual · Today</div></div><div class="mrow-right"><div class="mrow-val warn">£450</div><div style="font-size:11px;color:var(--light)">Pending</div></div><span class="chev">›</span></div>
+        <div class="mrow"><div class="mrow-icon warn">💷</div><div class="mrow-body"><div class="mrow-name">#0043 — Hanna</div><div class="mrow-sub">Grey Seal Coding · 14 Apr</div></div><div class="mrow-right"><div class="mrow-val warn">£800</div><div style="font-size:11px;color:var(--light)">Sent</div></div><span class="chev">›</span></div>
+        <div class="mrow" style="background:var(--red-p)"><div class="mrow-icon bad">💷</div><div class="mrow-body"><div class="mrow-name">#0042 — Doherty</div><div class="mrow-sub">Morvern Design · 12 Apr</div></div><div class="mrow-right"><div class="mrow-val bad">£1,150</div><div style="font-size:11px;color:var(--red)">Overdue</div></div><span class="chev">›</span></div>
+        <div class="mrow"><div class="mrow-icon ok">💷</div><div class="mrow-body"><div class="mrow-name">#0041 — McAuley</div><div class="mrow-sub">Cormorant Survey · 10 Apr</div></div><div class="mrow-right"><div class="mrow-val ok">£650</div><div style="font-size:11px;color:var(--light)">Paid</div></div><span class="chev">›</span></div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+    <nav class="bnav"><button class="bni" onclick="mgo('ms-dash')"><div class="bni-icon">🏠</div><div class="bni-label">Home</div></button><button class="bni" onclick="mgo('ms-jobs')"><div class="bni-icon">📋</div><div class="bni-label">Jobs</div></button><button class="bni" onclick="mgo('ms-vessels')"><div class="bni-icon">⛵</div><div class="bni-label">Vessels</div></button><button class="bni" onclick="mgo('ms-reports')"><div class="bni-icon">📄</div><div class="bni-label">Reports</div></button><button class="bni on"><div class="bni-icon">💷</div><div class="bni-label">Finance</div></button></nav>
+  </div>
+
+  <!-- SCREEN: NEW JOB -->
+  <div class="screen" id="ms-new-job">
+    <div class="sb sb-card"></div>
+    <div class="tbar"><button class="back-btn" onclick="mgo('ms-jobs')">‹ Back</button><div class="tbar-title">New Job</div><div style="width:50px"></div></div>
+    <div class="scroll" style="padding:14px">
+      <div class="fg"><label class="fl">Vessel</label><select class="fs"><option>Silver Sands</option><option>Morvern</option><option>Grey Seal</option><option>Cormorant</option><option>+ Add new vessel</option></select></div>
+      <div class="fg"><label class="fl">Client name</label><input class="fi" type="text" placeholder="e.g. J. McLaughlin"></div>
+      <div class="fg"><label class="fl">Job type</label><select class="fs"><option>MCA Annual Survey</option><option>MCA Coding Survey (5yr)</option><option>Condition Survey</option><option>Damage Survey</option><option>Stability Calculation</option><option>Naval Architecture / Design</option><option>SignalK Install</option></select></div>
+      <div class="fg"><label class="fl">Date &amp; time</label><input class="fi" type="datetime-local"></div>
+      <div class="fg"><label class="fl">Location</label><input class="fi" placeholder="e.g. Cushendall Harbour"></div>
+      <div class="fg"><label class="fl">Fee (£)</label><input class="fi" type="number" placeholder="450"></div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px"><button class="btn btn-steel btn-full" onclick="mgo('ms-jobs')">Create job</button><button class="btn btn-ghost btn-full" onclick="mgo('ms-jobs')">Cancel</button></div>
+    </div>
+  </div>
+
+</div><!-- /mobile-app -->
+
+
+<!-- DRIVING MODE (shared) -->
+<div class="drive-overlay" id="drive-overlay">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px">
+    <div style="display:flex;align-items:center;gap:10px"><svg width="24" height="24" viewBox="0 0 36 36"><use href="#mm"/></svg><span style="font-size:13px;font-weight:600;color:rgba(255,255,255,.55)">McCollam Marine — Driving Mode</span></div>
+    <button onclick="closeDriving()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:white;padding:6px 14px;border-radius:7px;font-family:var(--fn);font-size:13px;font-weight:600;cursor:pointer">✕ Exit</button>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:0 24px 28px">
+    <div style="text-align:center;padding-top:16px"><div class="drive-time" id="drive-clock">09:14</div><div style="font-size:14px;color:rgba(255,255,255,.35);margin-top:6px">Tuesday 15 April 2025</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="drive-card"><div style="font-size:11px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Next job</div><div style="font-size:18px;font-weight:700;color:white">Silver Sands</div><div style="font-size:12px;color:rgba(255,255,255,.4)">Cushendall Harbour · 09:00</div><div style="margin-top:10px;background:rgba(100,116,139,.3);border-radius:6px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;cursor:pointer"><span style="font-size:14px">🗺</span><span style="font-size:12px;font-weight:600;color:var(--steel-l)">Open Maps</span></div></div>
+      <div class="drive-card"><div style="font-size:11px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Drive time</div><div style="font-size:18px;font-weight:700;color:white">~24 min</div><div style="font-size:12px;color:rgba(255,255,255,.4)">from current location</div></div>
+    </div>
+    <div>
+      <div style="text-align:center;margin-bottom:18px"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">Hold to speak</div><div class="voice-ring">🎙</div></div>
+      <div class="drive-actions">
+        <div class="drive-action"><div class="drive-action-icon">📞</div><div class="drive-action-label">Call client</div></div>
+        <div class="drive-action"><div class="drive-action-icon">📝</div><div class="drive-action-label">Voice note</div></div>
+        <div class="drive-action"><div class="drive-action-icon">📅</div><div class="drive-action-label">Today's jobs</div></div>
+        <div class="drive-action"><div class="drive-action-icon">✅</div><div class="drive-action-label">Complete job</div></div>
+        <div class="drive-action"><div class="drive-action-icon">💷</div><div class="drive-action-label">Invoice</div></div>
+        <div class="drive-action"><div class="drive-action-icon">⚠️</div><div class="drive-action-label">Report issue</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DESKTOP MODALS -->
+<div class="modal-bg" id="modal-ai">
+  <div class="modal"><div class="modal-head"><div class="modal-title">🤖 AI Report Generator</div><button class="modal-x" onclick="closeModal('modal-ai')">×</button></div>
+    <div class="modal-body"><div style="background:var(--off);border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:12px;color:var(--mid);line-height:1.6">Complete the checklist and add your notes. The AI drafts the full report in McCollam Marine house style — you review and sign off.</div>
+    <div class="fg"><label class="fl">Report type</label><select class="fs"><option>MCA Annual Survey</option><option>MCA Coding Survey (5yr)</option><option>Damage Survey</option><option>Stability Calculation</option></select></div>
+    <div class="fg"><label class="fl">Extra context</label><textarea class="ftextarea" placeholder="Any specific findings or context…"></textarea></div>
+    <div style="background:var(--navy);border-radius:var(--r);padding:12px;display:flex;align-items:center;gap:10px"><span style="font-size:20px">⚡</span><div><div style="font-size:12px;font-weight:700;color:var(--steel-l)">Saves 2–3 hours per report</div><div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px">You review and sign off before sending.</div></div></div></div>
+    <div class="modal-footer"><button class="btn btn-out btn-sm" onclick="closeModal('modal-ai')">Cancel</button><button class="btn btn-steel btn-sm" onclick="closeModal('modal-ai');dshow('report-editor',document.querySelector('[onclick*=report-editor]'))">Generate →</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-portfolio">
+  <div class="modal"><div class="modal-head"><div class="modal-title">Add Portfolio Project</div><button class="modal-x" onclick="closeModal('modal-portfolio')">×</button></div>
+    <div class="modal-body">
+      <div class="fg"><label class="fl">Title</label><input class="fi" placeholder="e.g. Silver Sands — MCA Coding Survey"></div>
+      <div class="fg"><label class="fl">Category</label><select class="fs"><option>Survey Reports</option><option>Naval Architecture</option><option>Stability Studies</option><option>Boat Builds</option></select></div>
+      <div class="fg"><label class="fl">Description</label><textarea class="ftextarea" placeholder="Describe the project, scope, and outcome…"></textarea></div>
+      <div class="fg"><label class="fl">Photo</label><div style="border:2px dashed var(--border);border-radius:8px;padding:22px;text-align:center;color:var(--light);cursor:pointer;font-size:13px">📷 Upload image</div></div>
+      <div class="fg"><label class="fl">Tags</label><input class="fi" placeholder="e.g. MCA, Annual Survey, 2024"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px"><input type="checkbox" id="pub-check" checked><label for="pub-check" style="font-size:13px;color:var(--mid)">Publish to website immediately</label></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-out btn-sm" onclick="closeModal('modal-portfolio')">Cancel</button><button class="btn btn-steel btn-sm" onclick="closeModal('modal-portfolio')">Save &amp; publish →</button></div>
+  </div>
+</div>
+
+<script>
+const isMobile = () => window.innerWidth < 720;
+
+/* ── DESKTOP NAV ── */
+function dshow(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  const p = document.getElementById('p-' + id);
+  if (p) { p.classList.add('on'); p.scrollTop = 0; }
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+}
+
+/* ── MOBILE NAV ── */
+function mgo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const s = document.getElementById(id);
+  if (s) { s.classList.add('active'); const sc = s.querySelector('.scroll'); if (sc) sc.scrollTop = 0; }
+}
+function mstab(btn, tabId) {
+  const screen = btn.closest('.screen');
+  screen.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+  screen.querySelectorAll('.tc').forEach(t => t.classList.remove('on'));
+  const t = document.getElementById(tabId);
+  if (t) t.classList.add('on');
+}
+
+/* ── CHECKLIST TOGGLE ── */
+function toggleCheck(row) {
+  const circle = row.querySelector('div[style*="border-radius:50%"]');
+  const label = row.querySelector('.mrow-name, .row-name');
+  if (!circle) return;
+  const done = circle.style.background.includes('green') || circle.innerHTML.includes('✓');
+  if (done) {
+    circle.style.background = ''; circle.style.borderColor = 'var(--border)'; circle.innerHTML = '';
+    if (label) { label.style.textDecoration = ''; label.style.color = ''; }
+  } else {
+    circle.style.background = 'var(--green-p)'; circle.style.borderColor = 'var(--green)';
+    circle.style.display = 'flex'; circle.style.alignItems = 'center'; circle.style.justifyContent = 'center';
+    circle.innerHTML = '<span style="font-size:10px;color:var(--green);font-weight:700">✓</span>';
+    if (label) { label.style.textDecoration = 'line-through'; label.style.color = 'var(--light)'; }
+  }
+}
+
+/* ── DRIVING MODE ── */
+function openDriving() { document.getElementById('drive-overlay').classList.add('on'); document.body.style.overflow = 'hidden'; updateClock(); }
+function closeDriving() { document.getElementById('drive-overlay').classList.remove('on'); document.body.style.overflow = ''; }
+function updateClock() {
+  const el = document.getElementById('drive-clock');
+  if (!el) return;
+  el.textContent = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+  if (document.getElementById('drive-overlay').classList.contains('on')) setTimeout(updateClock, 5000);
+}
+
+/* ── MODALS ── */
+function openModal(id) { document.getElementById(id).classList.add('on'); }
+function closeModal(id) { document.getElementById(id).classList.remove('on'); }
+document.querySelectorAll('.modal-bg').forEach(el => el.addEventListener('click', e => { if (e.target === el) el.classList.remove('on'); }));
+
+/* ── REPORT SECTIONS ── */
+function switchRSection(btn, tabId) {
+  document.querySelectorAll('.report-section-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('on'));
+  const t = document.getElementById(tabId);
+  if (t) t.classList.add('on');
+}
+</script>
+</body>
+</html>
