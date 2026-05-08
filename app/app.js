@@ -453,10 +453,7 @@
             <div style="flex:1">
               <div style="margin-bottom:8px">${badgeHtml}</div>
               <div style="font-size:12px;color:rgba(255,255,255,.55);line-height:1.55;margin-bottom:12px">${sub}</div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <button class="btn btn-sea btn-sm" style="height:32px;font-size:12px;padding:0 12px" onclick="exportFleetInspectionPack()">📄 Inspection pack</button>
-                <button class="btn btn-sm" style="height:32px;font-size:12px;padding:0 12px;background:rgba(255,255,255,.08);color:white;border:1px solid rgba(255,255,255,.12)" onclick="go('s-calendar')">📅 Calendar</button>
-              </div>
+              <button class="btn btn-sea btn-sm" style="height:32px;font-size:12px;padding:0 14px" onclick="exportFleetInspectionPack()">📄 Inspection pack →</button>
             </div>
           </div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;position:relative;z-index:1">

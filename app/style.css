@@ -627,6 +627,102 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .sheet-act.danger { color: var(--red); }
 
 /* ═══════════════════════════════════════════════════════════════
+   MOBILE COMPACTION — tighten heroes, tiles and headers below 520px
+   so above-the-fold content shows actions, not just decoration.
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 519px) {
+  /* Hero containers — reduce padding */
+  .hero { padding: 14px !important; }
+
+  /* Compliance ring — drop from 96 to 76 across the app */
+  .ring-wrap { width: 76px !important; height: 76px !important; }
+  .ring-wrap > svg { width: 76px !important; height: 76px !important; }
+  .ring-pct { font-size: 19px !important; }
+  .ring-pct-lbl { font-size: 9px !important; }
+
+  /* Inline 26px ring text used on home — override */
+  .hero .ring-val > div:first-child { font-size: 19px !important; }
+  .hero .ring-val span { font-size: 11px !important; }
+
+  /* Display headings — slightly smaller */
+  .h-display { font-size: 20px !important; letter-spacing: -.4px !important; }
+
+  /* Tiles in hero strips */
+  .tile { padding: 8px 10px !important; }
+  .tile-num { font-size: 17px !important; }
+  .tile-lbl { font-size: 9px !important; }
+
+  /* Quick action / qa-tile — small but reasonable */
+  .qa-tile { padding: 12px !important; }
+  .qa-icon { width: 36px !important; height: 36px !important; font-size: 17px !important; }
+  .qa-title { font-size: 13px !important; }
+  .qa-sub { font-size: 11px !important; }
+
+  /* Top dark header on home — less bottom padding */
+  #s-home > div[style*="background:var(--ink)"] {
+    padding-bottom: 14px !important;
+  }
+  #home-greeting > div:first-child { font-size: 11px !important; margin-bottom: 1px !important; }
+  #home-greeting .h-display { font-size: 18px !important; }
+
+  /* Section headings — slightly smaller */
+  .h-section { font-size: 14px !important; margin: 14px 16px 6px !important; }
+  .h-section-row { margin: 14px 16px 6px !important; }
+  .slbl { padding: 14px 20px 6px !important; font-size: 10px !important; }
+
+  /* Vessel detail / surveyor vessel hero compaction */
+  #s-vessel-detail > div[style*="background:var(--ink)"],
+  #s-surveyor-vessel .hero-mm,
+  #s-surveyor-job .hero-mm {
+    padding: 12px 14px 14px !important;
+  }
+  .vcover-emoji { width: 38px !important; height: 38px !important; font-size: 18px !important; }
+  .vcover-name { font-size: 15px !important; }
+  .vcover-stat .num { font-size: 15px !important; }
+  .vcover-stat .lbl { font-size: 8px !important; }
+
+  /* Vessel cover card body padding */
+  .vcover-body { padding: 12px 14px !important; }
+  .vcover-head { padding: 14px 14px 10px !important; }
+
+  /* Status badges */
+  .insp-pill { font-size: 10px !important; padding: 5px 9px !important; }
+  .cat-pill { font-size: 9px !important; padding: 2px 7px !important; }
+
+  /* Action card margins */
+  .action-card { padding: 12px !important; }
+
+  /* Surveyor home tile-strip horizontal compaction */
+  #s-surveyor-home > div[style*="background:var(--ink)"],
+  #s-surveyor-home > div.sv-hero {
+    padding: 0 16px 14px !important;
+  }
+
+  /* Login card — slightly tighter on small screens */
+  .auth-content { padding: 0 22px calc(28px + env(safe-area-inset-bottom)) !important; }
+  .auth-card { padding: 16px !important; }
+  .auth-h1 { font-size: 24px !important; margin-top: 18px !important; }
+  .auth-sub { font-size: 13px !important; margin-top: 6px !important; }
+  .auth-mark { width: 56px !important; height: 56px !important; margin-top: 18px !important; }
+
+  /* Tickets + crew cards padding */
+  .ticket-body { padding: 10px 12px !important; gap: 10px !important; }
+  .ticket-name { font-size: 13px !important; }
+  .ticket-sub { font-size: 11px !important; }
+  .ticket-ic { width: 34px !important; height: 34px !important; font-size: 15px !important; }
+
+  .crewc { padding: 12px !important; }
+  .crewc-av { width: 38px !important; height: 38px !important; }
+  .crewc-name { font-size: 14px !important; }
+
+  /* Bottom nav slightly tighter */
+  .bnav { padding: 8px 0 calc(8px + var(--safe)) !important; }
+  .bni-ic { font-size: 19px !important; }
+  .bni-lb { font-size: 9px !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    AUTH SCREENS — login + magic-link sent.
    Full-bleed dark background with mesh, premium feel.
    ═══════════════════════════════════════════════════════════════ */
