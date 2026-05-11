@@ -67,6 +67,17 @@
       btn.addEventListener('click', () => {
         const role = btn.dataset.role;
         if (role === 'operator') {
+          // Reset the Store + session so /app boots into the operator home
+          // even if the last session on this device was surveyor or admin.
+          try { Store.setMode('operator'); } catch (_) {}
+          try {
+            localStorage.setItem('codedok-session-v1', JSON.stringify({
+              mode: 'demo',
+              signed_in_at: new Date().toISOString()
+            }));
+            // Strip any stale deep-link that would otherwise force surveyor mode.
+            localStorage.removeItem('codedok-deeplink');
+          } catch (_) {}
           window.location.href = '../index.html';
           return;
         }
