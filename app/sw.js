@@ -1,10 +1,15 @@
-// CodedOK service worker — cache-first for the app shell.
-// Bump CACHE_VERSION when shipping a new build to invalidate old caches.
-const CACHE_VERSION = 'codedok-v1';
+// CodedOK service worker.
+// Strategy:
+//   - HTML / JS / CSS / codes.js / store.js / app.js: network-first (always
+//     get the latest when online, fall back to cache when offline)
+//   - Fonts / icons / images: cache-first (rarely change, big files)
+// Bump CACHE_VERSION whenever you ship — old caches are deleted on activate.
+const CACHE_VERSION = 'codedok-v3';
 const SHELL = [
   './',
   './index.html',
   './style.css',
+  './codes.js',
   './store.js',
   './app.js',
   './manifest.webmanifest',
@@ -28,9 +33,30 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+function isAppShell(url) {
+  return /(\.html|\.css|\.js|\.json|\/)$/.test(url.pathname) && !/\.woff2?$/.test(url.pathname);
+}
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+
+  if (isAppShell(url)) {
+    // Network-first for code/markup — never serve stale UI when online.
+    e.respondWith(
+      fetch(req).then((res) => {
+        if (res && res.status === 200 && res.type === 'basic') {
+          const copy = res.clone();
+          caches.open(CACHE_VERSION).then((c) => c.put(req, copy));
+        }
+        return res;
+      }).catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Cache-first for static assets (fonts, icons, images, vessel photos).
   e.respondWith(
     caches.match(req).then((hit) => {
       if (hit) return hit;
