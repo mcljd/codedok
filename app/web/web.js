@@ -67,7 +67,7 @@
       btn.addEventListener('click', () => {
         const role = btn.dataset.role;
         if (role === 'operator') {
-          window.location.href = '../app/index.html';
+          window.location.href = '../index.html';
           return;
         }
         Store.setMode('surveyor');
@@ -429,10 +429,10 @@
       // Pass the vessel id via localStorage so /app can pick it up on load
       // and deep-link to the surveyor vessel detail.
       try { localStorage.setItem('codedok-deeplink', JSON.stringify({ vesselId: vesselId, view: 's-surveyor-vessel', ts: Date.now() })); } catch (_) {}
-      window.open('../app/index.html', '_blank');
+      window.open('../index.html', '_blank');
     },
     openMobile() {
-      window.open('../app/index.html', '_blank');
+      window.open('../index.html', '_blank');
     },
     signOut: signOut,
     refresh() { refreshCounts(); renderView(); }
