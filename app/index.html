@@ -4,6 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>CodedOK — MCA Compliance Platform</title>
+
+<!-- Self-healing escape hatch. If app.js fails to parse / load (broken
+     cached bundle, network blip during initial install), the page would
+     otherwise sit there silently with no working buttons. After 4
+     seconds we check whether window.enterDemo has been defined; if
+     not, we unregister all service workers, drop every cache, and hard
+     reload. Also triggers immediately on ?reset for manual recovery. -->
+<script>
+(function () {
+  function nuke(reason) {
+    try { console.warn('CodedOK: self-heal triggered —', reason); } catch (_) {}
+    var done = function () { window.location.replace(window.location.pathname); };
+    var jobs = [];
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+      jobs.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+        return Promise.all(regs.map(function (r) { return r.unregister(); }));
+      }));
+    }
+    if (window.caches && caches.keys) {
+      jobs.push(caches.keys().then(function (keys) {
+        return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+      }));
+    }
+    Promise.all(jobs).then(done, done);
+  }
+  if (window.location.search.indexOf('reset') !== -1) {
+    nuke('manual ?reset');
+    return;
+  }
+  setTimeout(function () {
+    if (typeof window.enterDemo !== 'function') {
+      nuke('app.js did not initialise within 4s');
+    }
+  }, 4000);
+})();
+</script>
+
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="print.css" media="print">
 
@@ -162,6 +199,7 @@
     </div>
 
     <button class="auth-demo-link" onclick="enterDemo()">Try the live demo — no account →</button>
+    <a class="auth-demo-link" href="?reset" style="font-size:11px;color:rgba(255,255,255,.35);text-decoration:none;display:block;margin-top:4px">Reset app (clears cache)</a>
   </div>
 </div>
 
