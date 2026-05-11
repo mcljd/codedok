@@ -5129,7 +5129,15 @@ ${sectionsHtml}
 
   function enterDemo() {
     saveSession({ mode: 'demo', signed_in_at: new Date().toISOString() });
+    // Force operator mode so the demo always lands in the operator home
+    // — otherwise a stale surveyor/admin session bounces them to the
+    // wrong screen with the wrong user.
+    if (window.Store) Store.setMode('operator');
+    document.body.classList.remove('desktop-surveyor');
+    document.body.classList.remove('desktop-admin');
+    activeVesselId = null;
     renderDemoBadge();
+    renderHome();
     go('s-home');
   }
   window.enterDemo = enterDemo;
