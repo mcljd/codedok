@@ -2844,7 +2844,7 @@
     if (existing) existing.remove();
     const total = (d.vessel ? 1 : 0) + d.certs.length + d.equipment.length + d.deficiencies.length;
     if (total === 0) {
-      alert('Couldn\\'t find anything I recognised in that PDF. Try a different survey report, or add the vessel manually.');
+      alert("Couldn't find anything I recognised in that PDF. Try a different survey report, or add the vessel manually.");
       return;
     }
     const modal = document.createElement('div');
