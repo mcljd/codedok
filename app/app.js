@@ -876,8 +876,8 @@
     if (greeting) {
       const firstName = (s.user && s.user.name) ? s.user.name.split(' ')[0] : '';
       greeting.innerHTML = `
-        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:3px;font-weight:500">Good ${part}${firstName ? ', ' + escapeHtml(firstName) : ''}</div>
-        <div class="h-display" style="font-size:24px">Fleet command</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:2px;font-weight:500">Good ${part}${firstName ? ', ' + escapeHtml(firstName) : ''}</div>
+        <div class="h-display" style="font-size:18px">Fleet command</div>
       `;
     }
     const av = document.getElementById('home-avatar');
