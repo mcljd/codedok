@@ -65,12 +65,13 @@
     </nav>
     <div class="w-sb-foot">
       <div class="w-sb-user">
-        <div class="w-sb-avatar" id="w-user-avatar">MM</div>
-        <div>
+        <button class="w-sb-avatar" id="w-user-avatar" title="Upload company logo" onclick="WebApp.pickLogo()">MM</button>
+        <div style="flex:1;min-width:0">
           <div class="w-sb-user-name" id="w-user-name">Surveyor</div>
           <div class="w-sb-user-sub" id="w-user-sub">Signed in</div>
         </div>
       </div>
+      <input type="file" id="w-logo-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">
       <button class="w-sb-signout" onclick="WebApp.signOut()">Sign out</button>
     </div>
   </aside>

@@ -651,6 +651,20 @@
     return i;
   }
 
+  function setSurveyorLogo(dataUrl) {
+    const user = getCurrentUser();
+    if (!user || user.kind !== 'surveyor') return null;
+    user.surveyor = user.surveyor || {};
+    user.surveyor.logo = dataUrl || null;
+    save(state);
+    return user.surveyor.logo;
+  }
+
+  function getSurveyorLogo(userId) {
+    const u = getUser(userId);
+    return (u && u.surveyor && u.surveyor.logo) || null;
+  }
+
   function inviteSurveyor(input) {
     // input: { vessel_id, surveyor_user_id (or email), scopes, expires_at }
     const g = {
@@ -1066,6 +1080,8 @@
     startInspection,
     completeInspection,
     inviteSurveyor,
+    setSurveyorLogo,
+    getSurveyorLogo,
     revokeSurveyor,
     addSmsDocument,
     smsSubmissions,
