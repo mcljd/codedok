@@ -395,9 +395,10 @@
   const DESKTOP_SURVEYOR_MIN = 1024;
 
   function applyDesktopSurveyor() {
-    const isSurveyor = Store && Store.getMode() === 'surveyor';
-    const wideEnough = window.innerWidth >= DESKTOP_SURVEYOR_MIN;
-    document.body.classList.toggle('desktop-surveyor', isSurveyor && wideEnough);
+    // Desktop surveyor experience lives at /web/ now. In the main /app,
+    // surveyor mode always uses the standard mobile phone frame so the
+    // mobile UI doesn't drift out of sync with what the operator sees.
+    document.body.classList.remove('desktop-surveyor');
     refreshSurveyorSidebar();
   }
 
@@ -2307,11 +2308,27 @@
         </div>`;
     }
 
+    // Desktop nudge — shown on wide viewports so a surveyor browsing on
+    // a laptop can jump to the full workspace at /web/.
+    const desktopBanner = window.innerWidth >= 1024 ? `
+      <div style="padding:14px 16px 0">
+        <div class="card" onclick="window.open('web/index.html', '_blank')" style="padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid var(--sea)">
+          <div style="font-size:22px">🖥️</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--text)">Open the desktop workspace</div>
+            <div style="font-size:11px;color:var(--lt);margin-top:1px">Full portfolio view, bigger cards, side-by-side filters.</div>
+          </div>
+          <span class="chev">›</span>
+        </div>
+      </div>` : '';
+
     // Tab content
-    if (surveyorTab === 'vessels')   wrap.innerHTML = renderSurveyorVesselsTab(me);
-    else if (surveyorTab === 'inbox')   wrap.innerHTML = renderSurveyorInboxTab(me);
-    else if (surveyorTab === 'jobs')    wrap.innerHTML = renderSurveyorJobsTab(me);
-    else if (surveyorTab === 'earnings') wrap.innerHTML = renderSurveyorEarningsTab(me);
+    let tabHtml = '';
+    if (surveyorTab === 'vessels')   tabHtml = renderSurveyorVesselsTab(me);
+    else if (surveyorTab === 'inbox')   tabHtml = renderSurveyorInboxTab(me);
+    else if (surveyorTab === 'jobs')    tabHtml = renderSurveyorJobsTab(me);
+    else if (surveyorTab === 'earnings') tabHtml = renderSurveyorEarningsTab(me);
+    wrap.innerHTML = desktopBanner + tabHtml;
   }
 
   function renderSurveyorVesselsTab(me) {
