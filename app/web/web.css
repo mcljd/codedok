@@ -155,11 +155,42 @@ body.web {
   padding: 8px 4px;
 }
 .w-sb-avatar {
-  width: 36px; height: 36px; border-radius: 50%;
+  width: 40px; height: 40px; border-radius: 10px;
   background: linear-gradient(135deg, var(--sea), var(--ink2));
   color: white; display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 700;
+  border: 1px solid rgba(255,255,255,.1);
+  flex-shrink: 0;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0;
+  font-family: var(--fn);
+  position: relative;
+  transition: border-color 140ms ease, transform 140ms ease;
 }
+.w-sb-avatar:hover { border-color: var(--seal); transform: scale(1.04); }
+.w-sb-avatar.has-logo { background: white; }
+.w-sb-avatar.has-logo img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  padding: 4px;
+  display: block;
+}
+.w-sb-avatar::after {
+  content: '✎';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.55);
+  color: white;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 140ms ease;
+  border-radius: inherit;
+}
+.w-sb-avatar:hover::after { opacity: 1; }
 .w-sb-user-name { font-size: 13px; font-weight: 700; color: white; line-height: 1.2; }
 .w-sb-user-sub  { font-size: 11px; color: rgba(255,255,255,.45); margin-top: 2px; }
 .w-sb-signout {
@@ -183,6 +214,54 @@ body.web {
   min-width: 0;
   background: var(--page);
 }
+
+/* ---------- BRAND STRIP ---------- */
+.w-brand {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: var(--sh);
+  margin-bottom: 18px;
+}
+.w-brand-empty {
+  cursor: pointer;
+  border-style: dashed;
+  background: transparent;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.w-brand-empty:hover { background: var(--card); border-color: var(--sea); }
+.w-brand-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid var(--bdr);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.w-brand-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  padding: 6px;
+}
+.w-brand-logo.placeholder {
+  background: var(--slate);
+  color: var(--lt);
+  font-size: 28px;
+  font-weight: 300;
+}
+.w-brand-info { flex: 1; min-width: 0; }
+.w-brand-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.w-brand-sub  { font-size: 12px; color: var(--mid); line-height: 1.5; }
+.w-brand-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
 /* ---------- VIEW HEADER ---------- */
 .w-view-h {

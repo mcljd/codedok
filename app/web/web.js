@@ -82,13 +82,79 @@
     const me = Store.getCurrentUser();
     if (me) {
       $('#w-user-name').textContent = me.name;
-      $('#w-user-avatar').textContent = me.initials || (me.name || '').split(' ').map((p) => p[0]).join('').slice(0, 2);
       const sub = me.surveyor && me.surveyor.company ? me.surveyor.company : 'Surveyor';
       $('#w-user-sub').textContent = sub;
+      paintAvatar();
     }
     bindNav();
+    bindLogoInput();
     refreshCounts();
     renderView();
+  }
+
+  function brandStrip(me) {
+    const logo = me && me.surveyor && me.surveyor.logo;
+    const company = (me && me.surveyor && me.surveyor.company) || (me && me.name) || 'Your business';
+    if (logo) {
+      return `
+        <div class="w-brand">
+          <div class="w-brand-logo"><img alt="${esc(company)} logo" src="${logo}"></div>
+          <div class="w-brand-info">
+            <div class="w-brand-name">${esc(company)}</div>
+            <div class="w-brand-sub">This logo appears on every quote &amp; invoice you send.</div>
+          </div>
+          <div class="w-brand-actions">
+            <button class="w-btn w-btn-ghost" onclick="WebApp.pickLogo()">Replace</button>
+            <button class="w-btn w-btn-ghost" onclick="WebApp.removeLogo()" style="color:var(--red)">Remove</button>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="w-brand w-brand-empty" onclick="WebApp.pickLogo()">
+        <div class="w-brand-logo placeholder">+</div>
+        <div class="w-brand-info">
+          <div class="w-brand-name">Upload your company logo</div>
+          <div class="w-brand-sub">It'll appear on every quote, invoice, and survey report you send through CodedOK. PNG or SVG, under 1 MB.</div>
+        </div>
+        <div class="w-brand-actions"><button class="w-btn">Choose file</button></div>
+      </div>`;
+  }
+
+  function paintAvatar() {
+    const me = Store.getCurrentUser();
+    if (!me) return;
+    const av = $('#w-user-avatar');
+    const logo = me.surveyor && me.surveyor.logo;
+    if (logo) {
+      av.classList.add('has-logo');
+      av.innerHTML = '<img alt="Company logo" src="' + logo + '">';
+    } else {
+      av.classList.remove('has-logo');
+      av.textContent = me.initials || (me.name || '').split(' ').map((p) => p[0]).join('').slice(0, 2);
+    }
+  }
+
+  function bindLogoInput() {
+    const input = $('#w-logo-input');
+    if (!input || input.dataset.bound) return;
+    input.dataset.bound = '1';
+    input.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      if (file.size > 1024 * 1024) {
+        alert('Logo must be under 1 MB. Try a smaller PNG or SVG.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        Store.setSurveyorLogo(reader.result);
+        paintAvatar();
+        // Re-render any view that uses the logo (the portfolio header strip).
+        renderView();
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   function signOut() {
@@ -178,7 +244,7 @@
 
     const groupKeys = Object.keys(byOrg).sort((a, b) => byOrg[a].name.localeCompare(byOrg[b].name));
 
-    let html = `
+    let html = brandStrip(me) + `
       <div class="w-view-h">
         <div>
           <div class="w-view-title">Your portfolio</div>
@@ -433,6 +499,16 @@
     },
     openMobile() {
       window.open('../index.html', '_blank');
+    },
+    pickLogo() {
+      const input = document.getElementById('w-logo-input');
+      if (input) input.click();
+    },
+    removeLogo() {
+      if (!confirm('Remove your company logo?')) return;
+      Store.setSurveyorLogo(null);
+      paintAvatar();
+      renderView();
     },
     signOut: signOut,
     refresh() { refreshCounts(); renderView(); }

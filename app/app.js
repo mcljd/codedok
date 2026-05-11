@@ -2905,16 +2905,21 @@
     const v = Store.getVessel(inv.vessel_id);
     const surveyor = Store.snapshot().users.find((u) => u.id === inv.surveyor_user_id) || {};
 
+    const surveyorLogo = surveyor.surveyor && surveyor.surveyor.logo;
+    const surveyorCompany = (surveyor.surveyor && surveyor.surveyor.company) || surveyor.name || 'Surveyor';
     wrap.innerHTML = `
       <div class="hero" style="border-radius:0;padding:14px 18px 18px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;position:relative;z-index:1">
           <button class="back" onclick="go('s-home')" style="color:rgba(255,255,255,.6)">‹ Home</button>
           <span class="cat-pill">Invoice</span>
         </div>
-        <div style="position:relative;z-index:1">
-          <div style="font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.07em">${escapeHtml(inv.id)}</div>
-          <div class="h-display" style="font-size:32px;margin-top:4px">£${inv.total}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">From ${escapeHtml((surveyor.surveyor && surveyor.surveyor.company) || surveyor.name || 'Surveyor')}</div>
+        <div style="position:relative;z-index:1;display:flex;align-items:center;gap:14px">
+          ${surveyorLogo ? `<div class="invoice-logo"><img alt="${escapeHtml(surveyorCompany)} logo" src="${surveyorLogo}"></div>` : ''}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.07em">${escapeHtml(inv.id)}</div>
+            <div class="h-display" style="font-size:32px;margin-top:4px">£${inv.total}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">From ${escapeHtml(surveyorCompany)}</div>
+          </div>
         </div>
       </div>
 
