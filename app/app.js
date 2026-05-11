@@ -233,21 +233,35 @@
   }
   window.codedOkMark = codedOkMark;
 
-  // McCollam Marine wordmark — inline SVG, no asset dependency.
-  // Hull-line on left + "McCollam Marine" wordmark.
-  function mmMark(size) {
+  // Generic surveyor brand block — uses the surveyor's uploaded logo from
+  // user.surveyor.logo if set, otherwise an initials placeholder. Replaces
+  // the old hardcoded McCollam Marine wordmark.
+  function surveyorMark(size) {
     size = size || 28;
-    const w = size, h = size;
-    return `
-      <svg class="mm-mark-svg" width="${w}" height="${h}" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-        <path d="M2 6 Q14 2 26 6 L26 18 Q23 22 14 22 Q5 22 2 18 Z" stroke="rgba(255,255,255,.45)" stroke-width="1.4" fill="none"/>
-        <path d="M5 10 L23 10" stroke="rgba(255,255,255,.25)" stroke-width=".8"/>
-        <path d="M7 14 L21 14" stroke="rgba(255,255,255,.25)" stroke-width=".8"/>
-        <path d="M9 18 L19 18" stroke="rgba(255,255,255,.25)" stroke-width=".8"/>
-        <path d="M14 4 L14 21" stroke="rgba(255,255,255,.5)" stroke-width=".8"/>
-      </svg>`;
+    const me = (window.Store && Store.getCurrentUser()) || {};
+    const logo = me.surveyor && me.surveyor.logo;
+    const company = (me.surveyor && me.surveyor.company) || me.name || 'Your business';
+    if (logo) {
+      return `<img class="sv-brand-logo" alt="${escapeHtml(company)} logo" src="${logo}" style="width:${size}px;height:${size}px;border-radius:6px;object-fit:contain;background:white;padding:2px;flex-shrink:0">`;
+    }
+    const initials = me.initials || company.split(/\s+/).map((p) => p[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || 'S';
+    return `<div class="sv-brand-placeholder" style="width:${size}px;height:${size}px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-size:${Math.max(10, Math.round(size * 0.4))}px;font-weight:700;flex-shrink:0;border:1px solid rgba(255,255,255,.12)">${escapeHtml(initials)}</div>`;
   }
+  // Back-compat alias — legacy callers used mmMark.
+  function mmMark(size) { return surveyorMark(size); }
   window.mmMark = mmMark;
+  window.surveyorMark = surveyorMark;
+
+  function surveyorCompanyName() {
+    const me = (window.Store && Store.getCurrentUser()) || {};
+    return (me.surveyor && me.surveyor.company) || me.name || 'Your business';
+  }
+  function surveyorTagline() {
+    const me = (window.Store && Store.getCurrentUser()) || {};
+    if (me.surveyor && me.surveyor.qualifications && me.surveyor.qualifications.length > 0) return me.surveyor.qualifications[0];
+    if (me.surveyor && me.surveyor.regions && me.surveyor.regions.length > 0) return me.surveyor.regions[0];
+    return 'Marine surveyor';
+  }
 
   function scoreColor(score) {
     if (score >= 90) return '#16a34a';
@@ -410,10 +424,10 @@
     // Brand mark (inline)
     const markEl = document.getElementById('sv-sb-mark');
     if (markEl && typeof mmMark === 'function') {
-      markEl.innerHTML = `${mmMark(28)}
+      markEl.innerHTML = `${surveyorMark(28)}
         <div class="mm-mark-words">
-          <div class="mm-mark-name">McCollam Marine</div>
-          <div class="mm-mark-tag">Naval Architects · Marine Surveyors</div>
+          <div class="mm-mark-name">${escapeHtml(surveyorCompanyName())}</div>
+          <div class="mm-mark-tag">${escapeHtml(surveyorTagline())}</div>
         </div>`;
     }
 
@@ -924,23 +938,17 @@
           ? 'All certificates &amp; equipment current. Keep on top of upcoming renewals.'
           : `${counts.overdue} item${counts.overdue === 1 ? '' : 's'} need${counts.overdue === 1 ? 's' : ''} attention before your next MCA visit.`;
         statusEl.innerHTML = `
-          <div style="display:flex;align-items:center;gap:14px;position:relative;z-index:1">
-            <div class="ring-wrap" style="flex-shrink:0;width:72px;height:72px">
-              ${ringSvg(fleetScore, scoreColor(fleetScore), 72, true)}
+          <div style="display:flex;align-items:center;gap:12px;position:relative;z-index:1">
+            <div class="ring-wrap" style="flex-shrink:0;width:60px;height:60px">
+              ${ringSvg(fleetScore, scoreColor(fleetScore), 60, true)}
               <div class="ring-val">
-                <div class="ring-pct" style="color:white;font-size:20px;letter-spacing:-.5px;font-weight:800">${fleetScore}<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55)">%</span></div>
+                <div class="ring-pct" style="color:white;font-size:16px;letter-spacing:-.4px;font-weight:800">${fleetScore}<span style="font-size:9px;font-weight:600;color:rgba(255,255,255,.55)">%</span></div>
               </div>
             </div>
-            <div style="flex:1;min-width:0">
-              <div style="margin-bottom:6px">${badgeHtml}</div>
-              <button class="btn btn-sea btn-sm" style="height:30px;font-size:12px;padding:0 12px" onclick="exportFleetInspectionPack()">📄 Inspection pack →</button>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+              ${badgeHtml}
+              <button class="btn btn-sea btn-sm" style="height:28px;font-size:11px;padding:0 10px;align-self:flex-start" onclick="exportFleetInspectionPack()">📄 Inspection pack →</button>
             </div>
-          </div>
-          <div class="home-tile-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px;position:relative;z-index:1">
-            <div class="tile tile-sm"><div class="tile-num ${counts.overdue ? 'rd' : ''}">${counts.overdue}</div><div class="tile-lbl">Overdue</div></div>
-            <div class="tile tile-sm"><div class="tile-num ${counts.due30 ? 'am' : ''}">${counts.due30}</div><div class="tile-lbl">≤30d</div></div>
-            <div class="tile tile-sm"><div class="tile-num ${counts.due60 ? 'am' : ''}">${counts.due60}</div><div class="tile-lbl">30–60d</div></div>
-            <div class="tile tile-sm"><div class="tile-num ok">${counts.valid}</div><div class="tile-lbl">Clear</div></div>
           </div>`;
       }
     }
@@ -2264,7 +2272,7 @@
         <div class="empty">
           <div class="empty-art">🔍</div>
           <div class="empty-h">Surveyor mode</div>
-          <div class="empty-sub">Switch to McCollam Marine's surveyor view to see all vessels you've been granted, raise deficiencies, and sign inspections.</div>
+          <div class="empty-sub">Switch to your surveyor workspace to see all vessels you've been granted, raise deficiencies, and sign inspections.</div>
           <button class="btn btn-sm btn-sea" onclick="enterSurveyorMode()">Enter surveyor mode</button>
         </div>`;
       return;
@@ -2274,11 +2282,11 @@
     const earnings = Store.surveyorEarnings(me.id);
 
     // Update bnav active state + inbox dot
-    ['vessels','inbox','jobs','earn'].forEach((tab) => {
+    ['vessels','inbox','jobs','earn','account'].forEach((tab) => {
       const el = document.getElementById('sv-nav-' + tab);
       if (el) el.classList.remove('on');
     });
-    const navMap = { vessels: 'sv-nav-vessels', inbox: 'sv-nav-inbox', jobs: 'sv-nav-jobs', earnings: 'sv-nav-earn' };
+    const navMap = { vessels: 'sv-nav-vessels', inbox: 'sv-nav-inbox', jobs: 'sv-nav-jobs', earnings: 'sv-nav-earn', account: 'sv-nav-account' };
     const navEl = document.getElementById(navMap[surveyorTab]);
     if (navEl) navEl.classList.add('on');
     const dot = document.getElementById('sv-inbox-dot');
@@ -2288,14 +2296,14 @@
     if (heroEl) {
       heroEl.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 16px;position:relative;z-index:1">
-          <div class="mm-mark">
-            ${mmMark(36)}
+          <div class="mm-mark" onclick="setSurveyorTab('account')" style="cursor:pointer">
+            ${surveyorMark(36)}
             <div class="mm-mark-words">
-              <div class="mm-mark-name">McCollam Marine</div>
-              <div class="mm-mark-tag">Naval Architects · Marine Surveyors</div>
+              <div class="mm-mark-name">${escapeHtml(surveyorCompanyName())}</div>
+              <div class="mm-mark-tag">${escapeHtml(surveyorTagline())}</div>
             </div>
           </div>
-          <button onclick="exitSurveyorMode()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--fn)">↩ Exit</button>
+          <button onclick="setSurveyorTab('account')" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--fn)">⚙ Account</button>
         </div>
         <div style="position:relative;z-index:1;margin-bottom:14px">
           <div style="font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">Surveyor workspace · ${me.surveyor && me.surveyor.regions ? escapeHtml(me.surveyor.regions[0]) : ''}</div>
@@ -2328,6 +2336,7 @@
     else if (surveyorTab === 'inbox')   tabHtml = renderSurveyorInboxTab(me);
     else if (surveyorTab === 'jobs')    tabHtml = renderSurveyorJobsTab(me);
     else if (surveyorTab === 'earnings') tabHtml = renderSurveyorEarningsTab(me);
+    else if (surveyorTab === 'account')  tabHtml = renderSurveyorAccountTab(me);
     wrap.innerHTML = desktopBanner + tabHtml;
   }
 
@@ -2518,6 +2527,142 @@
       <div class="spacer"></div>`;
   }
 
+  function renderSurveyorAccountTab(me) {
+    const logo = me.surveyor && me.surveyor.logo;
+    const company = (me.surveyor && me.surveyor.company) || me.name || '';
+    const phone = (me.surveyor && me.surveyor.phone) || '';
+    const email = me.email || '';
+    const quals = (me.surveyor && me.surveyor.qualifications) || [];
+    const regions = (me.surveyor && me.surveyor.regions) || [];
+
+    const brandCard = logo
+      ? `<div class="card" style="padding:14px;display:flex;align-items:center;gap:14px">
+           <div style="width:64px;height:64px;border-radius:12px;background:white;border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+             <img alt="${escapeHtml(company)} logo" src="${logo}" style="max-width:100%;max-height:100%;object-fit:contain;padding:4px">
+           </div>
+           <div style="flex:1;min-width:0">
+             <div style="font-size:14px;font-weight:700;color:var(--text)">Your company logo</div>
+             <div style="font-size:12px;color:var(--lt);margin-top:2px;line-height:1.5">Appears on every quote, invoice &amp; survey report you send.</div>
+           </div>
+           <div style="display:flex;flex-direction:column;gap:6px">
+             <button class="btn btn-sm btn-out" onclick="pickSurveyorLogo()" style="height:30px;padding:0 10px;font-size:12px">Replace</button>
+             <button class="btn btn-sm btn-out" onclick="removeSurveyorLogo()" style="height:30px;padding:0 10px;font-size:12px;color:var(--red);border-color:rgba(220,38,38,.3)">Remove</button>
+           </div>
+         </div>`
+      : `<div class="card" onclick="pickSurveyorLogo()" style="padding:18px;text-align:center;cursor:pointer;border:1.5px dashed var(--bdr);background:transparent">
+           <div style="font-size:36px;margin-bottom:6px">📷</div>
+           <div style="font-size:14px;font-weight:700;color:var(--text)">Upload your company logo</div>
+           <div style="font-size:12px;color:var(--lt);margin-top:4px;line-height:1.5;max-width:280px;margin-left:auto;margin-right:auto">Appears on every quote, invoice &amp; survey report you send. PNG or SVG, under 1 MB.</div>
+           <button class="btn btn-sm btn-sea" style="margin-top:12px;height:32px;padding:0 14px;font-size:12px">Choose file</button>
+         </div>`;
+
+    return `
+      <input type="file" id="sv-logo-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none" onchange="handleSurveyorLogoUpload(event)">
+
+      <div class="slbl">Brand</div>
+      <div style="padding:0 16px">${brandCard}</div>
+
+      <div class="slbl">Business details</div>
+      <div style="padding:0 16px">
+        <div class="card">
+          <div class="row" style="cursor:default">
+            <div class="row-body">
+              <div class="row-name">Company name</div>
+              <div class="row-sub">${escapeHtml(company) || 'Not set'}</div>
+            </div>
+          </div>
+          <div class="row" style="cursor:default">
+            <div class="row-body">
+              <div class="row-name">Email</div>
+              <div class="row-sub">${escapeHtml(email) || 'Not set'}</div>
+            </div>
+          </div>
+          <div class="row" style="cursor:default">
+            <div class="row-body">
+              <div class="row-name">Phone</div>
+              <div class="row-sub">${escapeHtml(phone) || 'Not set'}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      ${quals.length ? `
+        <div class="slbl">Qualifications</div>
+        <div style="padding:0 16px">
+          <div class="card" style="padding:14px 16px">
+            ${quals.map((q) => `<div style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:13px;color:var(--mid)"><span style="color:var(--green)">✓</span><span>${escapeHtml(q)}</span></div>`).join('')}
+          </div>
+        </div>` : ''}
+
+      ${regions.length ? `
+        <div class="slbl">Regions covered</div>
+        <div style="padding:0 16px">
+          <div class="card" style="padding:14px 16px;display:flex;flex-wrap:wrap;gap:6px">
+            ${regions.map((r) => `<span class="chip chip-bl">${escapeHtml(r)}</span>`).join('')}
+          </div>
+        </div>` : ''}
+
+      <div class="slbl">Desktop workspace</div>
+      <div style="padding:0 16px">
+        <div class="card">
+          <div class="row" onclick="window.open('web/index.html', '_blank')">
+            <div class="row-ic bl">🖥️</div>
+            <div class="row-body">
+              <div class="row-name">Open desktop workspace</div>
+              <div class="row-sub">Bigger screen, portfolio grid, side-by-side filters</div>
+            </div>
+            <span class="chev">›</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="slbl">Session</div>
+      <div style="padding:0 16px">
+        <div class="card">
+          <div class="row" onclick="exitSurveyorMode()">
+            <div class="row-ic">↩️</div>
+            <div class="row-body">
+              <div class="row-name">Exit surveyor mode</div>
+              <div class="row-sub">Back to operator view</div>
+            </div>
+            <span class="chev">›</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="spacer"></div>`;
+  }
+
+  function pickSurveyorLogo() {
+    const input = document.getElementById('sv-logo-input');
+    if (input) input.click();
+  }
+  window.pickSurveyorLogo = pickSurveyorLogo;
+
+  function removeSurveyorLogo() {
+    if (!confirm('Remove your company logo?')) return;
+    Store.setSurveyorLogo(null);
+    renderSurveyorHome();
+  }
+  window.removeSurveyorLogo = removeSurveyorLogo;
+
+  function handleSurveyorLogoUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      alert('Logo must be under 1 MB. Try a smaller PNG or SVG.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      Store.setSurveyorLogo(reader.result);
+      renderSurveyorHome();
+    };
+    reader.readAsDataURL(file);
+  }
+  window.handleSurveyorLogoUpload = handleSurveyorLogoUpload;
+
   let activeJobId = null;
   function openSurveyorJob(jobId) {
     activeJobId = jobId;
@@ -2568,7 +2713,7 @@
       <div class="hero hero-mm" style="border-radius:0;padding:14px 18px 18px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:relative;z-index:1">
           <button class="back" onclick="go('s-surveyor-home')" style="color:rgba(255,255,255,.6)">‹ Back</button>
-          <div class="mm-mark"><div class="mm-mark-words"><div class="mm-mark-name" style="font-size:13px">McCollam Marine</div></div></div>
+          <div class="mm-mark">${surveyorMark(22)}<div class="mm-mark-words"><div class="mm-mark-name" style="font-size:13px">${escapeHtml(surveyorCompanyName())}</div></div></div>
         </div>
         <div style="position:relative;z-index:1">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
@@ -3040,8 +3185,8 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;position:relative;z-index:1">
           <button class="back" onclick="go('s-surveyor-home')" style="color:rgba(255,255,255,.6)">‹ My vessels</button>
           <div class="mm-mark">
-            ${mmMark(22)}
-            <div class="mm-mark-words"><div class="mm-mark-name" style="font-size:13px">McCollam Marine</div></div>
+            ${surveyorMark(22)}
+            <div class="mm-mark-words"><div class="mm-mark-name" style="font-size:13px">${escapeHtml(surveyorCompanyName())}</div></div>
           </div>
         </div>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;position:relative;z-index:1">
