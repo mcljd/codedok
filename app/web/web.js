@@ -150,7 +150,7 @@
   function openWebImportReview(parsed) {
     const total = (parsed.vessel ? 1 : 0) + parsed.certs.length + parsed.equipment.length + parsed.deficiencies.length;
     if (total === 0) {
-      alert('Couldn\\'t find anything I recognised in that PDF. Try a different survey report.');
+      alert("Couldn't find anything I recognised in that PDF. Try a different survey report.");
       return;
     }
     let html = `<div class="w-modal-backdrop" onclick="WebApp.closeImport()"></div>
