@@ -263,6 +263,81 @@ body.web {
 .w-brand-sub  { font-size: 12px; color: var(--mid); line-height: 1.5; }
 .w-brand-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
+/* ---------- IMPORT DROP ZONE ---------- */
+.w-drop {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card);
+  border: 1.5px dashed var(--bdr);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.w-drop.on, .w-drop:hover {
+  background: var(--seap);
+  border-color: var(--sea);
+}
+.w-drop-ic { font-size: 26px; }
+.w-drop-info { flex: 1; }
+.w-drop-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.w-drop-sub { font-size: 12px; color: var(--mid); margin-top: 2px; line-height: 1.5; }
+.w-drop-sub a { color: var(--sea); font-weight: 600; }
+
+/* ---------- IMPORT REVIEW MODAL ---------- */
+#w-import-modal { position: fixed; inset: 0; z-index: 1000; font-family: var(--fn); }
+.w-modal-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(10,22,40,.55);
+}
+.w-modal {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%; max-width: 560px;
+  max-height: 85vh;
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.w-modal-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--bdr);
+}
+.w-modal-body {
+  padding: 16px 20px 20px;
+  overflow-y: auto;
+}
+.w-modal-sec {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--lt);
+  margin: 14px 0 8px;
+}
+.w-imp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--page);
+  border: 1px solid var(--bdr);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.w-imp-row input[type=checkbox] {
+  width: 18px; height: 18px;
+  accent-color: var(--sea);
+  flex-shrink: 0;
+}
+
 /* ---------- VIEW HEADER ---------- */
 .w-view-h {
   display: flex;
