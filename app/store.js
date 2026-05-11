@@ -790,12 +790,94 @@
       built_by_codedok: !!input.built_by_codedok,
       title: input.title || '',
       body: input.body || '',
-      last_reviewed_at: input.last_reviewed_at || null
+      last_reviewed_at: input.last_reviewed_at || null,
+      // New surfaces for the SMS feature set:
+      edit_log: [],           // [{ at, by, sections: ['risk', 'meta'] }]
+      acknowledgements: [],   // [{ at, crew_id, name }]
+      share_token: null,      // token for surveyor read-only view
+      share_token_expires_at: null,
+      review_due_at: null     // 12mo after signed_at
     };
     state.sms_documents.push(d);
     logAction('sms.created', 'sms', d.id, { type: d.type });
     save(state);
     return d;
+  }
+
+  // Append a record to the SMS edit log. Used to show audit trail in
+  // the builder footer + the inspection-pack PDF — "last edited 12 Sep
+  // by Joseph; reviewed 14 Sep by McCollam Marine" is the surveyor
+  // trust signal Sea-Flux's cloud library can't show.
+  function appendSmsEdit(docId, info) {
+    const d = (state.sms_documents || []).find((x) => x.id === docId);
+    if (!d) return null;
+    d.edit_log = d.edit_log || [];
+    d.edit_log.push({
+      at: new Date().toISOString(),
+      by_user_id: ((getCurrentUser() || {}).id) || 'u_jm',
+      by_name: (getCurrentUser() || {}).name || 'Operator',
+      sections: info && info.sections ? info.sections : [],
+      note: info && info.note ? info.note : ''
+    });
+    save(state);
+    return d.edit_log[d.edit_log.length - 1];
+  }
+
+  // Each crew member taps "Read & understood" — surveyors want this
+  // as evidence of training.
+  function ackSms(docId, crewId, name) {
+    const d = (state.sms_documents || []).find((x) => x.id === docId);
+    if (!d) return null;
+    d.acknowledgements = d.acknowledgements || [];
+    // Idempotent — replace existing ack for the same crew member.
+    d.acknowledgements = d.acknowledgements.filter((a) => a.crew_id !== crewId);
+    const a = { at: new Date().toISOString(), crew_id: crewId, name: name || '' };
+    d.acknowledgements.push(a);
+    save(state);
+    return a;
+  }
+
+  function revokeSmsAck(docId, crewId) {
+    const d = (state.sms_documents || []).find((x) => x.id === docId);
+    if (!d) return false;
+    d.acknowledgements = (d.acknowledgements || []).filter((a) => a.crew_id !== crewId);
+    save(state);
+    return true;
+  }
+
+  // Generate / refresh a share token so a surveyor can view the SMS in a
+  // login-free read-only mode on their iPad on the dock. 7 days by default.
+  function createSmsShareToken(docId, hours) {
+    const d = (state.sms_documents || []).find((x) => x.id === docId);
+    if (!d) return null;
+    if (typeof hours !== 'number') hours = 24 * 7;
+    d.share_token = Math.random().toString(36).slice(2, 12).toUpperCase();
+    d.share_token_expires_at = new Date(Date.now() + hours * 3600000).toISOString();
+    save(state);
+    return d.share_token;
+  }
+
+  function getSmsByShareToken(token) {
+    if (!token) return null;
+    const d = (state.sms_documents || []).find((x) => x.share_token === token);
+    if (!d) return null;
+    if (d.share_token_expires_at && new Date(d.share_token_expires_at).getTime() < Date.now()) return null;
+    return d;
+  }
+
+  // Annual review: signed_at + 12 months. Returns true if the SMS is
+  // due for review (within 30 days or overdue).
+  function isSmsReviewDue(doc) {
+    if (!doc || !doc.signed_at) return false;
+    const signed = new Date(doc.signed_at).getTime();
+    const dueAt = signed + 365 * 86400000;
+    return (dueAt - Date.now()) < 30 * 86400000; // within 30d or overdue
+  }
+  function smsReviewDays(doc) {
+    if (!doc || !doc.signed_at) return null;
+    const signed = new Date(doc.signed_at).getTime();
+    const dueAt = signed + 365 * 86400000;
+    return Math.round((dueAt - Date.now()) / 86400000);
   }
 
   // ---------- Jobs / invoices ----------
@@ -1174,6 +1256,13 @@
     setVesselPhoto,
     revokeSurveyor,
     addSmsDocument,
+    appendSmsEdit,
+    ackSms,
+    revokeSmsAck,
+    createSmsShareToken,
+    getSmsByShareToken,
+    isSmsReviewDue,
+    smsReviewDays,
     smsSubmissions,
     updateSmsDocument,
     deliverSmsToOperator,
