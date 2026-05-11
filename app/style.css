@@ -321,6 +321,9 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .tile-num { font-size: 22px; font-weight: 700; color: white; line-height: 1; letter-spacing: -.4px; }
 .tile-num.rd { color: #fca5a5; }
 .tile-num.am { color: #fbbf24; }
+.tile.tile-sm { padding: 8px 10px; gap: 2px; border-radius: 10px; }
+.tile.tile-sm .tile-num { font-size: 17px; letter-spacing: -.3px; }
+.tile.tile-sm .tile-lbl { font-size: 10px; }
 .tile-num.ok { color: #86efac; }
 .tile-lbl { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .07em; }
 
