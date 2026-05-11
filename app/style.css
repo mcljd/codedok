@@ -1083,27 +1083,30 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   #s-home .scroll > .slbl:first-child { padding-top: 18px !important; }
 
   /* Collapsing hero on scroll — keeps ring + badge, hides tile row */
-  #home-status {
-    transition: padding 220ms ease;
-  }
-  #home-status > div:last-child {
-    transition: max-height 240ms ease, opacity 180ms ease, margin-top 240ms ease;
-    max-height: 80px;
+  #home-status { transition: padding 220ms ease; }
+  .home-tile-row {
+    transition: max-height 260ms ease, opacity 200ms ease, margin-top 260ms ease, transform 260ms ease;
+    max-height: 200px;
     overflow: hidden;
     opacity: 1;
+    transform: translateY(0);
   }
   #s-home.hero-collapsed > div[style*="background:var(--ink)"] {
     padding-bottom: 10px !important;
   }
+  #s-home.hero-collapsed #home-greeting > div:first-child { opacity: 0; height: 0; margin: 0 !important; transition: all 200ms ease; }
   #s-home.hero-collapsed #home-greeting .h-display {
     font-size: 15px !important;
   }
   #s-home.hero-collapsed #home-status { padding: 10px 12px !important; }
-  #s-home.hero-collapsed #home-status > div:last-child {
+  #s-home.hero-collapsed .home-tile-row {
     max-height: 0;
     opacity: 0;
     margin-top: 0 !important;
+    transform: translateY(-8px);
   }
+  /* Smooth-shrink the greeting line spacing */
+  #home-greeting > div:first-child { transition: opacity 200ms ease, height 200ms ease, margin 200ms ease; }
 
   /* Section headings — slightly smaller */
   .h-section { font-size: 14px !important; margin: 14px 16px 6px !important; }

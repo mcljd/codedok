@@ -880,7 +880,7 @@
         if (ticking) return;
         ticking = true;
         requestAnimationFrame(() => {
-          homeShell.classList.toggle('hero-collapsed', homeScroll.scrollTop > 32);
+          homeShell.classList.toggle('hero-collapsed', homeScroll.scrollTop > 12);
           ticking = false;
         });
       }, { passive: true });
@@ -935,7 +935,7 @@
               <button class="btn btn-sea btn-sm" style="height:30px;font-size:12px;padding:0 12px" onclick="exportFleetInspectionPack()">📄 Inspection pack →</button>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px;position:relative;z-index:1">
+          <div class="home-tile-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px;position:relative;z-index:1">
             <div class="tile tile-sm"><div class="tile-num ${counts.overdue ? 'rd' : ''}">${counts.overdue}</div><div class="tile-lbl">Overdue</div></div>
             <div class="tile tile-sm"><div class="tile-num ${counts.due30 ? 'am' : ''}">${counts.due30}</div><div class="tile-lbl">≤30d</div></div>
             <div class="tile tile-sm"><div class="tile-num ${counts.due60 ? 'am' : ''}">${counts.due60}</div><div class="tile-lbl">30–60d</div></div>
