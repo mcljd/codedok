@@ -2692,6 +2692,20 @@
           </div>
         </div>` : ''}
 
+      <div class="slbl">Bulk-import a client</div>
+      <div style="padding:0 16px">
+        <div class="card">
+          <div class="row" onclick="pickSurveyReport()">
+            <div class="row-ic bl">📄</div>
+            <div class="row-body">
+              <div class="row-name">Import from survey report (PDF)</div>
+              <div class="row-sub">Drop your own report PDF — creates the vessel, certs &amp; equipment in one go</div>
+            </div>
+            <span class="chev">›</span>
+          </div>
+        </div>
+      </div>
+
       <div class="slbl">Desktop workspace</div>
       <div style="padding:0 16px">
         <div class="card">
@@ -2759,6 +2773,265 @@
     };
     reader.readAsDataURL(file);
   }
+
+  // ---------- Survey-report import ----------
+  let importDraft = null;            // { vessel, certs, equipment, deficiencies }
+  let importTargetVesselId = null;   // if set, items go onto this vessel; else we create one
+
+  function pickSurveyReport(vesselId) {
+    importTargetVesselId = vesselId || null;
+    let input = document.getElementById('survey-report-input');
+    if (!input) {
+      input = document.createElement('input');
+      input.type = 'file';
+      input.id = 'survey-report-input';
+      input.accept = 'application/pdf';
+      input.style.display = 'none';
+      input.addEventListener('change', handleSurveyReportUpload);
+      document.body.appendChild(input);
+    }
+    input.click();
+  }
+  window.pickSurveyReport = pickSurveyReport;
+
+  async function handleSurveyReportUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Survey report must be under 10 MB.');
+      return;
+    }
+    if (!window.SurveyImport) {
+      alert('Import parser not loaded. Reload the app and try again.');
+      return;
+    }
+    showImportSpinner(`Parsing ${file.name}…`);
+    try {
+      const parsed = await window.SurveyImport.parseSurveyReport(file);
+      importDraft = parsed;
+      hideImportSpinner();
+      openImportReview();
+    } catch (err) {
+      console.error('Import parse failed', err);
+      hideImportSpinner();
+      alert('Could not read that PDF. Try a different file or fill in the vessel manually.');
+    }
+  }
+  window.handleSurveyReportUpload = handleSurveyReportUpload;
+
+  function showImportSpinner(label) {
+    hideImportSpinner();
+    const el = document.createElement('div');
+    el.id = 'import-spinner';
+    el.className = 'bdrop on';
+    el.innerHTML = `
+      <div class="sheet" style="padding:32px 22px;text-align:center">
+        <div style="font-size:36px;margin-bottom:10px">📄</div>
+        <div style="font-size:15px;font-weight:700">${escapeHtml(label)}</div>
+        <div style="font-size:12px;color:var(--lt);margin-top:6px">This usually takes 2–5 seconds.</div>
+      </div>`;
+    document.body.appendChild(el);
+  }
+  function hideImportSpinner() {
+    const el = document.getElementById('import-spinner');
+    if (el) el.remove();
+  }
+
+  function openImportReview() {
+    const d = importDraft || { vessel: null, certs: [], equipment: [], deficiencies: [] };
+    const existing = document.getElementById('import-review');
+    if (existing) existing.remove();
+    const total = (d.vessel ? 1 : 0) + d.certs.length + d.equipment.length + d.deficiencies.length;
+    if (total === 0) {
+      alert('Couldn\\'t find anything I recognised in that PDF. Try a different survey report, or add the vessel manually.');
+      return;
+    }
+    const modal = document.createElement('div');
+    modal.id = 'import-review';
+    modal.className = 'bdrop on';
+    modal.onclick = function (e) { if (e.target === modal) closeImportReview(); };
+    document.body.appendChild(modal);
+
+    const targetVessel = importTargetVesselId ? Store.getVessel(importTargetVesselId) : null;
+
+    let html = `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+        <div class="sh-pull"></div>
+        <div class="sh-head">
+          <div class="sh-title">Review extracted items</div>
+          <button class="sh-x" onclick="closeImportReview()">×</button>
+        </div>
+        <div style="padding:0 20px 14px;overflow-y:auto;max-height:72vh">
+          <div style="font-size:12px;color:var(--lt);line-height:1.55;margin-bottom:12px">
+            ${targetVessel
+              ? `Items will be added to <strong>${escapeHtml(targetVessel.name)}</strong>.`
+              : 'A new vessel will be created from the extracted particulars.'}
+            Untick anything CodedOK got wrong before importing.
+          </div>`;
+
+    // VESSEL
+    if (d.vessel && !targetVessel) {
+      html += `
+        <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin:6px 0 8px">Vessel</div>
+        <div class="card" style="padding:12px 14px;margin-bottom:8px">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+            <input type="checkbox" checked id="imp-v-on" style="margin-top:3px;width:18px;height:18px;accent-color:var(--sea)">
+            <div style="flex:1;min-width:0">
+              <input class="fi" id="imp-v-name" value="${escapeHtml(d.vessel.name || '')}" style="font-size:14px;font-weight:700;border:none;background:transparent;padding:0;margin-bottom:4px">
+              <div style="font-size:11px;color:var(--lt)">
+                ${escapeHtml(d.vessel.type || 'Vessel')}${d.vessel.category ? ' · ' + escapeHtml(d.vessel.category) : ''}${d.vessel.port ? ' · ' + escapeHtml(d.vessel.port) : ''}${d.vessel.length ? ' · ' + d.vessel.length + 'm' : ''}
+              </div>
+            </div>
+          </label>
+        </div>`;
+    }
+
+    // CERTS
+    if (d.certs.length > 0) {
+      html += `<div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin:12px 0 8px">Certificates · ${d.certs.length}</div>`;
+      d.certs.forEach((c, i) => {
+        html += `
+          <div class="card" style="padding:10px 12px;margin-bottom:6px">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" checked id="imp-c-${i}" style="width:18px;height:18px;accent-color:var(--sea);flex-shrink:0">
+              <div style="font-size:18px">${c.icon || '📋'}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(c.name)}</div>
+                <div style="font-size:11px;color:var(--lt);margin-top:1px">${escapeHtml(c.issuer || 'Unknown issuer')}${c.number ? ' · ' + escapeHtml(c.number) : ''} · expires ${fmtDate(c.expires_at)}</div>
+              </div>
+            </label>
+          </div>`;
+      });
+    }
+
+    // EQUIPMENT
+    if (d.equipment.length > 0) {
+      html += `<div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin:12px 0 8px">Equipment · ${d.equipment.length}</div>`;
+      d.equipment.forEach((eq, i) => {
+        html += `
+          <div class="card" style="padding:10px 12px;margin-bottom:6px">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" checked id="imp-e-${i}" style="width:18px;height:18px;accent-color:var(--sea);flex-shrink:0">
+              <div style="font-size:18px">${eq.icon || '🛠️'}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(eq.name)}</div>
+                <div style="font-size:11px;color:var(--lt);margin-top:1px">${escapeHtml(eq.issuer || 'Unknown maker')}${eq.number ? ' · ' + escapeHtml(eq.number) : ''} · next service ${fmtDate(eq.next_service_at)}</div>
+              </div>
+            </label>
+          </div>`;
+      });
+    }
+
+    // DEFICIENCIES
+    if (d.deficiencies.length > 0) {
+      html += `<div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin:12px 0 8px">Deficiencies · ${d.deficiencies.length}</div>`;
+      d.deficiencies.forEach((df, i) => {
+        html += `
+          <div class="card" style="padding:10px 12px;margin-bottom:6px">
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+              <input type="checkbox" checked id="imp-d-${i}" style="margin-top:3px;width:18px;height:18px;accent-color:var(--sea);flex-shrink:0">
+              <div style="font-size:18px">⚠️</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12px;color:var(--text);line-height:1.5">${escapeHtml(df.description)}</div>
+              </div>
+            </label>
+          </div>`;
+      });
+    }
+
+    html += `
+          <button class="btn btn-sea btn-full" onclick="commitImport()" style="margin-top:14px">Import ${total} item${total === 1 ? '' : 's'}</button>
+          <button class="btn btn-out btn-full" onclick="closeImportReview()" style="margin-top:8px">Cancel</button>
+        </div>
+      </div>`;
+    modal.innerHTML = html;
+  }
+  window.openImportReview = openImportReview;
+
+  function closeImportReview() {
+    const m = document.getElementById('import-review');
+    if (m) m.remove();
+    importDraft = null;
+    importTargetVesselId = null;
+  }
+  window.closeImportReview = closeImportReview;
+
+  function commitImport() {
+    const d = importDraft;
+    if (!d) return;
+
+    // 1) Resolve target vessel (existing or newly created).
+    let targetId = importTargetVesselId;
+    if (!targetId) {
+      const vOn = document.getElementById('imp-v-on');
+      if (vOn && vOn.checked && d.vessel) {
+        const editedName = (document.getElementById('imp-v-name') || {}).value || d.vessel.name;
+        const v = Store.addVessel({
+          name: editedName,
+          type: d.vessel.type || 'Vessel',
+          category: d.vessel.category || 'Cat 2',
+          ssr: d.vessel.ssr || '',
+          length: d.vessel.length || null,
+          persons: d.vessel.persons || 12,
+          port: d.vessel.port || '',
+          make: d.vessel.make || '',
+          engine: d.vessel.engine || ''
+        });
+        targetId = v.id;
+      }
+    }
+    if (!targetId) {
+      alert('Pick a vessel to attach these items to, or tick the vessel row to create one.');
+      return;
+    }
+
+    // 2) Bulk import certs / equipment / deficiencies.
+    let imported = 0;
+    d.certs.forEach((c, i) => {
+      const cb = document.getElementById('imp-c-' + i);
+      if (!cb || !cb.checked) return;
+      Store.addCert({
+        vessel_id: targetId,
+        name: c.name,
+        icon: c.icon,
+        category: c.category,
+        issuer: c.issuer,
+        number: c.number,
+        expires_at: c.expires_at
+      });
+      imported++;
+    });
+    d.equipment.forEach((eq, i) => {
+      const cb = document.getElementById('imp-e-' + i);
+      if (!cb || !cb.checked) return;
+      Store.addEquipment({
+        vessel_id: targetId,
+        name: eq.name,
+        icon: eq.icon,
+        make: eq.issuer,
+        serial: eq.number,
+        next_service_at: eq.next_service_at
+      });
+      imported++;
+    });
+    d.deficiencies.forEach((df, i) => {
+      const cb = document.getElementById('imp-d-' + i);
+      if (!cb || !cb.checked) return;
+      if (Store.addDeficiency) {
+        Store.addDeficiency({ vessel_id: targetId, description: df.description, severity: 'medium' });
+      }
+      imported++;
+    });
+
+    closeImportReview();
+    alert(`Imported ${imported} item${imported === 1 ? '' : 's'}.`);
+    setActiveVessel(targetId);
+    renderHome();
+    if (document.getElementById('s-vessels').classList.contains('on')) renderVesselsList();
+    if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
+  }
+  window.commitImport = commitImport;
 
   function pickSurveyorLogo() {
     const input = document.getElementById('sv-logo-input');

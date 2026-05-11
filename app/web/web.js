@@ -92,6 +92,180 @@
     renderView();
   }
 
+  function importDropZone() {
+    return `
+      <div id="w-drop" class="w-drop">
+        <div class="w-drop-ic">📄</div>
+        <div class="w-drop-info">
+          <div class="w-drop-title">Bulk-onboard a client from a survey report</div>
+          <div class="w-drop-sub">Drag a PDF here, or <a href="#" onclick="WebApp.pickImport(); return false">choose a file</a>. CodedOK extracts the vessel, certs &amp; equipment for review.</div>
+        </div>
+      </div>`;
+  }
+
+  function bindDropZone() {
+    const dz = document.getElementById('w-drop');
+    if (!dz || dz.dataset.bound) return;
+    dz.dataset.bound = '1';
+    ['dragenter','dragover'].forEach((evt) => dz.addEventListener(evt, (e) => { e.preventDefault(); dz.classList.add('on'); }));
+    ['dragleave','drop'].forEach((evt) => dz.addEventListener(evt, (e) => { e.preventDefault(); dz.classList.remove('on'); }));
+    dz.addEventListener('drop', (e) => {
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) runImport(file);
+    });
+  }
+
+  async function runImport(file) {
+    if (!window.SurveyImport) { alert('Parser not loaded; reload the page.'); return; }
+    if (file.size > 10 * 1024 * 1024) { alert('PDF must be under 10 MB.'); return; }
+    showSpinner(`Parsing ${file.name}…`);
+    try {
+      const parsed = await window.SurveyImport.parseSurveyReport(file);
+      hideSpinner();
+      openWebImportReview(parsed);
+    } catch (err) {
+      hideSpinner();
+      console.error(err);
+      alert('Could not read that PDF. Try a different file.');
+    }
+  }
+
+  function showSpinner(label) {
+    hideSpinner();
+    const el = document.createElement('div');
+    el.id = 'w-spinner';
+    el.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,22,40,.55);z-index:1000;font-family:var(--fn)';
+    el.innerHTML = `<div style="background:white;padding:24px 28px;border-radius:14px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+      <div style="font-size:36px;margin-bottom:10px">📄</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text)">${esc(label)}</div>
+      <div style="font-size:12px;color:var(--mid);margin-top:6px">This usually takes 2–5 seconds.</div>
+    </div>`;
+    document.body.appendChild(el);
+  }
+  function hideSpinner() {
+    const el = document.getElementById('w-spinner');
+    if (el) el.remove();
+  }
+
+  function openWebImportReview(parsed) {
+    const total = (parsed.vessel ? 1 : 0) + parsed.certs.length + parsed.equipment.length + parsed.deficiencies.length;
+    if (total === 0) {
+      alert('Couldn\\'t find anything I recognised in that PDF. Try a different survey report.');
+      return;
+    }
+    let html = `<div class="w-modal-backdrop" onclick="WebApp.closeImport()"></div>
+      <div class="w-modal">
+        <div class="w-modal-h">
+          <div style="font-size:18px;font-weight:800">Review extracted items</div>
+          <button onclick="WebApp.closeImport()" style="background:none;border:none;font-size:22px;color:var(--lt);cursor:pointer">×</button>
+        </div>
+        <div class="w-modal-body">
+          <div style="font-size:13px;color:var(--mid);margin-bottom:14px">Untick anything CodedOK got wrong before importing. A new vessel will be created from the extracted particulars.</div>`;
+
+    if (parsed.vessel) {
+      html += `<div class="w-modal-sec">Vessel</div>
+        <label class="w-imp-row"><input type="checkbox" checked id="wimp-v-on">
+          <div style="flex:1"><input id="wimp-v-name" value="${esc(parsed.vessel.name)}" style="font-weight:700;font-size:14px;border:none;width:100%;padding:0">
+            <div style="font-size:11px;color:var(--lt);margin-top:2px">${esc(parsed.vessel.category || '')} ${parsed.vessel.port ? '· ' + esc(parsed.vessel.port) : ''} ${parsed.vessel.length ? '· ' + parsed.vessel.length + 'm' : ''}</div>
+          </div></label>`;
+    }
+    if (parsed.certs.length) {
+      html += `<div class="w-modal-sec">Certificates · ${parsed.certs.length}</div>`;
+      parsed.certs.forEach((c, i) => {
+        html += `<label class="w-imp-row"><input type="checkbox" checked id="wimp-c-${i}">
+          <span style="font-size:18px">${c.icon}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700">${esc(c.name)}</div>
+            <div style="font-size:11px;color:var(--lt)">${esc(c.issuer || '—')}${c.number ? ' · ' + esc(c.number) : ''} · expires ${esc(c.expires_at)}</div>
+          </div></label>`;
+      });
+    }
+    if (parsed.equipment.length) {
+      html += `<div class="w-modal-sec">Equipment · ${parsed.equipment.length}</div>`;
+      parsed.equipment.forEach((e, i) => {
+        html += `<label class="w-imp-row"><input type="checkbox" checked id="wimp-e-${i}">
+          <span style="font-size:18px">${e.icon}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700">${esc(e.name)}</div>
+            <div style="font-size:11px;color:var(--lt)">${esc(e.issuer || '—')}${e.number ? ' · ' + esc(e.number) : ''} · next service ${esc(e.next_service_at)}</div>
+          </div></label>`;
+      });
+    }
+    if (parsed.deficiencies.length) {
+      html += `<div class="w-modal-sec">Deficiencies · ${parsed.deficiencies.length}</div>`;
+      parsed.deficiencies.forEach((d, i) => {
+        html += `<label class="w-imp-row"><input type="checkbox" checked id="wimp-d-${i}">
+          <span style="font-size:18px">⚠️</span>
+          <div style="flex:1;font-size:12px;color:var(--text);line-height:1.5">${esc(d.description)}</div></label>`;
+      });
+    }
+
+    html += `<button class="w-btn" style="margin-top:14px;width:100%;justify-content:center" onclick="WebApp.commitImport()">Import ${total} item${total === 1 ? '' : 's'}</button>
+        </div></div>`;
+
+    const existing = document.getElementById('w-import-modal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'w-import-modal';
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+    window.__webImportDraft = parsed;
+  }
+
+  function commitWebImport() {
+    const parsed = window.__webImportDraft;
+    if (!parsed) return;
+    let imported = 0;
+    let targetId = null;
+    if (parsed.vessel && document.getElementById('wimp-v-on') && document.getElementById('wimp-v-on').checked) {
+      const v = Store.addVessel({
+        name: (document.getElementById('wimp-v-name') || {}).value || parsed.vessel.name,
+        type: parsed.vessel.type || 'Vessel',
+        category: parsed.vessel.category || 'Cat 2',
+        ssr: parsed.vessel.ssr || '',
+        length: parsed.vessel.length || null,
+        persons: parsed.vessel.persons || 12,
+        port: parsed.vessel.port || '',
+        make: parsed.vessel.make || '',
+        engine: parsed.vessel.engine || ''
+      });
+      targetId = v.id;
+      imported++;
+    } else {
+      // If no vessel selected, attach to first vessel (or bail).
+      const all = Store.snapshot().vessels;
+      if (all.length === 0) { alert('Tick the vessel row to create one, or add a vessel first.'); return; }
+      targetId = all[0].id;
+    }
+    parsed.certs.forEach((c, i) => {
+      const cb = document.getElementById('wimp-c-' + i);
+      if (!cb || !cb.checked) return;
+      Store.addCert({ vessel_id: targetId, name: c.name, icon: c.icon, category: c.category, issuer: c.issuer, number: c.number, expires_at: c.expires_at });
+      imported++;
+    });
+    parsed.equipment.forEach((e, i) => {
+      const cb = document.getElementById('wimp-e-' + i);
+      if (!cb || !cb.checked) return;
+      Store.addEquipment({ vessel_id: targetId, name: e.name, icon: e.icon, make: e.issuer, serial: e.number, next_service_at: e.next_service_at });
+      imported++;
+    });
+    parsed.deficiencies.forEach((d, i) => {
+      const cb = document.getElementById('wimp-d-' + i);
+      if (!cb || !cb.checked) return;
+      if (Store.addDeficiency) Store.addDeficiency({ vessel_id: targetId, description: d.description, severity: 'medium' });
+      imported++;
+    });
+    closeWebImport();
+    alert(`Imported ${imported} item${imported === 1 ? '' : 's'}.`);
+    refreshCounts();
+    renderView();
+  }
+  function closeWebImport() {
+    const m = document.getElementById('w-import-modal');
+    if (m) m.remove();
+    window.__webImportDraft = null;
+  }
+
   function brandStrip(me) {
     const logo = me && me.surveyor && me.surveyor.logo;
     const company = (me && me.surveyor && me.surveyor.company) || (me && me.name) || 'Your business';
@@ -191,6 +365,7 @@
     else if (state.view === 'jobs')  wrap.innerHTML = renderJobs();
     else if (state.view === 'earnings') wrap.innerHTML = renderEarnings();
     bindPortfolioControls();
+    bindDropZone();
   }
 
   // ---------- Portfolio (the focus) ----------
@@ -244,7 +419,7 @@
 
     const groupKeys = Object.keys(byOrg).sort((a, b) => byOrg[a].name.localeCompare(byOrg[b].name));
 
-    let html = brandStrip(me) + `
+    let html = brandStrip(me) + importDropZone() + `
       <div class="w-view-h">
         <div>
           <div class="w-view-title">Your portfolio</div>
@@ -500,6 +675,25 @@
     openMobile() {
       window.open('../index.html', '_blank');
     },
+    pickImport() {
+      let input = document.getElementById('w-import-input');
+      if (!input) {
+        input = document.createElement('input');
+        input.type = 'file';
+        input.id = 'w-import-input';
+        input.accept = 'application/pdf';
+        input.style.display = 'none';
+        input.addEventListener('change', (e) => {
+          const f = e.target.files && e.target.files[0];
+          e.target.value = '';
+          if (f) runImport(f);
+        });
+        document.body.appendChild(input);
+      }
+      input.click();
+    },
+    commitImport: commitWebImport,
+    closeImport: closeWebImport,
     pickLogo() {
       const input = document.getElementById('w-logo-input');
       if (input) input.click();
