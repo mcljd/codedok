@@ -186,6 +186,36 @@
         localStorage.setItem(KEY, JSON.stringify(seed));
         return seed;
       }
+      // Migration: rename legacy seed vessels (Silver Sands -> Tsunami IV,
+      // Cormorant -> Lagavulin) and refresh their meta fields. Idempotent —
+      // only fires when the old names are still present.
+      let migrated = false;
+      (parsed.vessels || []).forEach((v) => {
+        if (v.id === 'v_silver_sands' && v.name === 'Silver Sands') {
+          v.name = 'Tsunami IV';
+          v.type = 'Open RIB charter';
+          v.length = 8.5;
+          v.persons = 10;
+          v.port = 'Ballycastle';
+          v.make = 'Redbay Stormforce';
+          v.engine = 'Suzuki 300hp 4-stroke';
+          v.photo = v.photo || null;
+          migrated = true;
+        }
+        if (v.id === 'v_cormorant' && v.name === 'Cormorant') {
+          v.name = 'Lagavulin';
+          v.type = 'Cabin RIB charter';
+          v.category = 'Cat 2';
+          v.length = 11.0;
+          v.persons = 12;
+          v.port = 'Ballycastle';
+          v.make = 'Redbay Stormforce Cabin';
+          v.engine = 'Twin Suzuki 4-stroke';
+          v.photo = v.photo || null;
+          migrated = true;
+        }
+      });
+      if (migrated) localStorage.setItem(KEY, JSON.stringify(parsed));
       return parsed;
     } catch (err) {
       console.warn('Store load failed, reseeding:', err);
