@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<meta name="theme-color" content="#0a1628">
+<title>CodedOK Web — Surveyor workspace</title>
+<link rel="stylesheet" href="../app/style.css">
+<link rel="stylesheet" href="web.css">
+</head>
+<body class="web">
+
+<!-- LOGIN -->
+<section id="w-login" class="w-login on">
+  <div class="w-login-bg"></div>
+  <div class="w-login-card">
+    <div class="w-mark">CodedOK</div>
+    <div class="w-login-title">Welcome back</div>
+    <div class="w-login-sub">Sign in to continue. Surveyors get the full desktop workspace.</div>
+
+    <div class="w-role-grid">
+      <button class="w-role" data-role="surveyor">
+        <div class="w-role-ic">🛠️</div>
+        <div class="w-role-title">I'm a surveyor</div>
+        <div class="w-role-sub">Manage your vessel portfolio, jobs, quotes &amp; earnings on desktop.</div>
+        <div class="w-role-cta">Open surveyor workspace →</div>
+      </button>
+      <button class="w-role" data-role="operator">
+        <div class="w-role-ic">⛵</div>
+        <div class="w-role-title">I'm an operator</div>
+        <div class="w-role-sub">CodedOK is built for the phone &amp; tablet — we'll take you there.</div>
+        <div class="w-role-cta">Open mobile app →</div>
+      </button>
+    </div>
+
+    <div class="w-login-foot">
+      Demo build. Data is local to this browser.
+    </div>
+  </div>
+</section>
+
+<!-- APP SHELL -->
+<section id="w-app" class="w-app">
+  <aside class="w-sidebar">
+    <div class="w-sb-brand">
+      <div class="w-sb-mark">CodedOK</div>
+      <div class="w-sb-mode">Surveyor workspace</div>
+    </div>
+    <nav class="w-sb-nav">
+      <button class="w-sb-item on" data-view="portfolio">
+        <span class="w-sb-ic">⛵</span><span>Portfolio</span>
+        <span class="w-sb-count" id="w-count-portfolio"></span>
+      </button>
+      <button class="w-sb-item" data-view="inbox">
+        <span class="w-sb-ic">📥</span><span>Inbox</span>
+        <span class="w-sb-count" id="w-count-inbox"></span>
+      </button>
+      <button class="w-sb-item" data-view="jobs">
+        <span class="w-sb-ic">🛠️</span><span>Jobs</span>
+        <span class="w-sb-count" id="w-count-jobs"></span>
+      </button>
+      <button class="w-sb-item" data-view="earnings">
+        <span class="w-sb-ic">💷</span><span>Earnings</span>
+      </button>
+    </nav>
+    <div class="w-sb-foot">
+      <div class="w-sb-user">
+        <div class="w-sb-avatar" id="w-user-avatar">MM</div>
+        <div>
+          <div class="w-sb-user-name" id="w-user-name">Surveyor</div>
+          <div class="w-sb-user-sub" id="w-user-sub">Signed in</div>
+        </div>
+      </div>
+      <button class="w-sb-signout" onclick="WebApp.signOut()">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="w-main">
+    <div id="w-view"></div>
+  </main>
+</section>
+
+<script src="../app/codes.js"></script>
+<script src="../app/store.js"></script>
+<script src="web.js"></script>
+</body>
+</html>
