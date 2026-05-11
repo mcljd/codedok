@@ -1162,13 +1162,14 @@
       }
       smsCardEl.innerHTML = `
         <div class="card" style="padding:14px;border-radius:14px;cursor:pointer;border-left:4px solid ${color}" onclick="go('s-sms')">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:42px;height:42px;border-radius:11px;background:${color === 'var(--green)' ? 'var(--grnp)' : color === 'var(--sea)' ? 'var(--seap)' : color === 'var(--amber)' ? 'var(--ampp)' : 'var(--purpp)'};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${icon}</div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:48px;height:48px;border-radius:13px;background:${color === 'var(--green)' ? 'var(--grnp)' : color === 'var(--sea)' ? 'var(--seap)' : color === 'var(--amber)' ? 'var(--ampp)' : 'var(--purpp)'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${icon}</div>
             <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:6px"><div style="font-size:14px;font-weight:700;color:var(--text)">Safety Management System</div><span style="font-size:9px;font-weight:700;color:white;background:var(--purp);padding:2px 6px;border-radius:4px;letter-spacing:.04em">SMS</span></div>
-              <div style="font-size:12px;color:var(--lt);margin-top:2px">${escapeHtml(line)}</div>
+              <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.25">Safety Management System</div>
+              <div style="font-size:13px;color:var(--mid);margin-top:3px;line-height:1.4">${escapeHtml(line)}</div>
+              <div style="font-size:13px;font-weight:700;color:var(--sea);margin-top:8px">${cta}</div>
             </div>
-            <span style="font-size:11px;font-weight:700;color:var(--sea)">${cta}</span>
+            <span class="chev" style="flex-shrink:0">›</span>
           </div>
         </div>`;
     }
