@@ -993,7 +993,7 @@
       const firstName = (s.user && s.user.name) ? s.user.name.split(' ')[0] : '';
       greeting.innerHTML = `
         <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:3px;font-weight:500">Good ${part}${firstName ? ', ' + escapeHtml(firstName) : ''}</div>
-        <div class="h-display" style="font-size:24px">Fleet command</div>
+        <div class="h-display" style="font-size:24px">Your boats</div>
       `;
     }
     const av = document.getElementById('home-avatar');
@@ -1017,7 +1017,7 @@
         const counts = Store.urgencyCounts();
         const ready = counts.overdue === 0;
         const badgeHtml = ready
-          ? `<span class="insp-pill rdy">✓ Inspection-ready</span>`
+          ? `<span class="insp-pill rdy">✓ Ready for survey</span>`
           : `<span class="insp-pill notready pulse-rd">⚠ ${counts.overdue} urgent item${counts.overdue === 1 ? '' : 's'}</span>`;
         const sub = ready
           ? 'All certificates &amp; equipment current. Keep on top of upcoming renewals.'
@@ -1228,7 +1228,7 @@
           </div>
           ${opts.compact ? '' : `
             <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between">
-              ${ready ? '<span class="insp-pill rdy">✓ Inspection-ready</span>' : `<span class="insp-pill notready">⚠ Not ready</span>`}
+              ${ready ? '<span class="insp-pill rdy">✓ Ready for survey</span>' : `<span class="insp-pill notready">⚠ Not ready</span>`}
               <span style="font-size:11px;color:var(--lt)">Tap to open →</span>
             </div>`}
         </div>
@@ -1517,7 +1517,7 @@
       const ready = Store.isInspectionReady(v.id);
       const score = Store.complianceScore(v.id);
       const badgeHtml = ready
-        ? '<span class="insp-pill rdy">✓ Inspection-ready</span>'
+        ? '<span class="insp-pill rdy">✓ Ready for survey</span>'
         : '<span class="insp-pill notready pulse-rd">⚠ Not ready</span>';
       header.style.cssText = '';
       header.classList.add('hero');
@@ -2773,6 +2773,62 @@
     };
     reader.readAsDataURL(file);
   }
+
+  // ---------- Help / first-run explainer ----------
+  function openHelp() {
+    const existing = document.getElementById('help-sheet');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'help-sheet';
+    modal.className = 'bdrop on';
+    modal.onclick = function (e) { if (e.target === modal) closeHelp(); };
+    document.body.appendChild(modal);
+    modal.innerHTML = `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 18px)">
+        <div class="sh-pull"></div>
+        <div class="sh-head">
+          <div class="sh-title">How CodedOK works</div>
+          <button class="sh-x" onclick="closeHelp()">×</button>
+        </div>
+        <div style="padding:0 22px 6px">
+          <div style="display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--bdr)">
+            <div style="font-size:30px;flex-shrink:0;width:48px;text-align:center">1️⃣</div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:var(--text)">Your boats &amp; their paperwork</div>
+              <div style="font-size:14px;color:var(--mid);margin-top:3px;line-height:1.55">Add each boat once. We track every certificate and piece of safety gear and remind you before anything expires.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--bdr)">
+            <div style="font-size:30px;flex-shrink:0;width:48px;text-align:center">2️⃣</div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:var(--text)">Upload your survey report</div>
+              <div style="font-size:14px;color:var(--mid);margin-top:3px;line-height:1.55">Got a PDF from your surveyor? Upload it once and we fill in every cert and piece of gear automatically. Find it in <strong>Account → Import from survey report</strong>.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--bdr)">
+            <div style="font-size:30px;flex-shrink:0;width:48px;text-align:center">3️⃣</div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:var(--text)">One tap before a survey</div>
+              <div style="font-size:14px;color:var(--mid);margin-top:3px;line-height:1.55">Tap <strong>Inspection pack</strong> on the home screen. You get one PDF with every cert, ready to show the surveyor.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start;padding:14px 0">
+            <div style="font-size:30px;flex-shrink:0;width:48px;text-align:center">4️⃣</div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:var(--text)">Stuck? Tap the surveyor</div>
+              <div style="font-size:14px;color:var(--mid);margin-top:3px;line-height:1.55">Book McCollam Marine right in the app for a quote, survey, or signed SMS. Pay through the app — no chasing invoices.</div>
+            </div>
+          </div>
+          <button class="btn btn-sea btn-full" onclick="closeHelp()" style="margin-top:14px">Got it</button>
+        </div>
+      </div>`;
+  }
+  window.openHelp = openHelp;
+  function closeHelp() {
+    const m = document.getElementById('help-sheet');
+    if (m) m.remove();
+  }
+  window.closeHelp = closeHelp;
 
   // ---------- Survey-report import ----------
   let importDraft = null;            // { vessel, certs, equipment, deficiencies }
@@ -4908,7 +4964,7 @@ ${sectionsHtml}
             <tr><th>Persons capacity</th><td>${v.persons || '—'}</td></tr>
             <tr><th>Port of registry</th><td>${escapeHtml(v.port || '—')}</td></tr>
             <tr><th>Certifying authority</th><td>${escapeHtml(v.certifier || '—')}</td></tr>
-            <tr><th>Compliance score</th><td><span class="${ready ? 'pp-status-ok' : 'pp-status-bad'}">${score}% — ${ready ? 'Inspection-ready' : 'NOT inspection-ready'}</span></td></tr>
+            <tr><th>Compliance score</th><td><span class="${ready ? 'pp-status-ok' : 'pp-status-bad'}">${score}% — ${ready ? 'Ready for survey' : 'Not ready for survey'}</span></td></tr>
           </table>
         </div>`;
 
