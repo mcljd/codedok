@@ -25,9 +25,11 @@
 
       // Users — operators and surveyors all live here.
       users: [
-        { id: 'u_jm',  email: 'joseph@codedok.com',     name: 'Joseph McLaughlin', initials: 'JM', kind: 'operator' },
+        { id: 'u_jm',  email: 'joseph@codedok.com',     name: 'Joseph McLaughlin', initials: 'JM', kind: 'operator', phone: '+44 7700 900111' },
         { id: 'u_sv1', email: 'mccollam@example.com',   name: 'McCollam Marine',   initials: 'MM', kind: 'surveyor',
           surveyor: { qualifications: ['MCA-recognised surveyor', 'Naval Architect MRINA'], certifying_bodies: ['YDSA'], regions: ['Northern Ireland', 'Irish Sea'], company: 'McCollam Marine', phone: '+44 28 9012 3456' } },
+        { id: 'u_rb',  email: 'service@redbayboats.com', name: 'Redbay Boats',     initials: 'RB', kind: 'builder',
+          builder: { company: 'Redbay Boats', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] } },
         { id: 'u_admin', email: 'admin@codedok.com',    name: 'Joe (CodedOK)',     initials: 'JD', kind: 'admin' }
       ],
 
@@ -45,11 +47,13 @@
         { id: 'v_silver_sands', org_id: 'org_jm', name: 'Tsunami IV', type: 'Open RIB charter', category: 'Cat 2',
           ssr: '987654', length: 8.5, persons: 10, port: 'Ballycastle', certifier: 'YDSA',
           icon: '⛵', photo: 'icons/vessels/tsunami.jpg', jurisdictions: ['UK'],
-          make: 'Redbay Stormforce', engine: 'Suzuki 300hp 4-stroke' },
+          make: 'Redbay Stormforce', engine: 'Suzuki 300hp 4-stroke',
+          built_by: 'redbay', hull_number: 'RB-487', built_at: isoOffset(-720) },
         { id: 'v_cormorant',    org_id: 'org_jm', name: 'Lagavulin',    type: 'Cabin RIB charter', category: 'Cat 2',
           ssr: '456789', length: 11.0, persons: 12, port: 'Ballycastle', certifier: 'YDSA',
           icon: '🚤', photo: 'icons/vessels/lagavulin.jpg', jurisdictions: ['UK'],
-          make: 'Redbay Stormforce Cabin', engine: 'Twin Suzuki 4-stroke' }
+          make: 'Redbay Stormforce Cabin', engine: 'Twin Suzuki 4-stroke',
+          built_by: 'redbay', hull_number: 'RB-512', built_at: isoOffset(-400) }
       ],
 
       certs: [
@@ -190,6 +194,20 @@
       // Cormorant -> Lagavulin) and refresh their meta fields. Idempotent —
       // only fires when the old names are still present.
       let migrated = false;
+      // Tag legacy seeded vessels as built by Redbay so the new builder
+      // dashboard finds them on existing devices.
+      (parsed.vessels || []).forEach((v) => {
+        if (v.id === 'v_silver_sands' && !v.built_by) { v.built_by = 'redbay'; v.hull_number = v.hull_number || 'RB-487'; migrated = true; }
+        if (v.id === 'v_cormorant'    && !v.built_by) { v.built_by = 'redbay'; v.hull_number = v.hull_number || 'RB-512'; migrated = true; }
+      });
+      // Add the Redbay builder user if it's missing.
+      if (parsed.users && !parsed.users.find((u) => u.id === 'u_rb')) {
+        parsed.users.push({
+          id: 'u_rb', email: 'service@redbayboats.com', name: 'Redbay Boats', initials: 'RB', kind: 'builder',
+          builder: { company: 'Redbay Boats', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] }
+        });
+        migrated = true;
+      }
       (parsed.vessels || []).forEach((v) => {
         if (v.id === 'v_silver_sands' && v.name === 'Silver Sands') {
           v.name = 'Tsunami IV';
@@ -289,11 +307,43 @@
   }
 
   function setMode(mode) {
-    if (!['operator', 'surveyor', 'admin'].includes(mode)) return;
+    if (!['operator', 'surveyor', 'admin', 'builder'].includes(mode)) return;
     const user = state.users.find((u) => u.kind === mode);
     if (user) state.session.user_id = user.id;
     state.session.mode = mode;
     save(state);
+  }
+
+  // ---------- Builder (boat builder, e.g. Redbay) ----------
+  // Anything that supports the boat-builder dashboard: every hull built by
+  // a given builder, their service pipeline, and aftermarket leads.
+
+  function vesselsByBuilder(builderSlug) {
+    return state.vessels.filter((v) => v.built_by === builderSlug);
+  }
+
+  function builderPipeline(builderSlug) {
+    const vessels = vesselsByBuilder(builderSlug);
+    return vessels.map((v) => {
+      const counts = urgencyCounts(v.id);
+      const score = complianceScore(v.id);
+      const certs = vesselCerts(v.id);
+      const equip = vesselEquipment(v.id);
+      // Next service / cert across both lists.
+      const items = []
+        .concat(certs.map((c) => ({ kind: 'cert', label: c.name, due: c.expires_at, severity: daysUntil(c.expires_at) })))
+        .concat(equip.map((e) => ({ kind: 'equipment', label: e.name, due: e.next_service_at, severity: daysUntil(e.next_service_at) })))
+        .filter((i) => i.due && i.severity !== Infinity)
+        .sort((a, b) => a.severity - b.severity);
+      const nextDue = items[0] || null;
+      const overdue = items.filter((i) => i.severity < 0);
+      const dueSoon = items.filter((i) => i.severity >= 0 && i.severity <= 60);
+      // Pull the owner so the builder can email them.
+      const org = state.organizations.find((o) => o.id === v.org_id) || {};
+      const ownerMembership = state.memberships.find((m) => m.org_id === v.org_id && m.role === 'owner');
+      const owner = ownerMembership ? getUser(ownerMembership.user_id) : null;
+      return { vessel: v, owner, org, counts, score, nextDue, overdue: overdue.length, dueSoon: dueSoon.length };
+    }).sort((a, b) => (a.nextDue && b.nextDue) ? a.nextDue.severity - b.nextDue.severity : 0);
   }
 
   function smsSubmissions(statusFilter) {
@@ -1254,6 +1304,8 @@
     setSurveyorLogo,
     getSurveyorLogo,
     setVesselPhoto,
+    vesselsByBuilder,
+    builderPipeline,
     revokeSurveyor,
     addSmsDocument,
     appendSmsEdit,
