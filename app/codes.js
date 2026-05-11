@@ -195,7 +195,7 @@
       ref: 'SPV Code App. 7 — General',
       blurb: 'The SMS opens with the vessel and operating company so a surveyor knows what they\'re reading.',
       fields: [
-        { id: 'vessel_name',   label: 'Vessel name',                    type: 'short', placeholder: 'e.g. Silver Sands' },
+        { id: 'vessel_name',   label: 'Vessel name',                    type: 'short', placeholder: 'e.g. Tsunami IV' },
         { id: 'vessel_ssr',    label: 'SSR / Official number',          type: 'short', placeholder: 'e.g. 987654' },
         { id: 'vessel_type',   label: 'Vessel type',                    type: 'short', placeholder: 'Motor charter / Angling / Sailing yacht' },
         { id: 'vessel_cat',    label: 'Coding category',                type: 'short', placeholder: 'Cat 2' },

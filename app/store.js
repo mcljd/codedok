@@ -42,25 +42,27 @@
       user: { name: 'Joseph McLaughlin', initials: 'JM', plan: 'trial', trialEndsAt: isoOffset(13) },
 
       vessels: [
-        { id: 'v_silver_sands', org_id: 'org_jm', name: 'Silver Sands', type: 'Motor charter', category: 'Cat 2',
-          ssr: '987654', length: 9.5, persons: 12, port: 'Cushendall', certifier: 'YDSA',
-          icon: '⛵', jurisdictions: ['UK'] },
-        { id: 'v_cormorant',    org_id: 'org_jm', name: 'Cormorant',    type: 'Angling',       category: 'Cat 3',
-          ssr: '456789', length: 7.8, persons: 10, port: 'Cushendall', certifier: 'YDSA',
-          icon: '🚤', jurisdictions: ['UK'] }
+        { id: 'v_silver_sands', org_id: 'org_jm', name: 'Tsunami IV', type: 'Open RIB charter', category: 'Cat 2',
+          ssr: '987654', length: 8.5, persons: 10, port: 'Ballycastle', certifier: 'YDSA',
+          icon: '⛵', photo: 'icons/vessels/tsunami.jpg', jurisdictions: ['UK'],
+          make: 'Redbay Stormforce', engine: 'Suzuki 300hp 4-stroke' },
+        { id: 'v_cormorant',    org_id: 'org_jm', name: 'Lagavulin',    type: 'Cabin RIB charter', category: 'Cat 2',
+          ssr: '456789', length: 11.0, persons: 12, port: 'Ballycastle', certifier: 'YDSA',
+          icon: '🚤', photo: 'icons/vessels/lagavulin.jpg', jurisdictions: ['UK'],
+          make: 'Redbay Stormforce Cabin', engine: 'Twin Suzuki 4-stroke' }
       ],
 
       certs: [
-        // Silver Sands — 2 overdue, 1 due-soon, rest valid
+        // Tsunami IV — 2 overdue, 1 due-soon, rest valid
         { id: 'c1',  vessel_id: 'v_silver_sands', kind: 'pyrotechnics', name: 'Cat C Pyrotechnics',     icon: '🧨', expires_at: isoOffset(-5),  category: 'equipment', issuer: 'IMO Group', number: 'PYR-4421' },
         { id: 'c2',  vessel_id: 'v_silver_sands', kind: 'liferaft',     name: 'Life raft service',      icon: '🛟', expires_at: isoOffset(-30), category: 'equipment', issuer: 'Survitec',  number: 'LR-9821' },
-        { id: 'c3',  vessel_id: 'v_silver_sands', kind: 'coding',       name: 'YDSA Coding Certificate',icon: '📋', expires_at: isoOffset(18),  category: 'vessel',    issuer: 'YDSA',      number: 'YDSA/2024/SS/4892' },
+        { id: 'c3',  vessel_id: 'v_silver_sands', kind: 'coding',       name: 'YDSA Coding Certificate',icon: '📋', expires_at: isoOffset(18),  category: 'vessel',    issuer: 'YDSA',      number: 'YDSA/2024/TS/4892' },
         { id: 'c4',  vessel_id: 'v_silver_sands', kind: 'pli',          name: 'Public Liability Insurance', icon: '🛡️', expires_at: isoOffset(200), category: 'insurance', issuer: 'Pantaenius', number: 'PL-225887' },
         { id: 'c5',  vessel_id: 'v_silver_sands', kind: 'radio',        name: 'Ship Radio Licence (VHF)',icon: '📡', expires_at: isoOffset(640), category: 'vessel',    issuer: 'Ofcom',     number: 'GBRT-559220' },
         { id: 'c8',  vessel_id: 'v_silver_sands', kind: 'stability',    name: 'Stability book',         icon: '📋', expires_at: null,            category: 'vessel',    issuer: 'McCollam Marine', number: 'STAB-2022-19' },
-        // Cormorant — all clear
+        // Lagavulin — all clear
         { id: 'c10', vessel_id: 'v_cormorant',    kind: 'pli',          name: 'P&I Insurance',          icon: '🛡️', expires_at: isoOffset(240), category: 'insurance', issuer: 'Topsail',  number: 'P-118832' },
-        { id: 'c11', vessel_id: 'v_cormorant',    kind: 'coding',       name: 'YDSA Coding Certificate',icon: '📋', expires_at: isoOffset(280), category: 'vessel',    issuer: 'YDSA',      number: 'YDSA/2024/CO/4901' },
+        { id: 'c11', vessel_id: 'v_cormorant',    kind: 'coding',       name: 'YDSA Coding Certificate',icon: '📋', expires_at: isoOffset(280), category: 'vessel',    issuer: 'YDSA',      number: 'YDSA/2024/LG/4901' },
         { id: 'c14', vessel_id: 'v_cormorant',    kind: 'liferaft',     name: 'Life raft service',      icon: '🛟', expires_at: isoOffset(420), category: 'equipment', issuer: 'Survitec',  number: 'LR-9899' },
         { id: 'c15', vessel_id: 'v_cormorant',    kind: 'radio',        name: 'Ship Radio Licence (VHF)',icon: '📡', expires_at: isoOffset(700), category: 'vessel',    issuer: 'Ofcom',     number: 'GBRT-559221' }
       ],
@@ -126,7 +128,7 @@
       jobs: [
         // Seed 1: completed paid job (shows in Earnings)
         { id: 'j_seed1', vessel_id: 'v_cormorant', surveyor_user_id: 'u_sv1', requested_by_user_id: 'u_jm',
-          type: 'annual_survey', title: 'Annual renewal survey — Cormorant',
+          type: 'annual_survey', title: 'Annual renewal survey — Lagavulin',
           description: 'Annual renewal under Workboat Code Ed 3, Cat 3.',
           status: 'completed',
           created_at: isoOffset(-205), quote_amount: 285, quote_sent_at: isoOffset(-204),
@@ -134,7 +136,7 @@
           completed_at: isoOffset(-198), invoice_id: 'inv_seed1', attachment_url: null },
         // Seed 2: pending request from operator — appears in Inbox
         { id: 'j_seed2', vessel_id: 'v_silver_sands', surveyor_user_id: 'u_sv1', requested_by_user_id: 'u_jm',
-          type: 'sms_review', title: 'SMS review — Silver Sands',
+          type: 'sms_review', title: 'SMS review — Tsunami IV',
           description: 'Operator has built a new SMS in CodedOK and asks for technical review and sign-off.',
           status: 'requested',
           created_at: isoOffset(-1), quote_amount: null, quote_sent_at: null,
@@ -164,7 +166,7 @@
         { id: 'a1', org_id: 'org_jm', actor_user_id: 'u_jm', action: 'cert.added',     target_type: 'cert',   target_id: 'c4', at: isoOffset(-3),  metadata: { name: 'Public Liability Insurance' } },
         { id: 'a2', org_id: 'org_jm', actor_user_id: null,    action: 'cert.flagged',   target_type: 'cert',   target_id: 'c1', at: isoOffset(-5),  metadata: { reason: 'expired' } },
         { id: 'a3', org_id: 'org_jm', actor_user_id: 'u_jm', action: 'equipment.serviced', target_type: 'equipment', target_id: 'e3', at: isoOffset(-42), metadata: { name: 'Fire extinguishers' } },
-        { id: 'a4', org_id: 'org_jm', actor_user_id: 'u_sv1',action: 'inspection.signed', target_type: 'inspection', target_id: 'i2', at: isoOffset(-198), metadata: { vessel: 'Cormorant' } }
+        { id: 'a4', org_id: 'org_jm', actor_user_id: 'u_sv1',action: 'inspection.signed', target_type: 'inspection', target_id: 'i2', at: isoOffset(-198), metadata: { vessel: 'Lagavulin' } }
       ]
     };
   }
@@ -651,6 +653,14 @@
     return i;
   }
 
+  function setVesselPhoto(vesselId, dataUrlOrNull) {
+    const v = getVessel(vesselId);
+    if (!v) return null;
+    v.photo = dataUrlOrNull || null;
+    save(state);
+    return v.photo;
+  }
+
   function setSurveyorLogo(dataUrl) {
     const user = getCurrentUser();
     if (!user || user.kind !== 'surveyor') return null;
@@ -1082,6 +1092,7 @@
     inviteSurveyor,
     setSurveyorLogo,
     getSurveyorLogo,
+    setVesselPhoto,
     revokeSurveyor,
     addSmsDocument,
     smsSubmissions,
