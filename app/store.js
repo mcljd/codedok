@@ -369,8 +369,25 @@
     const certWithDays = state.certs.map((c) => ({ kind: 'cert', cert: c, days: daysUntil(c.expires_at), vessel: getVessel(c.vessel_id) }));
     const equipWithDays = state.equipment.map((e) => ({ kind: 'equipment', equipment: e, days: daysUntil(e.next_service_at), vessel: getVessel(e.vessel_id) }));
     const crewWithDays = state.crewCerts.map((cc) => ({ kind: 'crewCert', crewCert: cc, days: daysUntil(cc.expires_at), person: state.crew.find((p) => p.id === cc.person_id) }));
-    const all = certWithDays.concat(equipWithDays).concat(crewWithDays).filter((it) => it.days !== Infinity);
+    let all = certWithDays.concat(equipWithDays).concat(crewWithDays).filter((it) => it.days !== Infinity);
     all.sort((a, b) => a.days - b.days);
+
+    // Dedupe: liferafts and similar items often exist as BOTH a cert
+    // ("Life raft service") and equipment ("Liferaft") on the same vessel.
+    // Keep the most urgent occurrence per (vessel_id, item_kind) so the
+    // user sees one row, not two for the same physical thing.
+    const seen = new Set();
+    all = all.filter((it) => {
+      const child = it.cert || it.equipment || it.crewCert;
+      const vesselId = child && child.vessel_id;
+      const itemKind = child && child.kind;
+      if (!vesselId || !itemKind) return true;
+      const key = vesselId + '|' + itemKind;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
     return all.filter((it) => it.days <= 60).slice(0, limit);
   }
 
