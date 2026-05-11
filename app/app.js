@@ -1291,18 +1291,21 @@
     const openDef = def.filter((d) => d.status === 'open').length;
     const critDef = def.filter((d) => d.status === 'open' && d.severity === 'critical').length;
 
+    const smsStatusPill = smsState === 'active'
+      ? '<span style="background:rgba(22,163,74,.18);color:#bbf7d0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● Live</span>'
+      : smsState === 'draft'
+      ? '<span style="background:rgba(8,145,178,.22);color:#67e8f9;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● In progress</span>'
+      : '<span style="background:rgba(124,58,237,.22);color:#c4b5fd;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">Featured</span>';
+
     wrap.innerHTML = `
       <!-- Hero feature: SMS -->
-      <div style="padding:14px 16px 6px">
-        <div class="hero" style="padding:18px;border-radius:14px;cursor:pointer" onclick="go('s-sms')">
+      <div style="padding:16px 16px 4px">
+        <div class="hero" style="padding:22px;border-radius:18px;cursor:pointer" onclick="go('s-sms')">
           <div style="position:relative;z-index:1">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-              <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.07em">${smsState === 'active' ? 'Live' : smsState === 'draft' ? 'In progress' : 'Featured · £10 to generate'}</div>
-              <span style="background:var(--purp);color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px">SMS</span>
-            </div>
-            <div style="font-size:18px;font-weight:800;color:white;letter-spacing:-.3px;margin-bottom:4px">Safety Management System</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:12px">${escapeHtml(smsSub)}</div>
-            <button class="btn btn-sea btn-sm" style="height:34px;font-size:12px;padding:0 14px">${smsState === 'active' ? 'Open SMS →' : smsState === 'draft' ? 'Resume building →' : 'Start building →'}</button>
+            <div style="margin-bottom:14px">${smsStatusPill}</div>
+            <div style="font-size:22px;font-weight:800;color:white;letter-spacing:-.5px;margin-bottom:6px;line-height:1.15">Safety Management System</div>
+            <div style="font-size:14px;color:rgba(255,255,255,.65);line-height:1.5;margin-bottom:18px;max-width:300px">${escapeHtml(smsSub)}</div>
+            <button class="btn btn-sea btn-sm" style="height:42px;font-size:14px;padding:0 18px;font-weight:700">${smsState === 'active' ? 'Open SMS →' : smsState === 'draft' ? 'Resume building →' : 'Start building →'}</button>
           </div>
         </div>
       </div>
