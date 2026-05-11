@@ -343,9 +343,10 @@
         <div style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:2px">Good morning</div>
         <div style="font-size:20px;font-weight:700;color:white;letter-spacing:-.2px">Fleet Status</div>
       </div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <div style="position:relative;cursor:pointer" onclick="go('s-notif')">
-          <span style="font-size:22px">🔔</span>
+      <div style="display:flex;gap:12px;align-items:center">
+        <button onclick="openHelp()" aria-label="Help" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:50%;width:40px;height:40px;color:white;font-size:18px;font-weight:700;cursor:pointer;font-family:var(--fn);padding:0">?</button>
+        <div style="position:relative;cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center" onclick="go('s-notif')">
+          <span style="font-size:24px">🔔</span>
           <div class="notif-dot"></div>
         </div>
         <div class="avatar" id="home-avatar">JM</div>
