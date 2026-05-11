@@ -924,23 +924,17 @@
           ? 'All certificates &amp; equipment current. Keep on top of upcoming renewals.'
           : `${counts.overdue} item${counts.overdue === 1 ? '' : 's'} need${counts.overdue === 1 ? 's' : ''} attention before your next MCA visit.`;
         statusEl.innerHTML = `
-          <div style="display:flex;align-items:center;gap:14px;position:relative;z-index:1">
-            <div class="ring-wrap" style="flex-shrink:0;width:72px;height:72px">
-              ${ringSvg(fleetScore, scoreColor(fleetScore), 72, true)}
+          <div style="display:flex;align-items:center;gap:12px;position:relative;z-index:1">
+            <div class="ring-wrap" style="flex-shrink:0;width:60px;height:60px">
+              ${ringSvg(fleetScore, scoreColor(fleetScore), 60, true)}
               <div class="ring-val">
-                <div class="ring-pct" style="color:white;font-size:20px;letter-spacing:-.5px;font-weight:800">${fleetScore}<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55)">%</span></div>
+                <div class="ring-pct" style="color:white;font-size:16px;letter-spacing:-.4px;font-weight:800">${fleetScore}<span style="font-size:9px;font-weight:600;color:rgba(255,255,255,.55)">%</span></div>
               </div>
             </div>
-            <div style="flex:1;min-width:0">
-              <div style="margin-bottom:6px">${badgeHtml}</div>
-              <button class="btn btn-sea btn-sm" style="height:30px;font-size:12px;padding:0 12px" onclick="exportFleetInspectionPack()">📄 Inspection pack →</button>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+              ${badgeHtml}
+              <button class="btn btn-sea btn-sm" style="height:28px;font-size:11px;padding:0 10px;align-self:flex-start" onclick="exportFleetInspectionPack()">📄 Inspection pack →</button>
             </div>
-          </div>
-          <div class="home-tile-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px;position:relative;z-index:1">
-            <div class="tile tile-sm"><div class="tile-num ${counts.overdue ? 'rd' : ''}">${counts.overdue}</div><div class="tile-lbl">Overdue</div></div>
-            <div class="tile tile-sm"><div class="tile-num ${counts.due30 ? 'am' : ''}">${counts.due30}</div><div class="tile-lbl">≤30d</div></div>
-            <div class="tile tile-sm"><div class="tile-num ${counts.due60 ? 'am' : ''}">${counts.due60}</div><div class="tile-lbl">30–60d</div></div>
-            <div class="tile tile-sm"><div class="tile-num ok">${counts.valid}</div><div class="tile-lbl">Clear</div></div>
           </div>`;
       }
     }

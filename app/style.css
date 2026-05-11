@@ -1084,7 +1084,7 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
   /* Top dark header on home — less bottom padding */
   #s-home > div[style*="background:var(--ink)"] {
-    padding-bottom: 18px !important;
+    padding: 0 18px 12px !important;
     transition: padding 220ms ease;
   }
   #home-greeting > div:first-child { font-size: 11px !important; margin-bottom: 1px !important; }
