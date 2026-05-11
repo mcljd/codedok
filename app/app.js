@@ -3816,6 +3816,19 @@
         </div>
       </div>
 
+      <div data-dyn="sms" style="padding:0 16px 6px">
+        <div class="card" onclick="openSmsAiWizard()" style="padding:16px;cursor:pointer;border-left:4px solid var(--purp);background:linear-gradient(135deg, rgba(124,58,237,.06), rgba(8,145,178,.06))">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="font-size:28px">✨</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px">Generate with AI — £149 one-off</div>
+              <div style="font-size:12px;color:var(--mid);margin-top:3px;line-height:1.55">Answer 6 questions about your operation. We generate a tailored 11-section SMS, you edit and sign. McCollam Marine reviews if you want.</div>
+            </div>
+            <span class="chev">›</span>
+          </div>
+        </div>
+      </div>
+
       ${draft ? `
         <div data-dyn="sms" style="padding:0 16px;margin-bottom:12px">
           <div class="qa-tile" onclick="go('s-sms-builder')" style="border:2px solid var(--sea);background:var(--seap)">
@@ -3907,6 +3920,234 @@
       saveSmsDraft(d);
     }
     return d;
+  }
+
+  // ---------- AI-generated SMS ----------
+  // Wizard: 6 questions → mock payment → mock Claude generation → draft seeded.
+  // Real implementation swaps `generateSmsFromInputs` for an edge-function
+  // call to Claude. Public flow stays the same.
+
+  let smsAiInputs = null;
+  let smsAiStep = 0;
+
+  function openSmsAiWizard() {
+    smsAiStep = 0;
+    smsAiInputs = {
+      vessel_id: (Store.getVessel(activeVesselId) || (Store.snapshot().vessels[0] || {})).id || null,
+      operation_type: '',
+      operating_area: '',
+      passengers_max: '',
+      crew_size: '',
+      season: '',
+      notable_risks: ''
+    };
+    renderSmsAiWizard();
+  }
+  window.openSmsAiWizard = openSmsAiWizard;
+
+  function renderSmsAiWizard() {
+    const existing = document.getElementById('sms-ai-modal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'sms-ai-modal';
+    modal.className = 'bdrop on';
+    document.body.appendChild(modal);
+
+    const steps = [
+      { key: 'vessel_id', kind: 'vessel', label: 'Which vessel is this SMS for?' },
+      { key: 'operation_type', kind: 'options', label: 'What type of operation?',
+        opts: ['Passenger charter / day trips', 'Sea angling / fishing trips', 'Diving / instruction', 'Sail training', 'Workboat / safety boat', 'Private use only'] },
+      { key: 'operating_area', kind: 'options', label: 'Where do you operate?',
+        opts: ['Cat 0 — Unrestricted', 'Cat 1 — Up to 150nm', 'Cat 2 — Up to 60nm', 'Cat 3 — Up to 20nm', 'Cat 4 — Up to 20nm in favourable weather', 'Cat 5/6 — Smooth & partially-smooth waters'] },
+      { key: 'passengers_max', kind: 'short', label: 'Max passengers on board?', placeholder: 'e.g. 10' },
+      { key: 'crew_size', kind: 'short', label: 'Typical crew (master + mate)?', placeholder: 'e.g. 1 master + 1 mate' },
+      { key: 'season', kind: 'options', label: 'Operating season?',
+        opts: ['Year-round', 'Apr–Oct (summer)', 'May–Sep (summer narrow)', 'Mar–Nov (extended)'] },
+      { key: 'notable_risks', kind: 'long', label: 'Any operation-specific risks worth flagging?',
+        placeholder: 'e.g. Crossing the Sound of Rathlin can produce overfalls in spring tides; passengers occasionally board with mobility aids…' }
+    ];
+
+    if (smsAiStep >= steps.length) {
+      modal.innerHTML = renderSmsAiPayment();
+      return;
+    }
+
+    const s = steps[smsAiStep];
+    const vessels = Store.snapshot().vessels;
+    let body = '';
+    if (s.kind === 'vessel') {
+      body = vessels.length === 0
+        ? `<div style="padding:14px;background:var(--ampp);border-radius:10px;font-size:12px;color:var(--text);line-height:1.55">Add a vessel first — the SMS is tied to one. Tap Cancel and create a vessel from your home screen.</div>`
+        : `<div style="display:flex;flex-direction:column;gap:8px">
+            ${vessels.map((v) => `
+              <button onclick="smsAiSelect('vessel_id', '${v.id}')" class="qa-tile" style="text-align:left;width:100%;border:${smsAiInputs.vessel_id === v.id ? '2px solid var(--sea)' : '1px solid var(--bdr)'}">
+                <div class="qa-icon bl">${v.icon || '⛵'}</div>
+                <div style="flex:1"><div class="qa-title">${escapeHtml(v.name)}</div><div class="qa-sub">${escapeHtml(v.type || '')} · ${escapeHtml(v.category || '')}</div></div>
+              </button>`).join('')}
+          </div>`;
+    } else if (s.kind === 'options') {
+      body = `<div style="display:flex;flex-direction:column;gap:8px">
+        ${s.opts.map((o) => `
+          <button onclick="smsAiSelect('${s.key}', '${escapeHtml(o).replace(/'/g, '&#39;')}')" class="qa-tile" style="text-align:left;width:100%;border:${smsAiInputs[s.key] === o ? '2px solid var(--sea)' : '1px solid var(--bdr)'}">
+            <div style="flex:1"><div class="qa-title" style="font-size:13px">${escapeHtml(o)}</div></div>
+            ${smsAiInputs[s.key] === o ? '<div style="color:var(--sea);font-weight:700">✓</div>' : ''}
+          </button>`).join('')}
+      </div>`;
+    } else if (s.kind === 'short') {
+      body = `<input class="fi" id="sms-ai-input" value="${escapeHtml(smsAiInputs[s.key] || '')}" placeholder="${escapeHtml(s.placeholder || '')}" autofocus>`;
+    } else if (s.kind === 'long') {
+      body = `<textarea class="fta" id="sms-ai-input" placeholder="${escapeHtml(s.placeholder || '')}" style="min-height:120px" autofocus>${escapeHtml(smsAiInputs[s.key] || '')}</textarea>`;
+    }
+
+    modal.innerHTML = `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+        <div class="sh-pull"></div>
+        <div class="sh-head">
+          <div class="sh-title">✨ Generate SMS — step ${smsAiStep + 1} of ${steps.length}</div>
+          <button class="sh-x" onclick="closeSmsAiWizard()">×</button>
+        </div>
+        <div style="padding:0 20px 14px;overflow-y:auto;max-height:70vh">
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px">${escapeHtml(s.label)}</div>
+          ${body}
+          <div style="display:flex;gap:8px;margin-top:14px">
+            ${smsAiStep > 0 ? `<button class="btn btn-out" style="flex:1" onclick="smsAiBack()">‹ Back</button>` : ''}
+            <button class="btn btn-sea" style="flex:2" onclick="smsAiNext('${s.key}', '${s.kind}')">
+              ${smsAiStep === steps.length - 1 ? 'Continue to payment →' : 'Next →'}
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function smsAiSelect(key, value) {
+    smsAiInputs[key] = value;
+    renderSmsAiWizard();
+  }
+  window.smsAiSelect = smsAiSelect;
+
+  function smsAiBack() { if (smsAiStep > 0) smsAiStep--; renderSmsAiWizard(); }
+  window.smsAiBack = smsAiBack;
+
+  function smsAiNext(key, kind) {
+    if (kind === 'short' || kind === 'long') {
+      const el = document.getElementById('sms-ai-input');
+      smsAiInputs[key] = (el && el.value || '').trim();
+    }
+    if (!smsAiInputs[key]) { alert('Please answer this question before continuing.'); return; }
+    smsAiStep++;
+    renderSmsAiWizard();
+  }
+  window.smsAiNext = smsAiNext;
+
+  function closeSmsAiWizard() {
+    const m = document.getElementById('sms-ai-modal');
+    if (m) m.remove();
+  }
+  window.closeSmsAiWizard = closeSmsAiWizard;
+
+  function renderSmsAiPayment() {
+    const v = Store.getVessel(smsAiInputs.vessel_id);
+    return `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+        <div class="sh-pull"></div>
+        <div class="sh-head">
+          <div class="sh-title">Generate SMS — pay £149</div>
+          <button class="sh-x" onclick="closeSmsAiWizard()">×</button>
+        </div>
+        <div style="padding:0 20px 14px">
+          <div style="background:var(--slate);border-radius:12px;padding:14px 16px;margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:var(--mid)">Tailored 11-section SMS for ${escapeHtml(v ? v.name : 'your vessel')}</span><span style="font-weight:600;color:var(--text)">£149</span></div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;color:var(--lt)"><span>Unlimited edits + Word/PDF export</span><span>included</span></div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;color:var(--lt)"><span>Surveyor review &amp; sign-off</span><span>billed separately</span></div>
+            <div style="height:1px;background:var(--bdr);margin:8px 0"></div>
+            <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800"><span>Total today</span><span>£149</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:12px">Mock checkout — production uses Stripe. You'll receive a generated draft you can review, edit, and send to McCollam Marine (or any approved surveyor) for sign-off.</div>
+          <button class="btn btn-sea btn-full" onclick="runSmsGeneration()">💷 Pay £149 &amp; generate now</button>
+          <button class="btn btn-out btn-full" style="margin-top:8px" onclick="smsAiBack()">‹ Back</button>
+        </div>
+      </div>`;
+  }
+
+  function runSmsGeneration() {
+    const modal = document.getElementById('sms-ai-modal');
+    if (modal) {
+      modal.innerHTML = `
+        <div class="sheet" style="padding:32px 22px;text-align:center">
+          <div style="font-size:36px;margin-bottom:10px">✨</div>
+          <div style="font-size:15px;font-weight:700">Generating your SMS…</div>
+          <div style="font-size:12px;color:var(--lt);margin-top:6px">Drafting 11 sections tailored to your operation.</div>
+        </div>`;
+    }
+    // Mock latency so the user sees the work happening.
+    setTimeout(() => {
+      const draft = generateSmsFromInputs(smsAiInputs);
+      saveSmsDraft(draft);
+      closeSmsAiWizard();
+      smsActiveSection = 0;
+      go('s-sms-builder');
+      alert('Your SMS is ready. Review each section, edit anything that needs adjusting, then submit for sign-off.');
+    }, 1800);
+  }
+  window.runSmsGeneration = runSmsGeneration;
+
+  // Mock generation — combines schema defaults with operator inputs.
+  // Real implementation calls Claude via an edge function with the same
+  // inputs and a JSON schema; output structure matches what's below.
+  function generateSmsFromInputs(inputs) {
+    const v = Store.getVessel(inputs.vessel_id);
+    const schema = window.Codes.SMS_SCHEMA;
+    const draft = {
+      vessel_id: v ? v.id : null,
+      sections: {},
+      started_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      generated_by_ai: true,
+      generation_inputs: inputs
+    };
+
+    function fill(text) {
+      if (!text) return '';
+      return text
+        .replace(/\[VESSEL_NAME\]/g, v ? v.name : 'the vessel')
+        .replace(/\[CATEGORY\]/g, (v && v.category) || inputs.operating_area || '');
+    }
+
+    // Pre-populate every section with the schema defaults, substituted.
+    schema.forEach((sec) => {
+      const obj = {};
+      (sec.fields || []).forEach((f) => {
+        if (f.default) obj[f.id] = fill(f.default);
+      });
+      draft.sections[sec.id] = obj;
+    });
+
+    // Override with concrete vessel + operator data.
+    draft.sections.meta = Object.assign({}, draft.sections.meta || {}, {
+      vessel_name: v ? v.name : '',
+      vessel_ssr: v ? (v.ssr || '') : '',
+      vessel_type: v ? (v.type || inputs.operation_type) : inputs.operation_type,
+      vessel_cat: v ? (v.category || inputs.operating_area) : inputs.operating_area,
+      company_name: '',
+      sms_version: '1.0 (AI-generated draft)',
+      sms_review_date: new Date().toISOString().slice(0, 10)
+    });
+
+    // Insert operation-aware risk assessments. Real impl: Claude reads
+    // inputs.operation_type + inputs.notable_risks and emits a per-vessel
+    // risk register. For now, prepend the operator's notable risks.
+    const riskBlock = draft.sections.risk ? Object.assign({}, draft.sections.risk) : {};
+    riskBlock.summary = [
+      `Operation: ${inputs.operation_type}.`,
+      `Operating area: ${inputs.operating_area}.`,
+      `Max persons on board: ${inputs.passengers_max}.`,
+      `Typical crew: ${inputs.crew_size}.`,
+      `Season: ${inputs.season}.`,
+      inputs.notable_risks ? `Operator-flagged risks: ${inputs.notable_risks}` : ''
+    ].filter(Boolean).join('\n\n');
+    draft.sections.risk = riskBlock;
+
+    return draft;
   }
 
   function renderSmsBuilder() {
