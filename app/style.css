@@ -61,6 +61,21 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
 /* TOP BAR */
 .tbar{background:var(--card);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);flex-shrink:0;}
+
+/* Large iOS-style page header — used on Tools and other top-level screens. */
+.lt-head{
+  background:var(--card);
+  padding:18px 20px 16px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  flex-shrink:0;
+  border-bottom:1px solid var(--bdr);
+}
+.lt-title{font-size:30px;font-weight:800;color:var(--text);letter-spacing:-.8px;line-height:1.05;}
+.lt-sub{font-size:14px;color:var(--mid);margin-top:6px;line-height:1.45;max-width:280px;}
+.lt-avatar{flex-shrink:0;}
 .tbar-title{font-size:18px;font-weight:700;color:var(--text);}
 .back{display:flex;align-items:center;gap:3px;color:var(--sea);font-size:15px;font-weight:500;cursor:pointer;border:none;background:none;font-family:var(--fn);}
 
@@ -335,20 +350,21 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .qa-tile {
   background: var(--card);
   border: 1px solid var(--bdr);
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 16px;
+  padding: 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   cursor: pointer;
   transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  box-shadow: 0 1px 3px rgba(15,23,42,.04), 0 4px 14px rgba(15,23,42,.03);
+  min-height: 72px;
 }
 .qa-tile:active { transform: scale(.98); }
-.qa-tile:hover { border-color: var(--sea); box-shadow: 0 6px 18px rgba(8,145,178,.10); }
+.qa-tile:hover { border-color: var(--sea); box-shadow: 0 6px 22px rgba(8,145,178,.12); }
 .qa-icon {
-  width: 40px; height: 40px; border-radius: 11px;
-  display: flex; align-items: center; justify-content: center; font-size: 19px;
+  width: 48px; height: 48px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
   flex-shrink: 0;
 }
 .qa-icon.rd { background: var(--redp); color: var(--red); }
@@ -356,8 +372,8 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .qa-icon.ok { background: var(--grnp); color: var(--green); }
 .qa-icon.bl { background: var(--seap); color: var(--sea); }
 .qa-icon.pu { background: var(--purpp); color: var(--purp); }
-.qa-title { font-size: 13px; font-weight: 700; color: var(--text); }
-.qa-sub { font-size: 11px; color: var(--lt); margin-top: 1px; }
+.qa-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing:-.1px; }
+.qa-sub { font-size: 13px; color: var(--mid); margin-top: 2px; line-height:1.4; }
 
 /* VESSEL COVER CARD */
 .vcover {
@@ -547,9 +563,9 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   padding: 4px;
 }
 .h-section {
-  font-size: 16px; font-weight: 700; color: var(--text);
-  letter-spacing: -.2px;
-  margin: 18px 16px 8px;
+  font-size: 18px; font-weight: 800; color: var(--text);
+  letter-spacing: -.3px;
+  margin: 24px 16px 10px;
 }
 .h-section-row {
   margin: 18px 16px 8px;
@@ -1391,22 +1407,32 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .auth-demo-link:hover { background: rgba(255,255,255,.05); color: white; }
 
 /* Demo-mode floating badge */
+/* DEMO BADGE — tiny pill anchored to the bottom-left above the bottom nav so
+   it never overlaps screen titles. Glassy purple so it reads on any background. */
 .demo-badge {
   position: fixed;
-  top: max(54px, env(safe-area-inset-top));
-  left: 14px;
+  bottom: calc(78px + var(--safe));
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 60;
-  background: linear-gradient(135deg, rgba(124,58,237,.95) 0%, rgba(99,102,241,.95) 100%);
+  background: rgba(124,58,237,.92);
   color: white;
-  font-size: 10px; font-weight: 800;
-  text-transform: uppercase; letter-spacing: .14em;
-  padding: 4px 9px;
-  border-radius: 6px;
-  box-shadow: 0 4px 14px rgba(124,58,237,.4);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .04em;
+  padding: 6px 14px;
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(124,58,237,.45), inset 0 0 0 1px rgba(255,255,255,.18);
   pointer-events: auto;
   cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .demo-badge:hover { filter: brightness(1.1); }
+
+/* Centered shell positioning on desktop — keep the pill inside the phone frame. */
+@media (min-width: 520px) {
+  .demo-badge { left: 50%; transform: translateX(-50%); }
+}
 
 /* JURISDICTION */
 .jur-panel{border-radius:12px;padding:14px 16px;margin-bottom:10px;}
