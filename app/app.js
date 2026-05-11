@@ -4342,10 +4342,29 @@ ${sectionsHtml}
 
     renderDemoBadge();
 
+    // Deep-link from /web — surveyor opens a specific vessel.
+    // Web app stores { vesselId, view, ts } on localStorage; we consume it once.
+    let deepLink = null;
+    try {
+      const raw = localStorage.getItem('codedok-deeplink');
+      if (raw) {
+        deepLink = JSON.parse(raw);
+        if (!deepLink || (Date.now() - (deepLink.ts || 0)) > 60000) deepLink = null;
+        localStorage.removeItem('codedok-deeplink');
+      }
+    } catch (_) {}
+
     // Boot routing
     const session = loadSession();
     if (!session) {
       go('s-login');
+      return;
+    }
+    if (deepLink && deepLink.vesselId && deepLink.view === 's-surveyor-vessel') {
+      Store.setMode('surveyor');
+      applyDesktopSurveyor();
+      window.setActiveVessel(deepLink.vesselId);
+      go('s-surveyor-vessel');
       return;
     }
     if (Store.getMode() === 'surveyor') {
