@@ -454,6 +454,36 @@
     return v;
   }
 
+  function updateVessel(vesselId, patch) {
+    const v = getVessel(vesselId);
+    if (!v) return null;
+    const allowed = ['name', 'type', 'category', 'ssr', 'length', 'persons', 'port', 'certifier', 'icon', 'make', 'engine', 'photo'];
+    allowed.forEach((k) => {
+      if (patch[k] !== undefined) v[k] = patch[k];
+    });
+    logAction('vessel.updated', 'vessel', v.id, { fields: Object.keys(patch) });
+    save(state);
+    return v;
+  }
+
+  function deleteVessel(vesselId) {
+    const v = getVessel(vesselId);
+    if (!v) return false;
+    state.vessels = state.vessels.filter((x) => x.id !== vesselId);
+    // Cascade: remove certs, equipment, deficiencies, inspections, jobs, surveyor grants for this vessel.
+    state.certs = state.certs.filter((c) => c.vessel_id !== vesselId);
+    state.equipment = state.equipment.filter((e) => e.vessel_id !== vesselId);
+    state.deficiencies = state.deficiencies.filter((d) => d.vessel_id !== vesselId);
+    state.inspections = state.inspections.filter((i) => i.vessel_id !== vesselId);
+    state.surveyor_grants = state.surveyor_grants.filter((g) => g.vessel_id !== vesselId);
+    if (state.jobs) state.jobs = state.jobs.filter((j) => j.vessel_id !== vesselId);
+    if (state.invoices) state.invoices = state.invoices.filter((i) => i.vessel_id !== vesselId);
+    if (state.sms_documents) state.sms_documents = state.sms_documents.filter((d) => d.vessel_id !== vesselId);
+    logAction('vessel.deleted', 'vessel', vesselId, { name: v.name });
+    save(state);
+    return true;
+  }
+
   function addCert(input) {
     const c = {
       id: uid('c'),
@@ -1099,6 +1129,8 @@
     // mutations
     setMode,
     addVessel,
+    updateVessel,
+    deleteVessel,
     addCert,
     updateCert,
     deleteCert,

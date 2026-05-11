@@ -17,6 +17,91 @@
   let activeInspectionId = null;
   window.setActiveVessel = function (id) { activeVesselId = id; };
 
+  // ---------- Edit / delete vessel ----------
+  function openEditVessel(vesselId) {
+    const v = Store.getVessel(vesselId);
+    if (!v) return;
+    const existing = document.getElementById('vessel-edit-modal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'vessel-edit-modal';
+    modal.className = 'bdrop on';
+    modal.onclick = function (e) { if (e.target === modal) closeEditVessel(); };
+    document.body.appendChild(modal);
+
+    const categories = ['Cat 0', 'Cat 1', 'Cat 2', 'Cat 3', 'Cat 4', 'Cat 5', 'Cat 6', 'Workboat'];
+    modal.innerHTML = `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+        <div class="sh-pull"></div>
+        <div class="sh-head">
+          <div class="sh-title">Edit vessel</div>
+          <button class="sh-x" onclick="closeEditVessel()">×</button>
+        </div>
+        <div style="padding:0 20px 14px;overflow-y:auto;max-height:70vh">
+          <div class="fg"><label class="fl">Vessel name</label><input class="fi" id="ev-name" value="${escapeHtml(v.name || '')}"></div>
+          <div class="fg"><label class="fl">Type</label><input class="fi" id="ev-type" value="${escapeHtml(v.type || '')}" placeholder="e.g. Open RIB charter"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="fg"><label class="fl">Category</label>
+              <select class="fi" id="ev-cat">
+                ${categories.map((c) => `<option value="${c}" ${c === v.category ? 'selected' : ''}>${c}</option>`).join('')}
+              </select>
+            </div>
+            <div class="fg"><label class="fl">Persons</label><input class="fi" id="ev-persons" type="number" min="1" value="${v.persons || 12}"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="fg"><label class="fl">Length (m)</label><input class="fi" id="ev-length" type="number" step="0.1" value="${v.length || ''}"></div>
+            <div class="fg"><label class="fl">SSR / reg.</label><input class="fi" id="ev-ssr" value="${escapeHtml(v.ssr || '')}"></div>
+          </div>
+          <div class="fg"><label class="fl">Home port</label><input class="fi" id="ev-port" value="${escapeHtml(v.port || '')}"></div>
+          <div class="fg"><label class="fl">Make / model</label><input class="fi" id="ev-make" value="${escapeHtml(v.make || '')}" placeholder="e.g. Redbay Stormforce"></div>
+          <div class="fg"><label class="fl">Engine</label><input class="fi" id="ev-engine" value="${escapeHtml(v.engine || '')}" placeholder="e.g. Suzuki 300hp 4-stroke"></div>
+          <button class="btn btn-sea btn-full" onclick="submitEditVessel('${v.id}')" style="margin-top:8px">Save changes</button>
+          <button class="btn btn-out btn-full" onclick="confirmDeleteVessel('${v.id}')" style="margin-top:8px;color:var(--red);border-color:rgba(220,38,38,.3)">🗑️ Delete vessel</button>
+        </div>
+      </div>`;
+  }
+  window.openEditVessel = openEditVessel;
+
+  function closeEditVessel() {
+    const modal = document.getElementById('vessel-edit-modal');
+    if (modal) modal.remove();
+  }
+  window.closeEditVessel = closeEditVessel;
+
+  function submitEditVessel(vesselId) {
+    const patch = {
+      name: (document.getElementById('ev-name') || {}).value || '',
+      type: (document.getElementById('ev-type') || {}).value || '',
+      category: (document.getElementById('ev-cat') || {}).value || '',
+      persons: parseInt((document.getElementById('ev-persons') || {}).value || '12', 10),
+      length: parseFloat((document.getElementById('ev-length') || {}).value || '0') || null,
+      ssr: (document.getElementById('ev-ssr') || {}).value || '',
+      port: (document.getElementById('ev-port') || {}).value || '',
+      make: (document.getElementById('ev-make') || {}).value || '',
+      engine: (document.getElementById('ev-engine') || {}).value || ''
+    };
+    if (!patch.name.trim()) { alert('Vessel name is required.'); return; }
+    Store.updateVessel(vesselId, patch);
+    closeEditVessel();
+    renderHome();
+    if (document.getElementById('s-vessels').classList.contains('on')) renderVesselsList();
+    if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
+  }
+  window.submitEditVessel = submitEditVessel;
+
+  function confirmDeleteVessel(vesselId) {
+    const v = Store.getVessel(vesselId);
+    if (!v) return;
+    const ok = confirm(`Delete \"${v.name}\"?\n\nThis removes the vessel and all its certs, equipment, deficiencies, inspections, jobs, and invoices. Cannot be undone.`);
+    if (!ok) return;
+    Store.deleteVessel(vesselId);
+    closeEditVessel();
+    activeVesselId = null;
+    go('s-vessels');
+    renderHome();
+  }
+  window.confirmDeleteVessel = confirmDeleteVessel;
+
   // ---------- File picker / attachments ----------
   // Hidden inputs in index.html: #cert-file-input, #eq-file-input.
   // Files are stored as base64 data URLs on the cert/equipment record.
@@ -1439,7 +1524,10 @@
       header.style.borderRadius = '0';
       header.style.padding = '12px 18px 18px';
       header.innerHTML = `
-        <button class="back" onclick="go('s-vessels')" style="color:rgba(255,255,255,.6);margin-bottom:8px">‹ Vessels</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <button class="back" onclick="go('s-vessels')" style="color:rgba(255,255,255,.6)">‹ Vessels</button>
+          <button onclick="openEditVessel('${v.id}')" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--fn)">✎ Edit</button>
+        </div>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:relative;z-index:1">
           <div style="min-width:0;flex:1">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
