@@ -908,7 +908,7 @@
           : `${counts.overdue} item${counts.overdue === 1 ? '' : 's'} need${counts.overdue === 1 ? 's' : ''} attention before your next MCA visit.`;
         statusEl.innerHTML = `
           <div style="display:flex;align-items:center;gap:14px;position:relative;z-index:1">
-            <div class="ring-wrap" style="flex-shrink:0">
+            <div class="ring-wrap" style="flex-shrink:0;width:72px;height:72px">
               ${ringSvg(fleetScore, scoreColor(fleetScore), 72, true)}
               <div class="ring-val">
                 <div class="ring-pct" style="color:white;font-size:20px;letter-spacing:-.5px;font-weight:800">${fleetScore}<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55)">%</span></div>
