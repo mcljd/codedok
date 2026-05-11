@@ -3821,7 +3821,7 @@
           <div style="display:flex;align-items:center;gap:14px">
             <div style="font-size:28px">✨</div>
             <div style="flex:1;min-width:0">
-              <div style="font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px">Generate with AI — £149 one-off</div>
+              <div style="font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px">Generate with AI — £49 one-off</div>
               <div style="font-size:12px;color:var(--mid);margin-top:3px;line-height:1.55">Answer 6 questions about your operation. We generate a tailored 11-section SMS, you edit and sign. McCollam Marine reviews if you want.</div>
             </div>
             <span class="chev">›</span>
@@ -4051,19 +4051,19 @@
       <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
         <div class="sh-pull"></div>
         <div class="sh-head">
-          <div class="sh-title">Generate SMS — pay £149</div>
+          <div class="sh-title">Generate SMS — pay £49</div>
           <button class="sh-x" onclick="closeSmsAiWizard()">×</button>
         </div>
         <div style="padding:0 20px 14px">
           <div style="background:var(--slate);border-radius:12px;padding:14px 16px;margin-bottom:14px">
-            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:var(--mid)">Tailored 11-section SMS for ${escapeHtml(v ? v.name : 'your vessel')}</span><span style="font-weight:600;color:var(--text)">£149</span></div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:var(--mid)">Tailored 11-section SMS for ${escapeHtml(v ? v.name : 'your vessel')}</span><span style="font-weight:600;color:var(--text)">£49</span></div>
             <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;color:var(--lt)"><span>Unlimited edits + Word/PDF export</span><span>included</span></div>
             <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;color:var(--lt)"><span>Surveyor review &amp; sign-off</span><span>billed separately</span></div>
             <div style="height:1px;background:var(--bdr);margin:8px 0"></div>
-            <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800"><span>Total today</span><span>£149</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800"><span>Total today</span><span>£49</span></div>
           </div>
           <div style="font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:12px">Mock checkout — production uses Stripe. You'll receive a generated draft you can review, edit, and send to McCollam Marine (or any approved surveyor) for sign-off.</div>
-          <button class="btn btn-sea btn-full" onclick="runSmsGeneration()">💷 Pay £149 &amp; generate now</button>
+          <button class="btn btn-sea btn-full" onclick="runSmsGeneration()">💷 Pay £49 &amp; generate now</button>
           <button class="btn btn-out btn-full" style="margin-top:8px" onclick="smsAiBack()">‹ Back</button>
         </div>
       </div>`;
