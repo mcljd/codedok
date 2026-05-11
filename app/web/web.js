@@ -67,21 +67,25 @@
       btn.addEventListener('click', () => {
         const role = btn.dataset.role;
         if (role === 'operator') {
-          // Reset the Store + session so /app boots into the operator home
-          // even if the last session on this device was surveyor or admin.
           try { Store.setMode('operator'); } catch (_) {}
           try {
             localStorage.setItem('codedok-session-v1', JSON.stringify({
               mode: 'demo',
               signed_in_at: new Date().toISOString()
             }));
-            // Strip any stale deep-link that would otherwise force surveyor mode.
             localStorage.removeItem('codedok-deeplink');
           } catch (_) {}
           window.location.href = '../index.html';
           return;
         }
+        if (role === 'builder') {
+          Store.setMode('builder');
+          state.view = 'builder';
+          enterApp();
+          return;
+        }
         Store.setMode('surveyor');
+        state.view = 'portfolio';
         enterApp();
       });
     });
@@ -93,7 +97,9 @@
     const me = Store.getCurrentUser();
     if (me) {
       $('#w-user-name').textContent = me.name;
-      const sub = me.surveyor && me.surveyor.company ? me.surveyor.company : 'Surveyor';
+      const sub = (me.surveyor && me.surveyor.company)
+                 || (me.builder && me.builder.company)
+                 || (me.kind === 'builder' ? 'Boat builder' : 'Surveyor');
       $('#w-user-sub').textContent = sub;
       paintAvatar();
     }
@@ -361,17 +367,38 @@
   function refreshCounts() {
     const me = Store.getCurrentUser();
     if (!me) return;
+    if (me.kind === 'builder') {
+      const rows = Store.builderPipeline ? Store.builderPipeline('redbay') : [];
+      const leads = rows.filter((r) => r.overdue > 0 || r.dueSoon > 0).length;
+      const cb = document.getElementById('w-count-builder');
+      const cl = document.getElementById('w-count-builder-leads');
+      if (cb) cb.textContent = rows.length || '';
+      if (cl) cl.textContent = leads || '';
+      return;
+    }
     const portfolio = Store.surveyorVessels(me.id);
     const inbox = Store.jobsForSurveyor(me.id, 'requested');
     const active = Store.jobsForSurveyor(me.id).filter((j) => j.status === 'accepted' || j.status === 'in_progress' || j.status === 'quoted');
-    $('#w-count-portfolio').textContent = portfolio.length || '';
-    $('#w-count-inbox').textContent = inbox.length || '';
-    $('#w-count-jobs').textContent = active.length || '';
+    if ($('#w-count-portfolio')) $('#w-count-portfolio').textContent = portfolio.length || '';
+    if ($('#w-count-inbox')) $('#w-count-inbox').textContent = inbox.length || '';
+    if ($('#w-count-jobs')) $('#w-count-jobs').textContent = active.length || '';
   }
 
   function renderView() {
+    // Mode-aware sidebar — builder gets a different nav and label.
+    const me = Store.getCurrentUser && Store.getCurrentUser();
+    const isBuilder = me && me.kind === 'builder';
+    const modeLabel = document.getElementById('w-sb-mode');
+    const navSurveyor = document.getElementById('w-sb-nav-surveyor');
+    const navBuilder = document.getElementById('w-sb-nav-builder');
+    if (modeLabel) modeLabel.textContent = isBuilder ? 'Builder dashboard' : 'Surveyor workspace';
+    if (navSurveyor) navSurveyor.style.display = isBuilder ? 'none' : '';
+    if (navBuilder) navBuilder.style.display = isBuilder ? '' : 'none';
+
     const wrap = $('#w-view');
-    if (state.view === 'portfolio') wrap.innerHTML = renderPortfolio();
+    if (state.view === 'builder')   wrap.innerHTML = renderBuilder();
+    else if (state.view === 'builder-leads') wrap.innerHTML = renderBuilderLeads();
+    else if (state.view === 'portfolio') wrap.innerHTML = renderPortfolio();
     else if (state.view === 'inbox') wrap.innerHTML = renderInbox();
     else if (state.view === 'jobs')  wrap.innerHTML = renderJobs();
     else if (state.view === 'earnings') wrap.innerHTML = renderEarnings();
@@ -587,6 +614,236 @@
   }
 
   // ---------- Inbox ----------
+  // ---------- Handover wizard ----------
+  function openHandoverWizard() {
+    const existing = document.getElementById('w-handover-modal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'w-handover-modal';
+    modal.innerHTML = `
+      <div class="w-modal-backdrop" onclick="WebApp.closeHandover()"></div>
+      <div class="w-modal">
+        <div class="w-modal-h">
+          <div style="font-size:18px;font-weight:800">+ New Stormforce handover</div>
+          <button onclick="WebApp.closeHandover()" style="background:none;border:none;font-size:22px;color:var(--lt);cursor:pointer">×</button>
+        </div>
+        <div class="w-modal-body">
+          <div style="font-size:13px;color:var(--mid);margin-bottom:14px;line-height:1.5">Five fields. We'll create the vessel, pre-load the cert schedule, and send the new owner a link to claim their app.</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div><label style="font-size:12px;font-weight:700;color:var(--mid)">Vessel name</label><input id="ho-name" placeholder="e.g. Tsunami V" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-family:var(--fn);font-size:14px;margin-top:4px"></div>
+            <div><label style="font-size:12px;font-weight:700;color:var(--mid)">Hull number</label><input id="ho-hull" placeholder="RB-XXX" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-family:var(--fn);font-size:14px;margin-top:4px"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div><label style="font-size:12px;font-weight:700;color:var(--mid)">Model</label>
+              <select id="ho-model" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-family:var(--fn);font-size:14px;margin-top:4px">
+                <option value="Redbay Stormforce">Stormforce (Open RIB)</option>
+                <option value="Redbay Stormforce Cabin">Stormforce Cabin</option>
+                <option value="Redbay Stormforce 1450">Stormforce 1450</option>
+                <option value="Redbay Stormforce 1650">Stormforce 1650</option>
+              </select>
+            </div>
+            <div><label style="font-size:12px;font-weight:700;color:var(--mid)">Engine</label><input id="ho-engine" value="Suzuki 300hp 4-stroke" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-family:var(--fn);font-size:14px;margin-top:4px"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div><label style="font-size:12px;font-weight:700;color:var(--mid)">Length (m)</label><input id="ho-length" type="number" step="0.1" value="8.5" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-family:var(--fn);font-size:14px;margin-top:4px"></div>
+            <div><label style="font-size:12px;font-weight:700;color:var(--mid)">Persons</label><input id="ho-persons" type="number" value="10" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-family:var(--fn);font-size:14px;margin-top:4px"></div>
+          </div>
+
+          <div style="font-size:12px;font-weight:700;color:var(--mid);margin:14px 0 6px">Owner</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div><input id="ho-owner-name" placeholder="Owner name" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-family:var(--fn);font-size:14px"></div>
+            <div><input id="ho-owner-email" placeholder="Owner email" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-family:var(--fn);font-size:14px"></div>
+          </div>
+
+          <div style="background:var(--seap);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--mid);line-height:1.55;margin-bottom:14px">
+            On submit we create the vessel record, mark it as built by Redbay, set McCollam Marine as the preferred surveyor, and pre-load a 12-month service calendar. Owner receives a claim link by email.
+          </div>
+
+          <button class="w-btn" style="width:100%;justify-content:center" onclick="WebApp.commitHandover()">Create vessel &amp; send claim link</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  function commitHandoverWizard() {
+    const name = ($('#ho-name') || {}).value;
+    const hull = ($('#ho-hull') || {}).value;
+    const model = ($('#ho-model') || {}).value;
+    const engine = ($('#ho-engine') || {}).value;
+    const length = parseFloat(($('#ho-length') || {}).value || '8.5');
+    const persons = parseInt(($('#ho-persons') || {}).value || '10', 10);
+    const ownerName = ($('#ho-owner-name') || {}).value;
+    const ownerEmail = ($('#ho-owner-email') || {}).value;
+    if (!name || !hull || !ownerName || !ownerEmail) {
+      alert('Vessel name, hull number, owner name and email are required.');
+      return;
+    }
+    const v = Store.addVessel({
+      name, type: 'Charter / RIB', category: 'Cat 2',
+      length, persons, port: '', certifier: 'YDSA',
+      icon: model.includes('Cabin') ? '🚤' : '⛵',
+      make: model, engine,
+      org_id: 'org_jm' // demo — in prod we'd create a new org from the owner email
+    });
+    Store.updateVessel(v.id, { built_by: 'redbay', hull_number: hull, built_at: new Date().toISOString().slice(0,10) });
+    document.getElementById('w-handover-modal').remove();
+    alert(`Created ${name} (${hull}). In production we'd email ${ownerEmail} a claim link.`);
+    refreshCounts();
+    renderView();
+  }
+
+  function closeHandover() {
+    const m = document.getElementById('w-handover-modal');
+    if (m) m.remove();
+  }
+
+  // ---------- Builder dashboard ----------
+  function renderBuilder() {
+    const me = Store.getCurrentUser();
+    const slug = 'redbay'; // Single-tenant for now — Redbay
+    const rows = Store.builderPipeline(slug) || [];
+    const totalHulls = rows.length;
+    const totalOverdue = rows.reduce((s, r) => s + r.overdue, 0);
+    const totalDueSoon = rows.reduce((s, r) => s + r.dueSoon, 0);
+    const avgScore = totalHulls > 0 ? Math.round(rows.reduce((a, r) => a + r.score, 0) / totalHulls) : 0;
+    const builderName = (me && me.builder && me.builder.company) || 'Redbay Boats';
+
+    return `
+      <div class="w-view-h">
+        <div>
+          <div class="w-view-title">${esc(builderName)} — built hulls</div>
+          <div class="w-view-sub">Every Stormforce you've built, what's due for service, and who to call. Click any hull to see the full record.</div>
+        </div>
+        <div class="w-view-actions">
+          <button class="w-btn w-btn-ghost" onclick="WebApp.handoverFlow()">+ New Stormforce handover</button>
+        </div>
+      </div>
+
+      <div class="w-kpi-row">
+        <div class="w-kpi">
+          <div class="w-kpi-lbl">Hulls built</div>
+          <div class="w-kpi-val">${totalHulls}</div>
+          <div class="w-kpi-sub">In the field, all years</div>
+        </div>
+        <div class="w-kpi">
+          <div class="w-kpi-lbl">Average compliance</div>
+          <div class="w-kpi-val ${avgScore >= 85 ? 'gr' : avgScore >= 65 ? 'am' : 'rd'}">${avgScore}<span style="font-size:14px;font-weight:600;color:var(--lt);margin-left:2px">%</span></div>
+          <div class="w-kpi-sub">Across the Redbay fleet</div>
+        </div>
+        <div class="w-kpi">
+          <div class="w-kpi-lbl">Service overdue</div>
+          <div class="w-kpi-val ${totalOverdue > 0 ? 'rd' : 'gr'}">${totalOverdue}</div>
+          <div class="w-kpi-sub">Aftermarket lead opportunity</div>
+        </div>
+        <div class="w-kpi">
+          <div class="w-kpi-lbl">Due in 60 days</div>
+          <div class="w-kpi-val ${totalDueSoon > 0 ? 'am' : ''}">${totalDueSoon}</div>
+          <div class="w-kpi-sub">Book ahead, retain the customer</div>
+        </div>
+      </div>
+
+      ${rows.length === 0 ? `
+        <div class="w-empty">
+          <div class="w-empty-art">🏗️</div>
+          <div class="w-empty-h">No Stormforce hulls registered yet</div>
+          <div class="w-empty-sub">Tap "+ New Stormforce handover" to onboard your next customer in 90 seconds.</div>
+        </div>` : `
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${rows.map((r) => builderRow(r)).join('')}
+        </div>`}
+    `;
+  }
+
+  function builderRow(r) {
+    const v = r.vessel;
+    const ringColor = scoreColor(r.score);
+    const C = 2 * Math.PI * 18;
+    const offset = C - (r.score / 100) * C;
+    const nextDueLine = r.nextDue
+      ? `${esc(r.nextDue.label)} · ${r.nextDue.severity < 0 ? Math.abs(r.nextDue.severity) + ' days overdue' : 'in ' + r.nextDue.severity + ' days'}`
+      : 'All clear';
+    const ownerName = r.owner ? r.owner.name : 'Unknown owner';
+    const ownerEmail = r.owner ? r.owner.email : '';
+    const ownerPhone = r.owner ? (r.owner.phone || '') : '';
+    return `
+      <div class="w-vessel-card" style="cursor:default">
+        <div class="w-vc-top">
+          <div class="w-vc-icon">${v.icon || '⛵'}</div>
+          <div class="w-vc-info">
+            <div class="w-vc-name">${esc(v.name)} <span class="chip chip-bl">${esc(v.hull_number || '—')}</span></div>
+            <div class="w-vc-meta">${esc(v.make || 'Redbay')} · ${esc(v.category || '')} · ${esc(v.port || '')}</div>
+          </div>
+          <div class="w-vc-ring">
+            <svg width="44" height="44" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="18" fill="none" stroke="var(--bdr)" stroke-width="4"/>
+              <circle cx="22" cy="22" r="18" fill="none" stroke="${ringColor}" stroke-width="4" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 22 22)"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:${ringColor}">${r.score}</div>
+          </div>
+        </div>
+        <div class="w-vc-stats">
+          <div>
+            <div class="w-vc-stat">Owner</div>
+            <div class="w-vc-stat-val">${esc(ownerName)}</div>
+          </div>
+          <div>
+            <div class="w-vc-stat">Next service</div>
+            <div class="w-vc-stat-val ${r.nextDue && r.nextDue.severity < 0 ? 'rd' : r.nextDue && r.nextDue.severity <= 30 ? 'am' : ''}">${esc(nextDueLine)}</div>
+          </div>
+        </div>
+        <div class="w-vc-cta">
+          <button class="w-vc-cta-btn" onclick="WebApp.viewVesselRecord('${v.id}')">View record</button>
+          <button class="w-vc-cta-btn primary" onclick="WebApp.emailOwner('${esc(ownerEmail)}','${esc(v.name)}','${esc(r.nextDue ? r.nextDue.label : '')}')">📧 Email ${esc((ownerName.split(' ')[0]) || 'owner')}</button>
+        </div>
+      </div>`;
+  }
+
+  function renderBuilderLeads() {
+    const slug = 'redbay';
+    const rows = Store.builderPipeline(slug) || [];
+    const overdueRows = rows.filter((r) => r.overdue > 0);
+    const dueSoonRows = rows.filter((r) => r.overdue === 0 && r.dueSoon > 0);
+
+    return `
+      <div class="w-view-h">
+        <div>
+          <div class="w-view-title">Service leads</div>
+          <div class="w-view-sub">Hulls overdue for service or due within 60 days. Email the owner with one tap, win the work back to your yard.</div>
+        </div>
+      </div>
+
+      ${overdueRows.length === 0 && dueSoonRows.length === 0 ? `
+        <div class="w-empty">
+          <div class="w-empty-art">✅</div>
+          <div class="w-empty-h">No leads right now</div>
+          <div class="w-empty-sub">All hulls are up to date. We'll surface new leads here automatically as service dates approach.</div>
+        </div>` : ''}
+
+      ${overdueRows.length > 0 ? `
+        <div class="w-client-group">
+          <div class="w-client-h">
+            <div class="w-client-name" style="color:var(--red)">Overdue · ${overdueRows.length}</div>
+            <div class="w-client-meta">Win these back before the customer goes elsewhere</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            ${overdueRows.map((r) => builderRow(r)).join('')}
+          </div>
+        </div>` : ''}
+
+      ${dueSoonRows.length > 0 ? `
+        <div class="w-client-group">
+          <div class="w-client-h">
+            <div class="w-client-name" style="color:var(--amber)">Due within 60 days · ${dueSoonRows.length}</div>
+            <div class="w-client-meta">Book ahead so the work stays at Redbay</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            ${dueSoonRows.map((r) => builderRow(r)).join('')}
+          </div>
+        </div>` : ''}
+    `;
+  }
+
   function renderInbox() {
     const me = Store.getCurrentUser();
     const requested = Store.jobsForSurveyor(me.id, 'requested');
@@ -686,6 +943,21 @@
     openMobile() {
       window.open('../index.html', '_blank');
     },
+    viewVesselRecord(vesselId) {
+      try { localStorage.setItem('codedok-deeplink', JSON.stringify({ vesselId: vesselId, view: 's-vessel-detail', ts: Date.now() })); } catch (_) {}
+      window.open('../index.html', '_blank');
+    },
+    emailOwner(email, vesselName, service) {
+      if (!email) { alert('No owner email on file. Open the vessel record to add one.'); return; }
+      const subject = encodeURIComponent(`Service due on ${vesselName} — book at Redbay`);
+      const body = encodeURIComponent(`Hi,\n\nYour ${vesselName} is due for ${service || 'service'}.\n\nWe can fit you in at the Redbay yard in Cushendall — reply to this email and we'll send a quote within the day.\n\nThanks,\nRedbay Boats Service Team\n+44 28 2177 1331`);
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    },
+    handoverFlow() {
+      openHandoverWizard();
+    },
+    commitHandover() { commitHandoverWizard(); },
+    closeHandover() { closeHandover(); },
     pickImport() {
       let input = document.getElementById('w-import-input');
       if (!input) {

@@ -25,6 +25,12 @@
         <div class="w-role-sub">Manage your vessel portfolio, jobs, quotes &amp; earnings on desktop.</div>
         <div class="w-role-cta">Open surveyor workspace →</div>
       </button>
+      <button class="w-role" data-role="builder">
+        <div class="w-role-ic">🏗️</div>
+        <div class="w-role-title">I'm a boat builder</div>
+        <div class="w-role-sub">See every hull you've built, what's due for service, and one-tap quote your owners.</div>
+        <div class="w-role-cta">Open builder dashboard →</div>
+      </button>
       <button class="w-role" data-role="operator">
         <div class="w-role-ic">⛵</div>
         <div class="w-role-title">I'm an operator</div>
@@ -44,9 +50,9 @@
   <aside class="w-sidebar">
     <div class="w-sb-brand">
       <div class="w-sb-mark">CodedOK</div>
-      <div class="w-sb-mode">Surveyor workspace</div>
+      <div class="w-sb-mode" id="w-sb-mode">Surveyor workspace</div>
     </div>
-    <nav class="w-sb-nav">
+    <nav class="w-sb-nav" id="w-sb-nav-surveyor">
       <button class="w-sb-item on" data-view="portfolio">
         <span class="w-sb-ic">⛵</span><span>Portfolio</span>
         <span class="w-sb-count" id="w-count-portfolio"></span>
@@ -61,6 +67,16 @@
       </button>
       <button class="w-sb-item" data-view="earnings">
         <span class="w-sb-ic">💷</span><span>Earnings</span>
+      </button>
+    </nav>
+    <nav class="w-sb-nav" id="w-sb-nav-builder" style="display:none">
+      <button class="w-sb-item on" data-view="builder">
+        <span class="w-sb-ic">🏗️</span><span>Built hulls</span>
+        <span class="w-sb-count" id="w-count-builder"></span>
+      </button>
+      <button class="w-sb-item" data-view="builder-leads">
+        <span class="w-sb-ic">📣</span><span>Service leads</span>
+        <span class="w-sb-count" id="w-count-builder-leads"></span>
       </button>
     </nav>
     <div class="w-sb-foot">
