@@ -1117,7 +1117,9 @@
         <div class="vc-pattern"></div>
         <div class="vcover-head">
           <div style="display:flex;align-items:center;gap:14px;min-width:0">
-            <div class="vcover-emoji">${v.icon || '⛵'}</div>
+            ${v.photo
+              ? `<div class="vcover-emoji vcover-photo" onclick="event.stopPropagation(); pickVesselPhoto('${v.id}')" title="Replace photo"><img alt="${escapeHtml(v.name)}" src="${escapeHtml(v.photo)}" onerror="this.parentNode.classList.remove('vcover-photo'); this.replaceWith(document.createTextNode('${v.icon || '⛵'}'))"></div>`
+              : `<div class="vcover-emoji vcover-photo-empty" onclick="event.stopPropagation(); pickVesselPhoto('${v.id}')" title="Add photo">${v.icon || '⛵'}<span class="vcover-cam">📷</span></div>`}
             <div style="min-width:0">
               <div class="vcover-name">${escapeHtml(v.name)}</div>
               <div class="vcover-meta">${escapeHtml(v.type || '')}${v.port ? ' · ' + escapeHtml(v.port) : ''}</div>
@@ -2631,6 +2633,43 @@
       </div>
 
       <div class="spacer"></div>`;
+  }
+
+  // ---------- Vessel photo upload ----------
+  let pendingVesselPhotoId = null;
+  function pickVesselPhoto(vesselId) {
+    pendingVesselPhotoId = vesselId;
+    let input = document.getElementById('vessel-photo-input');
+    if (!input) {
+      input = document.createElement('input');
+      input.type = 'file';
+      input.id = 'vessel-photo-input';
+      input.accept = 'image/png,image/jpeg,image/webp';
+      input.style.display = 'none';
+      input.addEventListener('change', handleVesselPhotoUpload);
+      document.body.appendChild(input);
+    }
+    input.click();
+  }
+  window.pickVesselPhoto = pickVesselPhoto;
+
+  function handleVesselPhotoUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file || !pendingVesselPhotoId) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Vessel photo must be under 2 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      Store.setVesselPhoto(pendingVesselPhotoId, reader.result);
+      pendingVesselPhotoId = null;
+      renderHome();
+      if (document.getElementById('s-vessels').classList.contains('on')) renderVesselsList();
+      if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
+    };
+    reader.readAsDataURL(file);
   }
 
   function pickSurveyorLogo() {
@@ -4373,7 +4412,7 @@ ${sectionsHtml}
   // ---------- Demo data controls ----------
 
   function resetDemoData() {
-    if (!confirm('Restore the demo data (Silver Sands & Cormorant)? This will wipe any vessels you added.')) return;
+    if (!confirm('Restore the demo data (Tsunami IV & Lagavulin)? This will wipe any vessels you added.')) return;
     Store.resetToSeed();
     const sv = document.getElementById('s-vessels');
     if (sv) {
