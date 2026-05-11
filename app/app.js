@@ -1125,6 +1125,39 @@
       urgEl.style.display = 'none';
     }
 
+    // Incident -> SMS update suggestion (set when a deficiency is raised).
+    (function () {
+      let raw = null;
+      try { raw = localStorage.getItem('codedok-sms-update-suggested'); } catch (_) {}
+      const homeEl = document.getElementById('s-home');
+      const scroll = homeEl && homeEl.querySelector('.scroll');
+      const old = document.getElementById('home-sms-update-banner');
+      if (old) old.remove();
+      if (!raw || !scroll) return;
+      let payload;
+      try { payload = JSON.parse(raw); } catch (_) { return; }
+      if (!payload || !payload.sms_doc_id) return;
+      const banner = document.createElement('div');
+      banner.id = 'home-sms-update-banner';
+      banner.innerHTML = `
+        <div style="padding:14px 16px 0">
+          <div class="card" style="padding:14px;border-left:4px solid var(--purp);cursor:pointer" onclick="openSmsDoc('${payload.sms_doc_id}')">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="font-size:22px">🔁</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:14px;font-weight:700;color:var(--text)">Update your SMS to prevent recurrence?</div>
+                <div style="font-size:12px;color:var(--mid);margin-top:2px;line-height:1.55">A new deficiency was logged: <em>${escapeHtml(payload.incident || 'unspecified')}</em>. Add a control to the relevant SMS section so this doesn't happen again.</div>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button class="btn btn-sm btn-sea" style="height:32px;padding:0 12px;font-size:12px" onclick="event.stopPropagation(); openSmsDoc('${payload.sms_doc_id}')">Update SMS</button>
+                  <button class="btn btn-sm btn-out" style="height:32px;padding:0 12px;font-size:12px" onclick="event.stopPropagation(); dismissSmsUpdateSuggestion()">Dismiss</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      scroll.insertBefore(banner, scroll.firstChild);
+    })();
+
     // Safety Management — featured card on Home
     const smsCardEl = document.getElementById('home-sms-card');
     if (smsCardEl) {
@@ -3730,8 +3763,35 @@
     const sev = prompt('Severity — critical / major / minor:', 'major');
     Store.addDeficiency({ vessel_id: v.id, title, severity: (sev || 'major').toLowerCase(), source: 'surveyor' });
     renderSurveyorVessel();
+    // Incident -> SMS loop. If this vessel has an active SMS, prompt the
+    // operator (next time they open the app) to update the SMS so the
+    // same issue can't recur.
+    maybePromptSmsUpdate(v.id, title);
   }
   window.surveyorRaiseDeficiency = surveyorRaiseDeficiency;
+
+  // Suggest an SMS update after an incident or deficiency is logged. The
+  // suggestion lives in localStorage until the operator acknowledges it.
+  function dismissSmsUpdateSuggestion() {
+    try { localStorage.removeItem('codedok-sms-update-suggested'); } catch (_) {}
+    const el = document.getElementById('home-sms-update-banner');
+    if (el) el.remove();
+  }
+  window.dismissSmsUpdateSuggestion = dismissSmsUpdateSuggestion;
+
+  function maybePromptSmsUpdate(vesselId, incidentText) {
+    const docs = (Store.snapshot().sms_documents || []).filter((d) => d.vessel_id === vesselId && (d.status === 'active' || d.status === 'signed'));
+    if (docs.length === 0) return;
+    try {
+      localStorage.setItem('codedok-sms-update-suggested', JSON.stringify({
+        vessel_id: vesselId,
+        sms_doc_id: docs[0].id,
+        incident: incidentText,
+        at: new Date().toISOString()
+      }));
+    } catch (_) {}
+  }
+  window.maybePromptSmsUpdate = maybePromptSmsUpdate;
 
   // ---------- Surveyor inspection workflow ----------
 
@@ -3876,6 +3936,29 @@
         </div>
       </div>
 
+      ${(function () {
+        // Annual review banner — surfaces on the hub for any signed SMS
+        // that's within 30 days of its review-due date.
+        if (!docs || !Store.isSmsReviewDue) return '';
+        const dueDoc = docs.find((d) => Store.isSmsReviewDue(d));
+        if (!dueDoc) return '';
+        const days = Store.smsReviewDays(dueDoc);
+        const label = days != null && days < 0 ? `Overdue by ${Math.abs(days)} days` : `Due in ${days} days`;
+        return `
+        <div data-dyn="sms" style="padding:0 16px 8px">
+          <div class="card" onclick="openSmsDoc('${dueDoc.id}')" style="padding:14px;cursor:pointer;border-left:4px solid var(--amber);background:var(--ampp)">
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="font-size:28px">📅</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:14px;font-weight:800;color:var(--text)">Annual SMS review ${label.toLowerCase()}</div>
+                <div style="font-size:12px;color:var(--mid);margin-top:2px;line-height:1.5">5-minute walkthrough to confirm nothing has changed in your operation. Updates your SMS to v${(dueDoc.version || 1) + 1}.</div>
+              </div>
+              <span class="chev">›</span>
+            </div>
+          </div>
+        </div>`;
+      })()}
+
       <div data-dyn="sms" style="padding:0 16px 6px">
         <div class="card" onclick="openSmsAiWizard()" style="padding:16px;cursor:pointer;border-left:4px solid var(--purp);background:linear-gradient(135deg, rgba(124,58,237,.06), rgba(8,145,178,.06))">
           <div style="display:flex;align-items:center;gap:14px">
@@ -3945,13 +4028,267 @@
   }
   window.startNewSms = startNewSms;
 
+  let openSmsDocId = null;
   function openSmsDoc(docId) {
     const d = Store.snapshot().sms_documents.find((x) => x.id === docId);
     if (!d) return;
-    // For prototype: re-download the doc.
-    downloadSmsAsWord(d.title || 'SMS', d.body || '');
+    openSmsDocId = docId;
+    showSmsDocSheet(d);
   }
   window.openSmsDoc = openSmsDoc;
+
+  function showSmsDocSheet(d) {
+    const existing = document.getElementById('sms-doc-sheet');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'sms-doc-sheet';
+    modal.className = 'bdrop on';
+    modal.onclick = function (e) { if (e.target === modal) closeSmsDoc(); };
+    document.body.appendChild(modal);
+
+    const v = d.vessel_id ? Store.getVessel(d.vessel_id) : null;
+    const crew = (Store.snapshot().crew || []).filter((c) => !v || (c.vessel_ids || []).includes(v.id));
+    const acks = d.acknowledgements || [];
+    const ackedIds = new Set(acks.map((a) => a.crew_id));
+    const edits = (d.edit_log || []).slice(-5).reverse();
+    const reviewDays = Store.smsReviewDays ? Store.smsReviewDays(d) : null;
+    const reviewDue = Store.isSmsReviewDue ? Store.isSmsReviewDue(d) : false;
+    const shareToken = d.share_token;
+    const shareValid = shareToken && d.share_token_expires_at && new Date(d.share_token_expires_at).getTime() > Date.now();
+    const shareUrl = shareToken ? `${window.location.origin}${window.location.pathname.replace(/[^\/]*$/, '')}#sms-view?t=${shareToken}` : '';
+
+    modal.innerHTML = `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px);max-height:88vh">
+        <div class="sh-pull"></div>
+        <div class="sh-head">
+          <div class="sh-title">${escapeHtml(d.title || 'Safety Management System')}</div>
+          <button class="sh-x" onclick="closeSmsDoc()">×</button>
+        </div>
+        <div style="padding:0 20px 14px;overflow-y:auto;max-height:75vh">
+          <div style="font-size:12px;color:var(--mid);margin-bottom:14px">
+            v${d.version} · ${escapeHtml(d.status)}${d.signed_at ? ' · signed ' + fmtDate(d.signed_at) : ''}${v ? ' · ' + escapeHtml(v.name) : ''}
+          </div>
+
+          ${reviewDue ? `
+            <div style="background:var(--ampp);border:1px solid rgba(217,119,6,.25);border-radius:12px;padding:14px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start">
+              <div style="font-size:24px">📅</div>
+              <div style="flex:1">
+                <div style="font-size:14px;font-weight:700;color:var(--text)">${reviewDays != null && reviewDays < 0 ? 'Annual review overdue' : 'Annual review due'}</div>
+                <div style="font-size:12px;color:var(--mid);margin-top:2px;line-height:1.5">${reviewDays != null && reviewDays < 0 ? `Overdue by ${Math.abs(reviewDays)} days` : `Due in ${reviewDays} days`}. Five questions to confirm nothing has changed in your operation.</div>
+                <button class="btn btn-sm btn-sea" style="margin-top:10px" onclick="startSmsAnnualReview('${d.id}')">Start review</button>
+              </div>
+            </div>` : ''}
+
+          <!-- 1. Share with surveyor -->
+          <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Show to your surveyor</div>
+          <div class="card" style="padding:14px;margin-bottom:14px">
+            ${shareValid ? `
+              <div style="font-size:12px;color:var(--mid);margin-bottom:8px;line-height:1.5">Read-only link · expires ${fmtDate(d.share_token_expires_at)}. Surveyor can open this on their iPad without an account.</div>
+              <div style="background:var(--slate);padding:10px;border-radius:8px;font-family:monospace;font-size:11px;color:var(--text);word-break:break-all;margin-bottom:10px">${escapeHtml(shareUrl)}</div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-sm btn-sea" style="flex:1" onclick="copySmsShareLink('${escapeHtml(shareUrl)}')">📋 Copy link</button>
+                <button class="btn btn-sm btn-out" onclick="rotateSmsShare('${d.id}')">Rotate</button>
+              </div>` : `
+              <div style="font-size:13px;color:var(--mid);margin-bottom:10px;line-height:1.5">Generate a read-only link your surveyor can open on their iPad — no login, expires in 7 days.</div>
+              <button class="btn btn-sm btn-sea btn-full" onclick="rotateSmsShare('${d.id}')">🔗 Generate surveyor link</button>`}
+          </div>
+
+          <!-- 2. Crew acknowledgements -->
+          <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Crew acknowledgements · ${acks.length}/${crew.length}</div>
+          <div class="card" style="padding:6px 0;margin-bottom:14px">
+            ${crew.length === 0 ? `
+              <div style="padding:14px;font-size:13px;color:var(--mid)">No crew on file yet. Add crew under Vessel → Crew to track read-receipts.</div>` :
+              crew.map((c) => {
+                const acked = ackedIds.has(c.id);
+                const ack = acks.find((a) => a.crew_id === c.id);
+                return `
+                  <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bdr)">
+                    <div style="width:34px;height:34px;border-radius:10px;background:${c.avatar_color || 'var(--seap)'};color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${escapeHtml((c.name || '?').split(' ').map((p) => p[0]).join('').slice(0,2).toUpperCase())}</div>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(c.name)}</div>
+                      <div style="font-size:11px;color:var(--lt)">${acked ? 'Signed ' + fmtDate(ack.at) : (c.role || 'Crew')}</div>
+                    </div>
+                    ${acked
+                      ? `<button class="btn btn-sm btn-out" style="height:32px;padding:0 12px;font-size:12px" onclick="revokeCrewAck('${d.id}','${c.id}')">Revoke</button>`
+                      : `<button class="btn btn-sm btn-sea" style="height:32px;padding:0 12px;font-size:12px" onclick="signCrewAck('${d.id}','${c.id}','${escapeHtml(c.name).replace(/'/g, '&#39;')}')">Sign</button>`}
+                  </div>`;
+              }).join('')}
+          </div>
+
+          <!-- 3. Audit trail -->
+          <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Audit trail</div>
+          <div class="card" style="padding:14px;margin-bottom:14px">
+            ${edits.length === 0 ? `
+              <div style="font-size:13px;color:var(--mid)">No edits logged yet. The next save will appear here.</div>` :
+              edits.map((e) => `
+                <div style="display:flex;gap:10px;padding:6px 0;font-size:12px;color:var(--mid);border-bottom:1px solid rgba(0,0,0,.04)">
+                  <div style="flex-shrink:0;color:var(--lt);min-width:90px">${fmtDate(e.at)}</div>
+                  <div style="flex:1"><strong style="color:var(--text)">${escapeHtml(e.by_name || 'Edited')}</strong>${e.note ? ' — ' + escapeHtml(e.note) : ''}${e.sections && e.sections.length ? ' · ' + escapeHtml(e.sections.join(', ')) : ''}</div>
+                </div>`).join('')}
+            ${d.signed_at && d.signed_by_user_id ? (function(){
+              const surv = (Store.snapshot().users || []).find((u) => u.id === d.signed_by_user_id) || {};
+              const surveyorName = (surv.surveyor && surv.surveyor.company) || surv.name || 'Surveyor';
+              return `
+                <div style="display:flex;gap:10px;padding:8px 0 0;margin-top:8px;border-top:1px solid var(--bdr);font-size:12px;color:var(--green)">
+                  <div style="flex-shrink:0;min-width:90px">${fmtDate(d.signed_at)}</div>
+                  <div style="flex:1">✓ Reviewed &amp; signed by <strong>${escapeHtml(surveyorName)}</strong></div>
+                </div>`;
+            })() : ''}
+          </div>
+
+          <button class="btn btn-out btn-full" onclick="downloadSmsAsWord('${escapeHtml(d.title || 'SMS').replace(/'/g, '&#39;')}', '${(d.body || '').replace(/'/g, '&#39;').replace(/\n/g, ' ')}')">📥 Download Word + PDF</button>
+        </div>
+      </div>`;
+  }
+
+  function closeSmsDoc() {
+    const m = document.getElementById('sms-doc-sheet');
+    if (m) m.remove();
+    openSmsDocId = null;
+  }
+  window.closeSmsDoc = closeSmsDoc;
+
+  // Surveyor read-only view — full-page, no login, no shell. Renders into
+  // the entire body so it works on an iPad on the dock.
+  function renderSmsPublicView(doc, token) {
+    document.body.classList.add('sms-public');
+    // Hide all the .shell screens — we own the whole page now.
+    document.querySelectorAll('.shell').forEach((el) => { el.style.display = 'none'; });
+    let host = document.getElementById('sms-public');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'sms-public';
+      document.body.appendChild(host);
+    }
+    if (!doc) {
+      host.innerHTML = `
+        <div style="max-width:560px;margin:80px auto;padding:36px;background:white;border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.18);font-family:var(--fn);text-align:center">
+          <div style="font-size:48px;margin-bottom:12px">🔒</div>
+          <div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px">Link expired or invalid</div>
+          <div style="font-size:14px;color:var(--mid);line-height:1.55">Ask the operator to generate a fresh surveyor link in the CodedOK app.</div>
+        </div>`;
+      return;
+    }
+    const v = doc.vessel_id ? Store.getVessel(doc.vessel_id) : null;
+    const schema = (window.Codes && window.Codes.SMS_SCHEMA) || [];
+    const surveyorRecord = doc.signed_by_user_id ? (Store.snapshot().users || []).find((u) => u.id === doc.signed_by_user_id) : null;
+    const surveyorName = surveyorRecord ? ((surveyorRecord.surveyor && surveyorRecord.surveyor.company) || surveyorRecord.name || 'Surveyor') : null;
+
+    function fill(text) {
+      if (!text) return '';
+      return text
+        .replace(/\[VESSEL_NAME\]/g, v ? v.name : '')
+        .replace(/\[CATEGORY\]/g, (v && v.category) || '');
+    }
+    function field(secId, fieldId, def) {
+      const sec = (doc.sections || {})[secId] || {};
+      const val = sec[fieldId];
+      if (val != null && String(val).trim() !== '') return String(val);
+      return def ? fill(def) : '';
+    }
+
+    const sectionsHtml = schema.map((sec, i) => {
+      const fields = (sec.fields || []).map((f) => {
+        const val = field(sec.id, f.id, f.default);
+        if (!val) return '';
+        return `
+          <div style="margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${escapeHtml(f.label)}</div>
+            <div style="font-size:14px;color:var(--text);line-height:1.6;white-space:pre-wrap">${escapeHtml(val)}</div>
+          </div>`;
+      }).filter(Boolean).join('');
+      return `
+        <section style="background:white;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:24px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <div style="font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.06em">Section ${i + 1}</div>
+            <div style="display:inline-flex;align-items:center;gap:6px;background:var(--seap);color:var(--sea);font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">📖 ${escapeHtml(sec.ref)}</div>
+          </div>
+          <h2 style="font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.3px;margin-bottom:14px">${sec.icon} ${escapeHtml(sec.title)}</h2>
+          ${fields || '<div style="font-size:13px;color:var(--lt);font-style:italic">Section not yet completed.</div>'}
+        </section>`;
+    }).join('');
+
+    const acks = doc.acknowledgements || [];
+    const edits = (doc.edit_log || []).slice(-10).reverse();
+
+    host.innerHTML = `
+      <div style="min-height:100vh;background:var(--page);font-family:var(--fn);padding:24px 16px 60px">
+        <div style="max-width:760px;margin:0 auto">
+          <div style="background:var(--ink);color:white;border-radius:18px;padding:28px 24px;margin-bottom:18px;background-image:radial-gradient(circle at 80% 0%, rgba(8,145,178,.22), transparent 60%)">
+            <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Safety Management System · read-only</div>
+            <div style="font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.15">${escapeHtml(v ? v.name : (doc.title || 'SMS'))}</div>
+            <div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:6px">v${doc.version}${doc.signed_at ? ' · signed ' + fmtDate(doc.signed_at) : ''}${v && v.category ? ' · ' + escapeHtml(v.category) : ''}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:14px">Shared by the operator via CodedOK. This is a read-only snapshot — changes won't sync.</div>
+          </div>
+
+          ${surveyorName ? `
+            <div style="background:var(--grnp);border:1px solid rgba(22,163,74,.2);border-radius:12px;padding:14px 18px;margin-bottom:18px;font-size:13px;color:var(--green);font-weight:700">✓ Signed by ${escapeHtml(surveyorName)} on ${fmtDate(doc.signed_at)}</div>` : ''}
+
+          ${sectionsHtml}
+
+          ${acks.length ? `
+            <section style="background:white;border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+              <h2 style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:12px">Crew acknowledgements · ${acks.length}</h2>
+              ${acks.map((a) => `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--bdr)"><span style="color:var(--text);font-weight:600">${escapeHtml(a.name || a.crew_id)}</span><span style="color:var(--lt)">${fmtDate(a.at)}</span></div>`).join('')}
+            </section>` : ''}
+
+          ${edits.length ? `
+            <section style="background:white;border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+              <h2 style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:12px">Audit trail</h2>
+              ${edits.map((e) => `<div style="display:flex;gap:12px;padding:6px 0;font-size:13px;color:var(--mid);border-bottom:1px solid var(--bdr)"><span style="min-width:100px;color:var(--lt)">${fmtDate(e.at)}</span><span style="flex:1"><strong style="color:var(--text)">${escapeHtml(e.by_name)}</strong>${e.note ? ' — ' + escapeHtml(e.note) : ''}</span></div>`).join('')}
+            </section>` : ''}
+
+          <div style="font-size:11px;color:var(--lt);text-align:center;margin-top:20px">CodedOK · token ${escapeHtml(token || '')}${doc.share_token_expires_at ? ' · link expires ' + fmtDate(doc.share_token_expires_at) : ''}</div>
+        </div>
+      </div>`;
+  }
+
+  function rotateSmsShare(docId) {
+    Store.createSmsShareToken(docId);
+    const d = Store.snapshot().sms_documents.find((x) => x.id === docId);
+    if (d) showSmsDocSheet(d);
+  }
+  window.rotateSmsShare = rotateSmsShare;
+
+  function copySmsShareLink(url) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(
+        () => alert('Surveyor link copied. Paste it into a message or email.'),
+        () => prompt('Copy the surveyor link:', url)
+      );
+    } else {
+      prompt('Copy the surveyor link:', url);
+    }
+  }
+  window.copySmsShareLink = copySmsShareLink;
+
+  function signCrewAck(docId, crewId, name) {
+    Store.ackSms(docId, crewId, name);
+    Store.appendSmsEdit(docId, { note: `Crew ack — ${name}` });
+    const d = Store.snapshot().sms_documents.find((x) => x.id === docId);
+    if (d) showSmsDocSheet(d);
+  }
+  window.signCrewAck = signCrewAck;
+
+  function revokeCrewAck(docId, crewId) {
+    Store.revokeSmsAck(docId, crewId);
+    const d = Store.snapshot().sms_documents.find((x) => x.id === docId);
+    if (d) showSmsDocSheet(d);
+  }
+  window.revokeCrewAck = revokeCrewAck;
+
+  function startSmsAnnualReview(docId) {
+    const d = Store.snapshot().sms_documents.find((x) => x.id === docId);
+    if (!d) return;
+    Store.appendSmsEdit(docId, { note: 'Started annual review' });
+    Store.updateSmsDocument(docId, { status: 'review', version: (d.version || 1) + 0 });
+    closeSmsDoc();
+    // Hand off to the existing builder — operator walks through the
+    // 11 sections again, edits anything that's changed, finishes.
+    smsActiveSection = 0;
+    go('s-sms-builder');
+  }
+  window.startSmsAnnualReview = startSmsAnnualReview;
 
   let smsActiveSection = 0;
 
@@ -4284,10 +4621,13 @@
         ${stepperHtml}
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
           <div style="min-width:0">
-            <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em">Section ${smsActiveSection + 1} of ${schema.length} · ${escapeHtml(sec.ref)}</div>
+            <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em">Section ${smsActiveSection + 1} of ${schema.length}</div>
             <div style="font-size:18px;font-weight:700;color:var(--text);margin-top:3px;letter-spacing:-.2px">${sec.icon} ${escapeHtml(sec.title)}</div>
           </div>
           <span class="chip chip-bl">${pct}% done</span>
+        </div>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:var(--seap);border:1px solid rgba(8,145,178,.2);color:var(--sea);font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;margin-bottom:10px">
+          <span>📖</span><span>Satisfies ${escapeHtml(sec.ref)}</span>
         </div>
         <div style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:12px">${escapeHtml(sec.blurb)}</div>
       </div>
@@ -4380,6 +4720,12 @@
       built_by_codedok: false,
       version: 1
     });
+
+    // Seed the audit trail with the finish event so the surveyor sees
+    // when this version was first compiled.
+    if (Store.appendSmsEdit) {
+      Store.appendSmsEdit(stored.id, { note: 'SMS compiled', sections: ['all'] });
+    }
 
     // Show finish screen — download + review options
     showSmsFinishSheet(stored, draft);
@@ -5217,6 +5563,18 @@ ${sectionsHtml}
     if (mark) mark.innerHTML = codedOkMark(38);
 
     renderDemoBadge();
+
+    // Surveyor read-only SMS view — login-free.
+    // Pattern: #sms-view?t=TOKEN (or ?t=TOKEN in the query string).
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    const tokenMatch = (hash + search).match(/[?&]t=([A-Z0-9]+)/i);
+    const isSmsView = /sms-view/.test(hash) || /sms-view/.test(search);
+    if (isSmsView && tokenMatch && tokenMatch[1] && window.Store) {
+      const doc = Store.getSmsByShareToken(tokenMatch[1]);
+      renderSmsPublicView(doc, tokenMatch[1]);
+      return; // Don't continue to the normal app routing.
+    }
 
     // Deep-link from /web — surveyor opens a specific vessel.
     // Web app stores { vesselId, view, ts } on localStorage; we consume it once.
