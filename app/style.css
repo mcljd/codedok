@@ -1070,10 +1070,40 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
   /* Top dark header on home — less bottom padding */
   #s-home > div[style*="background:var(--ink)"] {
-    padding-bottom: 14px !important;
+    padding-bottom: 18px !important;
+    transition: padding 220ms ease;
   }
   #home-greeting > div:first-child { font-size: 11px !important; margin-bottom: 1px !important; }
-  #home-greeting .h-display { font-size: 18px !important; }
+  #home-greeting .h-display {
+    font-size: 18px !important;
+    transition: font-size 220ms ease;
+  }
+
+  /* First content label gets a touch more breathing room from the header */
+  #s-home .scroll > .slbl:first-child { padding-top: 18px !important; }
+
+  /* Collapsing hero on scroll — keeps ring + badge, hides tile row */
+  #home-status {
+    transition: padding 220ms ease;
+  }
+  #home-status > div:last-child {
+    transition: max-height 240ms ease, opacity 180ms ease, margin-top 240ms ease;
+    max-height: 80px;
+    overflow: hidden;
+    opacity: 1;
+  }
+  #s-home.hero-collapsed > div[style*="background:var(--ink)"] {
+    padding-bottom: 10px !important;
+  }
+  #s-home.hero-collapsed #home-greeting .h-display {
+    font-size: 15px !important;
+  }
+  #s-home.hero-collapsed #home-status { padding: 10px 12px !important; }
+  #s-home.hero-collapsed #home-status > div:last-child {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0 !important;
+  }
 
   /* Section headings — slightly smaller */
   .h-section { font-size: 14px !important; margin: 14px 16px 6px !important; }

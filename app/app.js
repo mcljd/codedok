@@ -870,6 +870,22 @@
     if (!window.Store) return;
     const s = Store.snapshot();
 
+    // Collapse the home hero on scroll. Idempotent — guarded by data flag.
+    const homeShell = document.getElementById('s-home');
+    const homeScroll = homeShell && homeShell.querySelector('.scroll');
+    if (homeScroll && !homeScroll.dataset.collapseBound) {
+      homeScroll.dataset.collapseBound = '1';
+      let ticking = false;
+      homeScroll.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          homeShell.classList.toggle('hero-collapsed', homeScroll.scrollTop > 32);
+          ticking = false;
+        });
+      }, { passive: true });
+    }
+
     const hr = new Date().getHours();
     const part = hr < 12 ? 'morning' : hr < 18 ? 'afternoon' : 'evening';
     const greeting = document.getElementById('home-greeting');
