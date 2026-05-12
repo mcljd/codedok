@@ -5562,7 +5562,13 @@ ${sectionsHtml}
       // Surface the real error — silent failures here turn into bug
       // reports like "I signed in but nothing showed up in Supabase".
       console.error('handleSignedIn failed', err);
-      alert("Couldn't finish signing you in: " + (err.message || err) + "\n\nCheck Supabase RLS policies — see migration 0003_insert_policies.sql.");
+      const msg = (err && err.message) || String(err);
+      const hint = /infinite recursion/.test(msg)
+        ? 'Run migration 0004_fix_policy_recursion.sql in the Supabase SQL editor.'
+        : /violates row-level security|permission denied|new row violates/i.test(msg)
+        ? 'Run migration 0003_insert_policies.sql in the Supabase SQL editor.'
+        : 'Check Supabase RLS policies (migrations 0002–0004) in /supabase/migrations.';
+      alert("Couldn't finish signing you in:\n\n" + msg + "\n\n" + hint);
     }
   }
 
