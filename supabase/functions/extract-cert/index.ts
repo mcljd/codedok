@@ -1,10 +1,13 @@
 // CodedOK — Supabase Edge Function: extract-cert
 //
-// Takes a photo or PDF page of a single marine certificate / equipment
-// service document and returns structured fields ready to drop into the
-// vessel's cert or equipment record.
+// Accepts a single certificate / equipment service document in any of:
+//   - Image (JPEG, PNG, WebP) — phone snap
+//   - PDF — surveyor's saved cert or scanner output
+//   - DOCX — Word doc cert (rarer, but happens)
 //
-// Powered by Claude Sonnet 4.6 vision. Costs ~£0.01 per extraction.
+// Returns the structured fields ready to drop into a vessel's cert
+// or equipment record. Powered by Claude Sonnet 4.6 (vision + document
+// support). ~£0.01 per extraction.
 //
 // Deploy: paste into Supabase Dashboard → Edge Functions → New function
 //         → name 'extract-cert' → paste → Deploy
@@ -13,10 +16,11 @@
 //
 // Invoke from the browser:
 //   const { data } = await Supa.client.functions.invoke('extract-cert', {
-//     body: { image: '<base64 string>', mimeType: 'image/jpeg' }
+//     body: { image: '<base64 string>', mimeType: 'application/pdf' }
 //   });
 
 import Anthropic from "npm:@anthropic-ai/sdk@^0.27.0";
+import mammoth from "npm:mammoth@^1.6.0";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -79,8 +83,43 @@ Deno.serve(async (req) => {
   const mimeType = body.mimeType || "image/jpeg";
   if (!image) return jsonError(400, "Missing 'image' (base64 string)");
 
-  // Strip a 'data:image/jpeg;base64,' prefix if the caller included it.
+  // Strip a 'data:application/pdf;base64,' prefix if the caller included it.
   const base64 = String(image).replace(/^data:[^;]+;base64,/, "");
+
+  // Build the content block based on file type:
+  //   image/*  -> vision (base64 image source)
+  //   application/pdf -> document (Claude reads natively)
+  //   docx -> extract text with mammoth, send as text
+  let userContent: any[];
+
+  if (/^image\//i.test(mimeType)) {
+    userContent = [
+      { type: "image", source: { type: "base64", media_type: mimeType, data: base64 } },
+      { type: "text", text: "Extract the structured fields. Return JSON only." },
+    ];
+  } else if (mimeType === "application/pdf") {
+    userContent = [
+      { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
+      { type: "text", text: "Extract the structured fields from this certificate PDF. Return JSON only." },
+    ];
+  } else if (/officedocument\.wordprocessingml\.document|msword/i.test(mimeType)) {
+    // DOCX — extract plain text first (Claude can't read .docx binary).
+    try {
+      const buffer = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      const { value: docxText } = await mammoth.extractRawText({ buffer });
+      if (!docxText || !docxText.trim()) {
+        return jsonError(400, "Couldn't read text from that DOCX. Try saving as PDF.");
+      }
+      userContent = [{
+        type: "text",
+        text: `The following is the plain-text contents of a Word document containing one marine certificate.\n\n---\n${docxText.slice(0, 20000)}\n---\n\nExtract the structured fields. Return JSON only.`,
+      }];
+    } catch (err) {
+      return jsonError(400, "Couldn't parse the DOCX file", String(err));
+    }
+  } else {
+    return jsonError(400, `Unsupported file type: ${mimeType}. Use JPEG/PNG/WebP, PDF, or DOCX.`);
+  }
 
   const anthropic = new Anthropic({ apiKey });
 
@@ -94,16 +133,7 @@ Deno.serve(async (req) => {
         text: SYSTEM_PROMPT,
         cache_control: { type: "ephemeral" },  // cache the static prompt
       }],
-      messages: [{
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: mimeType, data: base64 },
-          },
-          { type: "text", text: "Extract the structured fields. Return JSON only." },
-        ],
-      }],
+      messages: [{ role: "user", content: userContent }],
     });
   } catch (err) {
     return jsonError(502, "Claude API call failed", String(err));

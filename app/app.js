@@ -3122,29 +3122,47 @@
 
   let pendingCertVesselId = null;
 
+  // Open the iOS camera by default — used by the operator's "Snap a cert"
+  // button on vessel detail. Accepts image, PDF or DOCX.
   function pickCertPhoto(vesselId) {
+    openCertPicker(vesselId, { camera: true });
+  }
+  window.pickCertPhoto = pickCertPhoto;
+
+  // Open a file picker for PDF / DOCX / image. Used by the surveyor's
+  // "Upload certificate" flow — most surveyor docs come as PDFs.
+  function pickCertDocument(vesselId) {
+    openCertPicker(vesselId, { camera: false });
+  }
+  window.pickCertDocument = pickCertDocument;
+
+  function openCertPicker(vesselId, opts) {
     pendingCertVesselId = vesselId || null;
-    let input = document.getElementById('cert-photo-input');
+    // Two separate inputs so the camera flag doesn't stick on the
+    // document-picker path.
+    const id = (opts && opts.camera) ? 'cert-photo-input' : 'cert-doc-input';
+    let input = document.getElementById(id);
     if (!input) {
       input = document.createElement('input');
       input.type = 'file';
-      input.id = 'cert-photo-input';
-      input.accept = 'image/*,application/pdf';
-      input.capture = 'environment';   // iOS shows camera by default
+      input.id = id;
+      input.accept = (opts && opts.camera)
+        ? 'image/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        : 'application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*';
+      if (opts && opts.camera) input.capture = 'environment';
       input.style.display = 'none';
       input.addEventListener('change', handleCertPhotoUpload);
       document.body.appendChild(input);
     }
     input.click();
   }
-  window.pickCertPhoto = pickCertPhoto;
 
   async function handleCertPhotoUpload(e) {
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      alert('That image is too big (over 8 MB). Snap a smaller photo and try again.');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('That file is too big (over 10 MB). Try compressing it or saving as a smaller PDF.');
       return;
     }
     if (!window.Supa || !window.Supa.ready) {
@@ -3152,7 +3170,8 @@
       return;
     }
 
-    showCertSpinner('Reading your certificate…');
+    const kind = /pdf/i.test(file.type) ? 'PDF' : /word|officedocument/i.test(file.type) ? 'Word document' : 'photo';
+    showCertSpinner(`Reading your ${kind}…`);
     try {
       const base64 = await readFileAsBase64(file);
       const { data, error } = await Supa.client.functions.invoke('extract-cert', {
@@ -4128,9 +4147,10 @@
             <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;letter-spacing:-.3px">${score}<span style="font-size:9px;font-weight:600;color:rgba(255,255,255,.6);margin-left:1px">%</span></div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;position:relative;z-index:1">
-          <button class="btn btn-sea btn-sm" style="flex:1" onclick="surveyorStartInspection()">▶ Start inspection</button>
-          <button class="btn btn-sm" style="flex:1;background:rgba(255,255,255,.08);color:white;border:1px solid rgba(255,255,255,.12)" onclick="surveyorRaiseDeficiency()">+ Deficiency</button>
+        <div style="display:flex;gap:8px;position:relative;z-index:1;flex-wrap:wrap">
+          <button class="btn btn-sea btn-sm" style="flex:1;min-width:140px" onclick="surveyorStartInspection()">▶ Start inspection</button>
+          <button class="btn btn-sm" style="flex:1;min-width:140px;background:rgba(255,255,255,.08);color:white;border:1px solid rgba(255,255,255,.12)" onclick="surveyorRaiseDeficiency()">+ Deficiency</button>
+          <button class="btn btn-sm" style="flex:1;min-width:140px;background:rgba(255,255,255,.08);color:white;border:1px solid rgba(255,255,255,.12)" onclick="pickCertDocument('${v.id}')">📄 Upload cert</button>
         </div>
       </div>
 
@@ -4150,15 +4170,21 @@
             </div>`).join('')}
         </div>` : ''}
 
-      <div class="h-section-row" style="margin:18px 16px 8px;display:flex;align-items:center;justify-content:space-between">
+      <div class="h-section-row" style="margin:18px 16px 8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div class="h-section" style="margin:0">Certificates · ${certs.length}</div>
-        <button class="btn btn-sm btn-out" onclick="pickCertPhoto('${v.id}')" style="height:36px;padding:0 12px;font-size:13px;font-weight:700">📷 Snap a cert</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-out" onclick="pickCertPhoto('${v.id}')" style="height:36px;padding:0 12px;font-size:13px;font-weight:700">📷 Snap</button>
+          <button class="btn btn-sm btn-out" onclick="pickCertDocument('${v.id}')" style="height:36px;padding:0 12px;font-size:13px;font-weight:700">📄 Upload</button>
+        </div>
       </div>
-      <div style="padding:0 16px">${certs.map((c) => ticketHtml(c, 'cert')).join('') || '<div class="empty"><div class="empty-art">📋</div><div class="empty-h">No certificates</div><div class="empty-sub">Tap <strong>Snap a cert</strong> to add one from a photo.</div></div>'}</div>
+      <div style="padding:0 16px">${certs.map((c) => ticketHtml(c, 'cert')).join('') || '<div class="empty"><div class="empty-art">📋</div><div class="empty-h">No certificates</div><div class="empty-sub">Tap <strong>📷 Snap</strong> to add from a phone photo, or <strong>📄 Upload</strong> a PDF / DOCX.</div></div>'}</div>
 
-      <div class="h-section-row" style="margin:18px 16px 8px;display:flex;align-items:center;justify-content:space-between">
+      <div class="h-section-row" style="margin:18px 16px 8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div class="h-section" style="margin:0">Equipment register · ${equipment.length}</div>
-        <button class="btn btn-sm btn-out" onclick="pickCertPhoto('${v.id}')" style="height:36px;padding:0 12px;font-size:13px;font-weight:700">📷 Snap a service doc</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-out" onclick="pickCertPhoto('${v.id}')" style="height:36px;padding:0 12px;font-size:13px;font-weight:700">📷 Snap</button>
+          <button class="btn btn-sm btn-out" onclick="pickCertDocument('${v.id}')" style="height:36px;padding:0 12px;font-size:13px;font-weight:700">📄 Upload</button>
+        </div>
       </div>
       <div style="padding:0 16px">${equipment.map((e) => ticketHtml(e, 'equipment')).join('') || '<div class="empty"><div class="empty-art">🦺</div><div class="empty-h">No equipment logged</div></div>'}</div>
 
