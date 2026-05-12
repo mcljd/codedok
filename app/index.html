@@ -787,43 +787,60 @@
   </div>
   <div class="scroll pb24">
 
-    <!-- Scan frame -->
-    <div style="padding:20px 20px 0">
-      <div class="scan-frame" onclick="openCertFilePicker()">
-        <span style="font-size:42px">📷</span>
-        <div style="font-size:15px;font-weight:600;color:var(--sea)">Point at any certificate</div>
-        <div style="font-size:13px;color:var(--lt);text-align:center;max-width:220px;line-height:1.5">MCA cert, insurance doc, service record, crew qualification — Claude AI reads it instantly</div>
-        <button class="btn btn-sea" style="margin-top:6px">Open camera</button>
+    <!-- Three equal-weight ways in. None of them assume the user has a
+         camera in their hand — PDFs from email and manual entries are
+         just as common as snaps. -->
+    <div style="padding:18px 16px 8px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--lt);margin-bottom:10px">Add a record</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="scan-opt scan-opt-primary" onclick="openCertCamera()">
+          <div class="scan-opt-ic" style="background:var(--seap);color:var(--sea)">📷</div>
+          <div class="scan-opt-text">
+            <div class="scan-opt-title">Take a photo</div>
+            <div class="scan-opt-sub">Use your camera — Claude reads the cert and fills the form for you</div>
+          </div>
+          <span class="scan-opt-arrow">›</span>
+        </button>
+        <button class="scan-opt" onclick="openCertFilePicker()">
+          <div class="scan-opt-ic" style="background:var(--purpp);color:var(--purp)">📄</div>
+          <div class="scan-opt-text">
+            <div class="scan-opt-title">Upload PDF or file</div>
+            <div class="scan-opt-sub">Pick a PDF, scanned image or Word doc from Files or email</div>
+          </div>
+          <span class="scan-opt-arrow">›</span>
+        </button>
+        <button class="scan-opt" onclick="openCertManual()">
+          <div class="scan-opt-ic" style="background:var(--ampp);color:var(--amber)">✎</div>
+          <div class="scan-opt-text">
+            <div class="scan-opt-title">Add manually</div>
+            <div class="scan-opt-sub">Type the details yourself — no file needed (you can attach one later)</div>
+          </div>
+          <span class="scan-opt-arrow">›</span>
+        </button>
       </div>
     </div>
 
-    <!-- Or upload -->
-    <div style="display:flex;align-items:center;gap:12px;padding:16px 20px">
-      <div style="flex:1;height:1px;background:var(--bdr)"></div>
-      <span style="font-size:13px;color:var(--lt);font-weight:500">or upload from files</span>
-      <div style="flex:1;height:1px;background:var(--bdr)"></div>
-    </div>
-
-    <!-- Quick add categories -->
-    <div style="padding:0 20px">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--lt);margin-bottom:12px">Quick add by type</div>
+    <!-- Quick add by type — opens the file picker pre-tagged so the form
+         defaults to the right category. -->
+    <div style="padding:6px 16px 0">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--lt);margin:14px 0 10px">Quick add by type</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div style="background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer" onclick="openCertFilePicker('vessel')">
+        <div class="quick-add-tile" onclick="openCertFilePicker('vessel')">
           <span style="font-size:24px">📋</span>
           <div style="font-size:13px;font-weight:600;color:var(--text)">Vessel certificate</div>
           <div style="font-size:11px;color:var(--lt)">Coding cert, loadline, radio licence</div>
         </div>
-        <div style="background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer" onclick="openCertFilePicker('equipment')">
+        <div class="quick-add-tile" onclick="openCertFilePicker('equipment')">
           <span style="font-size:24px">🦺</span>
           <div style="font-size:13px;font-weight:600;color:var(--text)">Safety equipment</div>
           <div style="font-size:11px;color:var(--lt)">Lifejackets, flares, fire ext.</div>
         </div>
-        <div style="background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer" onclick="openCertFilePicker('insurance')">
+        <div class="quick-add-tile" onclick="openCertFilePicker('insurance')">
           <span style="font-size:24px">🛡️</span>
           <div style="font-size:13px;font-weight:600;color:var(--text)">Insurance</div>
           <div style="font-size:11px;color:var(--lt)">PLI, P&I, hull insurance</div>
         </div>
-        <div style="background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer" onclick="openCertFilePicker('crew')">
+        <div class="quick-add-tile" onclick="openCertFilePicker('crew')">
           <span style="font-size:24px">🎓</span>
           <div style="font-size:13px;font-weight:600;color:var(--text)">Crew qualification</div>
           <div style="font-size:11px;color:var(--lt)">Skipper cert, medical, radio</div>
@@ -2393,8 +2410,15 @@
 <!-- Hidden file inputs used by the scan / equipment flows.
      `capture="environment"` prompts mobile to use the rear camera,
      while still allowing file selection on desktop and "choose from library" on phones. -->
-<input id="cert-file-input" type="file" accept="application/pdf,image/*" capture="environment" style="display:none">
-<input id="eq-file-input" type="file" accept="application/pdf,image/*" capture="environment" style="display:none">
+<!-- File pickers. Two of each: one capture="environment" for "Take a photo"
+     (iOS opens the camera directly), one without capture for "Upload file"
+     (iOS opens the Photos / Files picker so the user can grab a PDF, a
+     scanned image, etc.). Splitting them is the only way to support both
+     paths reliably on iOS Safari. -->
+<input id="cert-file-input"        type="file" accept="application/pdf,image/*,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none">
+<input id="cert-camera-input"      type="file" accept="image/*" capture="environment" style="display:none">
+<input id="eq-file-input"          type="file" accept="application/pdf,image/*" style="display:none">
+<input id="eq-camera-input"        type="file" accept="image/*" capture="environment" style="display:none">
 
 
 </body>

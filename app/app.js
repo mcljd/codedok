@@ -181,6 +181,11 @@
 
   let pendingEquipmentFile = null;
 
+  // Three entry points to the same add-cert form:
+  //   - openCertCamera:  opens the iOS camera (capture="environment")
+  //   - openCertFilePicker: opens the Photos / Files picker (no capture)
+  //   - openCertManual:  skips the file step entirely and jumps to the
+  //                       form so the user can type details by hand.
   function openCertFilePicker(categoryHint) {
     const input = document.getElementById('cert-file-input');
     if (!input) return;
@@ -190,6 +195,26 @@
   }
   window.openCertFilePicker = openCertFilePicker;
 
+  function openCertCamera(categoryHint) {
+    const input = document.getElementById('cert-camera-input');
+    if (!input) return;
+    input.value = '';
+    input.dataset.hint = categoryHint || 'vessel';
+    input.click();
+  }
+  window.openCertCamera = openCertCamera;
+
+  function openCertManual(categoryHint) {
+    pendingScan = {
+      kind: 'cert',
+      categoryHint: categoryHint || 'vessel',
+      manual: true,
+      file: null
+    };
+    go('s-scan-confirm');
+  }
+  window.openCertManual = openCertManual;
+
   function openEquipmentFilePicker() {
     const input = document.getElementById('eq-file-input');
     if (!input) return;
@@ -197,6 +222,14 @@
     input.click();
   }
   window.openEquipmentFilePicker = openEquipmentFilePicker;
+
+  function openEquipmentCamera() {
+    const input = document.getElementById('eq-camera-input');
+    if (!input) return;
+    input.value = '';
+    input.click();
+  }
+  window.openEquipmentCamera = openEquipmentCamera;
 
   function attachToExistingCert(certId) {
     attachContext = { mode: 'cert', id: certId };
@@ -230,15 +263,27 @@
   }
   window.viewAttachment = viewAttachment;
 
-  // Wire the hidden file inputs at boot.
+  // Wire the hidden file inputs at boot. Camera vs file-picker variants
+  // funnel into the same handler — the only difference is which native
+  // sheet iOS opens.
   function wireFileInputs() {
     const cert = document.getElementById('cert-file-input');
     if (cert) cert.addEventListener('change', (e) => {
       const f = e.target.files && e.target.files[0];
       if (f) handleCertFilePicked(f, cert.dataset.hint);
     });
+    const certCam = document.getElementById('cert-camera-input');
+    if (certCam) certCam.addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (f) handleCertFilePicked(f, certCam.dataset.hint);
+    });
     const eq = document.getElementById('eq-file-input');
     if (eq) eq.addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (f) handleEquipmentFilePicked(f);
+    });
+    const eqCam = document.getElementById('eq-camera-input');
+    if (eqCam) eqCam.addEventListener('change', (e) => {
       const f = e.target.files && e.target.files[0];
       if (f) handleEquipmentFilePicked(f);
     });
@@ -1580,18 +1625,18 @@
     if (tabId === 'cr-vessel') {
       const list = allCerts.filter((c) => c.category === 'vessel').sort((a, b) => Store.daysUntil(a.expires_at) - Store.daysUntil(b.expires_at));
       let html = '<div style="padding:14px 16px 4px">';
-      if (list.length === 0) html += emptyState('📋', 'No vessel certificates yet', 'Scan your Coding cert, radio licence, stability book or any vessel-level document.');
+      if (list.length === 0) html += emptyState('📋', 'No vessel certificates yet', 'Coding cert, radio licence, stability book — snap, upload or type it in.');
       else list.forEach((c) => { html += ticketHtml(c, 'cert'); });
-      html += `<div style="padding:6px 0 14px"><button class="btn btn-sea btn-full" onclick="go('s-scan')">📷 Scan certificate</button></div></div><div class="spacer"></div>`;
+      html += `<div style="padding:6px 0 14px"><button class="btn btn-sea btn-full" onclick="go('s-scan')">+ Add certificate</button></div></div><div class="spacer"></div>`;
       return html;
     }
 
     if (tabId === 'cr-equipment') {
       const list = allEquipment.slice().sort((a, b) => Store.daysUntil(a.next_service_at) - Store.daysUntil(b.next_service_at));
       let html = '<div style="padding:14px 16px 4px">';
-      if (list.length === 0) html += emptyState('🦺', 'No equipment logged', 'Add liferaft, lifejackets, EPIRB, fire extinguishers and other safety gear with their service dates.');
+      if (list.length === 0) html += emptyState('🦺', 'No equipment logged', 'Liferaft, lifejackets, EPIRB, fire extinguishers — log each with its service date.');
       else list.forEach((e) => { html += ticketHtml(e, 'equipment'); });
-      html += '</div><div class="spacer"></div>';
+      html += `<div style="padding:6px 0 14px"><button class="btn btn-sea btn-full" onclick="openCertManual('equipment')">+ Add equipment</button></div></div><div class="spacer"></div>`;
       return html;
     }
 
@@ -1610,9 +1655,9 @@
     if (tabId === 'cr-insurance') {
       const list = allCerts.filter((c) => c.category === 'insurance').sort((a, b) => Store.daysUntil(a.expires_at) - Store.daysUntil(b.expires_at));
       let html = '<div style="padding:14px 16px 4px">';
-      if (list.length === 0) html += emptyState('🛡️', 'No insurance docs', 'Scan your PLI, P&I or hull insurance certificate so renewals never lapse.');
+      if (list.length === 0) html += emptyState('🛡️', 'No insurance docs', 'PLI, P&I, hull insurance — keep your policy doc here so renewals never lapse.');
       else list.forEach((c) => { html += ticketHtml(c, 'cert'); });
-      html += '</div><div class="spacer"></div>';
+      html += `<div style="padding:6px 0 14px"><button class="btn btn-sea btn-full" onclick="openCertManual('insurance')">+ Add insurance</button></div></div><div class="spacer"></div>`;
       return html;
     }
     return '';
@@ -2075,24 +2120,25 @@
   function renderScanConfirm() {
     const wrap = document.getElementById('scan-confirm-scroll');
     if (!wrap) return;
-    if (!pendingScan || !pendingScan.file) {
+    if (!pendingScan) {
       wrap.innerHTML = `
         <div class="empty">
           <div class="empty-art">📷</div>
-          <div class="empty-h">No file selected</div>
-          <div class="empty-sub">Pick a photo or PDF from the previous screen.</div>
-          <button class="btn btn-sea btn-sm" onclick="go('s-scan')">‹ Back to scan</button>
+          <div class="empty-h">Nothing to add yet</div>
+          <div class="empty-sub">Choose one of the options on the previous screen.</div>
+          <button class="btn btn-sea btn-sm" onclick="go('s-scan')">‹ Back</button>
         </div>`;
       return;
     }
+    const isManual = !!pendingScan.manual;
     const f = pendingScan.file;
     const v = Store.getVessel(activeVesselId) || Store.snapshot().vessels[0];
-    const isImage = f.type && f.type.startsWith('image/');
-    const isPdf = f.type === 'application/pdf';
+    const isImage = f && f.type && f.type.startsWith('image/');
+    const isPdf = f && f.type === 'application/pdf';
     const today = new Date().toISOString().slice(0, 10);
 
-    // Best-guess defaults from filename.
-    const guessFromName = (f.name || '').toLowerCase();
+    // Best-guess defaults from filename (only useful when a file is present).
+    const guessFromName = ((f && f.name) || '').toLowerCase();
     let defaultName = 'Certificate';
     let defaultIcon = '📋';
     let defaultKind = 'other';
@@ -2108,8 +2154,7 @@
     else if (/(eng1|medical|ml5)/.test(guessFromName))  { defaultName = 'ENG1 Medical';               defaultKind = 'medical';    defaultCategory = 'crew';     defaultIcon = '🏥'; }
     else if (/(skipper|yachtmaster|day.?skipper)/.test(guessFromName)) { defaultName = 'RYA Day Skipper'; defaultKind = 'skipper'; defaultCategory = 'crew'; defaultIcon = '🎓'; }
 
-    wrap.innerHTML = `
-      <!-- File preview -->
+    const filePreviewHtml = f ? `
       <div style="padding:14px 16px 0">
         <div style="background:var(--slate);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:center">
           <div style="width:56px;height:56px;border-radius:11px;background:var(--card);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
@@ -2125,7 +2170,16 @@
           <span style="font-size:14px">📎</span>
           <div style="font-size:11px;color:var(--mid);line-height:1.5">File attached. We've taken a guess at the details from the filename — review and correct anything wrong.</div>
         </div>
-      </div>
+      </div>` : `
+      <div style="padding:14px 16px 0">
+        <div style="background:var(--ampp);border:1px solid rgba(217,119,6,.15);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
+          <span style="font-size:18px;flex-shrink:0">✎</span>
+          <div style="font-size:12px;color:var(--mid);line-height:1.5">Manual entry — type the details by hand. You can attach a PDF or photo later from the record's detail screen.</div>
+        </div>
+      </div>`;
+
+    wrap.innerHTML = `
+      ${filePreviewHtml}
 
       <!-- Form -->
       <div class="card mx" style="margin-top:12px">
@@ -2176,23 +2230,44 @@
     if (!pendingScan) return;
     const name = (document.getElementById('sc-name') || {}).value || 'Certificate';
     const vesselId = (document.getElementById('sc-vessel') || {}).value;
+    if (!vesselId) {
+      alert('Pick a vessel first.');
+      return;
+    }
     const category = (document.getElementById('sc-category') || {}).value || 'vessel';
     const issuer = (document.getElementById('sc-issuer') || {}).value || '';
     const number = (document.getElementById('sc-number') || {}).value || '';
     const issued_at = (document.getElementById('sc-issued') || {}).value || null;
     const expires_at = (document.getElementById('sc-expires') || {}).value || null;
-    Store.addCert({
-      vessel_id: vesselId,
-      kind: defaultKind || 'other',
-      name,
-      icon: defaultIcon || '📋',
-      category,
-      issuer,
-      number,
-      issued_at,
-      expires_at,
-      file: pendingScan.file
-    });
+
+    // Equipment lives in its own table — service date, qty, make/model.
+    // The form is shared with certs so we map the cert-shaped fields over.
+    if (category === 'equipment') {
+      Store.addEquipment({
+        vessel_id: vesselId,
+        kind: defaultKind || 'other',
+        name,
+        icon: defaultIcon || '🔧',
+        make: issuer || '',
+        serial: number || '',
+        installed_at: issued_at,
+        next_service_at: expires_at,
+        file: pendingScan.file || null
+      });
+    } else {
+      Store.addCert({
+        vessel_id: vesselId,
+        kind: defaultKind || 'other',
+        name,
+        icon: defaultIcon || '📋',
+        category,
+        issuer,
+        number,
+        issued_at,
+        expires_at,
+        file: pendingScan.file || null
+      });
+    }
     pendingScan = null;
     activeVesselId = vesselId;
     go('s-vessel-detail');
@@ -6088,10 +6163,10 @@ ${sectionsHtml}
       console.error('handleSignedIn failed', err);
       const msg = (err && err.message) || String(err);
       const hint = /infinite recursion/.test(msg)
-        ? 'Run migration 0004_fix_policy_recursion.sql in the Supabase SQL editor.'
+        ? 'Run migration 0005_definer_helpers_idempotent.sql in the Supabase SQL editor — it patches the RLS helpers to SECURITY DEFINER without cascade-dropping policies.'
         : /violates row-level security|permission denied|new row violates/i.test(msg)
         ? 'Run migration 0003_insert_policies.sql in the Supabase SQL editor.'
-        : 'Check Supabase RLS policies (migrations 0002–0004) in /supabase/migrations.';
+        : 'Check Supabase RLS policies (migrations 0002, 0003, 0005) in /supabase/migrations.';
       alert("Couldn't finish signing you in:\n\n" + msg + "\n\n" + hint);
     }
   }

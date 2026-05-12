@@ -287,6 +287,57 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
 /* SCAN STATE */
 .scan-frame{border:2px dashed var(--sea);border-radius:14px;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(8,145,178,.04);}
+
+/* Three-way add-record option cards on s-scan. */
+.scan-opt {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  text-align: left;
+  font-family: var(--fn);
+  cursor: pointer;
+  box-shadow: var(--sh-sm);
+  transition: transform 120ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+.scan-opt:active { transform: scale(.99); }
+.scan-opt:hover { border-color: var(--bdr-strong); box-shadow: var(--sh); }
+.scan-opt-primary {
+  background: linear-gradient(180deg, var(--seap) 0%, rgba(8,145,178,.04) 100%);
+  border-color: rgba(8,145,178,.25);
+}
+.scan-opt-ic {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.scan-opt-text { flex: 1; min-width: 0; }
+.scan-opt-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -.1px; }
+.scan-opt-sub { font-size: 12px; color: var(--mid); margin-top: 3px; line-height: 1.4; }
+.scan-opt-arrow { font-size: 20px; color: var(--lt); flex-shrink: 0; }
+
+.quick-add-tile {
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 200ms ease;
+}
+.quick-add-tile:active { transform: scale(.985); }
+.quick-add-tile:hover { border-color: var(--bdr-strong); }
 .ai-pulse{width:48px;height:48px;border-radius:50%;background:var(--seap);border:3px solid var(--sea);border-top-color:transparent;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .conf-bar{height:4px;border-radius:2px;background:var(--bdr);overflow:hidden;margin-top:6px;}

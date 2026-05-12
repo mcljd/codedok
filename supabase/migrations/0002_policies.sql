@@ -33,9 +33,15 @@ alter table action_log     enable row level security;
 -- Helpers
 -- ============================================================
 
+-- IMPORTANT: helpers MUST be `security definer` with a pinned search_path,
+-- otherwise the policies that call them recurse back through the users
+-- table and Postgres aborts with "infinite recursion detected in policy
+-- for relation 'users'".
 create or replace function current_user_row()
 returns setof users
 language sql
+security definer
+set search_path = public
 stable
 as $$
   select * from users where auth_user_id = auth.uid() limit 1;
@@ -44,6 +50,8 @@ $$;
 create or replace function current_kind()
 returns user_kind
 language sql
+security definer
+set search_path = public
 stable
 as $$
   select kind from users where auth_user_id = auth.uid() limit 1;
@@ -52,6 +60,8 @@ $$;
 create or replace function current_user_org_ids()
 returns setof text
 language sql
+security definer
+set search_path = public
 stable
 as $$
   select m.org_id
@@ -63,6 +73,8 @@ $$;
 create or replace function current_surveyor_vessel_ids()
 returns setof text
 language sql
+security definer
+set search_path = public
 stable
 as $$
   select g.vessel_id
@@ -74,6 +86,8 @@ $$;
 create or replace function current_builder_slug()
 returns text
 language sql
+security definer
+set search_path = public
 stable
 as $$
   select (builder->>'slug')
