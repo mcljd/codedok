@@ -5595,7 +5595,17 @@ ${sectionsHtml}
         if (lineEl) lineEl.innerHTML = `Sign-in link sent to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email from your phone — link expires in 15 minutes.`;
       } catch (err) {
         console.error('magic link send failed', err);
-        if (lineEl) lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't send to <strong>${escapeHtml(email)}</strong>: ${escapeHtml(err.message || 'unknown error')}.</span>`;
+        const msg = err && err.message ? err.message : 'unknown error';
+        // Be specific about library-load failures vs send failures so the
+        // user doesn't see "couldn't send to your email: MIME type".
+        const isLibError = /MIME|is not a valid|Failed to fetch|Failed to load|import\(/i.test(msg);
+        if (lineEl) {
+          if (isLibError) {
+            lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't load the sign-in library.</span> Try <a href="?reset" style="color:var(--seal)">Reset app</a> to clear an old cache, or check your network.`;
+          } else {
+            lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't send to <strong>${escapeHtml(email)}</strong>: ${escapeHtml(msg)}.</span>`;
+          }
+        }
       }
       return;
     }
