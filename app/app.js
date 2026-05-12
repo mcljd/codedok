@@ -5592,18 +5592,17 @@ ${sectionsHtml}
     if (window.Supa && window.CodedOkConfig && window.CodedOkConfig.supabaseUrl) {
       try {
         await window.Supa.signIn(email);
-        if (lineEl) lineEl.innerHTML = `Sign-in link sent to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email from your phone — link expires in 15 minutes.`;
+        if (lineEl) lineEl.innerHTML = `Sign-in link sent to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email on this device — link expires in 15 minutes.`;
       } catch (err) {
         console.error('magic link send failed', err);
         const msg = err && err.message ? err.message : 'unknown error';
-        // Be specific about library-load failures vs send failures so the
-        // user doesn't see "couldn't send to your email: MIME type".
-        const isLibError = /MIME|is not a valid|Failed to fetch|Failed to load|import\(/i.test(msg);
+        const isLibError = /MIME|is not a valid|Failed to fetch|Failed to load|import\(|Could not load Supabase/i.test(msg);
+        const tryDemoBtn = `<button class="auth-btn auth-btn-social" style="margin-top:12px;background:rgba(8,145,178,.18);border-color:rgba(8,145,178,.35);color:white;font-weight:700" onclick="resetLoginStep(); enterDemo();">🚀 Try the live demo instead</button>`;
         if (lineEl) {
           if (isLibError) {
-            lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't load the sign-in library.</span> Try <a href="?reset" style="color:var(--seal)">Reset app</a> to clear an old cache, or check your network.`;
+            lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't reach the sign-in service.</span> Check your network, or jump straight into the demo:${tryDemoBtn}`;
           } else {
-            lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't send to <strong>${escapeHtml(email)}</strong>: ${escapeHtml(msg)}.</span>`;
+            lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't send to <strong>${escapeHtml(email)}</strong>: ${escapeHtml(msg)}.</span>${tryDemoBtn}`;
           }
         }
       }
