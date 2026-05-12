@@ -1098,6 +1098,39 @@
     }
     banner.innerHTML = bannerHtml;
 
+    // ---- iOS PWA install nudge ----
+    // Only show when running in iOS Safari (not standalone). Encourages
+    // Add-to-Home-Screen so the user gets full screen + a real app icon.
+    // Dismissable; remembers via localStorage so it doesn't nag.
+    (function () {
+      const old = document.getElementById('home-pwa-install');
+      if (old) old.remove();
+      const dismissed = localStorage.getItem('codedok-pwa-installed-dismissed');
+      if (dismissed === '1') return;
+      const ua = navigator.userAgent || '';
+      const isIOS = /iPhone|iPad|iPod/.test(ua);
+      const isStandalone = (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
+      if (!isIOS || isStandalone) return;
+      const homeEl = document.getElementById('s-home');
+      const scroll = homeEl && homeEl.querySelector('.scroll');
+      if (!scroll) return;
+      const banner = document.createElement('div');
+      banner.id = 'home-pwa-install';
+      banner.innerHTML = `
+        <div style="padding:14px 16px 0">
+          <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:12px;border-left:4px solid var(--sea)">
+            <div style="font-size:22px;flex-shrink:0">📲</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:700;color:var(--text)">Add CodedOK to your home screen</div>
+              <div style="font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5">Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>. Removes Safari's bars, works fully offline, real app icon.</div>
+            </div>
+            <button onclick="dismissPwaInstall()" aria-label="Dismiss" style="background:none;border:none;color:var(--lt);font-size:18px;cursor:pointer;padding:4px 6px">×</button>
+          </div>
+        </div>`;
+      // Insert before existing children so it appears at the very top
+      scroll.insertBefore(banner, scroll.firstChild);
+    })();
+
     // ---- First-time onboarding flow ----
     // When there are no vessels we hide the normal sections (Top 3 actions,
     // SMS card, My vessels) and show one clear 3-step guide instead. This
@@ -2875,6 +2908,13 @@
     };
     reader.readAsDataURL(file);
   }
+
+  function dismissPwaInstall() {
+    try { localStorage.setItem('codedok-pwa-installed-dismissed', '1'); } catch (_) {}
+    const el = document.getElementById('home-pwa-install');
+    if (el) el.remove();
+  }
+  window.dismissPwaInstall = dismissPwaInstall;
 
   // ---------- Speed-dial: quick quote from an overdue item ----------
   // One-tap path from an overdue cert/equipment line to a job request
