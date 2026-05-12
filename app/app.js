@@ -6028,7 +6028,13 @@ ${sectionsHtml}
         const initials = (authUser.email || '?').slice(0, 2).toUpperCase();
         const name = (authUser.user_metadata && authUser.user_metadata.name) || authUser.email.split('@')[0];
         const id = 'u_' + Math.random().toString(36).slice(2, 9);
-        const kind = kindFromEmail(authUser.email);
+        // Role precedence: explicit chosen role from sign-up > admin/builder
+        // email pattern > default operator.
+        const chosenKind = authUser.user_metadata && authUser.user_metadata.kind;
+        const inferred = kindFromEmail(authUser.email);
+        const kind = ['operator','surveyor','admin','builder'].includes(chosenKind)
+          ? chosenKind
+          : inferred;
         const newUser = {
           id, auth_user_id: authUser.id,
           email: authUser.email, name, initials, kind
@@ -6212,6 +6218,22 @@ ${sectionsHtml}
     el.style.display = 'block';
   }
 
+  // Sign-up role picker state — defaults to operator. Set by clicking
+  // one of the two role buttons on the sign-up screen.
+  let signupRole = 'operator';
+
+  function setSignupRole(role) {
+    if (role !== 'operator' && role !== 'surveyor') return;
+    signupRole = role;
+    document.querySelectorAll('#signup-role-picker .role-pick').forEach((btn) => {
+      const isActive = btn.dataset.role === role;
+      btn.classList.toggle('on', isActive);
+      btn.style.background = isActive ? 'rgba(8,145,178,.2)' : 'rgba(255,255,255,.04)';
+      btn.style.borderColor = isActive ? 'var(--seal)' : 'rgba(255,255,255,.08)';
+    });
+  }
+  window.setSignupRole = setSignupRole;
+
   // ----- Email + password sign-up -----
   async function submitSignUp() {
     const email = ((document.getElementById('signup-email') || {}).value || '').trim();
@@ -6226,12 +6248,16 @@ ${sectionsHtml}
       return showSignupError("Cloud sign-up isn't configured. Use the demo button instead.");
     }
 
+    // Pass the chosen role through Supabase auth user_metadata so it
+    // survives the email-verification round-trip. handleSignedIn() reads
+    // it when creating the public.users row.
     try {
-      const result = await window.Supa.signUpWithPassword(email, password);
+      const result = await window.Supa.signUpWithPassword(email, password, { kind: signupRole });
       // If email confirmation is on, the session is null until they click the link.
       // If it's off, they're signed in immediately — onAuthChange fires.
       const lineEl = document.getElementById('login-sent-line');
-      if (lineEl) lineEl.innerHTML = `Account created. We've sent a verification link to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email, tap the link, then come back to sign in.`;
+      const roleLabel = signupRole === 'surveyor' ? 'surveyor' : 'skipper';
+      if (lineEl) lineEl.innerHTML = `${roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1)} account created. We've sent a verification link to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email, tap the link, then come back to sign in.`;
       toggleAuthMode('sent');
     } catch (err) {
       const msg = err && err.message ? err.message : 'sign-up failed';

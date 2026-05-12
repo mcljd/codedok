@@ -197,6 +197,20 @@
       <div id="login-step-signup" style="display:none">
         <div style="font-size:18px;font-weight:700;color:white;letter-spacing:-.3px;margin-bottom:14px">Create your account</div>
 
+        <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">I'm a…</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px" id="signup-role-picker">
+          <button type="button" class="role-pick on" data-role="operator" onclick="setSignupRole('operator')" style="background:rgba(8,145,178,.2);border:2px solid var(--seal);color:white;padding:12px 10px;border-radius:12px;font-family:var(--fn);font-size:13px;font-weight:700;cursor:pointer;text-align:left">
+            <div style="font-size:22px;margin-bottom:4px">⛵</div>
+            Skipper / operator
+            <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,.65);margin-top:2px">Track my own boats</div>
+          </button>
+          <button type="button" class="role-pick" data-role="surveyor" onclick="setSignupRole('surveyor')" style="background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);color:white;padding:12px 10px;border-radius:12px;font-family:var(--fn);font-size:13px;font-weight:700;cursor:pointer;text-align:left">
+            <div style="font-size:22px;margin-bottom:4px">🛠️</div>
+            Surveyor
+            <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,.65);margin-top:2px">Manage client vessels</div>
+          </button>
+        </div>
+
         <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Email</label>
         <input class="auth-input" id="signup-email" type="email" autocomplete="email" placeholder="you@example.com" inputmode="email">
 

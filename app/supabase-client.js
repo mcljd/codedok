@@ -95,12 +95,17 @@
 
     // Email + password sign-up. Supabase emails a verification link;
     // the user must click it before signInWithPassword will succeed.
-    async signUpWithPassword(email, password) {
+    // 'extra' is merged into user_metadata so we can capture role
+    // selection (operator / surveyor) from the sign-up form.
+    async signUpWithPassword(email, password, extra) {
       const client = await loadSupabase();
       const { data, error } = await client.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin + window.location.pathname }
+        options: {
+          emailRedirectTo: window.location.origin + window.location.pathname,
+          data: extra || {}
+        }
       });
       if (error) throw error;
       return data;
