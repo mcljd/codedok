@@ -6092,62 +6092,21 @@ ${sectionsHtml}
     }
   }
 
-  // Login form handlers
-  async function submitLoginEmail() {
-    const input = document.getElementById('login-email');
-    const email = (input && input.value || '').trim();
-    if (!email.includes('@')) {
-      if (input) {
-        input.style.borderColor = '#ef4444';
-        input.focus();
-        setTimeout(() => { input.style.borderColor = ''; }, 1200);
-      }
-      return;
-    }
-
-    // Optimistically swap to the "sent" panel so the user sees feedback
-    // immediately. If the real call fails we surface the error there.
-    const lineEl = document.getElementById('login-sent-line');
-    if (lineEl) lineEl.innerHTML = `Sending sign-in link to <strong style="color:white">${escapeHtml(email)}</strong>…`;
-    document.getElementById('login-step-email').style.display = 'none';
-    document.getElementById('login-step-sent').style.display = 'block';
-
-    // If Supabase is wired up, do the real magic-link send. Otherwise fall
-    // back to the legacy "click the open-app button" mock so demo builds
-    // still work without a backend.
-    if (window.Supa && window.CodedOkConfig && window.CodedOkConfig.supabaseUrl) {
-      try {
-        await window.Supa.signIn(email);
-        if (lineEl) lineEl.innerHTML = `Sign-in link sent to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email on this device — link expires in 15 minutes.`;
-      } catch (err) {
-        console.error('magic link send failed', err);
-        const msg = err && err.message ? err.message : 'unknown error';
-        const isLibError = /MIME|is not a valid|Failed to fetch|Failed to load|import\(|Could not load Supabase/i.test(msg);
-        const tryDemoBtn = `<button class="auth-btn auth-btn-social" style="margin-top:12px;background:rgba(8,145,178,.18);border-color:rgba(8,145,178,.35);color:white;font-weight:700" onclick="resetLoginStep(); enterDemo();">🚀 Try the live demo instead</button>`;
-        if (lineEl) {
-          if (isLibError) {
-            lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't reach the sign-in service.</span> Check your network, or jump straight into the demo:${tryDemoBtn}`;
-          } else {
-            lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't send to <strong>${escapeHtml(email)}</strong>: ${escapeHtml(msg)}.</span>${tryDemoBtn}`;
-          }
-        }
-      }
-      return;
-    }
-
-    if (lineEl) lineEl.innerHTML = `We've sent a sign-in link to <strong style="color:white">${escapeHtml(email)}</strong>. The link expires in 15 minutes.`;
-  }
-  window.submitLoginEmail = submitLoginEmail;
-
   function resetLoginStep() {
     toggleAuthMode('signin');
   }
   window.resetLoginStep = resetLoginStep;
 
+  // Single in-flight guard shared across every auth handler — prevents
+  // double-taps from firing two sign-ins, two reset emails, etc.
+  // (Supabase rate-limits reset/verification mail at 4/hour per address.)
+  let authInFlight = false;
+
   // Forgot password — sends a reset link to the email currently typed
   // in the sign-in form. User clicks the link, comes back, and the
   // app catches the recovery session and prompts for a new password.
   async function forgotPassword() {
+    if (authInFlight) return;
     const email = ((document.getElementById('login-email') || {}).value || '').trim();
     if (!email.includes('@')) {
       showLoginError('Type your email above first, then tap Forgot.');
@@ -6157,13 +6116,16 @@ ${sectionsHtml}
       showLoginError("Reset isn't configured.");
       return;
     }
+    authInFlight = true;
     try {
       await window.Supa.sendPasswordReset(email);
       const lineEl = document.getElementById('login-sent-line');
       if (lineEl) lineEl.innerHTML = `Reset link sent to <strong style="color:white">${escapeHtml(email)}</strong>. Tap it from this device — you'll come back here and be asked to set a new password.`;
       toggleAuthMode('sent');
     } catch (err) {
-      showLoginError("Couldn't send reset: " + (err.message || err));
+      showLoginError("Couldn't send reset: " + ((err && err.message) || err));
+    } finally {
+      authInFlight = false;
     }
   }
   window.forgotPassword = forgotPassword;
@@ -6210,13 +6172,18 @@ ${sectionsHtml}
     if (errEl) errEl.style.display = 'none';
     if (pwd.length < 8) return showErr('Password must be 8+ characters.');
     if (pwd !== confirm) return showErr("Passwords don't match.");
-    if (!window.Supa || !window.Supa.ready) return showErr("Cloud isn't connected.");
+    if (!window.Supa || !window.CodedOkConfig || !window.CodedOkConfig.supabaseUrl) {
+      return showErr("Cloud isn't configured.");
+    }
+    // Don't gate on Supa.ready — updatePassword awaits the lazy SDK load
+    // internally. Otherwise the user opens the modal before the CDN has
+    // finished and the form is unusable for the first few hundred ms.
     try {
       await window.Supa.updatePassword(pwd);
       closeChangePassword();
       alert('Password updated. You stay signed in on this device.');
     } catch (err) {
-      showErr(err.message || String(err));
+      showErr((err && err.message) || String(err));
     }
   }
   window.submitChangePassword = submitChangePassword;
@@ -6243,6 +6210,7 @@ ${sectionsHtml}
 
   // ----- Email + password sign-in -----
   async function submitSignIn() {
+    if (authInFlight) return;
     const email = ((document.getElementById('login-email') || {}).value || '').trim();
     const password = (document.getElementById('login-password') || {}).value || '';
     const errEl = document.getElementById('login-error');
@@ -6255,18 +6223,25 @@ ${sectionsHtml}
       return showLoginError("Cloud sign-in isn't configured. Use the demo button instead.");
     }
 
+    authInFlight = true;
     try {
       await window.Supa.signInWithPassword(email, password);
       // handleSignedIn() will fire via Supa.onAuthChange and route into the app.
     } catch (err) {
-      const msg = err && err.message ? err.message : 'sign-in failed';
+      const msg = (err && err.message) ? err.message : 'sign-in failed';
       if (/Email not confirmed/i.test(msg)) {
         showLoginError("Your email isn't verified yet. Check your inbox for the link we sent.");
-      } else if (/Invalid login credentials/i.test(msg)) {
+      } else if (/Invalid login credentials|invalid_grant/i.test(msg)) {
         showLoginError("That email and password don't match. Try again or create an account.");
+      } else if (/Failed to fetch|NetworkError|Could not load Supabase|MIME/i.test(msg)) {
+        showLoginError("Can't reach the sign-in service. Check your connection.");
+      } else if (/rate limit|too many/i.test(msg)) {
+        showLoginError("Too many attempts — wait a minute and try again.");
       } else {
         showLoginError(msg);
       }
+    } finally {
+      authInFlight = false;
     }
   }
   window.submitSignIn = submitSignIn;
@@ -6296,6 +6271,7 @@ ${sectionsHtml}
 
   // ----- Email + password sign-up -----
   async function submitSignUp() {
+    if (authInFlight) return;
     const email = ((document.getElementById('signup-email') || {}).value || '').trim();
     const password = (document.getElementById('signup-password') || {}).value || '';
     const errEl = document.getElementById('signup-error');
@@ -6311,8 +6287,9 @@ ${sectionsHtml}
     // Pass the chosen role through Supabase auth user_metadata so it
     // survives the email-verification round-trip. handleSignedIn() reads
     // it when creating the public.users row.
+    authInFlight = true;
     try {
-      const result = await window.Supa.signUpWithPassword(email, password, { kind: signupRole });
+      await window.Supa.signUpWithPassword(email, password, { kind: signupRole });
       // If email confirmation is on, the session is null until they click the link.
       // If it's off, they're signed in immediately — onAuthChange fires.
       const lineEl = document.getElementById('login-sent-line');
@@ -6320,14 +6297,20 @@ ${sectionsHtml}
       if (lineEl) lineEl.innerHTML = `${roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1)} account created. We've sent a verification link to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email, tap the link, then come back to sign in.`;
       toggleAuthMode('sent');
     } catch (err) {
-      const msg = err && err.message ? err.message : 'sign-up failed';
+      const msg = (err && err.message) ? err.message : 'sign-up failed';
       if (/already.*registered|already.*exists|User already registered/i.test(msg)) {
         showSignupError("That email is already in use. Sign in instead.");
       } else if (/weak.*password|Password should be/i.test(msg)) {
         showSignupError("Pick a stronger password (8+ characters).");
+      } else if (/Failed to fetch|NetworkError|Could not load Supabase|MIME/i.test(msg)) {
+        showSignupError("Can't reach the sign-up service. Check your connection.");
+      } else if (/rate limit|too many|email rate/i.test(msg)) {
+        showSignupError("Too many sign-ups for that email — wait an hour or use a different one.");
       } else {
         showSignupError(msg);
       }
+    } finally {
+      authInFlight = false;
     }
   }
   window.submitSignUp = submitSignUp;
@@ -6360,25 +6343,6 @@ ${sectionsHtml}
     if (isBuilderEmail(email))  return 'builder';
     return 'operator';
   }
-
-  function mockMagicLinkArrived() {
-    const email = (document.getElementById('login-email') || {}).value || 'joseph@codedok.com';
-    saveSession({ mode: 'live', email, signed_in_at: new Date().toISOString() });
-    renderDemoBadge();
-    if (isAdminEmail(email)) {
-      enterAdminMode();
-    } else {
-      go('s-home');
-    }
-  }
-  window.mockMagicLinkArrived = mockMagicLinkArrived;
-
-  function mockOauthSignIn(provider) {
-    saveSession({ mode: 'live', provider, signed_in_at: new Date().toISOString() });
-    renderDemoBadge();
-    go('s-home');
-  }
-  window.mockOauthSignIn = mockOauthSignIn;
 
   function enterDemo() {
     saveSession({ mode: 'demo', signed_in_at: new Date().toISOString() });
@@ -6416,31 +6380,55 @@ ${sectionsHtml}
     renderDemoBadge();
 
     // Real auth: when Supabase is wired, listen for sign-in / sign-out
-    // events from the magic-link redirect. On sign-in we ensure a row
-    // exists in our users table, persist the email session for the
-    // existing app code, and route into the operator home.
+    // events. handleSignedIn ensures a row exists in our users table,
+    // persists the email session for the existing app code, and routes
+    // into the right home (operator / surveyor / admin / builder).
     if (window.Supa && window.CodedOkConfig && window.CodedOkConfig.supabaseUrl) {
-      // Initial check — if the user is already signed in (returning
-      // from a magic-link redirect or a previous session), boot them
-      // straight into the app.
-      window.Supa.getUser().then((user) => {
+      // Dedupe handleSignedIn — both getUser() and onAuthChange's
+      // initial fire can deliver the same user. Run it at most once
+      // per unique auth user id until a sign-out clears the guard.
+      let signedInUserId = null;
+      const onUser = (user) => {
         if (!user) return;
+        if (signedInUserId === user.id) return;
+        signedInUserId = user.id;
         handleSignedIn(user);
+      };
+
+      // Initial check — confirm whether Supabase has a live session.
+      // If yes, route via handleSignedIn. If no but our localStorage
+      // thinks we're "live", the local session is stale (auth user
+      // deleted, refresh token expired, db wiped) — clear it and bounce
+      // to login so the user isn't left on a broken home screen.
+      window.Supa.getUser().then((user) => {
+        if (user) {
+          onUser(user);
+        } else {
+          const sess = loadSession();
+          if (sess && sess.mode === 'live') {
+            clearSession();
+            go('s-login');
+          }
+        }
       }).catch(() => {});
 
       // Subscribe to future changes.
       window.Supa.onAuthChange((event, sess) => {
-        // Password reset flow: user clicked the link in their email and
-        // Supabase has dropped them back with a recovery session. Prompt
-        // them to set the new password instead of signing them in to
-        // the app proper.
+        // Password reset flow: user clicked the link in their email
+        // and Supabase dropped them back with a recovery session. Show
+        // the change-password modal instead of routing into the app.
         if (event === 'PASSWORD_RECOVERY') {
           go('s-login');
           openChangePassword();
           return;
         }
-        if (event === 'SIGNED_IN' && sess && sess.user) handleSignedIn(sess.user);
+        // INITIAL_SESSION fires once at subscribe time in supabase-js v2
+        // (older versions fired SIGNED_IN). Handle both; dedupe via onUser.
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && sess && sess.user) {
+          onUser(sess.user);
+        }
         if (event === 'SIGNED_OUT') {
+          signedInUserId = null;
           clearSession();
           go('s-login');
         }
