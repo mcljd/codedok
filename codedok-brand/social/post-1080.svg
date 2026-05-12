@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Square post template — 1080×1080
+     For Instagram feed + Facebook square posts. Edit the headline and
+     sub-line; everything else is design-system. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A1628"/>
+      <stop offset="100%" stop-color="#1A3560"/>
+    </linearGradient>
+    <radialGradient id="blob" cx="20%" cy="0%" r="70%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.5" fill="rgba(255,255,255,0.05)"/>
+    </pattern>
+  </defs>
+
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <rect width="1080" height="1080" fill="url(#dots)"/>
+  <rect width="1080" height="1080" fill="url(#blob)"/>
+
+  <!-- Small brand chip top-left -->
+  <g transform="translate(72 72)">
+    <rect width="200" height="44" rx="22" fill="rgba(255,255,255,0.08)"
+          stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+    <text x="100" y="29" font-family="Inter, system-ui, sans-serif"
+          font-size="14" font-weight="700" fill="white" text-anchor="middle"
+          letter-spacing="2">CODEDOK</text>
+  </g>
+
+  <!-- Headline (edit me) -->
+  <text x="72" y="500" font-family="Inter, system-ui, sans-serif"
+        font-size="88" font-weight="800" fill="white" letter-spacing="-3">
+    <tspan x="72" dy="0">Stop losing boats</tspan>
+    <tspan x="72" dy="110">to expired</tspan>
+    <tspan x="72" dy="110" fill="#06B6D4">paperwork.</tspan>
+  </text>
+
+  <!-- Sub-line (edit me) -->
+  <text x="72" y="870" font-family="Inter, system-ui, sans-serif"
+        font-size="28" font-weight="500" fill="rgba(255,255,255,0.7)"
+        letter-spacing="-0.3">
+    The compliance app built for the boat,
+  </text>
+  <text x="72" y="906" font-family="Inter, system-ui, sans-serif"
+        font-size="28" font-weight="500" fill="rgba(255,255,255,0.7)"
+        letter-spacing="-0.3">
+    not the boardroom.
+  </text>
+
+  <!-- CTA footer -->
+  <g transform="translate(72 980)">
+    <text font-family="Inter, system-ui, sans-serif" font-size="22"
+          font-weight="700" fill="white">codedok.com</text>
+    <text x="0" y="32" font-family="Inter, system-ui, sans-serif" font-size="16"
+          font-weight="500" fill="rgba(255,255,255,0.45)">Free for your first vessel · £19/month</text>
+  </g>
+
+  <!-- Mark bottom-right -->
+  <g transform="translate(940 1000)">
+    <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M -36 -22 Q -18 -38 0 -22 T 36 -22" stroke="#06B6D4" stroke-width="5"/>
+    </g>
+    <circle cy="14" r="22" fill="#16A34A"/>
+    <path d="M -10 14 L -3 22 L 12 6"
+          stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+</svg>
