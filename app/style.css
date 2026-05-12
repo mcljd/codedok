@@ -67,10 +67,12 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
 /* SHELL */
 .shell{display:none;flex-direction:column;background:var(--page);position:relative;}
-.shell.on{display:flex;animation: shellIn 240ms var(--ease);}
+.shell.on{display:flex;animation: shellIn 200ms var(--ease);}
+/* Opacity-only — no transform — so we don't create a stacking context
+   that breaks position:sticky on the bnav while the animation runs. */
 @keyframes shellIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .shell.on { animation: none; }
@@ -120,11 +122,12 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .tbar-title{font-size:18px;font-weight:700;color:var(--text);}
 .back{display:flex;align-items:center;gap:3px;color:var(--sea);font-size:15px;font-weight:500;cursor:pointer;border:none;background:none;font-family:var(--fn);}
 
-/* BOTTOM NAV — glove-friendly tap targets, subtle active state */
+/* BOTTOM NAV — glove-friendly tap targets, subtle active state.
+   Solid background (no backdrop-filter) so iOS Safari doesn't repaint
+   the whole nav on every scroll frame — that's what makes the scroll
+   feel laggy / "off" with sticky elements. */
 .bnav{
-  background:rgba(255,255,255,.92);
-  backdrop-filter:saturate(180%) blur(20px);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  background:var(--card);
   border-top:1px solid var(--bdr);
   display:flex;
   padding:6px 0 max(6px, var(--safe));
