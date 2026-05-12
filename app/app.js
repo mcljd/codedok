@@ -384,16 +384,17 @@
   function actionLine(item) {
     if (item.cert) {
       const v = item.vessel ? ` — ${escapeHtml(item.vessel.name)}` : '';
+      const itemIcon = item.cert.icon || '📋';
       if (item.days < 0) {
         return {
-          sev: 'rd', icon: '🚨',
+          sev: 'rd', icon: itemIcon,
           title: `${escapeHtml(item.cert.name)}${v}`,
           sub: `Expired ${Math.abs(item.days)} day${Math.abs(item.days) === 1 ? '' : 's'} ago`,
           btn: '<button class="btn btn-xs btn-red">Fix</button>'
         };
       }
       return {
-        sev: 'am', icon: item.cert.icon || '📋',
+        sev: 'am', icon: itemIcon,
         title: `${escapeHtml(item.cert.name)}${v}`,
         sub: `Due in ${item.days} day${item.days === 1 ? '' : 's'}`,
         btn: '<button class="btn btn-xs btn-out" onclick="go(\'s-surveys\')">Book</button>'
@@ -1007,12 +1008,13 @@
     const statusEl = document.getElementById('home-status');
     if (statusEl) {
       // Convert the static container into a hero-styled element.
-      statusEl.className = 'hero';
-      statusEl.style.cssText = 'padding:14px';
+      statusEl.className = 'hero hero-home';
+      statusEl.style.cssText = 'padding:18px 16px 16px';
       if (isFirstTime) {
         const firstName = (s.user && s.user.name) ? s.user.name.split(' ')[0] : 'there';
         statusEl.innerHTML = `
-          <div style="position:relative;z-index:1;padding:8px 4px 6px">
+          <div class="hero-stars" aria-hidden="true"></div>
+          <div style="position:relative;z-index:1;padding:6px 2px 2px">
             <div style="font-size:13px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Welcome to CodedOK</div>
             <div style="font-size:22px;font-weight:800;color:white;letter-spacing:-.4px;line-height:1.15;margin-bottom:8px">Hi ${escapeHtml(firstName)} — let's set your boat up in 90 seconds.</div>
             <div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.55">Add one vessel. We'll suggest the certificates and gear you need based on your MCA category, and remind you before anything expires.</div>
@@ -1021,24 +1023,42 @@
         const fleetScore = Store.complianceScore();
         const counts = Store.urgencyCounts();
         const ready = counts.overdue === 0;
+        const ringColor = scoreColor(fleetScore);
         const badgeHtml = ready
           ? `<span class="insp-pill rdy">✓ Ready for survey</span>`
           : `<span class="insp-pill notready pulse-rd">⚠ ${counts.overdue} urgent item${counts.overdue === 1 ? '' : 's'}</span>`;
-        const sub = ready
-          ? 'All certificates &amp; equipment current. Keep on top of upcoming renewals.'
-          : `${counts.overdue} item${counts.overdue === 1 ? '' : 's'} need${counts.overdue === 1 ? 's' : ''} attention before your next MCA visit.`;
+        const headlineText = ready
+          ? 'On course'
+          : counts.overdue === 1 ? 'One item adrift' : `${counts.overdue} items adrift`;
+        const subText = ready
+          ? 'All certificates and gear current — keep an eye on the horizon.'
+          : `Tackle the urgent items first, then we'll line up the rest for survey day.`;
         statusEl.innerHTML = `
-          <div style="display:flex;align-items:center;gap:16px;position:relative;z-index:1">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Fleet compliance</div>
-              <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px">
-                <span style="font-size:48px;font-weight:800;color:white;letter-spacing:-1.6px;line-height:1">${fleetScore}</span>
-                <span style="font-size:18px;font-weight:600;color:rgba(255,255,255,.45);letter-spacing:-.4px">%</span>
+          <div class="hero-stars" aria-hidden="true"></div>
+          <div class="hero-top-row">
+            <div class="hero-ring-wrap">
+              ${ringSvg(fleetScore, ringColor, 124)}
+              <div class="hero-ring-num">
+                <span class="hero-ring-pct">${fleetScore}</span><span class="hero-ring-percent">%</span>
               </div>
+            </div>
+            <div class="hero-summary">
+              <div class="hero-label">Fleet compliance</div>
+              <div class="hero-headline">${escapeHtml(headlineText)}</div>
+              <div class="hero-sub">${subText}</div>
               ${badgeHtml}
             </div>
-            <button class="btn btn-sea" onclick="exportFleetInspectionPack()" style="height:42px;padding:0 14px;font-size:13px;font-weight:700;border-radius:12px;flex-shrink:0">📄 Inspection pack</button>
-          </div>`;
+          </div>
+          <div class="home-tile-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px">
+            <div class="tile tile-sm"><div class="tile-num rd">${counts.overdue}</div><div class="tile-lbl">Overdue</div></div>
+            <div class="tile tile-sm"><div class="tile-num am">${counts.due30}</div><div class="tile-lbl">Due 30d</div></div>
+            <div class="tile tile-sm"><div class="tile-num ok">${counts.valid}</div><div class="tile-lbl">Valid</div></div>
+          </div>
+          <button class="hero-cta" onclick="exportFleetInspectionPack()">
+            <span class="hero-cta-ic">📄</span>
+            <span class="hero-cta-lbl">Inspection pack</span>
+            <span class="hero-cta-arrow">→</span>
+          </button>`;
       }
     }
 

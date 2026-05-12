@@ -396,6 +396,139 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   background: radial-gradient(circle at 80% -10%, rgba(255,255,255,.10) 0%, transparent 60%);
   pointer-events: none;
 }
+
+/* HERO-HOME — wow variant used on the operator home screen.
+   Adds a second radial sheen, deeper shadow, and richer gradient. */
+.hero-home {
+  background-image:
+    radial-gradient(120% 80% at 100% 0%, rgba(8,145,178,.32) 0%, transparent 55%),
+    radial-gradient(90% 60% at 0% 100%, rgba(22,163,74,.18) 0%, transparent 60%),
+    linear-gradient(180deg, #0d1f33 0%, #0a1726 100%);
+  box-shadow: 0 18px 50px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.hero-home::before {
+  background:
+    radial-gradient(circle at 85% -10%, rgba(255,255,255,.12) 0%, transparent 55%),
+    radial-gradient(circle at 0% 110%, rgba(8,145,178,.18) 0%, transparent 55%);
+}
+
+/* Subtle drifting starfield in the hero background. Each star is a small
+   white dot rendered as a radial gradient — cheap and works offline. */
+.hero-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .55;
+  background-image:
+    radial-gradient(1.5px 1.5px at 18% 24%, rgba(255,255,255,.65) 50%, transparent 100%),
+    radial-gradient(1px 1px at 72% 18%, rgba(255,255,255,.55) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 38% 72%, rgba(134,239,172,.6) 50%, transparent 100%),
+    radial-gradient(1px 1px at 88% 60%, rgba(255,255,255,.45) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 12% 88%, rgba(125,211,252,.55) 50%, transparent 100%),
+    radial-gradient(1px 1px at 60% 92%, rgba(255,255,255,.45) 50%, transparent 100%),
+    radial-gradient(1px 1px at 92% 30%, rgba(255,255,255,.4) 50%, transparent 100%);
+  animation: heroDrift 18s ease-in-out infinite;
+}
+@keyframes heroDrift {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: .55; }
+  50%      { transform: translate3d(2px, -3px, 0); opacity: .8; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-stars { animation: none; }
+}
+
+/* Hero top row — big ring on the left, status on the right. */
+.hero-top-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.hero-ring-wrap {
+  position: relative;
+  width: 124px;
+  height: 124px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,.35));
+}
+.hero-ring-wrap svg circle:first-child { stroke: rgba(255,255,255,.08); }
+.hero-ring-wrap svg circle:last-child { stroke-width: 10; }
+.hero-ring-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+.hero-ring-pct {
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -1.6px;
+  line-height: 1;
+}
+.hero-ring-percent {
+  font-size: 17px;
+  font-weight: 600;
+  color: rgba(255,255,255,.55);
+  margin-left: 1px;
+  letter-spacing: -.4px;
+}
+.hero-summary {
+  flex: 1;
+  min-width: 0;
+}
+.hero-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.55);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.hero-headline {
+  font-size: 20px;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -.4px;
+  line-height: 1.15;
+  margin-bottom: 4px;
+}
+.hero-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,.62);
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+
+/* Hero CTA — full-width inspection pack button. Glassy and primary. */
+.hero-cta {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin-top: 14px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: linear-gradient(180deg, rgba(8,145,178,.95) 0%, rgba(7,116,141,.95) 100%);
+  color: white;
+  font-family: var(--fn);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(8,145,178,.35), inset 0 1px 0 rgba(255,255,255,.18);
+  transition: transform 120ms ease, box-shadow 200ms ease;
+}
+.hero-cta:active { transform: scale(.985); }
+.hero-cta:hover { box-shadow: 0 10px 28px rgba(8,145,178,.45), inset 0 1px 0 rgba(255,255,255,.22); }
+.hero-cta-ic { font-size: 19px; }
+.hero-cta-lbl { flex: 1; text-align: left; }
+.hero-cta-arrow { font-size: 18px; opacity: .9; }
 .hero-mm {
   background: var(--mm-navy);
   background-image: var(--mesh-mm);
@@ -1236,13 +1369,41 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   #s-home.hero-collapsed #home-greeting .h-display {
     font-size: 15px !important;
   }
-  #s-home.hero-collapsed #home-status { padding: 10px 12px !important; }
+  #s-home.hero-collapsed #home-status { padding: 10px 14px !important; }
   #s-home.hero-collapsed .home-tile-row {
     max-height: 0;
     opacity: 0;
     margin-top: 0 !important;
     transform: translateY(-8px);
   }
+  /* Shrink the ring + collapse the CTA when scrolled. Cheap height save. */
+  #s-home.hero-collapsed .hero-cta {
+    max-height: 0;
+    margin-top: 0 !important;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border: none;
+    overflow: hidden;
+    transition: max-height 220ms ease, opacity 180ms ease, margin-top 220ms ease, padding 220ms ease;
+  }
+  .hero-cta {
+    transition: max-height 260ms ease, opacity 200ms ease, margin-top 260ms ease, padding 260ms ease, transform 120ms ease, box-shadow 200ms ease;
+    max-height: 60px;
+  }
+  #s-home.hero-collapsed .hero-ring-wrap {
+    width: 64px;
+    height: 64px;
+    transition: width 220ms ease, height 220ms ease;
+  }
+  .hero-ring-wrap { transition: width 220ms ease, height 220ms ease; }
+  #s-home.hero-collapsed .hero-ring-wrap svg { width: 64px; height: 64px; }
+  #s-home.hero-collapsed .hero-ring-pct { font-size: 22px; transition: font-size 220ms ease; }
+  .hero-ring-pct { transition: font-size 220ms ease; }
+  #s-home.hero-collapsed .hero-ring-percent { font-size: 11px; transition: font-size 220ms ease; }
+  .hero-ring-percent { transition: font-size 220ms ease; }
+  #s-home.hero-collapsed .hero-sub { display: none; }
+  #s-home.hero-collapsed .hero-headline { font-size: 15px !important; margin-bottom: 4px; }
   /* Smooth-shrink the greeting line spacing */
   #home-greeting > div:first-child { transition: opacity 200ms ease, height 200ms ease, margin 200ms ease; }
 
