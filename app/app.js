@@ -3115,6 +3115,194 @@
   let importDraft = null;            // { vessel, certs, equipment, deficiencies }
   let importTargetVesselId = null;   // if set, items go onto this vessel; else we create one
 
+  // ---------- Cert photo capture → Claude Vision → review → save ----------
+  // Surveyor (or operator) taps a button, snaps a photo of one certificate,
+  // the extract-cert edge function reads it with Claude vision and returns
+  // structured fields. The review modal lets the user verify before save.
+
+  let pendingCertVesselId = null;
+
+  function pickCertPhoto(vesselId) {
+    pendingCertVesselId = vesselId || null;
+    let input = document.getElementById('cert-photo-input');
+    if (!input) {
+      input = document.createElement('input');
+      input.type = 'file';
+      input.id = 'cert-photo-input';
+      input.accept = 'image/*,application/pdf';
+      input.capture = 'environment';   // iOS shows camera by default
+      input.style.display = 'none';
+      input.addEventListener('change', handleCertPhotoUpload);
+      document.body.appendChild(input);
+    }
+    input.click();
+  }
+  window.pickCertPhoto = pickCertPhoto;
+
+  async function handleCertPhotoUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      alert('That image is too big (over 8 MB). Snap a smaller photo and try again.');
+      return;
+    }
+    if (!window.Supa || !window.Supa.ready) {
+      alert("CodedOK isn't connected to the cloud yet. Reload, sign in, and try again.");
+      return;
+    }
+
+    showCertSpinner('Reading your certificate…');
+    try {
+      const base64 = await readFileAsBase64(file);
+      const { data, error } = await Supa.client.functions.invoke('extract-cert', {
+        body: { image: base64, mimeType: file.type || 'image/jpeg' }
+      });
+      hideCertSpinner();
+      if (error) throw new Error(error.message || 'extraction failed');
+      if (!data || !data.extraction) throw new Error('No extraction returned');
+      openCertReviewModal(data.extraction, pendingCertVesselId);
+    } catch (err) {
+      hideCertSpinner();
+      console.error('cert extract failed', err);
+      alert("Couldn't read that certificate: " + (err.message || err) + "\n\nYou can still add it manually under + Add cert.");
+    }
+  }
+  window.handleCertPhotoUpload = handleCertPhotoUpload;
+
+  function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function showCertSpinner(label) {
+    hideCertSpinner();
+    const el = document.createElement('div');
+    el.id = 'cert-spinner';
+    el.className = 'bdrop on';
+    el.innerHTML = `
+      <div class="sheet" style="padding:36px 24px;text-align:center">
+        <div style="font-size:36px;margin-bottom:10px">📷</div>
+        <div style="font-size:15px;font-weight:700">${escapeHtml(label)}</div>
+        <div style="font-size:12px;color:var(--mid);margin-top:6px">Claude vision extracting fields — usually 3-6 seconds.</div>
+      </div>`;
+    document.body.appendChild(el);
+  }
+  function hideCertSpinner() {
+    const el = document.getElementById('cert-spinner');
+    if (el) el.remove();
+  }
+
+  function openCertReviewModal(ex, vesselId) {
+    const existing = document.getElementById('cert-review-sheet');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'cert-review-sheet';
+    modal.className = 'bdrop on';
+    modal.onclick = function (e) { if (e.target === modal) closeCertReview(); };
+    document.body.appendChild(modal);
+
+    const v = vesselId ? Store.getVessel(vesselId) : null;
+    const isEquip = ex.kind === 'equipment';
+    const confColor = ex.confidence === 'high' ? 'var(--green)' : ex.confidence === 'medium' ? 'var(--amber)' : 'var(--red)';
+
+    modal.innerHTML = `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+        <div class="sh-pull"></div>
+        <div class="sh-head">
+          <div class="sh-title">Review extracted ${isEquip ? 'equipment' : 'certificate'}</div>
+          <button class="sh-x" onclick="closeCertReview()">×</button>
+        </div>
+        <div style="padding:0 20px 14px;overflow-y:auto;max-height:72vh">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${confColor}"></div>
+            <div style="font-size:12px;color:var(--mid)">Confidence: <strong style="color:${confColor}">${escapeHtml(ex.confidence || 'unknown')}</strong>${ex.notes ? ' · ' + escapeHtml(ex.notes) : ''}</div>
+          </div>
+
+          ${v ? `<div style="font-size:12px;color:var(--mid);margin-bottom:14px">Adding to <strong>${escapeHtml(v.name)}</strong></div>` : ''}
+
+          <div class="fg"><label class="fl">Type</label><input class="fi" id="cer-name" value="${escapeHtml(ex.name || '')}"></div>
+          <div class="fg"><label class="fl">Issuer</label><input class="fi" id="cer-issuer" value="${escapeHtml(ex.issuer || '')}"></div>
+          <div class="fg"><label class="fl">Number / serial</label><input class="fi" id="cer-number" value="${escapeHtml(ex.number || '')}"></div>
+          ${isEquip ? `
+            <div class="fg"><label class="fl">Next service date</label><input class="fi" id="cer-next" type="date" value="${ex.next_service_at || ''}"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="fg"><label class="fl">Make</label><input class="fi" id="cer-make" value="${escapeHtml(ex.make || '')}"></div>
+              <div class="fg"><label class="fl">Model</label><input class="fi" id="cer-model" value="${escapeHtml(ex.model || '')}"></div>
+            </div>` : `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="fg"><label class="fl">Issued</label><input class="fi" id="cer-issued" type="date" value="${ex.issued_at || ''}"></div>
+              <div class="fg"><label class="fl">Expires</label><input class="fi" id="cer-expires" type="date" value="${ex.expires_at || ''}"></div>
+            </div>`}
+
+          <button class="btn btn-sea btn-full" onclick="saveExtractedCert('${escapeHtml(isEquip ? 'equipment' : 'cert')}','${vesselId || ''}','${escapeHtml(ex.type_hint || '')}')" style="margin-top:10px">${isEquip ? 'Add to equipment' : 'Add to certificates'}</button>
+          <button class="btn btn-out btn-full" onclick="closeCertReview()" style="margin-top:8px">Cancel</button>
+        </div>
+      </div>`;
+  }
+  window.openCertReviewModal = openCertReviewModal;
+
+  function closeCertReview() {
+    const m = document.getElementById('cert-review-sheet');
+    if (m) m.remove();
+    pendingCertVesselId = null;
+  }
+  window.closeCertReview = closeCertReview;
+
+  function saveExtractedCert(kind, vesselId, typeHint) {
+    const name = (document.getElementById('cer-name') || {}).value || '';
+    const issuer = (document.getElementById('cer-issuer') || {}).value || '';
+    const number = (document.getElementById('cer-number') || {}).value || '';
+    if (!name) { alert('Type / name is required.'); return; }
+    if (!vesselId) {
+      const v = (Store.snapshot().vessels || [])[0];
+      vesselId = v && v.id;
+    }
+    if (!vesselId) { alert('No vessel to add this to. Add a vessel first.'); return; }
+
+    if (kind === 'equipment') {
+      const next_service_at = (document.getElementById('cer-next') || {}).value || null;
+      const make = (document.getElementById('cer-make') || {}).value || '';
+      const model = (document.getElementById('cer-model') || {}).value || '';
+      Store.addEquipment({
+        vessel_id: vesselId, name, kind: typeHint || 'other',
+        make, model, serial: number, next_service_at,
+        icon: iconForType(typeHint)
+      });
+    } else {
+      const issued_at = (document.getElementById('cer-issued') || {}).value || null;
+      const expires_at = (document.getElementById('cer-expires') || {}).value || null;
+      Store.addCert({
+        vessel_id: vesselId, name, kind: typeHint || 'other',
+        issuer, number, issued_at, expires_at,
+        category: certCategoryForType(typeHint),
+        icon: iconForType(typeHint)
+      });
+    }
+
+    closeCertReview();
+    alert(`${kind === 'equipment' ? 'Equipment' : 'Certificate'} added.`);
+    renderHome();
+    if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
+  }
+  window.saveExtractedCert = saveExtractedCert;
+
+  function iconForType(t) {
+    return ({ coding:'📋', liferaft:'🛟', pyrotechnics:'🧨', epirb:'📡', pli:'🛡️',
+      p_and_i:'🛡️', radio:'📡', stability:'📋', lifejacket:'🦺', fire_ext:'🧯',
+      first_aid:'🩹', vhf_fixed:'📻', anchor:'⚓', mmsi:'📡' })[t] || '📋';
+  }
+  function certCategoryForType(t) {
+    if (!t) return 'vessel';
+    if (['liferaft','pyrotechnics','epirb','lifejacket','fire_ext','first_aid','anchor'].includes(t)) return 'equipment';
+    if (['pli','p_and_i'].includes(t)) return 'insurance';
+    return 'vessel';
+  }
+
   function pickSurveyReport(vesselId) {
     importTargetVesselId = vesselId || null;
     let input = document.getElementById('survey-report-input');
@@ -3962,10 +4150,16 @@
             </div>`).join('')}
         </div>` : ''}
 
-      <div class="h-section">Certificates · ${certs.length}</div>
-      <div style="padding:0 16px">${certs.map((c) => ticketHtml(c, 'cert')).join('') || '<div class="empty"><div class="empty-art">📋</div><div class="empty-h">No certificates</div></div>'}</div>
+      <div class="h-section-row" style="margin:18px 16px 8px;display:flex;align-items:center;justify-content:space-between">
+        <div class="h-section" style="margin:0">Certificates · ${certs.length}</div>
+        <button class="btn btn-sm btn-out" onclick="pickCertPhoto('${v.id}')" style="height:36px;padding:0 12px;font-size:13px;font-weight:700">📷 Snap a cert</button>
+      </div>
+      <div style="padding:0 16px">${certs.map((c) => ticketHtml(c, 'cert')).join('') || '<div class="empty"><div class="empty-art">📋</div><div class="empty-h">No certificates</div><div class="empty-sub">Tap <strong>Snap a cert</strong> to add one from a photo.</div></div>'}</div>
 
-      <div class="h-section">Equipment register · ${equipment.length}</div>
+      <div class="h-section-row" style="margin:18px 16px 8px;display:flex;align-items:center;justify-content:space-between">
+        <div class="h-section" style="margin:0">Equipment register · ${equipment.length}</div>
+        <button class="btn btn-sm btn-out" onclick="pickCertPhoto('${v.id}')" style="height:36px;padding:0 12px;font-size:13px;font-weight:700">📷 Snap a service doc</button>
+      </div>
       <div style="padding:0 16px">${equipment.map((e) => ticketHtml(e, 'equipment')).join('') || '<div class="empty"><div class="empty-art">🦺</div><div class="empty-h">No equipment logged</div></div>'}</div>
 
       <div class="h-section">Inspection history</div>
