@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- CodedOK profile picture — 1080×1080
+     Use as: Instagram avatar, Facebook profile, X profile, LinkedIn page logo.
+     Renders cleanly down to 56×56 (Instagram avatar size). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A1628"/>
+      <stop offset="100%" stop-color="#1A3560"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.30"/>
+      <stop offset="60%" stop-color="#06B6D4" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <rect width="1080" height="1080" fill="url(#glow)"/>
+
+  <!-- Two stylised waves -->
+  <g transform="translate(180 380)" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M 0 60 Q 90 -30 180 60 T 360 60 T 540 60 T 720 60"
+          stroke="#06B6D4" stroke-width="34" opacity="0.95"/>
+    <path d="M 0 160 Q 90 70 180 160 T 360 160 T 540 160 T 720 160"
+          stroke="#0891B2" stroke-width="26" opacity="0.7"/>
+  </g>
+
+  <!-- Compliance circle + tick -->
+  <g transform="translate(540 700)">
+    <circle r="120" fill="#16A34A"/>
+    <path d="M -56 0 L -16 44 L 60 -44"
+          stroke="white" stroke-width="28"
+          stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+</svg>

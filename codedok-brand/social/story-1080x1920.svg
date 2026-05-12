@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Story / Reels cover — 1080×1920
+     Instagram Stories, Facebook Stories, Reels cover.
+     Top + bottom 250px are typically masked by UI — keep critical content
+     inside the 1080×1420 centre band. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A1628"/>
+      <stop offset="100%" stop-color="#1A3560"/>
+    </linearGradient>
+    <radialGradient id="blob" cx="80%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blob2" cx="20%" cy="85%" r="40%">
+      <stop offset="0%" stop-color="#7C3AED" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1080" height="1920" fill="url(#bg)"/>
+  <rect width="1080" height="1920" fill="url(#blob)"/>
+  <rect width="1080" height="1920" fill="url(#blob2)"/>
+
+  <!-- Safe-zone guides (delete before exporting if you want — they're invisible at export anyway) -->
+
+  <!-- Brand chip top -->
+  <g transform="translate(72 360)">
+    <rect width="220" height="48" rx="24" fill="rgba(255,255,255,0.08)"
+          stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+    <text x="110" y="32" font-family="Inter, system-ui, sans-serif"
+          font-size="16" font-weight="700" fill="white" text-anchor="middle"
+          letter-spacing="2">CODEDOK</text>
+  </g>
+
+  <!-- Headline (edit me) — 4 lines max -->
+  <text x="72" font-family="Inter, system-ui, sans-serif"
+        font-size="104" font-weight="800" fill="white" letter-spacing="-3.5">
+    <tspan x="72" y="640">One PDF.</tspan>
+    <tspan x="72" y="760">Every cert.</tspan>
+    <tspan x="72" y="880" fill="#06B6D4">Survey ready.</tspan>
+  </text>
+
+  <!-- Body line -->
+  <text x="72" font-family="Inter, system-ui, sans-serif"
+        font-size="32" font-weight="500" fill="rgba(255,255,255,0.7)"
+        letter-spacing="-0.3">
+    <tspan x="72" y="1040">From your phone on the dock</tspan>
+    <tspan x="72" y="1080">to your surveyor&apos;s iPad.</tspan>
+  </text>
+
+  <!-- CTA pill -->
+  <g transform="translate(72 1300)">
+    <rect width="380" height="80" rx="40" fill="white"/>
+    <text x="190" y="52" font-family="Inter, system-ui, sans-serif"
+          font-size="24" font-weight="700" fill="#0A1628" text-anchor="middle"
+          letter-spacing="-0.3">Start free →</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="72" y="1640" font-family="Inter, system-ui, sans-serif"
+        font-size="22" font-weight="600" fill="rgba(255,255,255,0.55)">
+    codedok.com
+  </text>
+
+  <!-- Mark bottom-right -->
+  <g transform="translate(900 1640)">
+    <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M -50 -32 Q -25 -54 0 -32 T 50 -32" stroke="#06B6D4" stroke-width="7"/>
+    </g>
+    <circle cy="20" r="32" fill="#16A34A"/>
+    <path d="M -14 20 L -4 30 L 16 8"
+          stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+</svg>
