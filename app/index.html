@@ -334,7 +334,10 @@
         <div style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:2px">Good morning</div>
         <div style="font-size:20px;font-weight:700;color:white;letter-spacing:-.2px">Fleet Status</div>
       </div>
-      <div style="display:flex;gap:12px;align-items:center">
+      <div style="display:flex;gap:10px;align-items:center">
+        <button onclick="openSearch()" aria-label="Search" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:50%;width:40px;height:40px;color:white;cursor:pointer;font-family:var(--fn);padding:0;display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
         <button onclick="openHelp()" aria-label="Help" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:50%;width:40px;height:40px;color:white;font-size:18px;font-weight:700;cursor:pointer;font-family:var(--fn);padding:0">?</button>
         <div style="position:relative;cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center" onclick="go('s-notif')">
           <span style="font-size:24px">🔔</span>

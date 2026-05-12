@@ -999,18 +999,23 @@
     const av = document.getElementById('home-avatar');
     if (av && s.user) av.textContent = s.user.initials || '';
 
+    // First-time experience: show a full-screen onboarding instead of the
+    // normal home layout when there are no vessels. Sets a flag for the
+    // section toggling below.
+    const isFirstTime = s.vessels.length === 0;
+
     const statusEl = document.getElementById('home-status');
     if (statusEl) {
       // Convert the static container into a hero-styled element.
       statusEl.className = 'hero';
       statusEl.style.cssText = 'padding:14px';
-      if (s.vessels.length === 0) {
+      if (isFirstTime) {
+        const firstName = (s.user && s.user.name) ? s.user.name.split(' ')[0] : 'there';
         statusEl.innerHTML = `
-          <div class="empty">
-            <div class="empty-art">⛵</div>
-            <div class="empty-h" style="color:white">Add your first vessel</div>
-            <div class="empty-sub" style="color:rgba(255,255,255,.55)">CodedOK will auto-suggest the certs and equipment you need based on your MCA category.</div>
-            <button class="btn btn-sea btn-sm" onclick="go('s-onboard')">+ Add vessel</button>
+          <div style="position:relative;z-index:1;padding:8px 4px 6px">
+            <div style="font-size:13px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Welcome to CodedOK</div>
+            <div style="font-size:22px;font-weight:800;color:white;letter-spacing:-.4px;line-height:1.15;margin-bottom:8px">Hi ${escapeHtml(firstName)} — let's set your boat up in 90 seconds.</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.55">Add one vessel. We'll suggest the certificates and gear you need based on your MCA category, and remind you before anything expires.</div>
           </div>`;
       } else {
         const fleetScore = Store.complianceScore();
@@ -1093,6 +1098,54 @@
     }
     banner.innerHTML = bannerHtml;
 
+    // ---- First-time onboarding flow ----
+    // When there are no vessels we hide the normal sections (Top 3 actions,
+    // SMS card, My vessels) and show one clear 3-step guide instead. This
+    // is the first 30 seconds for a fresh user — must read as obvious.
+    const onbHostId = 'home-onboarding';
+    let onbEl = document.getElementById(onbHostId);
+    const sectionLabels = document.querySelectorAll('#s-home .scroll > .slbl');
+    const homeActionsHost = document.getElementById('home-actions');
+    const homeSmsHost = document.getElementById('home-sms-card');
+    const homeVesselsHost = document.getElementById('home-vessels');
+    if (isFirstTime) {
+      if (!onbEl) {
+        onbEl = document.createElement('div');
+        onbEl.id = onbHostId;
+        const scroll = document.querySelector('#s-home .scroll');
+        if (scroll) scroll.insertBefore(onbEl, scroll.firstChild);
+      }
+      onbEl.innerHTML = `
+        <div style="padding:16px">
+          <div class="card" style="padding:18px;border-radius:16px;border-left:4px solid var(--sea)">
+            <div style="font-size:11px;font-weight:700;color:var(--sea);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Step 1 of 3</div>
+            <div style="font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.3px;margin-bottom:6px">Add your boat</div>
+            <div style="font-size:14px;color:var(--mid);line-height:1.55;margin-bottom:14px">Name, length, persons, MCA category. About 60 seconds. We'll auto-suggest every certificate and piece of gear you need.</div>
+            <button class="btn btn-sea btn-full" onclick="go('s-onboard')" style="height:50px;font-weight:700">+ Add your first vessel →</button>
+          </div>
+          <div class="card" style="padding:18px;border-radius:16px;margin-top:12px;opacity:.55">
+            <div style="font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Step 2 of 3</div>
+            <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">Upload your last survey report</div>
+            <div style="font-size:13px;color:var(--mid);line-height:1.55">Drop one PDF — CodedOK extracts every cert and piece of gear automatically. <strong>You'll do this after adding the vessel.</strong></div>
+          </div>
+          <div class="card" style="padding:18px;border-radius:16px;margin-top:12px;opacity:.55">
+            <div style="font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Step 3 of 3</div>
+            <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">One tap before survey day</div>
+            <div style="font-size:13px;color:var(--mid);line-height:1.55">Tap the Inspection pack button. Get a signed PDF your surveyor opens on their iPad. Done.</div>
+          </div>
+        </div>`;
+      sectionLabels.forEach((el) => { el.style.display = 'none'; });
+      if (homeActionsHost) homeActionsHost.style.display = 'none';
+      if (homeSmsHost) homeSmsHost.style.display = 'none';
+      if (homeVesselsHost) homeVesselsHost.style.display = 'none';
+    } else {
+      if (onbEl) onbEl.remove();
+      sectionLabels.forEach((el) => { el.style.display = ''; });
+      if (homeActionsHost) homeActionsHost.style.display = '';
+      if (homeSmsHost) homeSmsHost.style.display = '';
+      if (homeVesselsHost) homeVesselsHost.style.display = '';
+    }
+
     const actionsEl = document.getElementById('home-actions');
     if (actionsEl) {
       const items = Store.topActions(3);
@@ -1105,6 +1158,17 @@
       } else {
         actionsEl.innerHTML = items.map((it) => {
           const a = actionLine(it); if (!a) return '';
+          // Speed-dial: overdue items get a one-tap "Get a quote" button
+          // that drops the operator into a pre-filled job request to the
+          // preferred surveyor (McCollam). Closes the loop the app was
+          // built to close — see action without leaving CodedOK.
+          const isOverdue = (it.days != null && it.days < 0);
+          const child = it.cert || it.equipment || it.crewCert;
+          const vesselId = child && child.vessel_id;
+          const itemLabel = child ? (child.name || child.label || '') : '';
+          const quoteBtn = isOverdue
+            ? `<button class="btn btn-sm btn-sea" style="height:36px;padding:0 12px;font-size:12px;font-weight:700;flex-shrink:0" onclick="event.stopPropagation(); quickQuoteForItem('${vesselId || ''}','${escapeHtml(itemLabel).replace(/'/g, '&#39;')}')">📞 Get a quote</button>`
+            : '';
           return `
             <div class="qa-tile" onclick="${it.cert ? "go('s-vessel-detail')" : it.equipment ? "go('s-equipment-list')" : "go('s-crew')"}">
               <div class="qa-icon ${a.sev}">${a.icon}</div>
@@ -1112,7 +1176,8 @@
                 <div class="qa-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.title}</div>
                 <div class="qa-sub">${a.sub}</div>
               </div>
-              <span class="chev">›</span>
+              ${quoteBtn}
+              ${quoteBtn ? '' : '<span class="chev">›</span>'}
             </div>`;
         }).join('');
       }
@@ -2809,6 +2874,146 @@
       if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
     };
     reader.readAsDataURL(file);
+  }
+
+  // ---------- Speed-dial: quick quote from an overdue item ----------
+  // One-tap path from an overdue cert/equipment line to a job request
+  // to the preferred surveyor. Pre-fills the vessel + the item title so
+  // the operator doesn't have to retype anything.
+  function quickQuoteForItem(vesselId, itemLabel) {
+    if (!window.Store) return;
+    const v = vesselId ? Store.getVessel(vesselId) : Store.snapshot().vessels[0];
+    if (!v) { alert('Vessel not found. Open the item directly instead.'); return; }
+    const surveyors = (Store.snapshot().users || []).filter((u) => u.kind === 'surveyor');
+    const preferred = surveyors[0];
+    if (!preferred) {
+      alert('No surveyor on file yet. Add one under Account → Switch view → Surveyors.');
+      return;
+    }
+    setActiveVessel(v.id);
+    // Reuse the existing job-request flow. The job title is the overdue
+    // item so the surveyor sees exactly what's being asked for.
+    const job = Store.createJob({
+      vessel_id: v.id,
+      surveyor_user_id: preferred.id,
+      type: 'other',
+      title: itemLabel ? `Service / renew — ${itemLabel}` : 'Service request',
+      description: itemLabel ? `${itemLabel} is overdue on ${v.name}. Please quote for the work.` : '',
+      status: 'requested'
+    });
+    const surveyorName = (preferred.surveyor && preferred.surveyor.company) || preferred.name;
+    alert(`Quote request sent to ${surveyorName}.\n\nThey'll be in touch with a price and the next available date.`);
+    renderHome();
+  }
+  window.quickQuoteForItem = quickQuoteForItem;
+
+  // ---------- Global search ----------
+  // Search across vessels, certs, equipment, deficiencies, surveyors,
+  // crew. Opens as a full-screen overlay from the home header. Results
+  // are tap-to-jump.
+  function openSearch() {
+    const existing = document.getElementById('search-overlay');
+    if (existing) existing.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'search-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:200;background:var(--page);display:flex;flex-direction:column;font-family:var(--fn)';
+    overlay.innerHTML = `
+      <div style="background:var(--card);border-bottom:1px solid var(--bdr);padding:14px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--lt)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="search-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search vessels, certs, equipment…" style="flex:1;border:none;background:transparent;font-size:17px;font-family:var(--fn);color:var(--text);outline:none">
+        <button onclick="closeSearch()" style="background:none;border:none;font-size:14px;color:var(--sea);font-weight:600;cursor:pointer">Cancel</button>
+      </div>
+      <div id="search-results" style="flex:1;overflow-y:auto;padding:8px 0"></div>`;
+    document.body.appendChild(overlay);
+    const input = document.getElementById('search-input');
+    input.addEventListener('input', renderSearchResults);
+    setTimeout(() => input.focus(), 50);
+    renderSearchResults();
+  }
+  window.openSearch = openSearch;
+  function closeSearch() {
+    const o = document.getElementById('search-overlay');
+    if (o) o.remove();
+  }
+  window.closeSearch = closeSearch;
+
+  function renderSearchResults() {
+    const out = document.getElementById('search-results');
+    if (!out) return;
+    const q = ((document.getElementById('search-input') || {}).value || '').trim().toLowerCase();
+    if (!q) {
+      out.innerHTML = `
+        <div style="padding:32px 24px;text-align:center;color:var(--lt);font-size:13px;line-height:1.55">
+          Try "Tsunami", "liferaft", "MMSI", "McCollam" — searches every vessel, certificate, equipment item, deficiency and surveyor.
+        </div>`;
+      return;
+    }
+    const s = Store.snapshot();
+    const matches = [];
+    (s.vessels || []).filter((v) => !v.deleted_at).forEach((v) => {
+      const haystack = [v.name, v.type, v.category, v.port, v.ssr, v.make, v.engine, v.hull_number].filter(Boolean).join(' ').toLowerCase();
+      if (haystack.includes(q)) matches.push({ kind:'vessel', label:v.name, sub:`${v.type || ''}${v.port ? ' · ' + v.port : ''}`, icon:v.icon || '⛵', act:() => { setActiveVessel(v.id); go('s-vessel-detail'); } });
+    });
+    (s.certs || []).filter((c) => !c.deleted_at).forEach((c) => {
+      const haystack = [c.name, c.issuer, c.number, c.kind, c.category].filter(Boolean).join(' ').toLowerCase();
+      if (haystack.includes(q)) {
+        const v = (s.vessels || []).find((x) => x.id === c.vessel_id);
+        matches.push({ kind:'cert', label:c.name, sub:`${v ? v.name + ' · ' : ''}${c.issuer || ''}${c.expires_at ? ' · expires ' + fmtDate(c.expires_at) : ''}`, icon:c.icon || '📋', act:() => { setActiveVessel(c.vessel_id); go('s-vessel-detail'); } });
+      }
+    });
+    (s.equipment || []).filter((e) => !e.deleted_at).forEach((e) => {
+      const haystack = [e.name, e.make, e.model, e.serial, e.kind].filter(Boolean).join(' ').toLowerCase();
+      if (haystack.includes(q)) {
+        const v = (s.vessels || []).find((x) => x.id === e.vessel_id);
+        matches.push({ kind:'equipment', label:e.name, sub:`${v ? v.name + ' · ' : ''}${e.make || ''}${e.next_service_at ? ' · next service ' + fmtDate(e.next_service_at) : ''}`, icon:e.icon || '🛠️', act:() => { setActiveVessel(e.vessel_id); go('s-equipment-list'); } });
+      }
+    });
+    (s.deficiencies || []).filter((d) => d.status === 'open').forEach((d) => {
+      const haystack = [d.title, d.description].filter(Boolean).join(' ').toLowerCase();
+      if (haystack.includes(q)) {
+        const v = (s.vessels || []).find((x) => x.id === d.vessel_id);
+        matches.push({ kind:'deficiency', label:d.title, sub:`${v ? v.name + ' · ' : ''}${d.severity}`, icon:'⚠️', act:() => { setActiveVessel(d.vessel_id); go('s-vessel-detail'); } });
+      }
+    });
+    (s.users || []).filter((u) => u.kind === 'surveyor' || u.kind === 'builder').forEach((u) => {
+      const haystack = [u.name, u.email, u.surveyor && u.surveyor.company, u.builder && u.builder.company].filter(Boolean).join(' ').toLowerCase();
+      if (haystack.includes(q)) {
+        matches.push({ kind:'person', label:u.name, sub:`${u.kind === 'surveyor' ? 'Surveyor' : 'Boat builder'}${u.email ? ' · ' + u.email : ''}`, icon: u.kind === 'surveyor' ? '🛠️' : '🏗️', act:() => alert(`${u.name}\n${u.email || ''}`) });
+      }
+    });
+
+    if (matches.length === 0) {
+      out.innerHTML = `<div style="padding:32px 24px;text-align:center;color:var(--lt);font-size:14px">No matches for "${escapeHtml(q)}"</div>`;
+      return;
+    }
+
+    // Group by kind for cleaner display.
+    const groupOrder = ['vessel','cert','equipment','deficiency','person'];
+    const groupLabels = { vessel:'Vessels', cert:'Certificates', equipment:'Equipment', deficiency:'Deficiencies', person:'People' };
+    let html = '';
+    groupOrder.forEach((g) => {
+      const inGroup = matches.filter((m) => m.kind === g);
+      if (inGroup.length === 0) return;
+      html += `<div style="padding:14px 16px 8px;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.07em">${groupLabels[g]} · ${inGroup.length}</div>`;
+      inGroup.slice(0, 20).forEach((m, i) => {
+        const id = 'sr-' + g + '-' + i;
+        html += `
+          <div id="${id}" class="search-row" style="padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;border-bottom:1px solid var(--bdr);background:var(--card)">
+            <div style="width:44px;height:44px;border-radius:11px;background:var(--slate);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${m.icon}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(m.label)}</div>
+              <div style="font-size:13px;color:var(--mid);margin-top:2px">${escapeHtml(m.sub)}</div>
+            </div>
+            <span class="chev">›</span>
+          </div>`;
+        // Defer the click binding so the act closure resolves correctly.
+        setTimeout(() => {
+          const el = document.getElementById(id);
+          if (el) el.onclick = () => { closeSearch(); m.act(); };
+        }, 0);
+      });
+    });
+    out.innerHTML = html;
   }
 
   // ---------- Help / first-run explainer ----------
