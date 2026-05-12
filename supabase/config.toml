@@ -1,0 +1,16 @@
+# CodedOK — Supabase project config
+#
+# The GitHub integration reads this to know which project the
+# supabase/functions/* directory should deploy to. Edge functions in
+# supabase/functions/<name>/index.ts auto-deploy on push to main.
+
+project_id = "zftoqqrqsxctehltebad"
+
+[functions.generate-sms]
+# JWT verification — set to false because the SMS generator is invoked
+# by signed-in users from the browser using their Supabase session.
+# Supabase still passes the user's bearer token via the Authorization
+# header for any function that needs it. Anonymous abuse is mitigated
+# elsewhere (the £10 Stripe charge must complete before the function
+# is called).
+verify_jwt = true

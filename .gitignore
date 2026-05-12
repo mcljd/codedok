@@ -36,3 +36,7 @@ yarn-debug.log*
 .dev.vars*
 !.dev.vars.example
 !.env.example
+
+# Supabase CLI local cache
+supabase/.temp/
+supabase/.branches/
