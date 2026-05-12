@@ -5482,11 +5482,63 @@ ${sectionsHtml}
     badge.style.display = (session && session.mode === 'demo') ? 'block' : 'none';
   }
 
+  // Called from the Supabase auth state listener when a real user is
+  // signed in (either fresh from a magic-link redirect or returning to
+  // an existing session). Ensures our users table has a row for them,
+  // persists the email session, and routes into the app.
+  async function handleSignedIn(authUser) {
+    try {
+      const client = window.Supa && window.Supa.client;
+      if (!client) return;
+
+      // Look up the users row keyed by auth_user_id.
+      let { data: row } = await client.from('users')
+        .select('*')
+        .eq('auth_user_id', authUser.id)
+        .maybeSingle();
+
+      // First time we're seeing this auth user — create the row.
+      if (!row) {
+        const initials = (authUser.email || '?').slice(0, 2).toUpperCase();
+        const name = (authUser.user_metadata && authUser.user_metadata.name) || authUser.email.split('@')[0];
+        const id = 'u_' + Math.random().toString(36).slice(2, 9);
+        const ins = await client.from('users').insert({
+          id, auth_user_id: authUser.id,
+          email: authUser.email, name, initials,
+          kind: isAdminEmail(authUser.email) ? 'admin' : 'operator'
+        }).select().single();
+        row = ins.data;
+      }
+
+      // Bridge with the existing localStorage session logic.
+      saveSession({
+        mode: 'live', email: authUser.email,
+        user_id: row && row.id,
+        signed_in_at: new Date().toISOString()
+      });
+
+      // Drive the existing boot routing without reloading the page.
+      renderDemoBadge();
+      if (row && row.kind === 'admin') {
+        applyDesktopAdmin();
+        go('s-admin-home');
+      } else if (row && row.kind === 'surveyor') {
+        Store.setMode('surveyor');
+        go('s-surveyor-home');
+      } else {
+        Store.setMode('operator');
+        go('s-home');
+      }
+    } catch (err) {
+      console.error('handleSignedIn failed', err);
+    }
+  }
+
   // Login form handlers
-  function submitLoginEmail() {
-    const email = (document.getElementById('login-email') || {}).value || '';
+  async function submitLoginEmail() {
+    const input = document.getElementById('login-email');
+    const email = (input && input.value || '').trim();
     if (!email.includes('@')) {
-      const input = document.getElementById('login-email');
       if (input) {
         input.style.borderColor = '#ef4444';
         input.focus();
@@ -5494,10 +5546,29 @@ ${sectionsHtml}
       }
       return;
     }
+
+    // Optimistically swap to the "sent" panel so the user sees feedback
+    // immediately. If the real call fails we surface the error there.
     const lineEl = document.getElementById('login-sent-line');
-    if (lineEl) lineEl.innerHTML = `We've sent a sign-in link to <strong style="color:white">${escapeHtml(email)}</strong>. The link expires in 15 minutes.`;
+    if (lineEl) lineEl.innerHTML = `Sending sign-in link to <strong style="color:white">${escapeHtml(email)}</strong>…`;
     document.getElementById('login-step-email').style.display = 'none';
     document.getElementById('login-step-sent').style.display = 'block';
+
+    // If Supabase is wired up, do the real magic-link send. Otherwise fall
+    // back to the legacy "click the open-app button" mock so demo builds
+    // still work without a backend.
+    if (window.Supa && window.CodedOkConfig && window.CodedOkConfig.supabaseUrl) {
+      try {
+        await window.Supa.signIn(email);
+        if (lineEl) lineEl.innerHTML = `Sign-in link sent to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email from your phone — link expires in 15 minutes.`;
+      } catch (err) {
+        console.error('magic link send failed', err);
+        if (lineEl) lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't send to <strong>${escapeHtml(email)}</strong>: ${escapeHtml(err.message || 'unknown error')}.</span>`;
+      }
+      return;
+    }
+
+    if (lineEl) lineEl.innerHTML = `We've sent a sign-in link to <strong style="color:white">${escapeHtml(email)}</strong>. The link expires in 15 minutes.`;
   }
   window.submitLoginEmail = submitLoginEmail;
 
@@ -5551,6 +5622,10 @@ ${sectionsHtml}
   function signOut() {
     if (!confirm('Sign out and return to the login screen?')) return;
     clearSession();
+    // Best-effort Supabase sign-out — keeps the next session clean.
+    if (window.Supa && window.Supa.signOut) {
+      window.Supa.signOut().catch(() => {});
+    }
     renderDemoBadge();
     go('s-login');
   }
@@ -5563,6 +5638,29 @@ ${sectionsHtml}
     if (mark) mark.innerHTML = codedOkMark(38);
 
     renderDemoBadge();
+
+    // Real auth: when Supabase is wired, listen for sign-in / sign-out
+    // events from the magic-link redirect. On sign-in we ensure a row
+    // exists in our users table, persist the email session for the
+    // existing app code, and route into the operator home.
+    if (window.Supa && window.CodedOkConfig && window.CodedOkConfig.supabaseUrl) {
+      // Initial check — if the user is already signed in (returning
+      // from a magic-link redirect or a previous session), boot them
+      // straight into the app.
+      window.Supa.getUser().then((user) => {
+        if (!user) return;
+        handleSignedIn(user);
+      }).catch(() => {});
+
+      // Subscribe to future changes.
+      window.Supa.onAuthChange((event, sess) => {
+        if (event === 'SIGNED_IN' && sess && sess.user) handleSignedIn(sess.user);
+        if (event === 'SIGNED_OUT') {
+          clearSession();
+          go('s-login');
+        }
+      });
+    }
 
     // Surveyor read-only SMS view — login-free.
     // Pattern: #sms-view?t=TOKEN (or ?t=TOKEN in the query string).
