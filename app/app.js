@@ -5485,19 +5485,21 @@ ${sectionsHtml}
   // Called from the Supabase auth state listener when a real user is
   // signed in (either fresh from a magic-link redirect or returning to
   // an existing session). Ensures our users table has a row for them,
-  // persists the email session, and routes into the app.
+  // creates a starter org + membership the first time, persists the
+  // email session, and routes into the app.
   async function handleSignedIn(authUser) {
-    try {
-      const client = window.Supa && window.Supa.client;
-      if (!client) return;
+    const client = window.Supa && window.Supa.client;
+    if (!client) return;
 
-      // Look up the users row keyed by auth_user_id.
-      let { data: row } = await client.from('users')
+    try {
+      // 1) Look up or create the users row keyed by auth_user_id.
+      const lookup = await client.from('users')
         .select('*')
         .eq('auth_user_id', authUser.id)
         .maybeSingle();
+      if (lookup.error) throw new Error('users select: ' + lookup.error.message);
+      let row = lookup.data;
 
-      // First time we're seeing this auth user — create the row.
       if (!row) {
         const initials = (authUser.email || '?').slice(0, 2).toUpperCase();
         const name = (authUser.user_metadata && authUser.user_metadata.name) || authUser.email.split('@')[0];
@@ -5507,22 +5509,49 @@ ${sectionsHtml}
           email: authUser.email, name, initials,
           kind: isAdminEmail(authUser.email) ? 'admin' : 'operator'
         }).select().single();
+        if (ins.error) throw new Error('users insert: ' + ins.error.message);
         row = ins.data;
       }
 
-      // Bridge with the existing localStorage session logic.
+      // 2) Make sure operators have a default org + owner membership so
+      //    any vessel they add has somewhere to live. (Surveyors and
+      //    admins don't need this — they don't own an org.)
+      if (row.kind === 'operator') {
+        const mem = await client.from('memberships')
+          .select('org_id')
+          .eq('user_id', row.id)
+          .limit(1)
+          .maybeSingle();
+        if (mem.error) throw new Error('memberships select: ' + mem.error.message);
+        if (!mem.data) {
+          const orgId = 'org_' + row.id.slice(2);
+          const orgIns = await client.from('organizations').insert({
+            id: orgId,
+            name: row.name + "'s vessels",
+            plan: 'trial'
+          });
+          if (orgIns.error) throw new Error('orgs insert: ' + orgIns.error.message);
+
+          const memIns = await client.from('memberships').insert({
+            org_id: orgId, user_id: row.id, role: 'owner'
+          });
+          if (memIns.error) throw new Error('membership insert: ' + memIns.error.message);
+        }
+      }
+
+      // 3) Bridge with the existing localStorage session logic.
       saveSession({
         mode: 'live', email: authUser.email,
-        user_id: row && row.id,
+        user_id: row.id,
         signed_in_at: new Date().toISOString()
       });
 
-      // Drive the existing boot routing without reloading the page.
+      // 4) Drive the existing boot routing without reloading the page.
       renderDemoBadge();
-      if (row && row.kind === 'admin') {
+      if (row.kind === 'admin') {
         applyDesktopAdmin();
         go('s-admin-home');
-      } else if (row && row.kind === 'surveyor') {
+      } else if (row.kind === 'surveyor') {
         Store.setMode('surveyor');
         go('s-surveyor-home');
       } else {
@@ -5530,7 +5559,10 @@ ${sectionsHtml}
         go('s-home');
       }
     } catch (err) {
+      // Surface the real error — silent failures here turn into bug
+      // reports like "I signed in but nothing showed up in Supabase".
       console.error('handleSignedIn failed', err);
+      alert("Couldn't finish signing you in: " + (err.message || err) + "\n\nCheck Supabase RLS policies — see migration 0003_insert_policies.sql.");
     }
   }
 
