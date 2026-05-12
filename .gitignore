@@ -13,6 +13,8 @@ _build/
 node_modules/
 dist/
 .cache/
+# Local download bundles (e.g. codedok-social-pack.zip) — never tracked
+*.zip
 
 # Env / secrets — never commit these
 .env
