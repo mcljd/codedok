@@ -123,6 +123,27 @@
       return { sent: true };
     },
 
+    // Change the signed-in user's password. Supabase rejects passwords
+    // shorter than 6 chars by default; we enforce 8 in the UI.
+    async updatePassword(newPassword) {
+      const client = await loadSupabase();
+      const { data, error } = await client.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      return data;
+    },
+
+    // Send a password-reset link to the user's email. The link returns
+    // to the app with a recovery token in the URL; the auth listener
+    // detects it and surfaces the "set new password" UI.
+    async sendPasswordReset(email) {
+      const client = await loadSupabase();
+      const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname
+      });
+      if (error) throw error;
+      return { sent: true };
+    },
+
     async signOut() {
       if (!window.Supa.client) return;
       await window.Supa.client.auth.signOut();

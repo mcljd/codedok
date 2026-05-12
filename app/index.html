@@ -169,7 +169,10 @@
         <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Email</label>
         <input class="auth-input" id="login-email" type="email" autocomplete="email" placeholder="you@example.com" inputmode="email">
 
-        <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 8px">Password</label>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px">
+          <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em">Password</label>
+          <button class="auth-demo-link" onclick="forgotPassword()" style="font-size:12px;padding:0;margin:0">Forgot?</button>
+        </div>
         <input class="auth-input" id="login-password" type="password" autocomplete="current-password" placeholder="••••••••">
 
         <button class="auth-btn auth-btn-primary" style="margin-top:14px" onclick="submitSignIn()">
@@ -1498,6 +1501,7 @@
     <div class="slbl">Account</div>
     <div class="card mx">
       <div class="row" onclick="go('s-notif')"><div class="row-ic bl">🔔</div><div class="row-body"><div class="row-name">Notification settings</div></div><span class="chev">›</span></div>
+      <div class="row" onclick="openChangePassword()"><div class="row-ic bl">🔑</div><div class="row-body"><div class="row-name">Change password</div><div class="row-sub">Set a new password for your account</div></div><span class="chev">›</span></div>
       <div class="row"><div class="row-ic bl">🔒</div><div class="row-body"><div class="row-name">Privacy &amp; data</div></div><span class="chev">›</span></div>
       <div class="row"><div class="row-ic bl">❓</div><div class="row-body"><div class="row-name">Help &amp; support</div></div><span class="chev">›</span></div>
       <div class="row" onclick="signOut()"><div class="row-ic rd">↩️</div><div class="row-body"><div class="row-name">Sign out</div><div class="row-sub">Return to the login screen</div></div><span class="chev">›</span></div>
