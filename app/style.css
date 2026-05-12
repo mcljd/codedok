@@ -10,30 +10,71 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 :root {
-  --ink:    #0a1628; --ink2: #1a3560; --ink3: #1e3454;
-  --sea:    #0891b2; --seal: #06b6d4; --seap: rgba(8,145,178,.12);
-  --green:  #16a34a; --grnp: rgba(22,163,74,.12);
-  --amber:  #d97706; --ampp: rgba(217,119,6,.13);
-  --red:    #dc2626; --redp: rgba(220,38,38,.12);
-  --purp:   #7c3aed; --purpp:rgba(124,58,237,.12);
-  --white:  #ffffff; --slate:#f1f5f9; --bdr:#e2e8f0;
-  /* Darker grey scale for higher contrast — designed to be readable on
-     a bright deck in direct sunlight by someone with average reading-age eyes. */
-  --text:   #0f172a; --mid:#334155; --lt:#64748b;
-  --card:   #ffffff; --page:#f8fafc;
+  /* Brand: navy hero, cyan accent. Slightly warmer ink so dark blocks
+     don't read as cold tech-blue. */
+  --ink:    #0B1726; --ink2: #1E3656; --ink3: #1e3454;
+  --sea:    #0891b2; --seal: #22D3EE; --seap: rgba(8,145,178,.10);
+
+  /* Status accents. Slightly muted vs full saturation — modern apps
+     pull these back so the UI doesn't read as a dashboard chart. */
+  --green:  #15803D; --grnp: rgba(21,128,61,.10);
+  --amber:  #B45309; --ampp: rgba(180,83,9,.10);
+  --red:    #B91C1C; --redp: rgba(185,28,28,.10);
+  --purp:   #6D28D9; --purpp:rgba(109,40,217,.10);
+
+  /* Surfaces. Warmer off-whites — feel like paper, not a spreadsheet. */
+  --white:  #ffffff;
+  --slate:  #F1F5F9;
+  --bdr:    #E2E8F0;
+  --bdr-strong: #CBD5E1;
+  --page:   #F8FAFC;
+  --card:   #ffffff;
+  --card-2: #FBFCFD;          /* lifted surface — settings rows, cards-in-cards */
+
+  /* Type. Six steps from tertiary grey to primary ink — gives every
+     screen a clear hierarchy without inventing new colours per piece. */
+  --text:   #0F172A;          /* primary text — headlines */
+  --text-2: #1E293B;          /* body */
+  --mid:    #475569;          /* meta */
+  --lt:     #64748B;          /* tertiary */
+  --lt-2:   #94A3B8;          /* placeholder, dividers */
+
   --fn:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --r:16px; --rs:10px; --safe:env(safe-area-inset-bottom,20px);
-  --sh:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.08);
-  --shlg:0 8px 40px rgba(0,0,0,.18);
+
+  /* Radius scale. Larger = friendlier, more modern. */
+  --r:    18px;               /* primary card radius */
+  --rs:   12px;               /* pill / small button radius */
+  --r-lg: 24px;               /* hero card, modal */
+
+  --safe: env(safe-area-inset-bottom,20px);
+
+  /* Shadow scale. Multi-layer = the modern app look. */
+  --sh-sm: 0 1px 2px rgba(15,23,42,.05);
+  --sh:    0 1px 3px rgba(15,23,42,.06), 0 6px 24px rgba(15,23,42,.04);
+  --sh-md: 0 1px 3px rgba(15,23,42,.08), 0 12px 28px rgba(15,23,42,.07);
+  --sh-lg: 0 8px 16px rgba(15,23,42,.08), 0 24px 56px rgba(15,23,42,.10);
+
+  /* Motion. Single ease curve everywhere for cohesive feel. */
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --t-fast: 140ms var(--ease);
+  --t-base: 220ms var(--ease);
+  --t-slow: 320ms var(--ease);
 }
 /* Base size bumped 15 -> 17px. Anything fixed at small px in component
    styles below also scales up because em-based metrics inherit. */
-html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-height:100vh;font-size:17px;line-height:1.55;overflow-x:hidden;}
+html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-height:100vh;font-size:17px;line-height:1.55;overflow-x:hidden;letter-spacing:-.005em;}
 @media(min-width:520px){body{display:flex;justify-content:center;align-items:flex-start;padding:32px 0 64px;}.shell{width:393px;min-height:852px;border-radius:44px;overflow:hidden;box-shadow:0 60px 120px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.08);}}
 
 /* SHELL */
 .shell{display:none;flex-direction:column;background:var(--page);position:relative;}
-.shell.on{display:flex;}
+.shell.on{display:flex;animation: shellIn 240ms var(--ease);}
+@keyframes shellIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell.on { animation: none; }
+}
 
 /* Mobile: lock the shell to viewport height so .scroll becomes the scroll
    context and .bnav stays pinned to the bottom (instead of scrolling away).
@@ -79,21 +120,49 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .tbar-title{font-size:18px;font-weight:700;color:var(--text);}
 .back{display:flex;align-items:center;gap:3px;color:var(--sea);font-size:15px;font-weight:500;cursor:pointer;border:none;background:none;font-family:var(--fn);}
 
-/* BOTTOM NAV — sized for glove-friendly tap targets */
-.bnav{background:var(--card);border-top:1px solid var(--bdr);display:flex;padding:6px 0 max(6px, var(--safe));flex-shrink:0;position:sticky;bottom:0;z-index:50;}
-.bni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:none;font-family:var(--fn);padding:4px 0;min-height:46px;}
-.bni-ic{font-size:26px;line-height:1;position:relative;}
-.bni-lb{font-size:12px;font-weight:600;color:var(--lt);}
-.bni.on .bni-lb{color:var(--sea);}
-.bni.on .bni-ic::after{content:'';position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--sea);}
+/* BOTTOM NAV — glove-friendly tap targets, subtle active state */
+.bnav{
+  background:rgba(255,255,255,.92);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-top:1px solid var(--bdr);
+  display:flex;
+  padding:6px 0 max(6px, var(--safe));
+  flex-shrink:0;
+  position:sticky;
+  bottom:0;
+  z-index:50;
+}
+.bni{
+  flex:1;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:pointer;border:none;background:none;font-family:var(--fn);
+  padding:8px 0 6px;min-height:50px;
+  color:var(--lt);
+  transition: color var(--t-fast);
+}
+.bni:active { transform: scale(.96); transition: transform 80ms ease; }
+.bni-ic{ font-size:24px; line-height:1; position:relative; transition: transform var(--t-fast); filter: grayscale(.15); }
+.bni-lb{ font-size:11px; font-weight:600; color:inherit; letter-spacing:.01em; }
+.bni.on { color:var(--sea); }
+.bni.on .bni-ic { filter: grayscale(0); transform: translateY(-1px); }
+.bni.on .bni-lb { color:var(--sea); font-weight:700; }
+.bni.on::before{
+  content:''; position:absolute; top:0; left:50%;
+  transform: translateX(-50%);
+  width: 28px; height: 3px;
+  border-radius: 0 0 4px 4px;
+  background: var(--sea);
+}
 
 /* CARDS */
-.card{background:var(--card);border-radius:var(--r);border:1px solid var(--bdr);overflow:hidden;box-shadow:var(--sh);}
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--bdr);overflow:hidden;box-shadow:var(--sh);transition:box-shadow var(--t-base), border-color var(--t-base);}
 .mx{margin:0 16px;}
 
 /* SECTION LABEL */
-.slbl{font-size:13px;font-weight:700;text-transform:none;letter-spacing:0;color:var(--mid);padding:20px 20px 10px;display:flex;align-items:center;justify-content:space-between;}
-.slbl-act{font-size:14px;font-weight:600;color:var(--sea);}
+.slbl{font-size:13px;font-weight:700;letter-spacing:-.01em;color:var(--mid);padding:22px 20px 10px;display:flex;align-items:center;justify-content:space-between;text-transform:none;}
+.slbl-act{font-size:14px;font-weight:600;color:var(--sea);transition: opacity var(--t-fast);}
+.slbl-act:hover { opacity: .75; }
 
 /* CHIPS */
 .chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
@@ -121,7 +190,15 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .chev{color:var(--lt);font-size:18px;flex-shrink:0;}
 
 /* BUTTONS */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:54px;padding:0 24px;border-radius:var(--rs);font-family:var(--fn);font-size:16px;font-weight:700;cursor:pointer;border:none;transition:all .15s;}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:54px;padding:0 24px;border-radius:14px;
+  font-family:var(--fn);font-size:16px;font-weight:700;letter-spacing:-.01em;
+  cursor:pointer;border:none;
+  transition: background var(--t-fast), transform var(--t-fast), box-shadow var(--t-base);
+  box-shadow: 0 1px 2px rgba(15,23,42,.06);
+}
+.btn:active { transform: scale(.97); }
 .btn-full{width:100%;}
 .btn-sea{background:var(--sea);color:white;}
 .btn-sea:active{opacity:.85;}
@@ -346,25 +423,25 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .tile-num.ok { color: #86efac; }
 .tile-lbl { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .07em; }
 
-/* QUICK ACTION TILE — bigger, more visual */
+/* QUICK ACTION TILE — modern row card */
 .qa-tile {
   background: var(--card);
   border: 1px solid var(--bdr);
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: var(--r);
+  padding: 14px 16px;
   display: flex;
   align-items: center;
   gap: 14px;
   cursor: pointer;
-  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-  box-shadow: 0 1px 3px rgba(15,23,42,.04), 0 4px 14px rgba(15,23,42,.03);
+  transition: transform var(--t-fast), box-shadow var(--t-base), border-color var(--t-base);
+  box-shadow: var(--sh-sm);
   min-height: 72px;
 }
-.qa-tile:active { transform: scale(.98); }
-.qa-tile:hover { border-color: var(--sea); box-shadow: 0 6px 22px rgba(8,145,178,.12); }
+.qa-tile:active { transform: scale(.985); }
+.qa-tile:hover { border-color: var(--bdr-strong); box-shadow: var(--sh); }
 .qa-icon {
-  width: 48px; height: 48px; border-radius: 13px;
-  display: flex; align-items: center; justify-content: center; font-size: 22px;
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
   flex-shrink: 0;
 }
 .qa-icon.rd { background: var(--redp); color: var(--red); }

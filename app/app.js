@@ -1028,17 +1028,16 @@
           ? 'All certificates &amp; equipment current. Keep on top of upcoming renewals.'
           : `${counts.overdue} item${counts.overdue === 1 ? '' : 's'} need${counts.overdue === 1 ? 's' : ''} attention before your next MCA visit.`;
         statusEl.innerHTML = `
-          <div style="display:flex;align-items:center;gap:12px;position:relative;z-index:1">
-            <div class="ring-wrap" style="flex-shrink:0;width:60px;height:60px">
-              ${ringSvg(fleetScore, scoreColor(fleetScore), 60, true)}
-              <div class="ring-val">
-                <div class="ring-pct" style="color:white;font-size:16px;letter-spacing:-.4px;font-weight:800">${fleetScore}<span style="font-size:9px;font-weight:600;color:rgba(255,255,255,.55)">%</span></div>
+          <div style="display:flex;align-items:center;gap:16px;position:relative;z-index:1">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Fleet compliance</div>
+              <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px">
+                <span style="font-size:48px;font-weight:800;color:white;letter-spacing:-1.6px;line-height:1">${fleetScore}</span>
+                <span style="font-size:18px;font-weight:600;color:rgba(255,255,255,.45);letter-spacing:-.4px">%</span>
               </div>
-            </div>
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
               ${badgeHtml}
-              <button class="btn btn-sea btn-sm" style="height:28px;font-size:11px;padding:0 10px;align-self:flex-start" onclick="exportFleetInspectionPack()">📄 Inspection pack →</button>
             </div>
+            <button class="btn btn-sea" onclick="exportFleetInspectionPack()" style="height:42px;padding:0 14px;font-size:13px;font-weight:700;border-radius:12px;flex-shrink:0">📄 Inspection pack</button>
           </div>`;
       }
     }
