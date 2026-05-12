@@ -6125,10 +6125,107 @@ ${sectionsHtml}
   window.submitLoginEmail = submitLoginEmail;
 
   function resetLoginStep() {
-    document.getElementById('login-step-email').style.display = '';
-    document.getElementById('login-step-sent').style.display = 'none';
+    toggleAuthMode('signin');
   }
   window.resetLoginStep = resetLoginStep;
+
+  // Toggle between the three login-card modes:
+  // 'signin'  email + password sign-in (default)
+  // 'signup'  email + password new-account creation
+  // 'sent'    verification email sent — wait, then sign in
+  function toggleAuthMode(mode) {
+    const ids = ['login-step-signin', 'login-step-signup', 'login-step-sent'];
+    const map = { signin: 'login-step-signin', signup: 'login-step-signup', sent: 'login-step-sent' };
+    const target = map[mode] || 'login-step-signin';
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = id === target ? '' : 'none';
+    });
+    // Clear any error states when switching.
+    ['login-error', 'signup-error'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) { el.style.display = 'none'; el.textContent = ''; }
+    });
+  }
+  window.toggleAuthMode = toggleAuthMode;
+
+  // ----- Email + password sign-in -----
+  async function submitSignIn() {
+    const email = ((document.getElementById('login-email') || {}).value || '').trim();
+    const password = (document.getElementById('login-password') || {}).value || '';
+    const errEl = document.getElementById('login-error');
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+
+    if (!email.includes('@')) return showLoginError('Enter the email you signed up with.');
+    if (!password) return showLoginError('Enter your password.');
+
+    if (!window.Supa || !window.CodedOkConfig || !window.CodedOkConfig.supabaseUrl) {
+      return showLoginError("Cloud sign-in isn't configured. Use the demo button instead.");
+    }
+
+    try {
+      await window.Supa.signInWithPassword(email, password);
+      // handleSignedIn() will fire via Supa.onAuthChange and route into the app.
+    } catch (err) {
+      const msg = err && err.message ? err.message : 'sign-in failed';
+      if (/Email not confirmed/i.test(msg)) {
+        showLoginError("Your email isn't verified yet. Check your inbox for the link we sent.");
+      } else if (/Invalid login credentials/i.test(msg)) {
+        showLoginError("That email and password don't match. Try again or create an account.");
+      } else {
+        showLoginError(msg);
+      }
+    }
+  }
+  window.submitSignIn = submitSignIn;
+
+  function showLoginError(text) {
+    const el = document.getElementById('login-error');
+    if (!el) return;
+    el.textContent = text;
+    el.style.display = 'block';
+  }
+
+  // ----- Email + password sign-up -----
+  async function submitSignUp() {
+    const email = ((document.getElementById('signup-email') || {}).value || '').trim();
+    const password = (document.getElementById('signup-password') || {}).value || '';
+    const errEl = document.getElementById('signup-error');
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+
+    if (!email.includes('@')) return showSignupError('Enter a valid email.');
+    if (password.length < 8) return showSignupError('Password must be at least 8 characters.');
+
+    if (!window.Supa || !window.CodedOkConfig || !window.CodedOkConfig.supabaseUrl) {
+      return showSignupError("Cloud sign-up isn't configured. Use the demo button instead.");
+    }
+
+    try {
+      const result = await window.Supa.signUpWithPassword(email, password);
+      // If email confirmation is on, the session is null until they click the link.
+      // If it's off, they're signed in immediately — onAuthChange fires.
+      const lineEl = document.getElementById('login-sent-line');
+      if (lineEl) lineEl.innerHTML = `Account created. We've sent a verification link to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email, tap the link, then come back to sign in.`;
+      toggleAuthMode('sent');
+    } catch (err) {
+      const msg = err && err.message ? err.message : 'sign-up failed';
+      if (/already.*registered|already.*exists|User already registered/i.test(msg)) {
+        showSignupError("That email is already in use. Sign in instead.");
+      } else if (/weak.*password|Password should be/i.test(msg)) {
+        showSignupError("Pick a stronger password (8+ characters).");
+      } else {
+        showSignupError(msg);
+      }
+    }
+  }
+  window.submitSignUp = submitSignUp;
+
+  function showSignupError(text) {
+    const el = document.getElementById('signup-error');
+    if (!el) return;
+    el.textContent = text;
+    el.style.display = 'block';
+  }
 
   // Admin emails route into the admin workspace; everything else → operator.
   function isAdminEmail(email) {
