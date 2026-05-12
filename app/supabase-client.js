@@ -39,22 +39,45 @@
 
   // Load supabase-js from CDN on first use. Module-mode import keeps it
   // off the critical path.
+  // Resilient loader — tries esm.sh first, falls back to jsdelivr if the
+  // primary CDN is blocked (corporate networks, ad-blockers, CDN outages).
+  // If both fail, window.Supa.loadError captures the reason and the rest
+  // of the app continues in localStorage-only mode without crashing.
+  const CDNS = [
+    'https://esm.sh/@supabase/supabase-js@2',
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+  ];
+
   let loadPromise = null;
   function loadSupabase() {
     if (loadPromise) return loadPromise;
-    loadPromise = import('https://esm.sh/@supabase/supabase-js@2').then((mod) => {
-      const { createClient } = mod;
-      const client = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true   // handles the magic-link redirect
+    loadPromise = (async () => {
+      let lastErr;
+      for (const url of CDNS) {
+        try {
+          const mod = await import(url);
+          const { createClient } = mod;
+          const client = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+            auth: {
+              persistSession: true,
+              autoRefreshToken: true,
+              detectSessionInUrl: true   // handles the magic-link redirect
+            }
+          });
+          window.Supa.client = client;
+          window.Supa.ready = true;
+          return client;
+        } catch (err) {
+          lastErr = err;
+          console.warn('Supabase CDN failed:', url, err && err.message);
         }
-      });
-      window.Supa.client = client;
-      window.Supa.ready = true;
-      return client;
-    });
+      }
+      // Both CDNs failed — leave the app in localStorage-only mode.
+      window.Supa.loadError = lastErr;
+      throw lastErr || new Error('Could not load Supabase from any CDN');
+    })();
+    // Don't let the promise itself surface as unhandled if no one awaits.
+    loadPromise.catch(() => {});
     return loadPromise;
   }
 
