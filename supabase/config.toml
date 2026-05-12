@@ -7,10 +7,10 @@
 project_id = "zftoqqrqsxctehltebad"
 
 [functions.generate-sms]
-# JWT verification — set to false because the SMS generator is invoked
-# by signed-in users from the browser using their Supabase session.
-# Supabase still passes the user's bearer token via the Authorization
-# header for any function that needs it. Anonymous abuse is mitigated
-# elsewhere (the £10 Stripe charge must complete before the function
-# is called).
+# Called by signed-in users after the £10 charge.
+verify_jwt = true
+
+[functions.extract-cert]
+# Called by signed-in users (surveyor or operator) to extract structured
+# fields from a single certificate photo / PDF via Claude vision.
 verify_jwt = true
