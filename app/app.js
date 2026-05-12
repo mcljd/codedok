@@ -4711,25 +4711,85 @@
       </div>`;
   }
 
-  function runSmsGeneration() {
+  async function runSmsGeneration() {
     const modal = document.getElementById('sms-ai-modal');
     if (modal) {
       modal.innerHTML = `
         <div class="sheet" style="padding:32px 22px;text-align:center">
           <div style="font-size:36px;margin-bottom:10px">✨</div>
-          <div style="font-size:15px;font-weight:700">Generating your SMS…</div>
-          <div style="font-size:12px;color:var(--lt);margin-top:6px">Drafting 11 sections tailored to your operation.</div>
+          <div style="font-size:15px;font-weight:700">Drafting your SMS with Claude…</div>
+          <div style="font-size:12px;color:var(--lt);margin-top:6px">Writing 11 sections tailored to your operation. ~15–25 seconds.</div>
         </div>`;
     }
-    // Mock latency so the user sees the work happening.
-    setTimeout(() => {
-      const draft = generateSmsFromInputs(smsAiInputs);
-      saveSmsDraft(draft);
-      closeSmsAiWizard();
-      smsActiveSection = 0;
-      go('s-sms-builder');
-      alert('Your SMS is ready. Review each section, edit anything that needs adjusting, then submit for sign-off.');
-    }, 1800);
+
+    let draft = null;
+
+    // Try the real Claude API via the Supabase edge function first. Falls
+    // back to the local template substitution if the function isn't
+    // deployed or any error occurs — so the app keeps working in dev.
+    if (window.Supa && window.Supa.ready) {
+      try {
+        const v = Store.getVessel(smsAiInputs.vessel_id) || {};
+        const payload = {
+          vessel: {
+            name: v.name, type: v.type, category: v.category,
+            length: v.length, persons: v.persons
+          },
+          operation_type: smsAiInputs.operation_type,
+          operating_area: smsAiInputs.operating_area,
+          passengers_max: smsAiInputs.passengers_max,
+          crew_size: smsAiInputs.crew_size,
+          season: smsAiInputs.season,
+          notable_risks: smsAiInputs.notable_risks
+        };
+        const { data, error } = await Supa.client.functions.invoke('generate-sms', { body: payload });
+        if (error) throw new Error(error.message || 'edge function error');
+        if (data && data.sections) {
+          // Merge Claude's per-section output into the existing draft
+          // shape so the existing builder UI just works.
+          draft = {
+            vessel_id: smsAiInputs.vessel_id,
+            sections: {},
+            started_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            generated_by_ai: true,
+            ai_model: data.model,
+            generation_inputs: smsAiInputs
+          };
+          const schema = window.Codes.SMS_SCHEMA;
+          schema.forEach((sec) => {
+            const claudeSection = data.sections[sec.id] || {};
+            const sectionObj = { ai_summary: claudeSection.summary || '', body: claudeSection.body || '' };
+            // Also pre-fill the schema fields with the body so the builder
+            // shows real content in every field.
+            (sec.fields || []).forEach((f) => {
+              if (!sectionObj[f.id]) sectionObj[f.id] = claudeSection.body || '';
+            });
+            draft.sections[sec.id] = sectionObj;
+          });
+          // Override the meta section with concrete vessel data.
+          if (v.name) draft.sections.meta = Object.assign({}, draft.sections.meta || {}, {
+            vessel_name: v.name,
+            vessel_ssr: v.ssr || '',
+            vessel_type: v.type || '',
+            vessel_cat: v.category || '',
+            sms_version: '1.0 (AI-generated)',
+            sms_review_date: new Date().toISOString().slice(0, 10)
+          });
+        }
+      } catch (err) {
+        console.warn('Claude generation failed, falling back to local template:', err);
+      }
+    }
+
+    // Fallback: local template substitution (the original mock).
+    if (!draft) draft = generateSmsFromInputs(smsAiInputs);
+
+    saveSmsDraft(draft);
+    closeSmsAiWizard();
+    smsActiveSection = 0;
+    go('s-sms-builder');
+    alert('Your SMS is ready. Review each section, edit anything that needs adjusting, then submit for sign-off.');
   }
   window.runSmsGeneration = runSmsGeneration;
 
