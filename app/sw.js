@@ -4,7 +4,7 @@
 //     get the latest when online, fall back to cache when offline)
 //   - Fonts / icons / images: cache-first (rarely change, big files)
 // Bump CACHE_VERSION whenever you ship — old caches are deleted on activate.
-const CACHE_VERSION = 'codedok-v16';
+const CACHE_VERSION = 'codedok-v17';
 const SHELL = [
   './',
   './index.html',
@@ -44,6 +44,13 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+
+  // Skip cross-origin requests entirely. If we intercepted them and the
+  // fetch failed, our fallback (./index.html) would return HTML for what
+  // was meant to be a JS module — breaking dynamic ES module imports
+  // from CDNs like esm.sh ("text/html is not a valid JavaScript MIME
+  // type"). Let the browser handle these directly.
+  if (url.origin !== self.location.origin) return;
 
   if (isAppShell(url)) {
     // Network-first for code/markup — never serve stale UI when online.
