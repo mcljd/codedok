@@ -382,7 +382,7 @@
   <div class="sb sb-dk"></div>
 
   <!-- Dark header -->
-  <div style="background:var(--ink);padding:0 20px 20px;flex-shrink:0">
+  <div style="background:var(--ink);padding:0 20px 10px;flex-shrink:0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
       <div id="home-greeting">
         <div style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:2px">Good morning</div>
@@ -400,12 +400,16 @@
         <div class="avatar" id="home-avatar">JM</div>
       </div>
     </div>
-
-    <!-- Fleet compliance score + inspection badge -->
-    <div id="home-status" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;display:flex;align-items:center;gap:16px"></div>
   </div>
 
   <div class="scroll">
+
+    <!-- Fleet compliance hero — scrolls away naturally so we don't animate
+         layout properties (which caused jumpy scroll on the older inline
+         "collapse-on-scroll" pattern). -->
+    <div id="home-status-wrap" style="padding:12px 16px 0">
+      <div id="home-status"></div>
+    </div>
 
     <!-- TOP 3 ACTIONS TODAY -->
     <div class="slbl">Top 3 actions today</div>
