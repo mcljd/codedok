@@ -6016,7 +6016,16 @@ ${sectionsHtml}
     if (!client) return;
 
     try {
-      // 1) Look up or create the users row keyed by auth_user_id.
+      // Simple, self-healing user save:
+      //   1. Look up our users row by auth_user_id.
+      //   2. If missing, create it with the role chosen at sign-up.
+      //   3. If present but the chosen role has changed since (e.g. they
+      //      signed up again with the role picker on a different setting),
+      //      sync the row.
+      // Org + membership are created LAZILY on first vessel add — no
+      // failure point at sign-in, no extra rows for users who sign up
+      // but never add a vessel.
+
       const lookup = await client.from('users')
         .select('*')
         .eq('auth_user_id', authUser.id)
@@ -6024,62 +6033,40 @@ ${sectionsHtml}
       if (lookup.error) throw new Error('users select: ' + lookup.error.message);
       let row = lookup.data;
 
+      // Role precedence: explicit chosen role from sign-up metadata >
+      // admin/builder email pattern > existing row's kind > default operator.
+      const chosenKind = authUser.user_metadata && authUser.user_metadata.kind;
+      const inferred = kindFromEmail(authUser.email);
+      const desiredKind = ['operator','surveyor','admin','builder'].includes(chosenKind)
+        ? chosenKind
+        : (row && row.kind) || inferred;
+
       if (!row) {
         const initials = (authUser.email || '?').slice(0, 2).toUpperCase();
         const name = (authUser.user_metadata && authUser.user_metadata.name) || authUser.email.split('@')[0];
         const id = 'u_' + Math.random().toString(36).slice(2, 9);
-        // Role precedence: explicit chosen role from sign-up > admin/builder
-        // email pattern > default operator.
-        const chosenKind = authUser.user_metadata && authUser.user_metadata.kind;
-        const inferred = kindFromEmail(authUser.email);
-        const kind = ['operator','surveyor','admin','builder'].includes(chosenKind)
-          ? chosenKind
-          : inferred;
         const newUser = {
           id, auth_user_id: authUser.id,
-          email: authUser.email, name, initials, kind
+          email: authUser.email, name, initials, kind: desiredKind
         };
-        // Tag Redbay builder accounts so the builderPipeline() function finds them.
-        if (kind === 'builder') newUser.builder = { slug: 'redbay', company: 'Redbay Boats' };
+        if (desiredKind === 'builder') newUser.builder = { slug: 'redbay', company: 'Redbay Boats' };
         const ins = await client.from('users').insert(newUser).select().single();
         if (ins.error) throw new Error('users insert: ' + ins.error.message);
         row = ins.data;
+      } else if (row.kind !== desiredKind && chosenKind) {
+        // Existing user signed up again with a different role — update.
+        const upd = await client.from('users').update({ kind: desiredKind }).eq('id', row.id).select().single();
+        if (!upd.error) row = upd.data;
       }
 
-      // 2) Make sure operators have a default org + owner membership so
-      //    any vessel they add has somewhere to live. (Surveyors and
-      //    admins don't need this — they don't own an org.)
-      if (row.kind === 'operator') {
-        const mem = await client.from('memberships')
-          .select('org_id')
-          .eq('user_id', row.id)
-          .limit(1)
-          .maybeSingle();
-        if (mem.error) throw new Error('memberships select: ' + mem.error.message);
-        if (!mem.data) {
-          const orgId = 'org_' + row.id.slice(2);
-          const orgIns = await client.from('organizations').insert({
-            id: orgId,
-            name: row.name + "'s vessels",
-            plan: 'trial'
-          });
-          if (orgIns.error) throw new Error('orgs insert: ' + orgIns.error.message);
-
-          const memIns = await client.from('memberships').insert({
-            org_id: orgId, user_id: row.id, role: 'owner'
-          });
-          if (memIns.error) throw new Error('membership insert: ' + memIns.error.message);
-        }
-      }
-
-      // 3) Bridge with the existing localStorage session logic.
+      // Bridge with the existing localStorage session.
       saveSession({
         mode: 'live', email: authUser.email,
         user_id: row.id,
         signed_in_at: new Date().toISOString()
       });
 
-      // 4) Drive the existing boot routing without reloading the page.
+      // Drive the boot routing.
       renderDemoBadge();
       if (row.kind === 'admin') {
         applyDesktopAdmin();
@@ -6088,16 +6075,12 @@ ${sectionsHtml}
         Store.setMode('surveyor');
         go('s-surveyor-home');
       } else if (row.kind === 'builder') {
-        // Builders live in /web — bounce them there so they land on the
-        // builder dashboard rather than the operator mobile shell.
         window.location.href = 'web/index.html#builder';
       } else {
         Store.setMode('operator');
         go('s-home');
       }
     } catch (err) {
-      // Surface the real error — silent failures here turn into bug
-      // reports like "I signed in but nothing showed up in Supabase".
       console.error('handleSignedIn failed', err);
       const msg = (err && err.message) || String(err);
       const hint = /infinite recursion/.test(msg)
@@ -6160,6 +6143,83 @@ ${sectionsHtml}
     toggleAuthMode('signin');
   }
   window.resetLoginStep = resetLoginStep;
+
+  // Forgot password — sends a reset link to the email currently typed
+  // in the sign-in form. User clicks the link, comes back, and the
+  // app catches the recovery session and prompts for a new password.
+  async function forgotPassword() {
+    const email = ((document.getElementById('login-email') || {}).value || '').trim();
+    if (!email.includes('@')) {
+      showLoginError('Type your email above first, then tap Forgot.');
+      return;
+    }
+    if (!window.Supa || !window.CodedOkConfig || !window.CodedOkConfig.supabaseUrl) {
+      showLoginError("Reset isn't configured.");
+      return;
+    }
+    try {
+      await window.Supa.sendPasswordReset(email);
+      const lineEl = document.getElementById('login-sent-line');
+      if (lineEl) lineEl.innerHTML = `Reset link sent to <strong style="color:white">${escapeHtml(email)}</strong>. Tap it from this device — you'll come back here and be asked to set a new password.`;
+      toggleAuthMode('sent');
+    } catch (err) {
+      showLoginError("Couldn't send reset: " + (err.message || err));
+    }
+  }
+  window.forgotPassword = forgotPassword;
+
+  // Change password while signed in. Tapped from Account → Change password.
+  function openChangePassword() {
+    const existing = document.getElementById('change-password-sheet');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'change-password-sheet';
+    modal.className = 'bdrop on';
+    modal.onclick = (e) => { if (e.target === modal) closeChangePassword(); };
+    modal.innerHTML = `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+        <div class="sh-pull"></div>
+        <div class="sh-head">
+          <div class="sh-title">Change password</div>
+          <button class="sh-x" onclick="closeChangePassword()">×</button>
+        </div>
+        <div style="padding:0 20px 14px">
+          <div style="font-size:13px;color:var(--mid);margin-bottom:14px;line-height:1.55">Pick a new password (8+ characters). Takes effect immediately on every device you've signed in on.</div>
+          <div class="fg"><label class="fl">New password</label><input class="fi" id="cp-new" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+          <div class="fg"><label class="fl">Confirm new password</label><input class="fi" id="cp-confirm" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+          <div id="cp-error" style="display:none;font-size:12px;color:var(--red);margin-top:6px;text-align:center"></div>
+          <button class="btn btn-sea btn-full" onclick="submitChangePassword()" style="margin-top:10px">Update password</button>
+          <button class="btn btn-out btn-full" onclick="closeChangePassword()" style="margin-top:8px">Cancel</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  window.openChangePassword = openChangePassword;
+
+  function closeChangePassword() {
+    const m = document.getElementById('change-password-sheet');
+    if (m) m.remove();
+  }
+  window.closeChangePassword = closeChangePassword;
+
+  async function submitChangePassword() {
+    const pwd = (document.getElementById('cp-new') || {}).value || '';
+    const confirm = (document.getElementById('cp-confirm') || {}).value || '';
+    const errEl = document.getElementById('cp-error');
+    function showErr(t) { if (errEl) { errEl.textContent = t; errEl.style.display = 'block'; } }
+    if (errEl) errEl.style.display = 'none';
+    if (pwd.length < 8) return showErr('Password must be 8+ characters.');
+    if (pwd !== confirm) return showErr("Passwords don't match.");
+    if (!window.Supa || !window.Supa.ready) return showErr("Cloud isn't connected.");
+    try {
+      await window.Supa.updatePassword(pwd);
+      closeChangePassword();
+      alert('Password updated. You stay signed in on this device.');
+    } catch (err) {
+      showErr(err.message || String(err));
+    }
+  }
+  window.submitChangePassword = submitChangePassword;
 
   // Toggle between the three login-card modes:
   // 'signin'  email + password sign-in (default)
@@ -6370,6 +6430,15 @@ ${sectionsHtml}
 
       // Subscribe to future changes.
       window.Supa.onAuthChange((event, sess) => {
+        // Password reset flow: user clicked the link in their email and
+        // Supabase has dropped them back with a recovery session. Prompt
+        // them to set the new password instead of signing them in to
+        // the app proper.
+        if (event === 'PASSWORD_RECOVERY') {
+          go('s-login');
+          openChangePassword();
+          return;
+        }
         if (event === 'SIGNED_IN' && sess && sess.user) handleSignedIn(sess.user);
         if (event === 'SIGNED_OUT') {
           clearSession();
