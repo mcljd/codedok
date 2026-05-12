@@ -1511,8 +1511,17 @@
   </nav>
 </div>
 
+<!-- Supabase config — anon key is safe to commit; RLS protects the data -->
+<script>
+  window.CodedOkConfig = {
+    supabaseUrl: 'https://zftoqqrqsxctehltebad.supabase.co',
+    supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdG9xcXJxc3hjdGVobHRlYmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzcxODIsImV4cCI6MjA5NDE1MzE4Mn0.T-gUL06oNQ7dfMJEA2zOVShcM9cwqsV6oH9CbQgi6j8'
+  };
+</script>
 <script src="codes.js" defer></script>
 <script src="store.js" defer></script>
+<script src="supabase-client.js" defer></script>
+<script src="sync.js" defer></script>
 <script src="parseSurveyReport.js" defer></script>
 <script src="app.js" defer></script>
 
