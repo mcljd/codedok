@@ -85,7 +85,29 @@
     ready: false,
     client: null,
 
-    // Email magic-link sign-in. Supabase emails the user a one-tap link.
+    // Email + password sign-in. Throws on bad credentials.
+    async signInWithPassword(email, password) {
+      const client = await loadSupabase();
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      return data;
+    },
+
+    // Email + password sign-up. Supabase emails a verification link;
+    // the user must click it before signInWithPassword will succeed.
+    async signUpWithPassword(email, password) {
+      const client = await loadSupabase();
+      const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: window.location.origin + window.location.pathname }
+      });
+      if (error) throw error;
+      return data;
+    },
+
+    // Legacy magic-link path — still exposed because some old buttons in
+    // the app may call it. New code should use signInWithPassword.
     async signIn(email) {
       const client = await loadSupabase();
       const { error } = await client.auth.signInWithOtp({
