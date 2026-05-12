@@ -384,16 +384,17 @@
   function actionLine(item) {
     if (item.cert) {
       const v = item.vessel ? ` — ${escapeHtml(item.vessel.name)}` : '';
+      const itemIcon = item.cert.icon || '📋';
       if (item.days < 0) {
         return {
-          sev: 'rd', icon: '🚨',
+          sev: 'rd', icon: itemIcon,
           title: `${escapeHtml(item.cert.name)}${v}`,
           sub: `Expired ${Math.abs(item.days)} day${Math.abs(item.days) === 1 ? '' : 's'} ago`,
           btn: '<button class="btn btn-xs btn-red">Fix</button>'
         };
       }
       return {
-        sev: 'am', icon: item.cert.icon || '📋',
+        sev: 'am', icon: itemIcon,
         title: `${escapeHtml(item.cert.name)}${v}`,
         sub: `Due in ${item.days} day${item.days === 1 ? '' : 's'}`,
         btn: '<button class="btn btn-xs btn-out" onclick="go(\'s-surveys\')">Book</button>'
@@ -1007,12 +1008,13 @@
     const statusEl = document.getElementById('home-status');
     if (statusEl) {
       // Convert the static container into a hero-styled element.
-      statusEl.className = 'hero';
-      statusEl.style.cssText = 'padding:14px';
+      statusEl.className = 'hero hero-home';
+      statusEl.style.cssText = 'padding:18px 16px 16px';
       if (isFirstTime) {
         const firstName = (s.user && s.user.name) ? s.user.name.split(' ')[0] : 'there';
         statusEl.innerHTML = `
-          <div style="position:relative;z-index:1;padding:8px 4px 6px">
+          <div class="hero-stars" aria-hidden="true"></div>
+          <div style="position:relative;z-index:1;padding:6px 2px 2px">
             <div style="font-size:13px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Welcome to CodedOK</div>
             <div style="font-size:22px;font-weight:800;color:white;letter-spacing:-.4px;line-height:1.15;margin-bottom:8px">Hi ${escapeHtml(firstName)} — let's set your boat up in 90 seconds.</div>
             <div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.55">Add one vessel. We'll suggest the certificates and gear you need based on your MCA category, and remind you before anything expires.</div>
@@ -1021,24 +1023,42 @@
         const fleetScore = Store.complianceScore();
         const counts = Store.urgencyCounts();
         const ready = counts.overdue === 0;
+        const ringColor = scoreColor(fleetScore);
         const badgeHtml = ready
           ? `<span class="insp-pill rdy">✓ Ready for survey</span>`
           : `<span class="insp-pill notready pulse-rd">⚠ ${counts.overdue} urgent item${counts.overdue === 1 ? '' : 's'}</span>`;
-        const sub = ready
-          ? 'All certificates &amp; equipment current. Keep on top of upcoming renewals.'
-          : `${counts.overdue} item${counts.overdue === 1 ? '' : 's'} need${counts.overdue === 1 ? 's' : ''} attention before your next MCA visit.`;
+        const headlineText = ready
+          ? 'On course'
+          : counts.overdue === 1 ? 'One item adrift' : `${counts.overdue} items adrift`;
+        const subText = ready
+          ? 'All certificates and gear current — keep an eye on the horizon.'
+          : `Tackle the urgent items first, then we'll line up the rest for survey day.`;
         statusEl.innerHTML = `
-          <div style="display:flex;align-items:center;gap:16px;position:relative;z-index:1">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Fleet compliance</div>
-              <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px">
-                <span style="font-size:48px;font-weight:800;color:white;letter-spacing:-1.6px;line-height:1">${fleetScore}</span>
-                <span style="font-size:18px;font-weight:600;color:rgba(255,255,255,.45);letter-spacing:-.4px">%</span>
+          <div class="hero-stars" aria-hidden="true"></div>
+          <div class="hero-top-row">
+            <div class="hero-ring-wrap">
+              ${ringSvg(fleetScore, ringColor, 124)}
+              <div class="hero-ring-num">
+                <span class="hero-ring-pct">${fleetScore}</span><span class="hero-ring-percent">%</span>
               </div>
+            </div>
+            <div class="hero-summary">
+              <div class="hero-label">Fleet compliance</div>
+              <div class="hero-headline">${escapeHtml(headlineText)}</div>
+              <div class="hero-sub">${subText}</div>
               ${badgeHtml}
             </div>
-            <button class="btn btn-sea" onclick="exportFleetInspectionPack()" style="height:42px;padding:0 14px;font-size:13px;font-weight:700;border-radius:12px;flex-shrink:0">📄 Inspection pack</button>
-          </div>`;
+          </div>
+          <div class="home-tile-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px">
+            <div class="tile tile-sm"><div class="tile-num rd">${counts.overdue}</div><div class="tile-lbl">Overdue</div></div>
+            <div class="tile tile-sm"><div class="tile-num am">${counts.due30}</div><div class="tile-lbl">Due 30d</div></div>
+            <div class="tile tile-sm"><div class="tile-num ok">${counts.valid}</div><div class="tile-lbl">Valid</div></div>
+          </div>
+          <button class="hero-cta" onclick="exportFleetInspectionPack()">
+            <span class="hero-cta-ic">📄</span>
+            <span class="hero-cta-lbl">Inspection pack</span>
+            <span class="hero-cta-arrow">→</span>
+          </button>`;
       }
     }
 
@@ -6092,62 +6112,21 @@ ${sectionsHtml}
     }
   }
 
-  // Login form handlers
-  async function submitLoginEmail() {
-    const input = document.getElementById('login-email');
-    const email = (input && input.value || '').trim();
-    if (!email.includes('@')) {
-      if (input) {
-        input.style.borderColor = '#ef4444';
-        input.focus();
-        setTimeout(() => { input.style.borderColor = ''; }, 1200);
-      }
-      return;
-    }
-
-    // Optimistically swap to the "sent" panel so the user sees feedback
-    // immediately. If the real call fails we surface the error there.
-    const lineEl = document.getElementById('login-sent-line');
-    if (lineEl) lineEl.innerHTML = `Sending sign-in link to <strong style="color:white">${escapeHtml(email)}</strong>…`;
-    document.getElementById('login-step-email').style.display = 'none';
-    document.getElementById('login-step-sent').style.display = 'block';
-
-    // If Supabase is wired up, do the real magic-link send. Otherwise fall
-    // back to the legacy "click the open-app button" mock so demo builds
-    // still work without a backend.
-    if (window.Supa && window.CodedOkConfig && window.CodedOkConfig.supabaseUrl) {
-      try {
-        await window.Supa.signIn(email);
-        if (lineEl) lineEl.innerHTML = `Sign-in link sent to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email on this device — link expires in 15 minutes.`;
-      } catch (err) {
-        console.error('magic link send failed', err);
-        const msg = err && err.message ? err.message : 'unknown error';
-        const isLibError = /MIME|is not a valid|Failed to fetch|Failed to load|import\(|Could not load Supabase/i.test(msg);
-        const tryDemoBtn = `<button class="auth-btn auth-btn-social" style="margin-top:12px;background:rgba(8,145,178,.18);border-color:rgba(8,145,178,.35);color:white;font-weight:700" onclick="resetLoginStep(); enterDemo();">🚀 Try the live demo instead</button>`;
-        if (lineEl) {
-          if (isLibError) {
-            lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't reach the sign-in service.</span> Check your network, or jump straight into the demo:${tryDemoBtn}`;
-          } else {
-            lineEl.innerHTML = `<span style="color:#fca5a5">Couldn't send to <strong>${escapeHtml(email)}</strong>: ${escapeHtml(msg)}.</span>${tryDemoBtn}`;
-          }
-        }
-      }
-      return;
-    }
-
-    if (lineEl) lineEl.innerHTML = `We've sent a sign-in link to <strong style="color:white">${escapeHtml(email)}</strong>. The link expires in 15 minutes.`;
-  }
-  window.submitLoginEmail = submitLoginEmail;
-
   function resetLoginStep() {
     toggleAuthMode('signin');
   }
   window.resetLoginStep = resetLoginStep;
 
+  // Single in-flight guard shared across every auth handler — prevents
+  // double-taps from firing two sign-ins, two reset emails, etc.
+  // (Supabase rate-limits reset/verification mail at 4/hour per address.)
+  let authInFlight = false;
+
   // Forgot password — sends a reset link to the email currently typed
   // in the sign-in form. User clicks the link, comes back, and the
   // app catches the recovery session and prompts for a new password.
   async function forgotPassword() {
+    if (authInFlight) return;
     const email = ((document.getElementById('login-email') || {}).value || '').trim();
     if (!email.includes('@')) {
       showLoginError('Type your email above first, then tap Forgot.');
@@ -6157,13 +6136,16 @@ ${sectionsHtml}
       showLoginError("Reset isn't configured.");
       return;
     }
+    authInFlight = true;
     try {
       await window.Supa.sendPasswordReset(email);
       const lineEl = document.getElementById('login-sent-line');
       if (lineEl) lineEl.innerHTML = `Reset link sent to <strong style="color:white">${escapeHtml(email)}</strong>. Tap it from this device — you'll come back here and be asked to set a new password.`;
       toggleAuthMode('sent');
     } catch (err) {
-      showLoginError("Couldn't send reset: " + (err.message || err));
+      showLoginError("Couldn't send reset: " + ((err && err.message) || err));
+    } finally {
+      authInFlight = false;
     }
   }
   window.forgotPassword = forgotPassword;
@@ -6210,13 +6192,18 @@ ${sectionsHtml}
     if (errEl) errEl.style.display = 'none';
     if (pwd.length < 8) return showErr('Password must be 8+ characters.');
     if (pwd !== confirm) return showErr("Passwords don't match.");
-    if (!window.Supa || !window.Supa.ready) return showErr("Cloud isn't connected.");
+    if (!window.Supa || !window.CodedOkConfig || !window.CodedOkConfig.supabaseUrl) {
+      return showErr("Cloud isn't configured.");
+    }
+    // Don't gate on Supa.ready — updatePassword awaits the lazy SDK load
+    // internally. Otherwise the user opens the modal before the CDN has
+    // finished and the form is unusable for the first few hundred ms.
     try {
       await window.Supa.updatePassword(pwd);
       closeChangePassword();
       alert('Password updated. You stay signed in on this device.');
     } catch (err) {
-      showErr(err.message || String(err));
+      showErr((err && err.message) || String(err));
     }
   }
   window.submitChangePassword = submitChangePassword;
@@ -6243,6 +6230,7 @@ ${sectionsHtml}
 
   // ----- Email + password sign-in -----
   async function submitSignIn() {
+    if (authInFlight) return;
     const email = ((document.getElementById('login-email') || {}).value || '').trim();
     const password = (document.getElementById('login-password') || {}).value || '';
     const errEl = document.getElementById('login-error');
@@ -6255,18 +6243,25 @@ ${sectionsHtml}
       return showLoginError("Cloud sign-in isn't configured. Use the demo button instead.");
     }
 
+    authInFlight = true;
     try {
       await window.Supa.signInWithPassword(email, password);
       // handleSignedIn() will fire via Supa.onAuthChange and route into the app.
     } catch (err) {
-      const msg = err && err.message ? err.message : 'sign-in failed';
+      const msg = (err && err.message) ? err.message : 'sign-in failed';
       if (/Email not confirmed/i.test(msg)) {
         showLoginError("Your email isn't verified yet. Check your inbox for the link we sent.");
-      } else if (/Invalid login credentials/i.test(msg)) {
+      } else if (/Invalid login credentials|invalid_grant/i.test(msg)) {
         showLoginError("That email and password don't match. Try again or create an account.");
+      } else if (/Failed to fetch|NetworkError|Could not load Supabase|MIME/i.test(msg)) {
+        showLoginError("Can't reach the sign-in service. Check your connection.");
+      } else if (/rate limit|too many/i.test(msg)) {
+        showLoginError("Too many attempts — wait a minute and try again.");
       } else {
         showLoginError(msg);
       }
+    } finally {
+      authInFlight = false;
     }
   }
   window.submitSignIn = submitSignIn;
@@ -6296,6 +6291,7 @@ ${sectionsHtml}
 
   // ----- Email + password sign-up -----
   async function submitSignUp() {
+    if (authInFlight) return;
     const email = ((document.getElementById('signup-email') || {}).value || '').trim();
     const password = (document.getElementById('signup-password') || {}).value || '';
     const errEl = document.getElementById('signup-error');
@@ -6311,8 +6307,9 @@ ${sectionsHtml}
     // Pass the chosen role through Supabase auth user_metadata so it
     // survives the email-verification round-trip. handleSignedIn() reads
     // it when creating the public.users row.
+    authInFlight = true;
     try {
-      const result = await window.Supa.signUpWithPassword(email, password, { kind: signupRole });
+      await window.Supa.signUpWithPassword(email, password, { kind: signupRole });
       // If email confirmation is on, the session is null until they click the link.
       // If it's off, they're signed in immediately — onAuthChange fires.
       const lineEl = document.getElementById('login-sent-line');
@@ -6320,14 +6317,20 @@ ${sectionsHtml}
       if (lineEl) lineEl.innerHTML = `${roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1)} account created. We've sent a verification link to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email, tap the link, then come back to sign in.`;
       toggleAuthMode('sent');
     } catch (err) {
-      const msg = err && err.message ? err.message : 'sign-up failed';
+      const msg = (err && err.message) ? err.message : 'sign-up failed';
       if (/already.*registered|already.*exists|User already registered/i.test(msg)) {
         showSignupError("That email is already in use. Sign in instead.");
       } else if (/weak.*password|Password should be/i.test(msg)) {
         showSignupError("Pick a stronger password (8+ characters).");
+      } else if (/Failed to fetch|NetworkError|Could not load Supabase|MIME/i.test(msg)) {
+        showSignupError("Can't reach the sign-up service. Check your connection.");
+      } else if (/rate limit|too many|email rate/i.test(msg)) {
+        showSignupError("Too many sign-ups for that email — wait an hour or use a different one.");
       } else {
         showSignupError(msg);
       }
+    } finally {
+      authInFlight = false;
     }
   }
   window.submitSignUp = submitSignUp;
@@ -6360,25 +6363,6 @@ ${sectionsHtml}
     if (isBuilderEmail(email))  return 'builder';
     return 'operator';
   }
-
-  function mockMagicLinkArrived() {
-    const email = (document.getElementById('login-email') || {}).value || 'joseph@codedok.com';
-    saveSession({ mode: 'live', email, signed_in_at: new Date().toISOString() });
-    renderDemoBadge();
-    if (isAdminEmail(email)) {
-      enterAdminMode();
-    } else {
-      go('s-home');
-    }
-  }
-  window.mockMagicLinkArrived = mockMagicLinkArrived;
-
-  function mockOauthSignIn(provider) {
-    saveSession({ mode: 'live', provider, signed_in_at: new Date().toISOString() });
-    renderDemoBadge();
-    go('s-home');
-  }
-  window.mockOauthSignIn = mockOauthSignIn;
 
   function enterDemo() {
     saveSession({ mode: 'demo', signed_in_at: new Date().toISOString() });
@@ -6416,31 +6400,55 @@ ${sectionsHtml}
     renderDemoBadge();
 
     // Real auth: when Supabase is wired, listen for sign-in / sign-out
-    // events from the magic-link redirect. On sign-in we ensure a row
-    // exists in our users table, persist the email session for the
-    // existing app code, and route into the operator home.
+    // events. handleSignedIn ensures a row exists in our users table,
+    // persists the email session for the existing app code, and routes
+    // into the right home (operator / surveyor / admin / builder).
     if (window.Supa && window.CodedOkConfig && window.CodedOkConfig.supabaseUrl) {
-      // Initial check — if the user is already signed in (returning
-      // from a magic-link redirect or a previous session), boot them
-      // straight into the app.
-      window.Supa.getUser().then((user) => {
+      // Dedupe handleSignedIn — both getUser() and onAuthChange's
+      // initial fire can deliver the same user. Run it at most once
+      // per unique auth user id until a sign-out clears the guard.
+      let signedInUserId = null;
+      const onUser = (user) => {
         if (!user) return;
+        if (signedInUserId === user.id) return;
+        signedInUserId = user.id;
         handleSignedIn(user);
+      };
+
+      // Initial check — confirm whether Supabase has a live session.
+      // If yes, route via handleSignedIn. If no but our localStorage
+      // thinks we're "live", the local session is stale (auth user
+      // deleted, refresh token expired, db wiped) — clear it and bounce
+      // to login so the user isn't left on a broken home screen.
+      window.Supa.getUser().then((user) => {
+        if (user) {
+          onUser(user);
+        } else {
+          const sess = loadSession();
+          if (sess && sess.mode === 'live') {
+            clearSession();
+            go('s-login');
+          }
+        }
       }).catch(() => {});
 
       // Subscribe to future changes.
       window.Supa.onAuthChange((event, sess) => {
-        // Password reset flow: user clicked the link in their email and
-        // Supabase has dropped them back with a recovery session. Prompt
-        // them to set the new password instead of signing them in to
-        // the app proper.
+        // Password reset flow: user clicked the link in their email
+        // and Supabase dropped them back with a recovery session. Show
+        // the change-password modal instead of routing into the app.
         if (event === 'PASSWORD_RECOVERY') {
           go('s-login');
           openChangePassword();
           return;
         }
-        if (event === 'SIGNED_IN' && sess && sess.user) handleSignedIn(sess.user);
+        // INITIAL_SESSION fires once at subscribe time in supabase-js v2
+        // (older versions fired SIGNED_IN). Handle both; dedupe via onUser.
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && sess && sess.user) {
+          onUser(sess.user);
+        }
         if (event === 'SIGNED_OUT') {
+          signedInUserId = null;
           clearSession();
           go('s-login');
         }
