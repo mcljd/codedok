@@ -5504,11 +5504,14 @@ ${sectionsHtml}
         const initials = (authUser.email || '?').slice(0, 2).toUpperCase();
         const name = (authUser.user_metadata && authUser.user_metadata.name) || authUser.email.split('@')[0];
         const id = 'u_' + Math.random().toString(36).slice(2, 9);
-        const ins = await client.from('users').insert({
+        const kind = kindFromEmail(authUser.email);
+        const newUser = {
           id, auth_user_id: authUser.id,
-          email: authUser.email, name, initials,
-          kind: isAdminEmail(authUser.email) ? 'admin' : 'operator'
-        }).select().single();
+          email: authUser.email, name, initials, kind
+        };
+        // Tag Redbay builder accounts so the builderPipeline() function finds them.
+        if (kind === 'builder') newUser.builder = { slug: 'redbay', company: 'Redbay Boats' };
+        const ins = await client.from('users').insert(newUser).select().single();
         if (ins.error) throw new Error('users insert: ' + ins.error.message);
         row = ins.data;
       }
@@ -5554,6 +5557,10 @@ ${sectionsHtml}
       } else if (row.kind === 'surveyor') {
         Store.setMode('surveyor');
         go('s-surveyor-home');
+      } else if (row.kind === 'builder') {
+        // Builders live in /web — bounce them there so they land on the
+        // builder dashboard rather than the operator mobile shell.
+        window.location.href = 'web/index.html#builder';
       } else {
         Store.setMode('operator');
         go('s-home');
@@ -5630,6 +5637,21 @@ ${sectionsHtml}
     if (!email) return false;
     const e = email.toLowerCase();
     return e === 'admin@codedok.com' || e === 'joe@codedok.com' || e.startsWith('admin@') || e.startsWith('joe+admin@');
+  }
+
+  // Builder emails route into the builder dashboard. Redbay's service team
+  // signs in with @redbayboats.com — they land directly on their fleet view.
+  function isBuilderEmail(email) {
+    if (!email) return false;
+    const e = email.toLowerCase();
+    return e.endsWith('@redbayboats.com') || e.endsWith('@redbay.com');
+  }
+
+  // Map an email to the role we should create the user with on first sign-in.
+  function kindFromEmail(email) {
+    if (isAdminEmail(email))    return 'admin';
+    if (isBuilderEmail(email))  return 'builder';
+    return 'operator';
   }
 
   function mockMagicLinkArrived() {
