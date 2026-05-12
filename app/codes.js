@@ -182,18 +182,30 @@
     { id: 'incident_log',   name: 'Incident & Near-miss Log',       desc: 'Recording, investigation, MAIB reporting threshold',                icon: '📓' }
   ];
 
-  // FULL SAFETY MANAGEMENT SYSTEM SCHEMA
-  // Sources: Sport or Pleasure Vessel Code 2025 — Appendix 7
-  //          Workboat Code Ed 3 — Appendix (Safety Management System)
-  // Both codes are aligned on what a small-vessel SMS must contain.
-  // Templated default text is industry-standard boilerplate; operators edit to suit.
+  // ===========================================================================
+  // SAFETY MANAGEMENT SYSTEM SCHEMA
+  //
+  // Canonical source:
+  //   The Sport or Pleasure Vessel Code 2025, Appendix 7 — "Safety Management
+  //   System". Published 20 November 2025 by the Maritime and Coastguard Agency.
+  //   File: docs/The_sport_or_pleasure_vessel_code 2025 Published.pdf
+  //
+  //   Cross-referenced with:
+  //   Workboat Code Edition 3 (updated)
+  //   File: docs/Workboat_Code_Edition_3 - UPDATED.pdf
+  //
+  // Section order, titles and references mirror SPV Code 2025 App. 7 sections
+  // §1–§11 exactly. Default text is operator-ready boilerplate. The AI SMS
+  // generator (generateSmsFromInputs in app.js + the Claude edge function)
+  // substitutes [VESSEL_NAME] / [CATEGORY] and lets the operator review.
+  // ===========================================================================
   const SMS_SCHEMA = [
     {
       id: 'meta',
       title: 'Vessel & company',
       icon: '⛵',
-      ref: 'SPV Code App. 7 — General',
-      blurb: 'The SMS opens with the vessel and operating company so a surveyor knows what they\'re reading.',
+      ref: 'SPV Code 2025 App. 7 §1 — General',
+      blurb: 'Identifies the vessel and operating company. Required so the Certifying Authority can match the SMS to the vessel under examination (§30.1.2).',
       fields: [
         { id: 'vessel_name',   label: 'Vessel name',                    type: 'short', placeholder: 'e.g. Tsunami IV' },
         { id: 'vessel_ssr',    label: 'SSR / Official number',          type: 'short', placeholder: 'e.g. 987654' },
@@ -210,8 +222,8 @@
       id: 'hs_policy',
       title: 'Health, Safety & Environmental Policy',
       icon: '🛡️',
-      ref: 'SPV Code App. 7 §2 / Workboat Code App. §2 + §4',
-      blurb: 'A signed statement of intent — covering health, safety, working environment and the environment, both ashore and on board. Must be visible to crew and reviewed.',
+      ref: 'SPV Code 2025 App. 7 §2',
+      blurb: 'Must address health, safety, working environment and the environment, both ashore and on board (§2.2). An appointed person within the organisation takes responsibility (§2.3). The policy must also include a drug and alcohol policy (§2.4).',
       fields: [
         { id: 'policy_text', label: 'Policy statement', type: 'long', default:
 `The owner of [VESSEL_NAME] is committed to providing a safe and healthy workplace for crew, passengers and contractors, and to operating the vessel in a way that protects the marine environment.
@@ -235,8 +247,8 @@ Signed: ______________________     Position: ______________________     Date: __
       id: 'risk',
       title: 'Risk Assessments',
       icon: '⚠️',
-      ref: 'SPV Code App. 7 §3 / Workboat Code App. §3',
-      blurb: 'A risk assessment for every routine operation and foreseeable emergency. Assessed by likelihood × severity; records the controls in place.',
+      ref: 'SPV Code 2025 App. 7 §3',
+      blurb: 'The SMS shall include risk assessments for all applicable elements of the Code AND a statement confirming the sections of the Code requiring reference to the SMS have been included (§3.2). Further guidance: COSWP Chapter 1.',
       fields: [
         { id: 'risk_method', label: 'Method statement', type: 'long', default:
 `Risks are scored on a 5×5 matrix (likelihood × severity). For each task we list the hazards, who could be harmed, the controls already in place, the residual risk score, and any further action required. Risk assessments are reviewed every 12 months, when there is a change to the vessel, equipment or operation, and after any incident or near-miss.` },
@@ -262,8 +274,8 @@ Signed: ______________________     Position: ______________________     Date: __
       id: 'roles',
       title: 'Roles & Responsibilities',
       icon: '🧑‍✈️',
-      ref: 'SPV Code App. 7 §4 / Workboat Code App. §5–6',
-      blurb: 'Establishes the Master\'s overriding authority for safety, the Owner/Operator\'s duties, and a designated Person Ashore for emergency support.',
+      ref: 'SPV Code 2025 App. 7 §4',
+      blurb: 'Master has overriding authority — by written statement (§4.2.1). Owner/Operator defines responsibilities (§4.4). A competent Person Ashore must be designated to liaise with the Master, shore-based authorities and emergency services (§4.7).',
       fields: [
         { id: 'master_authority', label: 'Master\'s authority statement', type: 'long', default:
 `The Master of [VESSEL_NAME] has overriding authority and responsibility to make decisions with respect to the safety of the vessel, the persons on board and the prevention of pollution, and to request the owner/operator's assistance as may be necessary. No instruction from the Owner shall override this authority.` },
@@ -290,8 +302,8 @@ Signed: ______________________     Position: ______________________     Date: __
       id: 'training',
       title: 'Training & Familiarisation',
       icon: '🎓',
-      ref: 'SPV Code App. 7 §5 / Workboat Code App. §7',
-      blurb: 'Before working on the vessel, every crew member receives familiarisation. The minimum coverage is set by the Code.',
+      ref: 'SPV Code 2025 App. 7 §5',
+      blurb: 'Before first working on the vessel, each crew member receives familiarisation training covering, at minimum: emergency drills + MOB recovery, mooring, launch/recovery of survival craft, evacuation, lifejacket donning, fire-fighting equipment use (§5.2). See Section 28 of the Code for crew qualifications.',
       fields: [
         { id: 'familiarisation', label: 'Familiarisation checklist', type: 'long', default:
 `Before working on [VESSEL_NAME] each new crew member is briefed and signed off on:
@@ -312,8 +324,8 @@ The familiarisation record is signed by the crew member and the Master and kept 
       id: 'sop',
       title: 'Standard Operating Procedures',
       icon: '📋',
-      ref: 'SPV Code App. 7 §6 / Workboat Code App. §8',
-      blurb: 'Documented procedures for daily vessel operations: pre-departure checks, navigation, refuelling, watertight integrity, passenger conduct.',
+      ref: 'SPV Code 2025 App. 7 §6',
+      blurb: 'Documented procedures for: steering-gear test before passage, navigation and handling, maintenance routines, refuelling, watertight/weathertight integrity, stability, passenger and crew conduct, emergency towing (§6.1). Safety briefing requirements under §6.2.',
       fields: [
         { id: 'pre_departure', label: 'Pre-departure checks', type: 'long', default:
 `Before each voyage the Master shall confirm:
@@ -349,8 +361,8 @@ The familiarisation record is signed by the crew member and the Master and kept 
       id: 'emergency',
       title: 'Emergency Procedures',
       icon: '🚨',
-      ref: 'SPV Code App. 7 §7 / Workboat Code App. §9',
-      blurb: 'Clear procedures for the named emergencies the Code requires. Every crew member must know their role.',
+      ref: 'SPV Code 2025 App. 7 §7',
+      blurb: 'Procedures required by the Code for: fire, flooding, collision, grounding, violent act, propulsion/steering failure, MOB, abandon ship, medical, aid to other vessels, enclosed space rescue (§7.1). Roles in emergencies must be clearly defined (§7.2). Exercises must be recorded with names of participants (§7.5).',
       fields: [
         { id: 'mayday_proc', label: 'Mayday / Pan-Pan procedure', type: 'long', default:
 `To send a Mayday on Ch 16:
@@ -390,8 +402,8 @@ Pan-Pan is used for urgency that is NOT immediate danger to life. Same format, p
       id: 'reporting',
       title: 'Accident & Incident Reporting',
       icon: '📓',
-      ref: 'SPV Code App. 7 §8 / Workboat Code App. §10',
-      blurb: 'Procedure for reporting accidents to the MAIB and capturing near-misses for internal lessons-learned.',
+      ref: 'SPV Code 2025 App. 7 §8',
+      blurb: 'Procedure must be understood by all personnel (§8.1). Owner/Operator reports accidents to the Administration; see Section 3 of the Code and MIN 724 (§8.2). All accidents, incidents AND near-misses are recorded and reported to the Owner/Operator who implements corrective action (§8.3).',
       fields: [
         { id: 'maib_proc', label: 'MAIB reporting', type: 'long', default:
 `The Owner/Operator shall report any accident reportable under the Merchant Shipping (Accident Reporting and Investigation) Regulations 2012 to the Marine Accident Investigation Branch (MAIB) within 24 hours.
@@ -406,8 +418,8 @@ A report covers: serious injury, loss of life, structural damage, fire, groundin
       id: 'maintenance',
       title: 'Maintenance of Vessel & Equipment',
       icon: '🔧',
-      ref: 'SPV Code App. 7 §9 / Workboat Code App. §11',
-      blurb: 'Documented inspection + maintenance schedule for the vessel and its equipment, with records.',
+      ref: 'SPV Code 2025 App. 7 §9',
+      blurb: 'Maintenance shall meet §3.5 of the Code (§9.1). Owner/Operator develops documented inspection + maintenance procedures, sets the frequency, and records every inspection and maintenance activity (§9.2).',
       fields: [
         { id: 'maint_method', label: 'Maintenance approach', type: 'long', default:
 `Routine maintenance follows the manufacturer's service intervals. Service records are kept on board (and in CodedOK) for: liferaft, EPIRB, lifejackets, fire extinguishers, pyrotechnics, bilge pumps, engine, steering, gas system. Defects are logged immediately. Critical defects render the vessel unfit for commercial use until corrected.` },
@@ -423,8 +435,8 @@ A report covers: serious injury, loss of life, structural damage, fire, groundin
       id: 'cyber',
       title: 'Cyber Security',
       icon: '🔒',
-      ref: 'SPV Code App. 7 §10 (new in 2025)',
-      blurb: 'New under SPV Code 2025: identify systems, manage risks, detect attacks, restore. Proportionate to vessel size.',
+      ref: 'SPV Code 2025 App. 7 §10 (new)',
+      blurb: 'Required by §10.2: identify critical systems/data, define roles, defend, detect, restore, maintain back-ups. §10.3 mandates a cyber risk assessment covering IT systems, OT, remotely-operable equipment, comms, and crew responsibilities — refreshed on any alteration or every 5 years. References: IMO MSC.428(98), IEC 61162-420, IEC 63154.',
       fields: [
         { id: 'cyber_assets', label: 'Critical IT/OT systems on board', type: 'long', default:
 `  • Chartplotter / GPS
@@ -447,8 +459,8 @@ A report covers: serious injury, loss of life, structural damage, fire, groundin
       id: 'review',
       title: 'Review & Continuous Improvement',
       icon: '🔁',
-      ref: 'SPV Code App. 7 §11 / Workboat Code App. §12',
-      blurb: 'How and how often the SMS is reviewed. SPV Code requires at minimum every 3 years; in practice annually is far better.',
+      ref: 'SPV Code 2025 App. 7 §11',
+      blurb: 'Owner/Operator shall undertake a review of the SMS AT LEAST once every three years (§11.1). Improvements arising from any accident, incident, near-miss or periodic review shall be implemented at the earliest opportunity (§11.2). CodedOK defaults to annual review.',
       fields: [
         { id: 'review_freq', label: 'Review frequency', type: 'short', default: 'Annually, after every incident, and at least every 3 years per the Code' },
         { id: 'review_record', label: 'Review record', type: 'long', default:
