@@ -1313,6 +1313,25 @@
     save(state);
   }
 
+  // Swap every reference to the seeded McCollam Marine user (u_sv1) over
+  // to the real auth user's id. Used when the McCollam demo email signs
+  // in: the demo seed is loaded once with hardcoded ids, then this
+  // re-stamps the surveyor side so the signed-in user sees the seeded
+  // grants, jobs, invoices and inspections as their own.
+  function adoptSeededSurveyor(realUserId) {
+    if (!realUserId || realUserId === 'u_sv1') return;
+    const i = state.users.findIndex((u) => u.id === 'u_sv1');
+    if (i >= 0) state.users[i].id = realUserId;
+    (state.surveyor_grants || []).forEach((g) => { if (g.surveyor_user_id === 'u_sv1') g.surveyor_user_id = realUserId; });
+    (state.jobs            || []).forEach((j) => { if (j.surveyor_user_id === 'u_sv1') j.surveyor_user_id = realUserId; });
+    (state.invoices        || []).forEach((iv) => { if (iv.surveyor_user_id === 'u_sv1') iv.surveyor_user_id = realUserId; });
+    (state.inspections     || []).forEach((ins) => { if (ins.surveyor_user_id === 'u_sv1') ins.surveyor_user_id = realUserId; });
+    (state.audit_log       || []).forEach((a) => { if (a.actor_user_id === 'u_sv1') a.actor_user_id = realUserId; });
+    state.session.user_id = realUserId;
+    state.session.mode = 'surveyor';
+    save(state);
+  }
+
   // Mirror a Supabase users row into the local Store so getCurrentUser,
   // role-aware UI, and lazy-org-creation on first vessel-add can find
   // the signed-in user without re-querying Supabase.
@@ -1445,6 +1464,7 @@
     createHandoff,
     resetToSeed,
     applyDemoSeed,
+    adoptSeededSurveyor,
     resetToEmpty,
     hasDemoFixtures,
     attachAuthenticatedUser,

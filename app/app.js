@@ -7121,14 +7121,20 @@ ${sectionsHtml}
         signed_in_at: new Date().toISOString()
       });
 
-      // Demo-account gating. The only seeded experience belongs to
-      // mcljd303@icloud.com — every other real user gets an empty
-      // workspace, even if their device still has leftover demo
-      // fixtures from before this change.
-      const isDemoAccount = (authUser.email || '').toLowerCase() === 'mcljd303@icloud.com';
+      // Demo-account gating. Two seeded experiences:
+      //   mcljd303@icloud.com               → operator demo (skipper view)
+      //   anything matching the McCollam regex → surveyor demo, with the
+      //     seeded u_sv1 references swapped to this auth user so the
+      //     same demo data shows up as theirs. Use mcljd303+mccollam@…
+      //     so the verification email lands in the same inbox.
+      const emailLc = (authUser.email || '').toLowerCase();
+      const isDemoOperator = emailLc === 'mcljd303@icloud.com';
+      const isDemoSurveyor = /(?:^|\+)mccollam@/i.test(emailLc);
+      const isDemoAccount = isDemoOperator || isDemoSurveyor;
       if (window.Store) {
         if (isDemoAccount) {
           if (!Store.hasDemoFixtures()) Store.applyDemoSeed();
+          if (isDemoSurveyor) Store.adoptSeededSurveyor(row.id);
         } else if (Store.hasDemoFixtures()) {
           Store.resetToEmpty();
         }
