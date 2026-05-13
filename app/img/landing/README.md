@@ -1,10 +1,14 @@
 # Landing-page imagery
 
-Drop your boat photographs here with these exact filenames. The
-landing page (`app/index.html` → `#s-land`) already references
-them — once the files are committed and deployed, they appear
-automatically. Until they exist, gradient fallbacks render in
-their place so nothing breaks.
+Three hand-drawn SVG illustrations ship as the default — a harbour
+scene at first light, a RIB at speed, and a vessel on the travel lift.
+They're brand-aligned, modern editorial style, and licence-free since
+we drew them ourselves.
+
+**To replace any of them with a real photograph**, drop a `.jpg` file
+with the matching name into this folder. The CSS stacks the `.jpg`
+*above* the `.svg`, so as soon as the photo exists it takes over
+automatically — no code change needed.
 
 ## Required filenames
 

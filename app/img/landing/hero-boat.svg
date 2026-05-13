@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Coded vessel at harbour at first light">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#1C252B"/>
+      <stop offset="55%" stop-color="#173846"/>
+      <stop offset="100%" stop-color="#0F4C5C"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#0F4C5C"/>
+      <stop offset="100%" stop-color="#0A2F3A"/>
+    </linearGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#1E7A86"/>
+      <stop offset="100%" stop-color="#0F4C5C"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sky -->
+  <rect width="2000" height="780" fill="url(#sky)"/>
+
+  <!-- Subtle starfield (very dim, only top third) -->
+  <g fill="#F3F5F4" opacity=".35">
+    <circle cx="320"  cy="80"  r="1"/>
+    <circle cx="640"  cy="140" r="1.2"/>
+    <circle cx="980"  cy="60"  r="1"/>
+    <circle cx="1340" cy="120" r="1.4"/>
+    <circle cx="1700" cy="180" r="1"/>
+    <circle cx="180"  cy="220" r="1"/>
+    <circle cx="1500" cy="40"  r="1"/>
+    <circle cx="820"  cy="240" r="1"/>
+  </g>
+
+  <!-- First light glow on horizon (right) -->
+  <ellipse cx="1700" cy="780" rx="900" ry="180" fill="#C58A2A" opacity=".18"/>
+  <ellipse cx="1700" cy="780" rx="500" ry="100" fill="#F3F5F4" opacity=".10"/>
+
+  <!-- Distant headland -->
+  <path d="M 0 720 L 240 700 L 460 715 L 720 690 L 980 712 L 1240 698 L 1520 715 L 1800 700 L 2000 718 L 2000 800 L 0 800 Z" fill="#0A2F3A"/>
+
+  <!-- Water -->
+  <rect y="780" width="2000" height="420" fill="url(#water)"/>
+
+  <!-- Water highlights — long thin reflections -->
+  <g fill="#F3F5F4" opacity=".08">
+    <rect x="100"  y="900" width="380" height="2"/>
+    <rect x="220"  y="940" width="220" height="2"/>
+    <rect x="600"  y="880" width="500" height="2"/>
+    <rect x="700"  y="930" width="280" height="2"/>
+    <rect x="1100" y="900" width="600" height="2"/>
+    <rect x="1300" y="950" width="320" height="2"/>
+    <rect x="60"   y="1020" width="540" height="2"/>
+    <rect x="800"  y="1050" width="700" height="2"/>
+  </g>
+
+  <!-- Pier on the left -->
+  <g>
+    <rect x="0" y="780" width="220" height="36" fill="#1C252B"/>
+    <rect x="0" y="816" width="220" height="14" fill="#0A1418"/>
+    <!-- Bollards -->
+    <rect x="34"  y="752" width="20" height="32" rx="3" fill="#243036"/>
+    <rect x="112" y="752" width="20" height="32" rx="3" fill="#243036"/>
+    <rect x="188" y="752" width="20" height="32" rx="3" fill="#243036"/>
+    <!-- Lamp post -->
+    <rect x="40" y="540" width="6" height="220" fill="#243036"/>
+    <circle cx="43" cy="534" r="14" fill="#FCBF60" opacity=".75"/>
+    <circle cx="43" cy="534" r="8"  fill="#F3F5F4"/>
+  </g>
+
+  <!-- Distant background vessel (small silhouette) -->
+  <g transform="translate(1480 720)" opacity=".55">
+    <path d="M 0 0 L 180 0 L 168 -22 L 12 -22 Z" fill="#0A1418"/>
+    <rect x="60" y="-52" width="58" height="30" fill="#0A1418"/>
+    <rect x="84" y="-92" width="6"  height="40" fill="#0A1418"/>
+  </g>
+
+  <!-- Foreground coded vessel — three-quarter view -->
+  <g transform="translate(380 720)">
+    <!-- Reflection in water -->
+    <g transform="translate(0 220) scale(1, -.5)" opacity=".35">
+      <path d="M 0 0 L 760 0 L 680 -110 L 80 -110 Z" fill="#0F4C5C"/>
+      <path d="M 0 0 L 760 0 L 730 30 L 30 30 Z" fill="#1C252B"/>
+      <rect x="220" y="-200" width="280" height="90" rx="4" fill="#F3F5F4"/>
+      <rect x="350" y="-300" width="20" height="100" fill="#F3F5F4"/>
+    </g>
+    <!-- Hull -->
+    <path d="M 0 0 L 760 0 L 680 -110 L 80 -110 Z" fill="url(#hull)"/>
+    <!-- Boot stripe -->
+    <path d="M 0 0 L 760 0 L 730 24 L 30 24 Z" fill="#1C252B"/>
+    <!-- White rail/strake -->
+    <rect x="80" y="-118" width="600" height="8" fill="#F3F5F4"/>
+    <!-- Vessel ID -->
+    <text x="170" y="-46" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22" font-weight="700" fill="#F3F5F4" letter-spacing="2">CK-2025</text>
+    <!-- Deckhouse / wheelhouse -->
+    <path d="M 220 -110 L 500 -110 L 480 -200 L 240 -200 Z" fill="#F3F5F4"/>
+    <rect x="252" y="-188" width="50" height="38" fill="#0F4C5C"/>
+    <rect x="312" y="-188" width="50" height="38" fill="#0F4C5C"/>
+    <rect x="372" y="-188" width="50" height="38" fill="#0F4C5C"/>
+    <rect x="432" y="-188" width="36" height="38" fill="#0F4C5C"/>
+    <!-- Roof rail -->
+    <rect x="220" y="-210" width="280" height="6" fill="#1C252B"/>
+    <!-- Mast -->
+    <rect x="346" y="-330" width="8" height="130" fill="#1C252B"/>
+    <!-- Mast cross-bar -->
+    <rect x="320" y="-260" width="60" height="4" fill="#1C252B"/>
+    <!-- Aerial -->
+    <rect x="349" y="-356" width="2" height="26" fill="#1C252B"/>
+    <!-- Nav light -->
+    <circle cx="350" cy="-336" r="4" fill="#A14A3B"/>
+    <!-- Mooring line to bollard -->
+    <path d="M 80 -54 Q 50 -10, -288 -32" stroke="#C58A2A" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Very subtle vignette in corners -->
+  <rect width="2000" height="1200" fill="url(#vig)" pointer-events="none"/>
+  <defs>
+    <radialGradient id="vig" cx="50%" cy="50%" r="70%">
+      <stop offset="60%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.4"/>
+    </radialGradient>
+  </defs>
+</svg>
