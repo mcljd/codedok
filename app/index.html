@@ -49,7 +49,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="print.css" media="print">
 
-  <meta name="theme-color" content="#0a1628">
+  <meta name="theme-color" content="#1C252B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CodedOK">
@@ -159,9 +159,9 @@
   <div class="auth-wave">
     <svg viewBox="0 0 1200 200" preserveAspectRatio="none" fill="none">
       <path d="M0 120 Q 150 60, 300 120 T 600 120 T 900 120 T 1200 120 L 1200 200 L 0 200 Z"
-            fill="rgba(8,145,178,.10)"/>
+            fill="rgba(15,76,92,.10)"/>
       <path d="M0 140 Q 150 100, 300 140 T 600 140 T 900 140 T 1200 140 L 1200 200 L 0 200 Z"
-            fill="rgba(8,145,178,.06)"/>
+            fill="rgba(15,76,92,.06)"/>
     </svg>
   </div>
 
@@ -203,7 +203,7 @@
 
         <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">I'm a…</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px" id="signup-role-picker">
-          <button type="button" class="role-pick on" data-role="operator" onclick="setSignupRole('operator')" style="background:rgba(8,145,178,.2);border:2px solid var(--seal);color:white;padding:12px 10px;border-radius:12px;font-family:var(--fn);font-size:13px;font-weight:700;cursor:pointer;text-align:left">
+          <button type="button" class="role-pick on" data-role="operator" onclick="setSignupRole('operator')" style="background:rgba(15,76,92,.2);border:2px solid var(--seal);color:white;padding:12px 10px;border-radius:12px;font-family:var(--fn);font-size:13px;font-weight:700;cursor:pointer;text-align:left">
             <div style="font-size:22px;margin-bottom:4px">⛵</div>
             Skipper / operator
             <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,.65);margin-top:2px">Track my own boats</div>
@@ -246,8 +246,8 @@
 
       <!-- Mode: verification sent -->
       <div id="login-step-sent" style="display:none;text-align:center;padding:8px 0">
-        <div style="width:60px;height:60px;margin:0 auto 14px;border-radius:50%;background:rgba(22,163,74,.15);border:1px solid rgba(22,163,74,.35);display:flex;align-items:center;justify-content:center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div style="width:60px;height:60px;margin:0 auto 14px;border-radius:50%;background:rgba(79,122,82,.15);border:1px solid rgba(79,122,82,.35);display:flex;align-items:center;justify-content:center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="#4F7A52" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         <div style="font-size:18px;font-weight:700;color:white;letter-spacing:-.3px;margin-bottom:6px">Check your inbox</div>
         <div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.55;max-width:260px;margin:0 auto 18px" id="login-sent-line">We've sent a verification link to your email. Tap it, then come back here to sign in.</div>
@@ -264,7 +264,7 @@
   <div class="sb sb-dk"></div>
   <div style="position:relative;flex:1;background:var(--ink);overflow:hidden">
     <!-- Background gradient -->
-    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 70% 20%,rgba(8,145,178,.18) 0%,transparent 60%),radial-gradient(ellipse at 20% 80%,rgba(22,163,74,.1) 0%,transparent 50%)"></div>
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 70% 20%,rgba(15,76,92,.18) 0%,transparent 60%),radial-gradient(ellipse at 20% 80%,rgba(79,122,82,.1) 0%,transparent 50%)"></div>
     <div style="position:relative;z-index:2;display:flex;flex-direction:column;height:100%;padding:20px 24px calc(32px + env(safe-area-inset-bottom))">
 
       <!-- Logo -->
@@ -367,7 +367,7 @@
     </div>
 
     <div style="padding:20px 16px 0">
-      <div style="background:var(--seap);border:1px solid rgba(8,145,178,.2);border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
+      <div style="background:var(--seap);border:1px solid rgba(15,76,92,.2);border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
         <span style="font-size:20px;flex-shrink:0">💡</span>
         <div>
           <div style="font-size:13px;font-weight:600;color:var(--sea);margin-bottom:3px">Your details are private</div>
@@ -880,7 +880,7 @@
           <div style="height:8px;background:var(--bdr);border-radius:4px;width:70%"></div>
         </div>
         <!-- Scan overlay -->
-        <div style="position:absolute;inset:0;background:rgba(8,145,178,.06);border-radius:14px;display:flex;align-items:center;justify-content:center">
+        <div style="position:absolute;inset:0;background:rgba(15,76,92,.06);border-radius:14px;display:flex;align-items:center;justify-content:center">
           <div style="width:200px;height:2px;background:var(--sea);opacity:.7;box-shadow:0 0 8px var(--sea)"></div>
         </div>
       </div>
@@ -2283,7 +2283,7 @@
 
     <!-- Combined Pack -->
     <div class="card mx" style="margin-bottom:12px">
-      <div style="background:var(--seap);border-bottom:1px solid rgba(8,145,178,.15);padding:14px 16px;display:flex;align-items:center;gap:12px">
+      <div style="background:var(--seap);border-bottom:1px solid rgba(15,76,92,.15);padding:14px 16px;display:flex;align-items:center;gap:12px">
         <span style="font-size:24px">🌊</span>
         <div>
           <div style="font-size:14px;font-weight:700;color:var(--text)">Combined UK + Ireland pack</div>

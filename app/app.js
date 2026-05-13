@@ -366,9 +366,9 @@
     const safe = (name || 'attachment').replace(/[<>"']/g, '');
     w.document.write(`
       <!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe}</title>
-      <style>body{margin:0;background:#0a1628;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;color:white}
+      <style>body{margin:0;background:#1C252B;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;color:white}
       iframe,img{max-width:100%;max-height:100vh;background:white}
-      .dl{position:fixed;top:14px;right:14px;background:#0891b2;color:white;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600}</style></head>
+      .dl{position:fixed;top:14px;right:14px;background:#0F4C5C;color:white;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600}</style></head>
       <body>${dataUrl.startsWith('data:application/pdf')
         ? `<iframe src="${dataUrl}" style="width:100vw;height:100vh;border:none"></iframe>`
         : `<img src="${dataUrl}" alt="${safe}">`}
@@ -511,7 +511,7 @@
   }
 
   function scoreColor(score) {
-    if (score >= 90) return '#16a34a';
+    if (score >= 90) return '#4F7A52';
     if (score >= 70) return '#d97706';
     return '#dc2626';
   }
@@ -1606,9 +1606,9 @@
     const critDef = def.filter((d) => d.status === 'open' && d.severity === 'critical').length;
 
     const smsStatusPill = smsState === 'active'
-      ? '<span style="background:rgba(22,163,74,.18);color:#bbf7d0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● Live</span>'
+      ? '<span style="background:rgba(79,122,82,.18);color:#bbf7d0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● Live</span>'
       : smsState === 'draft'
-      ? '<span style="background:rgba(8,145,178,.22);color:#67e8f9;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● In progress</span>'
+      ? '<span style="background:rgba(15,76,92,.22);color:#67e8f9;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● In progress</span>'
       : '<span style="background:rgba(124,58,237,.22);color:#c4b5fd;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">Featured</span>';
 
     wrap.innerHTML = `
@@ -2314,7 +2314,7 @@
           </div>
           <button class="btn btn-xs btn-out" onclick="viewAttachment('${f.data_url}','${escapeHtml(f.name).replace(/'/g, '&#39;')}')">View</button>
         </div>
-        <div style="background:var(--grnp);border:1px solid rgba(22,163,74,.2);border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:center;margin-top:10px">
+        <div style="background:var(--grnp);border:1px solid rgba(79,122,82,.2);border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:center;margin-top:10px">
           <span style="font-size:14px">📎</span>
           <div style="font-size:11px;color:var(--mid);line-height:1.5">File attached. We've taken a guess at the details from the filename — review and correct anything wrong.</div>
         </div>
@@ -2475,7 +2475,7 @@
           </div>
 
           ${f ? `
-            <div style="background:var(--seap);border:1px solid rgba(8,145,178,.2);border-radius:12px;padding:12px 14px;margin-bottom:14px">
+            <div style="background:var(--seap);border:1px solid rgba(15,76,92,.2);border-radius:12px;padding:12px 14px;margin-bottom:14px">
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
                 <span style="font-size:18px">📎</span>
                 <div style="flex:1;min-width:0">
@@ -2685,7 +2685,7 @@
           const v = (h1 ^ (x * 2654435761) ^ (y * 40503) ^ h2) >>> 0;
           on = (v & 1) === 1;
         }
-        if (on) svg += `<rect x="${(x*cell).toFixed(2)}" y="${(y*cell).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" fill="#0a1628"/>`;
+        if (on) svg += `<rect x="${(x*cell).toFixed(2)}" y="${(y*cell).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" fill="#1C252B"/>`;
       }
     }
     svg += '</svg>';
@@ -4150,9 +4150,9 @@
     const sms = j.sms_doc_id ? Store.snapshot().sms_documents.find((d) => d.id === j.sms_doc_id) : null;
 
     const statusBadge = ({
-      requested: '<span class="insp-pill" style="background:rgba(8,145,178,.15);color:var(--sea);border:1px solid rgba(8,145,178,.3)">📥 New request</span>',
+      requested: '<span class="insp-pill" style="background:rgba(15,76,92,.15);color:var(--sea);border:1px solid rgba(15,76,92,.3)">📥 New request</span>',
       quoted:    '<span class="insp-pill" style="background:rgba(217,119,6,.15);color:var(--amber);border:1px solid rgba(217,119,6,.3)">⏳ Quote sent</span>',
-      paid:      '<span class="insp-pill" style="background:rgba(8,145,178,.15);color:var(--sea);border:1px solid rgba(8,145,178,.3)">💷 Paid · ready to do work</span>',
+      paid:      '<span class="insp-pill" style="background:rgba(15,76,92,.15);color:var(--sea);border:1px solid rgba(15,76,92,.3)">💷 Paid · ready to do work</span>',
       in_progress:'<span class="insp-pill" style="background:rgba(217,119,6,.15);color:var(--amber);border:1px solid rgba(217,119,6,.3)">🛠️ In progress</span>',
       completed: '<span class="insp-pill rdy">✓ Completed</span>',
       declined:  '<span class="insp-pill notready">✕ Declined</span>'
@@ -4294,7 +4294,7 @@
         </div>
 
         <div style="padding:0 20px 14px">
-          <div style="background:var(--seap);border:1px solid rgba(8,145,178,.2);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:14px">
+          <div style="background:var(--seap);border:1px solid rgba(15,76,92,.2);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:14px">
             📎 Upload your signed PDF — it lands directly on the operator's vessel record. ${defaultDocType === 'coding_cert' ? 'A new MCA Coding Certificate will be created with this file attached.' : defaultDocType === 'sms_signed' ? 'The operator\'s SMS will be marked Signed with your version replacing the draft.' : 'The file will be attached to this job.'}
           </div>
 
@@ -4949,7 +4949,7 @@
       })()}
 
       <div data-dyn="sms" style="padding:0 16px 6px">
-        <div class="card" onclick="openSmsAiWizard()" style="padding:16px;cursor:pointer;border-left:4px solid var(--purp);background:linear-gradient(135deg, rgba(124,58,237,.06), rgba(8,145,178,.06))">
+        <div class="card" onclick="openSmsAiWizard()" style="padding:16px;cursor:pointer;border-left:4px solid var(--purp);background:linear-gradient(135deg, rgba(124,58,237,.06), rgba(15,76,92,.06))">
           <div style="display:flex;align-items:center;gap:14px">
             <div style="font-size:28px">✨</div>
             <div style="flex:1;min-width:0">
@@ -5203,7 +5203,7 @@
     host.innerHTML = `
       <div style="min-height:100vh;background:var(--page);font-family:var(--fn);padding:24px 16px 60px">
         <div style="max-width:760px;margin:0 auto">
-          <div style="background:var(--ink);color:white;border-radius:18px;padding:28px 24px;margin-bottom:18px;background-image:radial-gradient(circle at 80% 0%, rgba(8,145,178,.22), transparent 60%)">
+          <div style="background:var(--ink);color:white;border-radius:18px;padding:28px 24px;margin-bottom:18px;background-image:radial-gradient(circle at 80% 0%, rgba(15,76,92,.22), transparent 60%)">
             <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Safety Management System · read-only</div>
             <div style="font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.15">${escapeHtml(v ? v.name : (doc.title || 'SMS'))}</div>
             <div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:6px">v${doc.version}${doc.signed_at ? ' · signed ' + fmtDate(doc.signed_at) : ''}${v && v.category ? ' · ' + escapeHtml(v.category) : ''}</div>
@@ -5211,7 +5211,7 @@
           </div>
 
           ${surveyorName ? `
-            <div style="background:var(--grnp);border:1px solid rgba(22,163,74,.2);border-radius:12px;padding:14px 18px;margin-bottom:18px;font-size:13px;color:var(--green);font-weight:700">✓ Signed by ${escapeHtml(surveyorName)} on ${fmtDate(doc.signed_at)}</div>` : ''}
+            <div style="background:var(--grnp);border:1px solid rgba(79,122,82,.2);border-radius:12px;padding:14px 18px;margin-bottom:18px;font-size:13px;color:var(--green);font-weight:700">✓ Signed by ${escapeHtml(surveyorName)} on ${fmtDate(doc.signed_at)}</div>` : ''}
 
           ${sectionsHtml}
 
@@ -5675,7 +5675,7 @@
           </div>
           <span class="chip chip-bl">${pct}% done</span>
         </div>
-        <div style="display:inline-flex;align-items:center;gap:6px;background:var(--seap);border:1px solid rgba(8,145,178,.2);color:var(--sea);font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;margin-bottom:10px">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:var(--seap);border:1px solid rgba(15,76,92,.2);color:var(--sea);font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;margin-bottom:10px">
           <span>📖</span><span>Satisfies ${escapeHtml(sec.ref)}</span>
         </div>
         <div style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:12px">${escapeHtml(sec.blurb)}</div>
@@ -5793,7 +5793,7 @@
 
     wrap.innerHTML = `
       <div style="padding:24px 20px;text-align:center">
-        <div style="width:72px;height:72px;margin:0 auto 14px;border-radius:50%;background:linear-gradient(135deg,var(--grnp) 0%,rgba(22,163,74,.05) 100%);display:flex;align-items:center;justify-content:center;font-size:36px">✓</div>
+        <div style="width:72px;height:72px;margin:0 auto 14px;border-radius:50%;background:linear-gradient(135deg,var(--grnp) 0%,rgba(79,122,82,.05) 100%);display:flex;align-items:center;justify-content:center;font-size:36px">✓</div>
         <div class="h-display" style="font-size:22px;color:var(--text);margin-bottom:6px">Your SMS is ready</div>
         <div style="font-size:13px;color:var(--lt);line-height:1.6;max-width:280px;margin:0 auto">${escapeHtml(v ? v.name : 'Your vessel')} · 11 sections completed · MCA-aligned</div>
       </div>
@@ -5828,7 +5828,7 @@
           </div>
         </div>` : `
         <div style="padding:0 16px 6px">
-          <div style="background:var(--grnp);border:1px solid rgba(22,163,74,.2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="background:var(--grnp);border:1px solid rgba(79,122,82,.2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px">
             <span style="font-size:18px">✓</span>
             <div style="font-size:12px;color:var(--mid);line-height:1.5">SMS unlocked. Download below or send to a surveyor for review and sign-off.</div>
           </div>
@@ -6206,18 +6206,18 @@
 <style>
 @page { size: A4; margin: 25mm 22mm; }
 body { font-family: 'Times New Roman', Cambria, Georgia, serif; font-size: 11pt; line-height: 1.5; color: #0f172a; }
-h1 { font-size: 22pt; font-weight: 700; color: #0a1628; margin: 0 0 6pt 0; letter-spacing: -.5pt; }
-h2 { font-size: 14pt; font-weight: 700; color: #0a1628; margin: 18pt 0 6pt 0; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; page-break-after: avoid; }
+h1 { font-size: 22pt; font-weight: 700; color: #1C252B; margin: 0 0 6pt 0; letter-spacing: -.5pt; }
+h2 { font-size: 14pt; font-weight: 700; color: #1C252B; margin: 18pt 0 6pt 0; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; page-break-after: avoid; }
 h3 { font-size: 11pt; font-weight: 700; color: #1e3454; margin: 12pt 0 4pt 0; page-break-after: avoid; }
 .cover { text-align: center; padding: 60pt 0 40pt; }
-.cover-title { font-size: 30pt; font-weight: 700; color: #0a1628; letter-spacing: -1pt; margin-bottom: 10pt; }
+.cover-title { font-size: 30pt; font-weight: 700; color: #1C252B; letter-spacing: -1pt; margin-bottom: 10pt; }
 .cover-vessel { font-size: 18pt; color: #1e3454; font-style: italic; margin-bottom: 30pt; }
 .cover-meta { font-size: 11pt; color: #475569; }
 .foot { font-size: 9pt; color: #94a3b8; text-align: center; margin-top: 30pt; padding-top: 12pt; border-top: 1pt solid #cbd5e1; }
 .signoff { margin-top: 24pt; padding: 14pt; border: 1pt solid #cbd5e1; }
 .signoff-row { display: flex; gap: 24pt; margin-top: 18pt; }
 .signoff-cell { flex: 1; }
-.signoff-line { border-bottom: 1pt solid #0a1628; height: 24pt; }
+.signoff-line { border-bottom: 1pt solid #1C252B; height: 24pt; }
 </style>
 </head>
 <body>
@@ -6232,7 +6232,7 @@ h3 { font-size: 11pt; font-weight: 700; color: #1e3454; margin: 12pt 0 4pt 0; pa
   </div>
 </div>
 
-<p style="font-size:10pt;color:#475569;font-style:italic;border-left:3pt solid #0891b2;padding:6pt 12pt;margin:18pt 0">
+<p style="font-size:10pt;color:#475569;font-style:italic;border-left:3pt solid #0F4C5C;padding:6pt 12pt;margin:18pt 0">
 This Safety Management System is built on the requirements of the Sport or Pleasure Vessel Code 2025 (Appendix 7) and the Workboat Code Edition 3 (Appendix on Safety Management). It is the responsibility of the vessel owner/operator to ensure the SMS is implemented, maintained, and reviewed.
 </p>
 
@@ -6293,9 +6293,9 @@ ${sectionsHtml}
       <div class="pp-head">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#0891b2" stroke-width="2.2" stroke-linecap="round"/>
-            <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#0891b2" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
-            <circle cx="20" cy="18" r="5" fill="#16a34a"/>
+            <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#0F4C5C" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#0F4C5C" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
+            <circle cx="20" cy="18" r="5" fill="#4F7A52"/>
             <path d="M17.5,18 L19.2,19.8 L23,15.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           </svg>
           <span style="font-size:12px;color:#94a3b8;font-weight:600;letter-spacing:.05em">CODEDOK</span>
@@ -6325,8 +6325,8 @@ ${sectionsHtml}
         <h2>Approval &amp; Sign-off</h2>
         <p style="font-size:11px">I confirm that this Safety Management System has been prepared in accordance with the relevant Code, and that I will implement it on board ${escapeHtml(v ? v.name : 'the vessel')}.</p>
         <table style="margin-top:14px"><tr>
-          <td style="width:50%;border-bottom:1px solid #0a1628;height:30px"></td>
-          <td style="width:50%;border-bottom:1px solid #0a1628;height:30px"></td>
+          <td style="width:50%;border-bottom:1px solid #1C252B;height:30px"></td>
+          <td style="width:50%;border-bottom:1px solid #1C252B;height:30px"></td>
         </tr><tr>
           <td><div style="font-size:9px;color:#475569">Signed (Owner/Operator)</div></td>
           <td><div style="font-size:9px;color:#475569">Date</div></td>
@@ -6469,7 +6469,7 @@ ${sectionsHtml}
         <div id="team-invite-role-picker" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
           ${Object.entries(TEAM_ROLE_PRESETS).map(([id, p], idx) => `
             <button type="button" class="role-pick${idx === 1 ? ' on' : ''}" data-role="${id}" onclick="pickTeamRole('${id}')"
-              style="background:${idx === 1 ? 'rgba(8,145,178,.15)' : 'var(--bg2)'};border:2px solid ${idx === 1 ? 'var(--sea)' : 'var(--bdr)'};color:var(--text);padding:10px;border-radius:10px;font-family:var(--fn);font-size:12px;font-weight:700;cursor:pointer;text-align:left">
+              style="background:${idx === 1 ? 'rgba(15,76,92,.15)' : 'var(--bg2)'};border:2px solid ${idx === 1 ? 'var(--sea)' : 'var(--bdr)'};color:var(--text);padding:10px;border-radius:10px;font-family:var(--fn);font-size:12px;font-weight:700;cursor:pointer;text-align:left">
               ${escapeHtml(p.label)}
               <div style="font-size:10px;font-weight:500;color:var(--mid);margin-top:2px;line-height:1.4">${escapeHtml(p.blurb)}</div>
             </button>`).join('')}
@@ -6506,7 +6506,7 @@ ${sectionsHtml}
     document.querySelectorAll('#team-invite-role-picker .role-pick').forEach((btn) => {
       const active = btn.dataset.role === role;
       btn.classList.toggle('on', active);
-      btn.style.background  = active ? 'rgba(8,145,178,.15)' : 'var(--bg2)';
+      btn.style.background  = active ? 'rgba(15,76,92,.15)' : 'var(--bg2)';
       btn.style.borderColor = active ? 'var(--sea)' : 'var(--bdr)';
     });
     document.querySelectorAll('#team-invite-perms .team-perm').forEach((cb) => {
@@ -6964,7 +6964,7 @@ ${sectionsHtml}
     }
 
     preview.innerHTML = `
-      <div style="background:var(--seap);border:1px solid rgba(8,145,178,.2);border-radius:12px;padding:14px 16px">
+      <div style="background:var(--seap);border:1px solid rgba(15,76,92,.2);border-radius:12px;padding:14px 16px">
         <div style="font-size:12px;font-weight:700;color:var(--sea);margin-bottom:6px">📋 Based on your category — ${escapeHtml(lastVessel.category)}</div>
         <div style="font-size:11px;color:var(--mid);line-height:1.6;margin-bottom:8px">CodedOK will track these on your behalf:</div>
         <div style="font-size:11px;color:var(--mid);line-height:1.7">
@@ -7031,9 +7031,9 @@ ${sectionsHtml}
           <div>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#0891b2" stroke-width="2.2" stroke-linecap="round"/>
-                <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#0891b2" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
-                <circle cx="20" cy="18" r="5" fill="#16a34a"/>
+                <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#0F4C5C" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#0F4C5C" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
+                <circle cx="20" cy="18" r="5" fill="#4F7A52"/>
                 <path d="M17.5,18 L19.2,19.8 L23,15.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
               </svg>
               <span style="font-size:12px;color:#94a3b8;font-weight:600;letter-spacing:.05em">CODEDOK</span>
@@ -7042,8 +7042,8 @@ ${sectionsHtml}
             <div class="pp-meta">Generated ${escapeHtml(today)}${issuedBySurveyor && surveyor ? ' by ' + escapeHtml(surveyor.surveyor && surveyor.surveyor.company ? surveyor.surveyor.company : surveyor.name) : ' · ' + escapeHtml(operator.name || '')}</div>
           </div>
           ${issuedBySurveyor ? `
-            <div style="text-align:right;border-left:2px solid #0a1628;padding-left:14px">
-              <div style="font-family:'Times New Roman',serif;font-size:18px;font-weight:700;color:#0a1628;letter-spacing:.5px">McCollam Marine</div>
+            <div style="text-align:right;border-left:2px solid #1C252B;padding-left:14px">
+              <div style="font-family:'Times New Roman',serif;font-size:18px;font-weight:700;color:#1C252B;letter-spacing:.5px">McCollam Marine</div>
               <div style="font-family:'Times New Roman',serif;font-size:9px;color:#475569;letter-spacing:.15em;text-transform:uppercase;margin-top:2px">Naval Architects · Marine Surveyors</div>
               <div style="font-size:11px;color:#94a3b8;margin-top:6px">${escapeHtml((surveyor.surveyor && surveyor.surveyor.regions || []).join(' · '))}</div>
               ${surveyor.surveyor && surveyor.surveyor.phone ? `<div style="font-size:11px;color:#475569;margin-top:2px">${escapeHtml(surveyor.surveyor.phone)}</div>` : ''}
@@ -7107,7 +7107,7 @@ ${sectionsHtml}
               const days = Store.daysUntil(c.expires_at);
               const cls = days === Infinity ? 'pp-status-ok' : days < 0 ? 'pp-status-bad' : days <= 30 ? 'pp-status-warn' : 'pp-status-ok';
               const label = days === Infinity ? 'No expiry' : days < 0 ? 'EXPIRED' : days <= 30 ? `${days}d` : 'Valid';
-              const fileMark = c.file ? '<span style="color:#0891b2;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
+              const fileMark = c.file ? '<span style="color:#0F4C5C;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
               return `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.issuer || '—')}</td><td>${escapeHtml(c.number || '—')}</td><td>${fmtDate(c.expires_at)}</td><td><span class="${cls}">${label}</span></td><td>${fileMark}</td></tr>`;
             }).join('')}
           </table>
@@ -7121,7 +7121,7 @@ ${sectionsHtml}
               const days = Store.daysUntil(e.next_service_at);
               const cls = e.next_service_at == null ? 'pp-status-ok' : days < 0 ? 'pp-status-bad' : days <= 30 ? 'pp-status-warn' : 'pp-status-ok';
               const label = e.next_service_at == null ? '—' : days < 0 ? 'OVERDUE' : days <= 30 ? `${days}d` : 'OK';
-              const fileMark = e.file ? '<span style="color:#0891b2;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
+              const fileMark = e.file ? '<span style="color:#0F4C5C;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
               return `<tr><td>${escapeHtml(e.name)}</td><td>${escapeHtml((e.make || '') + ' ' + (e.model || ''))}</td><td>${e.qty || 1}</td><td>${fmtDate(e.last_service_at)}</td><td>${fmtDate(e.next_service_at)}</td><td><span class="${cls}">${label}</span></td><td>${fileMark}</td></tr>`;
             }).join('')}
           </table>
@@ -7160,13 +7160,13 @@ ${sectionsHtml}
           <div style="display:flex;gap:32px;align-items:flex-end;margin-top:18px">
             <div style="flex:1">
               <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:24px">Surveyor signature</div>
-              <div style="border-bottom:1px solid #0a1628;height:1px;margin-bottom:6px"></div>
-              <div style="font-family:'Times New Roman',serif;font-size:13px;font-weight:700;color:#0a1628">${escapeHtml((surveyor.surveyor && surveyor.surveyor.company) || surveyor.name || '')}</div>
+              <div style="border-bottom:1px solid #1C252B;height:1px;margin-bottom:6px"></div>
+              <div style="font-family:'Times New Roman',serif;font-size:13px;font-weight:700;color:#1C252B">${escapeHtml((surveyor.surveyor && surveyor.surveyor.company) || surveyor.name || '')}</div>
               <div style="font-size:10px;color:#475569">${escapeHtml((surveyor.surveyor && surveyor.surveyor.qualifications || []).join(' · '))}</div>
             </div>
             <div style="flex:1">
               <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:24px">Date</div>
-              <div style="border-bottom:1px solid #0a1628;height:1px;margin-bottom:6px"></div>
+              <div style="border-bottom:1px solid #1C252B;height:1px;margin-bottom:6px"></div>
               <div style="font-size:13px;font-weight:600">${escapeHtml(today)}</div>
             </div>
           </div>
@@ -7616,7 +7616,7 @@ ${sectionsHtml}
     document.querySelectorAll('#signup-role-picker .role-pick').forEach((btn) => {
       const isActive = btn.dataset.role === role;
       btn.classList.toggle('on', isActive);
-      btn.style.background = isActive ? 'rgba(8,145,178,.2)' : 'rgba(255,255,255,.04)';
+      btn.style.background = isActive ? 'rgba(15,76,92,.2)' : 'rgba(255,255,255,.04)';
       btn.style.borderColor = isActive ? 'var(--seal)' : 'rgba(255,255,255,.08)';
     });
     // Surveyors don't have a business they're billing under — the field
