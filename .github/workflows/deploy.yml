@@ -19,6 +19,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Wrangler diagnostics
+        run: |
+          echo "::group::Token presence"
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "❌ CLOUDFLARE_API_TOKEN secret is NOT set on this repo."
+          else
+            echo "✅ CLOUDFLARE_API_TOKEN is set (len=${#CLOUDFLARE_API_TOKEN})"
+          fi
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "ℹ️  CLOUDFLARE_ACCOUNT_ID is not set — fine for single-account tokens, required if the token sees multiple accounts."
+          else
+            echo "✅ CLOUDFLARE_ACCOUNT_ID is set"
+          fi
+          echo "::endgroup::"
+          echo "::group::wrangler whoami"
+          npx --yes wrangler@4 whoami || true
+          echo "::endgroup::"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Deploy with Wrangler
         run: npx --yes wrangler@4 deploy
         env:
