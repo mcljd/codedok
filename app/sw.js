@@ -4,7 +4,7 @@
 //     get the latest when online, fall back to cache when offline)
 //   - Fonts / icons / images: cache-first (rarely change, big files)
 // Bump CACHE_VERSION whenever you ship — old caches are deleted on activate.
-const CACHE_VERSION = 'codedok-v35';
+const CACHE_VERSION = 'codedok-v36';
 const SHELL = [
   './',
   './index.html',
@@ -78,4 +78,41 @@ self.addEventListener('fetch', (e) => {
       }).catch(() => caches.match('./index.html'));
     })
   );
+});
+
+// ────────────────────────────────────────────────────────────────
+// Web push — expiry reminders fired by the send-reminders edge fn.
+// Payload shape (JSON): { title, body, url, tag }
+// ────────────────────────────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (_) {
+    data = { title: 'CodedOK', body: event.data ? event.data.text() : '' };
+  }
+  const title = data.title || 'CodedOK';
+  const opts = {
+    body: data.body || '',
+    icon: './icons/icon-180.png',
+    badge: './icons/icon-180.png',
+    tag: data.tag || 'codedok-reminder',
+    renotify: true,
+    data: { url: data.url || './' }
+  };
+  event.waitUntil(self.registration.showNotification(title, opts));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || './';
+  event.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) {
+      if (c.url.includes(self.location.origin)) {
+        await c.focus();
+        try { c.postMessage({ type: 'open', url: target }); } catch (_) {}
+        return;
+      }
+    }
+    await self.clients.openWindow(target);
+  })());
 });

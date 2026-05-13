@@ -1146,22 +1146,36 @@
     }
     banner.innerHTML = bannerHtml;
 
-    // ---- iOS PWA install nudge ----
-    // Only show when running in iOS Safari (not standalone). Encourages
-    // Add-to-Home-Screen so the user gets full screen + a real app icon.
-    // Dismissable; remembers via localStorage so it doesn't nag.
+    // ---- PWA install + reminders nudge ----
+    // Replaces the iOS-only banner with a cross-platform card:
+    //   - Android / desktop Chrome: real Install button via beforeinstallprompt.
+    //   - iOS Safari: manual "Share → Add to Home Screen" tip.
+    //   - Hides automatically once installed, dismissed, or already standalone.
+    // Also shows an "Enable reminders" button when push is supported and the
+    // user hasn't subscribed yet (handled by ensurePushUi).
     (function () {
       const old = document.getElementById('home-pwa-install');
       if (old) old.remove();
       const dismissed = localStorage.getItem('codedok-pwa-installed-dismissed');
-      if (dismissed === '1') return;
+      const isStandalone = (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
+      if (isStandalone || dismissed === '1') {
+        // Skip the install card entirely once installed/dismissed, but the
+        // reminders card still needs a host on home — render it on its own.
+        ensurePushUi();
+        return;
+      }
       const ua = navigator.userAgent || '';
       const isIOS = /iPhone|iPad|iPod/.test(ua);
-      const isStandalone = (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
-      if (!isIOS || isStandalone) return;
+      const canPrompt = !!window.__codedokInstallEvent;
       const homeEl = document.getElementById('s-home');
       const scroll = homeEl && homeEl.querySelector('.scroll');
-      if (!scroll) return;
+      if (!scroll) { ensurePushUi(); return; }
+      const tip = isIOS
+        ? `Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>. Removes Safari's bars, works fully offline, real app icon.`
+        : `One tap to install. Removes the address bar, works offline, real app icon.`;
+      const cta = canPrompt
+        ? `<button class="btn btn-sea" onclick="installPwa()" style="height:36px;padding:0 14px;font-weight:700;font-size:12px">Install</button>`
+        : ``;
       const banner = document.createElement('div');
       banner.id = 'home-pwa-install';
       banner.innerHTML = `
@@ -1170,13 +1184,14 @@
             <div style="font-size:22px;flex-shrink:0">📲</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:700;color:var(--text)">Add CodedOK to your home screen</div>
-              <div style="font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5">Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>. Removes Safari's bars, works fully offline, real app icon.</div>
+              <div style="font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5">${tip}</div>
             </div>
+            ${cta}
             <button onclick="dismissPwaInstall()" aria-label="Dismiss" style="background:none;border:none;color:var(--lt);font-size:18px;cursor:pointer;padding:4px 6px">×</button>
           </div>
         </div>`;
-      // Insert before existing children so it appears at the very top
       scroll.insertBefore(banner, scroll.firstChild);
+      ensurePushUi();
     })();
 
     // ---- First-time onboarding flow ----
@@ -2993,6 +3008,178 @@
     if (el) el.remove();
   }
   window.dismissPwaInstall = dismissPwaInstall;
+
+  // ─────────────────────────────────────────────────────────────
+  // PWA install via beforeinstallprompt (Android / Chrome / Edge).
+  // The event is captured once, then replayed on user click. iOS
+  // Safari never fires this — those users see the manual tip in
+  // the banner instead.
+  // ─────────────────────────────────────────────────────────────
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window.__codedokInstallEvent = e;
+    // Re-render the home banner so the Install button appears.
+    if (typeof renderHome === 'function' && document.getElementById('s-home')) {
+      try { renderHome(); } catch (_) {}
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    window.__codedokInstallEvent = null;
+    try { localStorage.setItem('codedok-pwa-installed-dismissed', '1'); } catch (_) {}
+    const el = document.getElementById('home-pwa-install');
+    if (el) el.remove();
+  });
+
+  async function installPwa() {
+    const ev = window.__codedokInstallEvent;
+    if (!ev) return;
+    try {
+      ev.prompt();
+      const { outcome } = await ev.userChoice;
+      if (outcome === 'accepted') {
+        const el = document.getElementById('home-pwa-install');
+        if (el) el.remove();
+      }
+    } catch (err) {
+      console.warn('installPwa failed:', err);
+    } finally {
+      window.__codedokInstallEvent = null;
+    }
+  }
+  window.installPwa = installPwa;
+
+  // ─────────────────────────────────────────────────────────────
+  // Web push reminders — opt-in flow.
+  // VAPID public key is safe to ship in the client.
+  // ─────────────────────────────────────────────────────────────
+  const VAPID_PUBLIC_KEY = 'BESwTm9pizzS1pXWoABM-oQH2p0ZN6ZGWGc_IAmFgCn7-ZMnxCnQhGRgiIv039pVWtdlt2TrThY0K_9OXi2q6_Y';
+
+  function pushSupported() {
+    return 'serviceWorker' in navigator
+      && 'PushManager' in window
+      && 'Notification' in window;
+  }
+
+  // Standard helper for VAPID base64url → Uint8Array.
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  async function ensurePushUi() {
+    const host = document.querySelector('#s-home .scroll');
+    if (!host) return;
+    let card = document.getElementById('home-push-card');
+    if (card) card.remove();
+
+    if (!pushSupported()) return;
+    if (Notification.permission === 'denied') return;
+    if (localStorage.getItem('codedok-push-dismissed') === '1') return;
+
+    // Demo mode has no real user_id to attach a subscription to — skip.
+    const session = (function () { try { return JSON.parse(localStorage.getItem('codedok-session') || 'null'); } catch (_) { return null; } })();
+    if (!session || session.mode === 'demo') return;
+    if (!window.Supa || !window.Supa.ready) {
+      // Supabase still loading — try again in a moment.
+      setTimeout(ensurePushUi, 1500);
+      return;
+    }
+
+    // Already subscribed on this device?
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) return;
+    } catch (_) {}
+
+    card = document.createElement('div');
+    card.id = 'home-push-card';
+    card.innerHTML = `
+      <div style="padding:14px 16px 0">
+        <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:12px;border-left:4px solid var(--sea)">
+          <div style="font-size:22px;flex-shrink:0">🔔</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--text)">Turn on expiry reminders</div>
+            <div style="font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5">A nudge 30 days and 7 days before any certificate, equipment service or crew qualification expires.</div>
+          </div>
+          <button class="btn btn-sea" onclick="enablePushReminders()" style="height:36px;padding:0 14px;font-weight:700;font-size:12px">Enable</button>
+          <button onclick="dismissPushCard()" aria-label="Dismiss" style="background:none;border:none;color:var(--lt);font-size:18px;cursor:pointer;padding:4px 6px">×</button>
+        </div>
+      </div>`;
+    const installCard = document.getElementById('home-pwa-install');
+    if (installCard && installCard.nextSibling) {
+      installCard.parentNode.insertBefore(card, installCard.nextSibling);
+    } else {
+      host.insertBefore(card, host.firstChild);
+    }
+  }
+  window.ensurePushUi = ensurePushUi;
+
+  function dismissPushCard() {
+    try { localStorage.setItem('codedok-push-dismissed', '1'); } catch (_) {}
+    const el = document.getElementById('home-push-card');
+    if (el) el.remove();
+  }
+  window.dismissPushCard = dismissPushCard;
+
+  async function enablePushReminders() {
+    if (!pushSupported()) { alert('This browser doesn’t support push notifications.'); return; }
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        if (perm === 'denied') alert('Notifications are blocked. Enable them in browser settings, then come back.');
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) throw new Error('Not signed in');
+
+      // Map auth user → public users row.
+      const { data: profile, error: profErr } = await client
+        .from('users').select('id').eq('auth_user_id', user.id).maybeSingle();
+      if (profErr) throw profErr;
+      if (!profile) throw new Error('No user profile row yet');
+
+      const json = sub.toJSON();
+      const row = {
+        id: 'ps_' + Math.random().toString(36).slice(2, 12),
+        user_id: profile.id,
+        endpoint: sub.endpoint,
+        p256dh: json.keys && json.keys.p256dh,
+        auth: json.keys && json.keys.auth,
+        user_agent: navigator.userAgent || null
+      };
+      const { error: insErr } = await client
+        .from('push_subscriptions')
+        .upsert(row, { onConflict: 'endpoint' });
+      if (insErr) throw insErr;
+
+      const el = document.getElementById('home-push-card');
+      if (el) el.remove();
+      try { localStorage.setItem('codedok-push-dismissed', '1'); } catch (_) {}
+      // Confirm with a local notification.
+      reg.showNotification('Reminders on', {
+        body: 'We’ll nudge you 30 and 7 days before anything expires.',
+        icon: './icons/icon-180.png',
+        tag: 'codedok-welcome'
+      });
+    } catch (err) {
+      console.error('enablePushReminders failed:', err);
+      alert('Could not enable reminders: ' + (err && err.message ? err.message : err));
+    }
+  }
+  window.enablePushReminders = enablePushReminders;
 
   // ---------- Speed-dial: quick quote from an overdue item ----------
   // One-tap path from an overdue cert/equipment line to a job request
