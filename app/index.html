@@ -185,12 +185,6 @@
           <button class="auth-demo-link" onclick="toggleAuthMode('signup')" style="font-size:13px">No account? <strong style="color:white;text-decoration:underline">Create one</strong></button>
         </div>
 
-        <div class="auth-divider">or</div>
-
-        <button class="auth-btn auth-btn-social" onclick="enterDemo()" style="background:rgba(8,145,178,.18);border-color:rgba(8,145,178,.35);color:white;font-weight:700">
-          🚀  Try the live demo · no signup
-        </button>
-
         <div class="auth-fineprint">
           By continuing you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
         </div>
@@ -295,7 +289,7 @@
       <!-- CTAs -->
       <div style="display:flex;flex-direction:column;gap:10px">
         <button class="btn btn-sea btn-full" onclick="go('s-onboard')">Get inspection-ready — Free trial</button>
-        <button class="btn btn-out btn-full" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15)" onclick="go('s-home')">See demo dashboard →</button>
+        <button class="btn btn-out btn-full" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15)" onclick="go('s-login')">I already have an account →</button>
       </div>
 
       <!-- Feature chips -->
@@ -315,7 +309,7 @@
 <div class="shell" id="s-onboard">
   <div class="sb sb-cd"></div>
   <div class="tbar">
-    <button class="back" onclick="go('s-land')">‹ Back</button>
+    <button class="back" onclick="goBackFromOnboard()">‹ Back</button>
     <div style="display:flex;gap:6px">
       <div style="width:28px;height:4px;border-radius:2px;background:var(--sea)"></div>
       <div style="width:28px;height:4px;border-radius:2px;background:var(--bdr)"></div>
@@ -1528,9 +1522,10 @@
       <div class="row" onclick="signOut()"><div class="row-ic rd">↩️</div><div class="row-body"><div class="row-name">Sign out</div><div class="row-sub">Return to the login screen</div></div><span class="chev">›</span></div>
     </div>
 
-    <!-- Mode switch (prototype only) -->
-    <div class="slbl">Switch view</div>
-    <div class="card mx">
+    <!-- Mode switch — demo account only. Toggled by renderAccount() based on
+         the signed-in email; hidden for real users who only have one role. -->
+    <div class="slbl" id="account-switch-view-label" style="display:none">Switch view</div>
+    <div class="card mx" id="account-switch-view-card" style="display:none">
       <div class="row" onclick="enterSurveyorMode()">
         <div class="row-ic pu">🔍</div>
         <div class="row-body">
@@ -1562,9 +1557,9 @@
       </div>
     </div>
 
-    <!-- DEMO DATA CONTROLS -->
-    <div class="slbl">Demo data</div>
-    <div class="card mx">
+    <!-- DEMO DATA CONTROLS — demo account only. -->
+    <div class="slbl" id="account-demo-label" style="display:none">Demo data</div>
+    <div class="card mx" id="account-demo-card" style="display:none">
       <div class="row" onclick="resetDemoData()"><div class="row-ic bl">↻</div><div class="row-body"><div class="row-name">Reset demo data</div><div class="row-sub">Restore Tsunami IV &amp; Lagavulin seed</div></div><span class="chev">›</span></div>
       <div class="row" onclick="clearAllData()"><div class="row-ic rd">🗑️</div><div class="row-body"><div class="row-name">Clear all data</div><div class="row-sub">Start empty — add your own vessel</div></div><span class="chev">›</span></div>
     </div>

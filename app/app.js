@@ -5959,10 +5959,27 @@ ${sectionsHtml}
   function renderAccount() {
     // Lightweight live update for the trial banner.
     const s = Store.snapshot();
-    if (!s.user || !s.user.trialEndsAt) return;
-    const days = Store.daysUntil(s.user.trialEndsAt);
-    const bar = document.querySelector('#s-account [style*="width:35%"]');
-    if (bar) bar.style.width = Math.max(5, Math.min(100, Math.round((14 - days) / 14 * 100))) + '%';
+    if (s.user && s.user.trialEndsAt) {
+      const days = Store.daysUntil(s.user.trialEndsAt);
+      const bar = document.querySelector('#s-account [style*="width:35%"]');
+      if (bar) bar.style.width = Math.max(5, Math.min(100, Math.round((14 - days) / 14 * 100))) + '%';
+    }
+
+    // "Switch view" toggles between operator / surveyor / admin. Only the
+    // dedicated demo account has more than one role to switch into; hide
+    // the section entirely for real users to avoid dead-end taps.
+    const session = loadSession();
+    const isDemoAccount = session && session.email
+      && session.email.toLowerCase() === 'mcljd303@icloud.com';
+    const switchLabel = document.getElementById('account-switch-view-label');
+    const switchCard  = document.getElementById('account-switch-view-card');
+    if (switchLabel) switchLabel.style.display = isDemoAccount ? '' : 'none';
+    if (switchCard)  switchCard.style.display  = isDemoAccount ? '' : 'none';
+
+    const demoLabel = document.getElementById('account-demo-label');
+    const demoCard  = document.getElementById('account-demo-card');
+    if (demoLabel) demoLabel.style.display = isDemoAccount ? '' : 'none';
+    if (demoCard)  demoCard.style.display  = isDemoAccount ? '' : 'none';
   }
 
   // ---------- Onboarding jurisdiction screen — wire codes-driven cert preview ----------
@@ -6332,6 +6349,23 @@ ${sectionsHtml}
         signed_in_at: new Date().toISOString()
       });
 
+      // Demo-account gating. The only seeded experience belongs to
+      // mcljd303@icloud.com — every other real user gets an empty
+      // workspace, even if their device still has leftover demo
+      // fixtures from before this change.
+      const isDemoAccount = (authUser.email || '').toLowerCase() === 'mcljd303@icloud.com';
+      if (window.Store) {
+        if (isDemoAccount) {
+          if (!Store.hasDemoFixtures()) Store.applyDemoSeed();
+        } else if (Store.hasDemoFixtures()) {
+          Store.resetToEmpty();
+        }
+        // Mirror the Supabase users row into the local Store so the rest
+        // of the app (getCurrentUser, lazy org creation on first vessel
+        // add, role-aware UI) recognises this account.
+        Store.attachAuthenticatedUser(row);
+      }
+
       // Drive the boot routing.
       renderDemoBadge();
       if (row.kind === 'admin') {
@@ -6610,20 +6644,26 @@ ${sectionsHtml}
     return 'operator';
   }
 
+  // Legacy entry point. The "Try the live demo →" login button was
+  // removed when we cut over to per-account real workspaces — demo
+  // data now only loads when mcljd303@icloud.com signs in. The
+  // function stays defined so the index.html self-heal sentinel
+  // (which probes for window.enterDemo) still detects a successful
+  // app.js load. Calling it just routes to the login screen.
   function enterDemo() {
-    saveSession({ mode: 'demo', signed_in_at: new Date().toISOString() });
-    // Force operator mode so the demo always lands in the operator home
-    // — otherwise a stale surveyor/admin session bounces them to the
-    // wrong screen with the wrong user.
-    if (window.Store) Store.setMode('operator');
-    document.body.classList.remove('desktop-surveyor');
-    document.body.classList.remove('desktop-admin');
-    activeVesselId = null;
-    renderDemoBadge();
-    renderHome();
-    go('s-home');
+    go('s-login');
   }
   window.enterDemo = enterDemo;
+
+  // Back-button target from the "Add your first vessel" onboarding screen.
+  // Signed-in users came from the home dashboard and should return there.
+  // Unauthenticated visitors (who tapped "Get inspection-ready" on the
+  // marketing landing page) get sent back to s-land.
+  function goBackFromOnboard() {
+    const session = loadSession();
+    go(session ? 's-home' : 's-land');
+  }
+  window.goBackFromOnboard = goBackFromOnboard;
 
   function signOut() {
     if (!confirm('Sign out and return to the login screen?')) return;
@@ -6726,10 +6766,30 @@ ${sectionsHtml}
     } catch (_) {}
 
     // Boot routing
-    const session = loadSession();
+    let session = loadSession();
+    // Stale `mode: 'demo'` sessions are no longer honoured — the only
+    // seeded experience is mcljd303@icloud.com signing in for real.
+    // Clear the session and any leftover demo fixtures so the user lands
+    // on the login screen with a clean Store instead of demo data.
+    if (session && session.mode === 'demo') {
+      clearSession();
+      if (window.Store && Store.hasDemoFixtures()) Store.resetToEmpty();
+      session = null;
+    }
     if (!session) {
       go('s-login');
       return;
+    }
+    // If a non-demo user is returning to the app and the Store still
+    // carries demo fixtures from a previous session, wipe them now so
+    // the operator home doesn't flash demo data before handleSignedIn
+    // catches up. handleSignedIn re-runs the same check, so we're safe
+    // either way.
+    if (window.Store
+        && session.mode === 'live'
+        && (session.email || '').toLowerCase() !== 'mcljd303@icloud.com'
+        && Store.hasDemoFixtures()) {
+      Store.resetToEmpty();
     }
     if (deepLink && deepLink.vesselId && deepLink.view === 's-surveyor-vessel') {
       Store.setMode('surveyor');

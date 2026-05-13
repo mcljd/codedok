@@ -11,9 +11,37 @@
     return new Date(TODAY.getTime() + days * DAY_MS).toISOString().slice(0, 10);
   }
 
+  // Empty state — what every real account starts from. No vessels, crew,
+  // certs, or surveyors. Their real data flows in via sync.js from Supabase.
+  function buildEmptyState() {
+    return {
+      meta: { seededAt: new Date().toISOString(), version: 2 },
+      session: { user_id: null, mode: 'operator' },
+      users: [],
+      organizations: [],
+      memberships: [],
+      user: null,
+      vessels: [],
+      certs: [],
+      equipment: [],
+      crew: [],
+      crewCerts: [],
+      deficiencies: [],
+      surveyor_grants: [],
+      inspections: [],
+      sms_documents: [],
+      handoff_links: [],
+      jobs: [],
+      invoices: [],
+      review_requests: [],
+      audit_log: []
+    };
+  }
+
   // Seed data is dated relative to "today" so the demo always looks right
-  // regardless of when the user first opens the app.
-  function buildSeed() {
+  // regardless of when the user first opens the app. Only loaded for the
+  // single demo account (mcljd303@icloud.com) — see Store.applyDemoSeed.
+  function buildDemoSeed() {
     return {
       meta: { seededAt: new Date().toISOString(), version: 2 },
 
@@ -175,33 +203,46 @@
     };
   }
 
+  // True if the Store still carries the original hardcoded demo fixtures.
+  // We use this to decide whether a sign-in by a non-demo user should
+  // wipe the local cache. Real users' offline data won't match these IDs.
+  function looksLikeDemo(parsed) {
+    if (!parsed) return false;
+    const u = parsed.users || [];
+    const v = parsed.vessels || [];
+    const o = parsed.organizations || [];
+    return u.some((x) => x.id === 'u_jm' || x.id === 'u_sv1')
+        || v.some((x) => x.id === 'v_silver_sands' || x.id === 'v_cormorant')
+        || o.some((x) => x.id === 'org_jm');
+  }
+
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
       if (!raw) {
-        const seed = buildSeed();
-        localStorage.setItem(KEY, JSON.stringify(seed));
-        return seed;
+        // Cold start: empty Store. Demo fixtures only load via
+        // Store.applyDemoSeed() when the demo account signs in.
+        const fresh = buildEmptyState();
+        localStorage.setItem(KEY, JSON.stringify(fresh));
+        return fresh;
       }
       const parsed = JSON.parse(raw);
-      // Light migration: if old v1 keys are present, drop and reseed.
+      // Light migration: if old v1 keys are present, drop and start clean.
       if (!parsed.session || !parsed.equipment) {
-        const seed = buildSeed();
-        localStorage.setItem(KEY, JSON.stringify(seed));
-        return seed;
+        const fresh = buildEmptyState();
+        localStorage.setItem(KEY, JSON.stringify(fresh));
+        return fresh;
       }
       // Migration: rename legacy seed vessels (Silver Sands -> Tsunami IV,
       // Cormorant -> Lagavulin) and refresh their meta fields. Idempotent —
-      // only fires when the old names are still present.
+      // only fires when the old names are still present. Kept for the
+      // demo account's existing localStorage; harmless on empty Stores.
       let migrated = false;
-      // Tag legacy seeded vessels as built by Redbay so the new builder
-      // dashboard finds them on existing devices.
       (parsed.vessels || []).forEach((v) => {
         if (v.id === 'v_silver_sands' && !v.built_by) { v.built_by = 'redbay'; v.hull_number = v.hull_number || 'RB-487'; migrated = true; }
         if (v.id === 'v_cormorant'    && !v.built_by) { v.built_by = 'redbay'; v.hull_number = v.hull_number || 'RB-512'; migrated = true; }
       });
-      // Add the Redbay builder user if it's missing.
-      if (parsed.users && !parsed.users.find((u) => u.id === 'u_rb')) {
+      if (parsed.users && parsed.users.length && !parsed.users.find((u) => u.id === 'u_rb') && parsed.users.find((u) => u.id === 'u_jm')) {
         parsed.users.push({
           id: 'u_rb', email: 'service@redbayboats.com', name: 'Redbay Boats', initials: 'RB', kind: 'builder',
           builder: { company: 'Redbay Boats', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] }
@@ -236,10 +277,10 @@
       if (migrated) localStorage.setItem(KEY, JSON.stringify(parsed));
       return parsed;
     } catch (err) {
-      console.warn('Store load failed, reseeding:', err);
-      const seed = buildSeed();
-      localStorage.setItem(KEY, JSON.stringify(seed));
-      return seed;
+      console.warn('Store load failed, resetting to empty:', err);
+      const fresh = buildEmptyState();
+      localStorage.setItem(KEY, JSON.stringify(fresh));
+      return fresh;
     }
   }
 
@@ -501,9 +542,35 @@
   }
 
   function addVessel(input) {
+    // Lazy-create a starter org + membership the first time a real user
+    // adds a vessel. The legacy fallback (input.org_id || 'org_jm') only
+    // worked for the seeded demo account; for everyone else the vessel
+    // would otherwise be orphaned to a non-existent org.
+    let orgId = input.org_id;
+    if (!orgId) {
+      const me = getCurrentUser();
+      const myMembership = me ? state.memberships.find((m) => m.user_id === me.id) : null;
+      if (myMembership) {
+        orgId = myMembership.org_id;
+      } else if (me) {
+        orgId = uid('org');
+        state.organizations.push({
+          id: orgId,
+          name: (me.name ? me.name + "'s fleet" : 'My fleet'),
+          plan: 'trial',
+          trial_ends_at: isoOffset(14),
+          stripe_customer_id: null
+        });
+        state.memberships.push({ org_id: orgId, user_id: me.id, role: 'owner' });
+      } else {
+        // No signed-in user (shouldn't happen in normal flow); fall back to
+        // the demo org so legacy seed paths keep working.
+        orgId = 'org_jm';
+      }
+    }
     const v = {
       id: uid('v'),
-      org_id: input.org_id || 'org_jm',
+      org_id: orgId,
       name: input.name || 'Untitled vessel',
       type: input.type || 'Motor vessel',
       category: input.category || 'Cat 2',
@@ -1229,8 +1296,45 @@
   }
 
   function resetToSeed() {
-    state = buildSeed();
+    state = buildDemoSeed();
     save(state);
+  }
+
+  // Load the demo fixtures over the top of the current Store. Only called
+  // by the app for the dedicated demo account on first sign-in (or if
+  // their local cache has been cleared). No-op for everyone else.
+  function applyDemoSeed() {
+    state = buildDemoSeed();
+    save(state);
+  }
+
+  // Mirror a Supabase users row into the local Store so getCurrentUser,
+  // role-aware UI, and lazy-org-creation on first vessel-add can find
+  // the signed-in user without re-querying Supabase.
+  function attachAuthenticatedUser(user) {
+    if (!user || !user.id) return;
+    const idx = state.users.findIndex((u) => u.id === user.id);
+    if (idx >= 0) {
+      state.users[idx] = Object.assign({}, state.users[idx], user);
+    } else {
+      state.users.push(user);
+    }
+    state.session.user_id = user.id;
+    const k = user.kind;
+    state.session.mode = (k === 'admin' || k === 'surveyor' || k === 'builder') ? k : 'operator';
+    save(state);
+  }
+
+  // Wipe every record back to an empty workspace. Preserves nothing.
+  // Used when a real (non-demo) user signs in on a device that still
+  // has the demo fixtures cached from before.
+  function resetToEmpty() {
+    state = buildEmptyState();
+    save(state);
+  }
+
+  function hasDemoFixtures() {
+    return looksLikeDemo(state);
   }
 
   function clearAll() {
@@ -1335,6 +1439,10 @@
     surveyorEarnings,
     createHandoff,
     resetToSeed,
+    applyDemoSeed,
+    resetToEmpty,
+    hasDemoFixtures,
+    attachAuthenticatedUser,
     clearAll
   };
 })();
