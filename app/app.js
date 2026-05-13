@@ -430,8 +430,10 @@
       // Height-locked with auto width so wordmark-style logos render
       // at their natural aspect rather than getting squashed into a
       // tiny square. Capped so a freakishly wide logo doesn't break
-      // the header layout.
-      return `<img class="sv-brand-logo" alt="${escapeHtml(company)} logo" src="${logo}" style="height:${size}px;width:auto;max-width:${size * 5}px;border-radius:6px;object-fit:contain;background:white;padding:3px 6px;flex-shrink:0;display:block">`;
+      // the header layout. onerror drops to the initials placeholder
+      // if the image URL is broken.
+      const fallback = (me.initials || company.split(/\s+/).map((p) => p[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || 'S').replace(/'/g, "&#39;");
+      return `<img class="sv-brand-logo" alt="${escapeHtml(company)} logo" src="${logo}" style="height:${size}px;width:auto;max-width:${size * 5}px;border-radius:6px;object-fit:contain;background:white;padding:3px 6px;flex-shrink:0;display:block" onerror="this.outerHTML='<div class=\\'sv-brand-placeholder\\' style=&quot;width:${size}px;height:${size}px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-size:${Math.max(10, Math.round(size * 0.4))}px;font-weight:700;flex-shrink:0;border:1px solid rgba(255,255,255,.12)&quot;>${fallback}</div>'">`;
     }
     const initials = me.initials || company.split(/\s+/).map((p) => p[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || 'S';
     return `<div class="sv-brand-placeholder" style="width:${size}px;height:${size}px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-size:${Math.max(10, Math.round(size * 0.4))}px;font-weight:700;flex-shrink:0;border:1px solid rgba(255,255,255,.12)">${escapeHtml(initials)}</div>`;
