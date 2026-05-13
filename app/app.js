@@ -619,6 +619,7 @@
     if (id === 's-my-quals')           renderMyQuals();
     if (id === 's-crew-home')          renderCrewHome();
     if (id === 's-plans')              renderPlans();
+    if (id === 's-land')               armLandingReveal();
   }
   window.go = go;
 
@@ -8001,6 +8002,40 @@ ${sectionsHtml}
     setTimeout(() => { if (window.toggleAuthMode) toggleAuthMode('signup'); }, 30);
   }
   window.goSignUp = goSignUp;
+
+  // Scroll-reveal for the landing page. Elements marked [data-reveal]
+  // fade in + slide up as they enter the viewport. Idempotent — safe
+  // to call on every render. Falls back to instant-visible if
+  // IntersectionObserver isn't available.
+  let _landReveal = null;
+  function armLandingReveal() {
+    const targets = document.querySelectorAll('#s-land [data-reveal]:not(.in)');
+    if (!targets.length) return;
+    if (!('IntersectionObserver' in window)) {
+      targets.forEach((el) => el.classList.add('in'));
+      return;
+    }
+    if (!_landReveal) {
+      _landReveal = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            _landReveal.unobserve(e.target);
+          }
+        });
+      }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
+    }
+    targets.forEach((el) => _landReveal.observe(el));
+    // Trigger reveals already in the viewport on first paint so the
+    // hero doesn't sit invisible while the user is looking at it.
+    requestAnimationFrame(() => {
+      targets.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.top < window.innerHeight * 0.9) el.classList.add('in');
+      });
+    });
+  }
+  window.armLandingReveal = armLandingReveal;
 
   function signOut() {
     if (!confirm('Sign out and return to the login screen?')) return;

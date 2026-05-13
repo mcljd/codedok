@@ -822,6 +822,276 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 }
 .vchip.add:hover { background: var(--seap); border-style: solid; }
 
+/* ════════════════════════════════════════════════════════════════
+   LANDING (s-land) — break out of the mobile shell on desktop and
+   give the marketing surface a magazine-style layout. Everything
+   in here is scoped to #s-land so it can't bleed into the app.
+   ════════════════════════════════════════════════════════════════ */
+
+#s-land .scroll { padding-bottom: 0; }
+
+#s-land .ld-eyebrow {
+  font-family: var(--fn);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: var(--seal);
+  margin-bottom: 14px;
+}
+#s-land .ld-eyebrow.on-dark { color: #7ED9E6; }
+
+#s-land .ld-h1 {
+  font-family: var(--fn-display);
+  font-size: clamp(46px, 9vw, 104px);
+  font-weight: 700;
+  line-height: .94;
+  letter-spacing: -.035em;
+  color: white;
+  margin: 0 0 22px;
+}
+#s-land .ld-h2 {
+  font-family: var(--fn-display);
+  font-size: clamp(30px, 5vw, 52px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -.025em;
+  color: var(--text);
+  margin: 0 0 18px;
+}
+#s-land .ld-h2.on-dark { color: white; }
+
+#s-land .ld-sub {
+  font-family: var(--fn);
+  font-size: clamp(15px, 1.5vw, 18px);
+  line-height: 1.55;
+  color: rgba(255,255,255,.72);
+  max-width: 38ch;
+}
+#s-land .ld-sub.on-light { color: var(--mid); }
+
+#s-land .ld-icon {
+  width: 26px; height: 26px;
+  display: inline-block;
+  color: var(--sea);
+}
+#s-land .ld-icon.on-dark { color: var(--seal); }
+
+/* Code-tag chip — set in monospace so it reads as technical, not
+   marketing. Used in the hero credibility row. */
+#s-land .ld-code-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--fn-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,.85);
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  padding: 6px 10px;
+  border-radius: 6px;
+  letter-spacing: -.01em;
+}
+
+/* Phone mockup that sits beside the hero copy on wide viewports. */
+#s-land .ld-mock {
+  width: 248px; height: 506px;
+  border-radius: 38px;
+  background: linear-gradient(180deg, #1C252B 0%, #0F4C5C 100%);
+  padding: 14px 12px 16px;
+  box-shadow: 0 30px 60px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.06);
+  position: relative;
+  flex-shrink: 0;
+}
+#s-land .ld-mock::before {
+  content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  width: 80px; height: 18px; background: #000; border-radius: 10px;
+}
+#s-land .ld-mock-ring {
+  width: 132px; height: 132px; margin: 70px auto 18px;
+  border-radius: 50%;
+  background: conic-gradient(var(--green) 0deg 287deg, rgba(255,255,255,.12) 287deg 360deg);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+#s-land .ld-mock-ring::after {
+  content: ''; position: absolute; inset: 8px;
+  border-radius: 50%; background: #0F4C5C;
+}
+#s-land .ld-mock-ring-text {
+  position: relative; z-index: 1; text-align: center;
+  font-family: var(--fn-display); color: white;
+}
+#s-land .ld-mock-ring-text .pct { font-size: 36px; font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+#s-land .ld-mock-ring-text .lbl { font-size: 9px; color: rgba(255,255,255,.55); text-transform: uppercase; letter-spacing: .12em; margin-top: 4px; font-family: var(--fn); }
+#s-land .ld-mock-tiles {
+  display: flex; gap: 6px; padding: 0 6px;
+}
+#s-land .ld-mock-tile {
+  flex: 1; background: rgba(255,255,255,.07); border-radius: 8px; padding: 8px 6px;
+  text-align: center; color: white; font-family: var(--fn);
+}
+#s-land .ld-mock-tile .n { font-size: 18px; font-weight: 700; letter-spacing: -.02em; font-family: var(--fn-display); }
+#s-land .ld-mock-tile .l { font-size: 8px; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .08em; margin-top: 2px; }
+
+/* Asymmetric feature grid — desktop 2-col, mobile 1-col. */
+#s-land .ld-features {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+#s-land .ld-feature {
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  padding: 22px 22px 20px;
+  transition: transform .25s var(--ease), border-color .25s var(--ease), box-shadow .25s var(--ease);
+}
+#s-land .ld-feature:hover {
+  transform: translateY(-3px);
+  border-color: rgba(15,76,92,.35);
+  box-shadow: 0 12px 32px rgba(28,37,43,.08);
+}
+#s-land .ld-feature .ld-feature-ic {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: rgba(15,76,92,.08);
+  color: var(--sea);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+#s-land .ld-feature h3 {
+  font-family: var(--fn-display);
+  font-size: 19px; font-weight: 700; letter-spacing: -.015em;
+  color: var(--text); margin: 0 0 6px;
+}
+#s-land .ld-feature p {
+  font-size: 13.5px; line-height: 1.6; color: var(--mid); margin: 0;
+}
+
+/* Pricing card — taller, breathier than generic SaaS cards. */
+#s-land .ld-plans {
+  display: grid; grid-template-columns: 1fr; gap: 16px;
+}
+#s-land .ld-plan {
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 18px;
+  padding: 26px 24px 22px;
+  position: relative;
+}
+#s-land .ld-plan.featured {
+  border: 2px solid var(--sea);
+  box-shadow: 0 16px 40px rgba(15,76,92,.12);
+}
+#s-land .ld-plan-tag {
+  position: absolute; top: -11px; left: 22px;
+  background: var(--sea); color: white;
+  font-size: 10px; font-weight: 700;
+  padding: 4px 10px; border-radius: 6px;
+  letter-spacing: .08em;
+}
+#s-land .ld-plan-name {
+  font-family: var(--fn-display);
+  font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -.02em;
+  margin-bottom: 4px;
+}
+#s-land .ld-plan-price {
+  font-family: var(--fn-display);
+  font-size: 44px; font-weight: 700; color: var(--sea); letter-spacing: -.03em;
+  line-height: 1; margin: 14px 0 4px;
+}
+#s-land .ld-plan-price small { font-size: 14px; font-weight: 500; color: var(--mid); letter-spacing: 0; }
+#s-land .ld-plan-blurb { font-size: 13px; color: var(--mid); line-height: 1.55; margin-bottom: 16px; min-height: 38px; }
+#s-land .ld-plan ul { list-style: none; padding: 0; margin: 0 0 4px; }
+#s-land .ld-plan li {
+  font-size: 13.5px; color: var(--text); line-height: 1.55;
+  margin: 7px 0; padding-left: 22px; position: relative;
+}
+#s-land .ld-plan li::before {
+  content: ''; position: absolute; left: 0; top: 6px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--green);
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6L5 8L9 4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* FAQ accordions — strip native disclosure arrow, replace with a
+   custom + that rotates on open. */
+#s-land .ld-faq { background: var(--card); border: 1px solid var(--bdr); border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+#s-land .ld-faq summary {
+  list-style: none;
+  padding: 18px 22px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--fn);
+  font-size: 15px; font-weight: 600; color: var(--text);
+  user-select: none;
+}
+#s-land .ld-faq summary::-webkit-details-marker { display: none; }
+#s-land .ld-faq summary::after {
+  content: '+';
+  font-size: 22px; font-weight: 300; color: var(--sea);
+  transition: transform .25s var(--ease);
+  font-family: var(--fn-display);
+}
+#s-land .ld-faq[open] summary::after { transform: rotate(45deg); }
+#s-land .ld-faq-body {
+  padding: 0 22px 18px;
+  font-size: 14px; line-height: 1.65; color: var(--mid);
+}
+
+/* Scroll-reveal: elements with [data-reveal] start hidden + nudged,
+   then fade in when they enter the viewport (driver in app.js). */
+#s-land [data-reveal] {
+  opacity: 0; transform: translateY(18px);
+  transition: opacity .6s var(--ease), transform .6s var(--ease);
+  will-change: opacity, transform;
+}
+#s-land [data-reveal].in {
+  opacity: 1; transform: translateY(0);
+}
+
+/* Desktop breakout — landing escapes the 393px shell frame.
+   Uses :has() to scope to the landing-on body state. */
+@media (min-width: 720px) {
+  #s-land .ld-features { grid-template-columns: 1fr 1fr; gap: 18px; }
+  #s-land .ld-plans    { grid-template-columns: 1fr 1fr 1fr; gap: 18px; align-items: stretch; }
+  #s-land .ld-plan     { display: flex; flex-direction: column; }
+  #s-land .ld-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) auto;
+    gap: 64px; align-items: center;
+  }
+}
+
+@media (min-width: 520px) {
+  /* Stop centering the body when the landing is on — let it go full
+     bleed. :has() selector works in modern browsers; on the rare
+     case it doesn't (old Firefox), the landing falls back to the
+     centered shell, which still looks fine. */
+  body:has(#s-land.on) {
+    display: block !important;
+    padding: 0 !important;
+    align-items: stretch !important;
+  }
+  body:has(#s-land.on) #s-land.on {
+    width: 100vw !important;
+    max-width: none !important;
+    min-height: 100vh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  body:has(#s-land.on) #s-land .scroll {
+    overflow-y: visible;
+    max-height: none;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   end landing
+   ════════════════════════════════════════════════════════════════ */
+
 /* Auth loading state — spinner inside buttons + full-screen overlay
    for the longer handleSignedIn round-trip. Designed to feel
    intentional rather than a stalled tap. */
