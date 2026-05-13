@@ -5668,14 +5668,132 @@
   }
   window.sendSmsToSurveyor = sendSmsToSurveyor;
 
-  function inviteSurveyorByEmail(docId, vesselId) {
-    const email = (document.getElementById('invite-surveyor-email') || {}).value || '';
+  // Real surveyor invite. Writes an `invitations` row in Supabase, then
+  // surfaces the resulting URL for the operator to share by any channel.
+  // The surveyor accepts by opening the link signed in with the invited
+  // email — see acceptPendingInvitation() in the boot path.
+  async function inviteSurveyorByEmail(docId, vesselId) {
+    const input = document.getElementById('invite-surveyor-email');
+    const email = (input && input.value || '').trim();
     if (!email.includes('@')) { alert('Please enter a valid email.'); return; }
-    alert(`Invite sent to ${email}. Once they accept, your SMS will be in their Inbox.`);
-    // For prototype: also create the job against McCollam (the only seeded surveyor) so the demo flows.
-    sendSmsToSurveyor(docId, vesselId, 'u_sv1');
+    if (!window.Supa || !window.Supa.ready) {
+      alert('Sign in to send a real invite — Supabase is not configured on this device.');
+      return;
+    }
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user }, error: authErr } = await client.auth.getUser();
+      if (authErr || !user) throw new Error('Sign in before sending invites.');
+      const me = await client.from('users').select('id').eq('auth_user_id', user.id).maybeSingle();
+      if (me.error || !me.data) throw new Error('User profile missing — sign out and back in.');
+
+      const id = 'inv_' + Math.random().toString(36).slice(2, 12);
+      const row = {
+        id,
+        vessel_id: vesselId,
+        invited_email: email,
+        invited_by_user_id: me.data.id
+        // token + scopes + expires_at populated by DB defaults
+      };
+      const ins = await client.from('invitations').insert(row).select('token').single();
+      if (ins.error) throw new Error(ins.error.message);
+
+      const base = window.location.origin + window.location.pathname;
+      const url  = base + '#invite=' + ins.data.token + (docId ? '&doc=' + encodeURIComponent(docId) : '');
+
+      showInvitationShare(email, url);
+    } catch (err) {
+      console.error('inviteSurveyorByEmail failed', err);
+      alert('Could not create invite: ' + (err && err.message ? err.message : err));
+    }
   }
   window.inviteSurveyorByEmail = inviteSurveyorByEmail;
+
+  function showInvitationShare(email, url) {
+    const old = document.getElementById('invite-share-modal');
+    if (old) old.remove();
+    const modal = document.createElement('div');
+    modal.id = 'invite-share-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = `
+      <div class="card" style="max-width:420px;width:100%;padding:20px;border-radius:16px;background:var(--bg)">
+        <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px;letter-spacing:-.2px">Invite ready</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:14px">Send this link to <strong>${escapeHtml(email)}</strong>. They'll sign in with that email, accept, and gain surveyor access. The link expires in 14 days.</div>
+        <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;font-family:monospace;font-size:11px;color:var(--text);word-break:break-all;margin-bottom:14px" id="invite-url-text">${escapeHtml(url)}</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sea" style="flex:1;height:42px;font-weight:700" onclick="copyInviteUrl()">Copy link</button>
+          <button class="btn btn-out" style="flex:1;height:42px" onclick="document.getElementById('invite-share-modal').remove()">Done</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    window.__inviteUrl = url;
+  }
+
+  async function copyInviteUrl() {
+    const url = window.__inviteUrl;
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      const btn = document.querySelector('#invite-share-modal .btn-sea');
+      if (btn) { const t = btn.textContent; btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = t; }, 1500); }
+    } catch (_) {
+      // Clipboard API blocked — fall back to manual select.
+      const el = document.getElementById('invite-url-text');
+      if (el) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+  }
+  window.copyInviteUrl = copyInviteUrl;
+
+  // ─────────────────────────────────────────────────────────────
+  // Accept-invitation boot handler. If the URL hash carries
+  // #invite=TOKEN, stash it; once the user is authenticated (or
+  // signs in/up), call the SECURITY DEFINER RPC and surface the
+  // result. The RPC enforces that the auth email matches the
+  // invited email — wrong account just shows a clear error.
+  // ─────────────────────────────────────────────────────────────
+  function readInviteTokenFromUrl() {
+    const hash = window.location.hash || '';
+    const m = hash.match(/[?#&]invite=([0-9a-f-]{8,})/i);
+    return m ? m[1] : null;
+  }
+
+  function stashPendingInviteFromUrl() {
+    const token = readInviteTokenFromUrl();
+    if (!token) return;
+    try { localStorage.setItem('codedok-pending-invite', token); } catch (_) {}
+  }
+
+  async function acceptPendingInvitation() {
+    let token = null;
+    try { token = localStorage.getItem('codedok-pending-invite'); } catch (_) {}
+    if (!token) return false;
+    if (!window.Supa || !window.Supa.ready) return false;
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) return false;
+      const { data, error } = await client.rpc('accept_invitation', { p_token: token });
+      if (error) throw new Error(error.message);
+      try { localStorage.removeItem('codedok-pending-invite'); } catch (_) {}
+      const vName = data && data.vessel_id ? Store.getVessel(data.vessel_id) : null;
+      alert('Invite accepted — you now have surveyor access to ' + (vName ? vName.name : 'the vessel') + '.');
+      // Clear the hash so a refresh doesn't re-trigger anything.
+      if (window.location.hash) history.replaceState(null, '', window.location.pathname);
+      return true;
+    } catch (err) {
+      console.error('accept_invitation failed', err);
+      try { localStorage.removeItem('codedok-pending-invite'); } catch (_) {}
+      alert("Couldn't accept invitation: " + (err && err.message ? err.message : err));
+      return false;
+    }
+  }
+  window.acceptPendingInvitation = acceptPendingInvitation;
   window.downloadSmsAsWordFromDraft = function () {
     const draft = loadSmsDraft();
     if (!draft) return;
@@ -6380,6 +6498,10 @@ ${sectionsHtml}
         Store.setMode('operator');
         go('s-home');
       }
+
+      // If they arrived via a surveyor invite link, claim the grant
+      // now that auth is settled. Errors surface to the user.
+      acceptPendingInvitation();
     } catch (err) {
       console.error('handleSignedIn failed', err);
       const msg = (err && err.message) || String(err);
@@ -6740,6 +6862,13 @@ ${sectionsHtml}
         }
       });
     }
+
+    // Stash any surveyor-invite token from the URL hash so we can
+    // accept it as soon as the user is authenticated. If they're
+    // already signed in, handleSignedIn will pick this up; if they
+    // need to sign in or sign up, the token survives across the auth
+    // round-trip.
+    stashPendingInviteFromUrl();
 
     // Surveyor read-only SMS view — login-free.
     // Pattern: #sms-view?t=TOKEN (or ?t=TOKEN in the query string).
