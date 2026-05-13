@@ -7477,6 +7477,12 @@ ${sectionsHtml}
     const client = window.Supa && window.Supa.client;
     if (!client) return;
 
+    // Show a friendly loading state for the whole round-trip. This
+    // covers the gap between submitSignIn finishing and the home
+    // screen rendering — without it the user taps "Sign in" and
+    // stares at the form for 1-2 seconds wondering if it worked.
+    setAuthLoading(true, 'Loading your workspace…');
+
     try {
       // Simple, self-healing user save:
       //   1. Look up our users row by auth_user_id.
@@ -7599,7 +7605,13 @@ ${sectionsHtml}
       // If they arrived via a surveyor invite link, claim the grant
       // now that auth is settled. Errors surface to the user.
       acceptPendingInvitation();
+      // Routing is done; tear down the loading overlay. Slight delay
+      // gives the new home a moment to paint so the user doesn't see
+      // a flash of the login screen between overlay-removal and home-
+      // mount.
+      setTimeout(() => setAuthLoading(false), 120);
     } catch (err) {
+      setAuthLoading(false);
       console.error('handleSignedIn failed', err);
       const msg = (err && err.message) || String(err);
       const hint = /infinite recursion/.test(msg)
@@ -7620,6 +7632,50 @@ ${sectionsHtml}
   // double-taps from firing two sign-ins, two reset emails, etc.
   // (Supabase rate-limits reset/verification mail at 4/hour per address.)
   let authInFlight = false;
+
+  // Visual loading state for auth round-trips. Covers two layers:
+  //   1. Disables every .auth-btn-primary and swaps its label for a
+  //      spinner + the supplied message — so the form clearly
+  //      acknowledges the tap.
+  //   2. Drops a full-screen blurred overlay with the same message
+  //      so the rest of the page can't be tapped during the gap
+  //      between auth-success and the home screen rendering.
+  // Call setAuthLoading(false) to tear it down.
+  function setAuthLoading(active, message) {
+    document.querySelectorAll('.auth-btn-primary').forEach((btn) => {
+      btn.disabled = !!active;
+      if (active) {
+        if (!btn.dataset.origLabel) btn.dataset.origLabel = btn.innerHTML;
+        btn.innerHTML = '<span class="auth-spin" aria-hidden="true"></span>' + escapeHtml(message || 'Just a moment…');
+        btn.style.opacity = '.85';
+        btn.style.cursor = 'wait';
+      } else if (btn.dataset.origLabel) {
+        btn.innerHTML = btn.dataset.origLabel;
+        delete btn.dataset.origLabel;
+        btn.style.opacity = '';
+        btn.style.cursor = '';
+      }
+    });
+
+    let overlay = document.getElementById('auth-loading-overlay');
+    if (active) {
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'auth-loading-overlay';
+        overlay.setAttribute('role', 'status');
+        overlay.setAttribute('aria-live', 'polite');
+        document.body.appendChild(overlay);
+      }
+      overlay.innerHTML = `
+        <div class="auth-loading-card">
+          <div class="auth-spin auth-spin-lg" aria-hidden="true"></div>
+          <div class="auth-loading-msg">${escapeHtml(message || 'Just a moment…')}</div>
+        </div>`;
+    } else if (overlay) {
+      overlay.remove();
+    }
+  }
+  window.setAuthLoading = setAuthLoading;
 
   // Forgot password — sends a reset link to the email currently typed
   // in the sign-in form. User clicks the link, comes back, and the
@@ -7743,10 +7799,14 @@ ${sectionsHtml}
     }
 
     authInFlight = true;
+    setAuthLoading(true, 'Signing in…');
     try {
       await window.Supa.signInWithPassword(email, password);
-      // handleSignedIn() will fire via Supa.onAuthChange and route into the app.
+      // handleSignedIn() will fire via Supa.onAuthChange and route into
+      // the app — it'll keep setAuthLoading on until routing completes,
+      // so we deliberately don't turn it off here on success.
     } catch (err) {
+      setAuthLoading(false);
       const msg = (err && err.message) ? err.message : 'sign-in failed';
       if (/Email not confirmed/i.test(msg)) {
         showLoginError("Your email isn't verified yet. Check your inbox for the link we sent.");
@@ -7816,6 +7876,7 @@ ${sectionsHtml}
     // user_metadata so they survive the email-verification round-trip.
     // handleSignedIn() reads these when creating the public.users row.
     authInFlight = true;
+    setAuthLoading(true, 'Creating your account…');
     try {
       const meta = { kind: signupRole, name };
       if (signupRole === 'operator' && businessName) meta.business_name = businessName;
@@ -7825,8 +7886,10 @@ ${sectionsHtml}
       const lineEl = document.getElementById('login-sent-line');
       const roleLabel = signupRole === 'surveyor' ? 'surveyor' : 'skipper';
       if (lineEl) lineEl.innerHTML = `${roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1)} account created. We've sent a verification link to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email, tap the link, then come back to sign in.`;
+      setAuthLoading(false);
       toggleAuthMode('sent');
     } catch (err) {
+      setAuthLoading(false);
       const msg = (err && err.message) ? err.message : 'sign-up failed';
       if (/already.*registered|already.*exists|User already registered/i.test(msg)) {
         showSignupError("That email is already in use. Sign in instead.");

@@ -808,6 +808,56 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 }
 .vchip.add:hover { background: var(--seap); border-style: solid; }
 
+/* Auth loading state — spinner inside buttons + full-screen overlay
+   for the longer handleSignedIn round-trip. Designed to feel
+   intentional rather than a stalled tap. */
+.auth-spin {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: white;
+  animation: auth-spin .7s linear infinite;
+  display: inline-block;
+  vertical-align: -2px;
+  margin-right: 8px;
+}
+.auth-spin-lg {
+  width: 44px; height: 44px;
+  border-width: 3px;
+  border-color: rgba(243,245,244,.25);
+  border-top-color: #F3F5F4;
+  margin: 0;
+  vertical-align: middle;
+}
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+
+#auth-loading-overlay {
+  position: fixed; inset: 0; z-index: 99999;
+  background: rgba(28,37,43,.78);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fn);
+  animation: auth-overlay-in 180ms var(--ease);
+}
+.auth-loading-card {
+  text-align: center;
+  color: #F3F5F4;
+  max-width: 280px;
+  padding: 28px 24px;
+}
+.auth-loading-msg {
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 18px;
+  letter-spacing: -.1px;
+  font-family: var(--fn-display);
+}
+@keyframes auth-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* SECTION HEADING — Barlow Condensed gives compact, authoritative
    stacks for page titles and big numbers (compliance scores, totals). */
 .h-display {
