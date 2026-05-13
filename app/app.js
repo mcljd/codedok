@@ -499,6 +499,7 @@
     if (id === 's-invoice-view')       renderInvoiceView();
     if (id === 's-admin-home')         renderAdminHome();
     if (id === 's-admin-review')       renderAdminReview();
+    if (id === 's-my-quals')           renderMyQuals();
   }
   window.go = go;
 
@@ -6104,8 +6105,16 @@ ${sectionsHtml}
     if (demoLabel) demoLabel.style.display = isDemoAccount ? '' : 'none';
     if (demoCard)  demoCard.style.display  = isDemoAccount ? '' : 'none';
 
+    // My Qualifications — show for any signed-in (non-demo) user.
+    const qualsLabel = document.getElementById('account-quals-label');
+    const qualsCard  = document.getElementById('account-quals-card');
+    const realSession = session && session.mode === 'live';
+    if (qualsLabel) qualsLabel.style.display = realSession ? '' : 'none';
+    if (qualsCard)  qualsCard.style.display  = realSession ? '' : 'none';
+
     renderAccountTeam();
     renderTrialBanner();
+    applyPermissionGates();
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -6175,6 +6184,15 @@ ${sectionsHtml}
     })[p] || p;
   }
 
+  // Access-level presets. Owner is implicit (the inviter); the modal
+  // only offers the levels that can be assigned to invitees.
+  const TEAM_ROLE_PRESETS = {
+    admin:  { label: 'Admin',  blurb: 'Full access except managing payment.', perms: ['manage_vessels','manage_certs','manage_crew','manage_sms','manage_team'] },
+    mate:   { label: 'Mate',   blurb: 'Senior crew — can manage vessels, certs and crew.', perms: ['manage_vessels','manage_certs','manage_crew'] },
+    crew:   { label: 'Crew',   blurb: 'Day-to-day crew — can update their own qualifications.', perms: [] },
+    viewer: { label: 'Viewer', blurb: 'Read-only — sees vessels and status but can\'t edit anything.', perms: [] }
+  };
+
   function openInviteTeamMember() {
     const old = document.getElementById('team-invite-modal');
     if (old) old.remove();
@@ -6182,15 +6200,25 @@ ${sectionsHtml}
     modal.id = 'team-invite-modal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
     modal.innerHTML = `
-      <div class="card" style="max-width:440px;width:100%;padding:20px;border-radius:16px;background:var(--bg);max-height:90vh;overflow:auto">
+      <div class="card" style="max-width:460px;width:100%;padding:20px;border-radius:16px;background:var(--bg);max-height:92vh;overflow:auto">
         <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px;letter-spacing:-.2px">Invite a team member</div>
-        <div style="font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:14px">Send a link they can open on their phone. They'll sign up with the email below and join your org with the permissions you pick.</div>
+        <div style="font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:14px">Send a link they can open on their phone. They'll sign up with the email below and join your org at the level you choose.</div>
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Email</label>
-        <input class="fi" id="team-invite-email" type="email" placeholder="crew@example.com" style="width:100%;margin-bottom:12px">
+        <input class="fi" id="team-invite-email" type="email" placeholder="crew@example.com" style="width:100%;margin-bottom:14px">
 
-        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">They can manage…</label>
-        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Access level</label>
+        <div id="team-invite-role-picker" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+          ${Object.entries(TEAM_ROLE_PRESETS).map(([id, p], idx) => `
+            <button type="button" class="role-pick${idx === 1 ? ' on' : ''}" data-role="${id}" onclick="pickTeamRole('${id}')"
+              style="background:${idx === 1 ? 'rgba(8,145,178,.15)' : 'var(--bg2)'};border:2px solid ${idx === 1 ? 'var(--sea)' : 'var(--bdr)'};color:var(--text);padding:10px;border-radius:10px;font-family:var(--fn);font-size:12px;font-weight:700;cursor:pointer;text-align:left">
+              ${escapeHtml(p.label)}
+              <div style="font-size:10px;font-weight:500;color:var(--mid);margin-top:2px;line-height:1.4">${escapeHtml(p.blurb)}</div>
+            </button>`).join('')}
+        </div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Fine-tune permissions <span style="color:var(--mid);font-weight:500;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px" id="team-invite-perms">
           ${[
             ['manage_vessels','Vessels — add, edit, delete'],
             ['manage_certs','Certificates & equipment'],
@@ -6210,8 +6238,25 @@ ${sectionsHtml}
         </div>
       </div>`;
     document.body.appendChild(modal);
+    pickTeamRole('mate');
   }
   window.openInviteTeamMember = openInviteTeamMember;
+
+  function pickTeamRole(role) {
+    const preset = TEAM_ROLE_PRESETS[role];
+    if (!preset) return;
+    document.querySelectorAll('#team-invite-role-picker .role-pick').forEach((btn) => {
+      const active = btn.dataset.role === role;
+      btn.classList.toggle('on', active);
+      btn.style.background  = active ? 'rgba(8,145,178,.15)' : 'var(--bg2)';
+      btn.style.borderColor = active ? 'var(--sea)' : 'var(--bdr)';
+    });
+    document.querySelectorAll('#team-invite-perms .team-perm').forEach((cb) => {
+      cb.checked = preset.perms.includes(cb.value);
+    });
+    window.__pendingInviteRole = role;
+  }
+  window.pickTeamRole = pickTeamRole;
 
   async function submitTeamInvite() {
     const email = ((document.getElementById('team-invite-email') || {}).value || '').trim();
@@ -6252,6 +6297,109 @@ ${sectionsHtml}
     }
   }
   window.submitTeamInvite = submitTeamInvite;
+
+  // ─────────────────────────────────────────────────────────────
+  // My Qualifications — every signed-in user can view their own
+  // crew_certs. RLS scopes the query to the user's own crew row.
+  // ─────────────────────────────────────────────────────────────
+  async function renderMyQuals() {
+    const body = document.getElementById('my-quals-body');
+    if (!body) return;
+    body.innerHTML = `<div style="opacity:.6;font-size:13px;color:var(--mid)">Loading…</div>`;
+
+    if (!window.Supa || !window.Supa.ready) {
+      body.innerHTML = `<div class="card" style="padding:16px"><div style="font-size:13px;color:var(--mid);line-height:1.5">Cloud sync isn't configured — sign in to see your qualifications.</div></div>`;
+      return;
+    }
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) {
+        body.innerHTML = `<div class="card" style="padding:16px"><div style="font-size:13px;color:var(--mid);line-height:1.5">Sign in to see your qualifications.</div></div>`;
+        return;
+      }
+      const me = await client.from('users').select('id, name').eq('auth_user_id', user.id).maybeSingle();
+      if (!me.data) throw new Error('User profile missing.');
+
+      const crewRow = await client.from('crew').select('id, name, role, vessel_ids').eq('user_id', me.data.id).maybeSingle();
+      if (!crewRow.data) {
+        body.innerHTML = `
+          <div class="card" style="padding:18px">
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">No crew record linked yet</div>
+            <div style="font-size:13px;color:var(--mid);line-height:1.55;margin-bottom:6px">When the operator adds you to a vessel's crew list with your email, your tickets and medicals will show up here.</div>
+            <div style="font-size:12px;color:var(--lt);line-height:1.5">Tip: ask them to use the email <strong>${escapeHtml(user.email || '')}</strong> when they add you.</div>
+          </div>`;
+        return;
+      }
+
+      const certs = await client.from('crew_certs').select('id, name, issuer, number, expires_at, file_url').eq('person_id', crewRow.data.id).order('expires_at', { ascending: true, nullsFirst: false });
+      const list = certs.data || [];
+
+      const header = `
+        <div style="padding:0 0 14px">
+          <div style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.3px">${escapeHtml(crewRow.data.name || me.data.name || 'Crew member')}</div>
+          <div style="font-size:13px;color:var(--mid);margin-top:2px">${escapeHtml(crewRow.data.role || 'Crew')} · ${list.length} qualification${list.length === 1 ? '' : 's'}</div>
+        </div>`;
+
+      const rows = list.length ? list.map((c) => {
+        const days = c.expires_at ? Store.daysUntil(c.expires_at) : Infinity;
+        const expired = days < 0;
+        const due30 = days >= 0 && days <= 30;
+        const colour = expired ? '#ef4444' : (due30 ? '#f59e0b' : 'var(--gn)');
+        const sub = c.expires_at
+          ? (expired ? `Expired ${Math.abs(days)}d ago` : days === Infinity ? '' : `Expires in ${days}d · ${fmtDate(c.expires_at)}`)
+          : 'No expiry';
+        return `
+          <div class="row" style="border-left:4px solid ${colour}">
+            <div class="row-ic ${expired ? 'rd' : (due30 ? 'or' : 'gn')}">🎓</div>
+            <div class="row-body">
+              <div class="row-name">${escapeHtml(c.name)}</div>
+              <div class="row-sub">${escapeHtml(sub)}${c.issuer ? ' · ' + escapeHtml(c.issuer) : ''}</div>
+            </div>
+            ${c.file_url ? `<a class="chev" href="${escapeHtml(c.file_url)}" target="_blank" rel="noopener" style="text-decoration:none">›</a>` : '<span class="chev"></span>'}
+          </div>`;
+      }).join('') : `<div class="row"><div class="row-body"><div class="row-sub" style="color:var(--mid)">No qualifications on file yet. Ask your operator to upload them, or send them to yourself.</div></div></div>`;
+
+      body.innerHTML = header + `<div class="card mx" style="margin:0">${rows}</div>`;
+    } catch (err) {
+      console.warn('renderMyQuals failed', err);
+      body.innerHTML = `<div class="card" style="padding:16px"><div style="font-size:13px;color:#fca5a5;line-height:1.5">Could not load qualifications: ${escapeHtml(err && err.message || String(err))}</div></div>`;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Permission gate. Returns true if the signed-in user has the
+  // permission on their current org. Falls back to true for the
+  // demo seed (where the active user is always u_jm = owner).
+  // Permissions live on memberships.permissions.
+  // ─────────────────────────────────────────────────────────────
+  function canI(perm) {
+    if (!window.Store) return true;
+    const me = Store.getCurrentUser();
+    if (!me) return false;
+    // Demo / single-user paths: if there's exactly one membership and
+    // it's owned by me, all perms allowed regardless of array contents.
+    const memb = (Store.snapshot().memberships || []).find((m) => m.user_id === me.id);
+    if (!memb) return true; // No org yet — nothing to gate.
+    if (memb.role === 'owner') return true;
+    const perms = memb.permissions || [];
+    return perms.includes(perm) || perms.includes('view_all') && /^view/.test(perm);
+  }
+  window.canI = canI;
+
+  function applyPermissionGates() {
+    // Hide team-invite for users without manage_team.
+    const teamCard = document.getElementById('account-team-card');
+    if (teamCard) {
+      const inviteRow = teamCard.querySelector('.row[onclick*="openInviteTeamMember"]');
+      if (inviteRow) inviteRow.style.display = canI('manage_team') ? '' : 'none';
+    }
+    // Tag the body so CSS rules can hide owner-only affordances.
+    document.body.classList.toggle('perm-manage-vessels', canI('manage_vessels'));
+    document.body.classList.toggle('perm-manage-team', canI('manage_team'));
+    document.body.classList.toggle('perm-manage-certs', canI('manage_certs'));
+  }
+  window.applyPermissionGates = applyPermissionGates;
 
   // ─────────────────────────────────────────────────────────────
   // Trial countdown banner — shows on Account screen.

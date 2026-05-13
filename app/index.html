@@ -1530,6 +1530,19 @@
       <div class="row" onclick="signOut()"><div class="row-ic rd">↩️</div><div class="row-body"><div class="row-name">Sign out</div><div class="row-sub">Return to the login screen</div></div><span class="chev">›</span></div>
     </div>
 
+    <!-- MY QUALIFICATIONS — every signed-in user can view their own certs. -->
+    <div class="slbl" id="account-quals-label" style="display:none">Me</div>
+    <div class="card mx" id="account-quals-card" style="display:none">
+      <div class="row" onclick="go('s-my-quals')">
+        <div class="row-ic bl">🎓</div>
+        <div class="row-body">
+          <div class="row-name">My qualifications</div>
+          <div class="row-sub" id="account-quals-summary">View your tickets, medicals and renewals.</div>
+        </div>
+        <span class="chev">›</span>
+      </div>
+    </div>
+
     <!-- TEAM — owner-managed crew + admin invites with per-member permissions.
          Populated by renderAccountTeam(); hidden for non-operators. -->
     <div class="slbl" id="account-team-label" style="display:none">Team</div>
@@ -1597,6 +1610,25 @@
     <button class="bni" onclick="go('s-tools')"><div class="bni-ic">🛠️</div><div class="bni-lb">Tools</div></button>
     <button class="bni on"><div class="bni-ic">⚙️</div><div class="bni-lb">Account</div></button>
   </nav>
+</div>
+
+<!-- ════════════════════════════════════
+  MY QUALIFICATIONS — every signed-in user can view their own
+  crew_certs (RYA tickets, ENG1, first aid etc). Populated by
+  renderMyQuals() from Supabase via the crew → user_id link.
+════════════════════════════════════ -->
+<div class="shell" id="s-my-quals">
+  <div class="sb sb-cd"></div>
+  <div class="tbar">
+    <button class="back" onclick="go('s-account')">‹ Account</button>
+    <div class="ttl">My qualifications</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll pb24">
+    <div id="my-quals-body" style="padding:16px">
+      <div style="opacity:.6;font-size:13px;color:var(--mid)">Loading…</div>
+    </div>
+  </div>
 </div>
 
 <!-- Supabase config — anon key is safe to commit; RLS protects the data -->
