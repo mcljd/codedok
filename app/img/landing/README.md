@@ -1,33 +1,58 @@
 # Landing-page imagery
 
-Drop real boat photographs here and they'll appear on the landing page.
+Drop your boat photographs here with these exact filenames. The
+landing page (`app/index.html` → `#s-land`) already references
+them — once the files are committed and deployed, they appear
+automatically. Until they exist, gradient fallbacks render in
+their place so nothing breaks.
 
-## Slots wired up in `app/index.html` → `#s-land`
+## Required filenames
 
-| Filename                  | Where it shows               | Suggested size / crop                 |
-|---------------------------|------------------------------|---------------------------------------|
-| `hero-boat.jpg`           | Hero, beside the phone mock  | 1200 × 900, landscape, room for type left |
-| `feature-coded.jpg`       | "Skippers & operators" pillar background | 800 × 600, vessel on water     |
-| `feature-surveyor.jpg`    | "Surveyors" pillar background | 800 × 600, dockside / yard work       |
-| `feature-crew.jpg`        | "Crew" pillar background     | 800 × 600, crew with kit              |
-| `og-card.jpg`             | OpenGraph share card          | 1200 × 630, full-bleed brand        |
+| Filename                  | Where it shows                                        | Suggested image                       | Crop / size guidance                  |
+|---------------------------|-------------------------------------------------------|---------------------------------------|---------------------------------------|
+| `hero-boat.jpg`           | Behind the top hero (dark overlay covers it)          | The WD-210 green trawler              | 2000 × 1200, landscape, vessel on the right or centred |
+| `in-the-field.jpg`        | Full-bleed quote section between How-it-works + Features | The RIB at speed offshore             | 2000 × 1100, the boat in the right half so the pull-quote sits left  |
+| `in-the-yard.jpg`         | Full-bleed "Survey day" section between Features + Pricing | The red RIB on the blue WISE lift     | 2000 × 1400, vessel centred/upper, room below for headline + button |
 
-## Source
+## Optional later
 
-Use photos **you have the right to use** — your own work, McCollam Marine
-images you have permission for, or licensed stock. Don't hot-link from
-external sites; the assets directory is served by Cloudflare Workers and
-needs the file in the repo.
+| Filename     | Where it shows         | Notes                                  |
+|--------------|------------------------|----------------------------------------|
+| `og-card.jpg`| OpenGraph share card   | 1200 × 630, full-bleed brand           |
 
 ## Format guidance
 
-- WebP preferred (smaller). JPEG is fine.
-- Compress to ~150 KB each before committing.
-- Keep aspect ratios consistent within each slot so the layout doesn't
-  shift between feature cards.
+- WebP preferred (smaller files). JPEG is fine.
+- Compress to roughly 200-300 KB each before committing — Cloudflare
+  serves them, but smaller = faster first paint, better Lighthouse score.
+- Keep the hero shot wide / horizontal. The two editorial sections
+  also need landscape framing for desktop; mobile crops the centre.
+- Save in sRGB colour space (default on phones, but worth checking
+  if you've edited in Lightroom / Photos).
 
-## Once dropped
+## Rights
 
-Push to `claude/test-github-push-IySCw` (or main). The GitHub Actions
-deploy picks them up automatically — no code change needed because the
-slots are already wired in `index.html`.
+Use photos **you have the right to use** — your own work, McCollam
+Marine images with permission, or licensed stock. Don't reference
+external URLs; the Workers Assets pipeline needs the file in the
+repo.
+
+## How to add them
+
+From your local clone:
+
+```bash
+cd codedok
+git pull
+# copy the three files into app/img/landing/
+cp ~/Downloads/wd-210.jpg     app/img/landing/hero-boat.jpg
+cp ~/Downloads/rib-at-speed.jpg app/img/landing/in-the-field.jpg
+cp ~/Downloads/rib-on-lift.jpg  app/img/landing/in-the-yard.jpg
+git add app/img/landing/*.jpg
+git commit -m "Landing: real boat photos"
+git push origin claude/test-github-push-IySCw
+```
+
+The GitHub Actions deploy picks them up automatically. Hard-refresh
+the site with `?reset` once after the green build to bust the SW
+cache.

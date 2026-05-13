@@ -269,10 +269,14 @@
 
     <!-- ── HERO ────────────────────────────────────────────── -->
     <section style="position:relative;padding:24px 22px 56px;overflow:hidden">
-      <!-- Atmospheric backdrop. Two radial sheens, single linear base. -->
-      <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 80% -10%,rgba(30,122,134,.32) 0%,transparent 60%),radial-gradient(ellipse 70% 60% at -10% 110%,rgba(79,122,82,.16) 0%,transparent 55%);pointer-events:none"></div>
+      <!-- Boat photograph behind a heavy dark overlay so the type stays
+           readable. If hero-boat.jpg isn't uploaded yet the URL silently
+           404s and we fall back to the pure gradient — no broken image. -->
+      <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(rgba(28,37,43,.78), rgba(15,76,92,.92)), url('img/landing/hero-boat.jpg') center/cover no-repeat #1C252B;pointer-events:none"></div>
+      <!-- Atmospheric sheens layered over the photo for depth. -->
+      <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 80% -10%,rgba(30,122,134,.28) 0%,transparent 60%),radial-gradient(ellipse 70% 60% at -10% 110%,rgba(79,122,82,.16) 0%,transparent 55%);pointer-events:none"></div>
       <!-- Subtle horizontal rule grid, gives the section structure under the type -->
-      <div aria-hidden="true" style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px);background-size:100% 88px;background-position:0 -44px;pointer-events:none;opacity:.6"></div>
+      <div aria-hidden="true" style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px);background-size:100% 88px;background-position:0 -44px;pointer-events:none;opacity:.5"></div>
 
       <!-- Nav: brand + sign in -->
       <nav style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;margin-bottom:64px">
@@ -469,7 +473,19 @@
       </div>
     </section>
 
-    <div class="ld-divider"></div>
+    <!-- ── EDITORIAL: IN THE FIELD ──────────────────────────── -->
+    <!-- Full-bleed photo break between How-it-works and Features.
+         Uses img/landing/in-the-field.jpg (RIB at speed). Gradient
+         overlay keeps the pull-quote readable; falls back to a
+         brand-tinted slab if the image isn't uploaded yet. -->
+    <section style="position:relative;min-height:380px;display:flex;align-items:center;color:white;overflow:hidden">
+      <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(90deg, rgba(28,37,43,.85) 0%, rgba(15,76,92,.55) 60%, rgba(15,76,92,.25) 100%), url('img/landing/in-the-field.jpg') center/cover no-repeat #0F4C5C"></div>
+      <div data-reveal style="position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:64px 22px;width:100%">
+        <div class="ld-eyebrow on-dark">Built where the work is</div>
+        <p style="font-family:var(--fn-display);font-size:clamp(26px, 3.8vw, 44px);font-weight:700;line-height:1.1;letter-spacing:-.02em;color:white;max-width:680px;margin:0">"The compliance ring on my phone before I cast off. The inspection pack in my pocket when the surveyor walks down the pier."</p>
+        <div style="margin-top:18px;font-size:13px;color:rgba(255,255,255,.7);letter-spacing:.02em">— what we built this for</div>
+      </div>
+    </section>
 
     <!-- ── FEATURE GRID ─────────────────────────────────────── -->
     <section style="background:var(--slate);color:var(--text);padding:72px 22px">
@@ -578,6 +594,20 @@
           </div>
 
         </div>
+      </div>
+    </section>
+
+    <!-- ── EDITORIAL: SURVEY DAY ──────────────────────────── -->
+    <!-- Boat-on-the-lift shot. Uses img/landing/in-the-yard.jpg with
+         a vertical fade so the headline + CTA sit on a darker base
+         while the boat above stays visible. -->
+    <section style="position:relative;min-height:480px;display:flex;align-items:flex-end;color:white;overflow:hidden">
+      <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(28,37,43,.15) 0%, rgba(28,37,43,.55) 55%, rgba(28,37,43,.95) 100%), url('img/landing/in-the-yard.jpg') center/cover no-repeat #1C252B"></div>
+      <div data-reveal style="position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:120px 22px 56px;width:100%">
+        <div class="ld-eyebrow on-dark">Survey day</div>
+        <h2 class="ld-h2 on-dark" style="margin-bottom:14px;max-width:640px">When the boat's out of the water and the surveyor's on board, the records had better be ready.</h2>
+        <p class="ld-sub" style="margin-bottom:24px">Every certificate, equipment item and crew qualification in one tap. The surveyor sees the same record you do, signs off in the app, and the inspection pack PDF lands in your inbox.</p>
+        <button class="btn btn-sea" onclick="goSignUp()" style="height:50px;padding:0 28px;font-weight:700;font-size:14px;border-radius:11px">Start free →</button>
       </div>
     </section>
 
