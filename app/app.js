@@ -7992,6 +7992,16 @@ ${sectionsHtml}
   }
   window.goHome = goHome;
 
+  // Send the visitor straight to the signup form on the auth screen.
+  // Used by every "Start free" CTA on the landing page so taps go to
+  // the right form without the user having to find the "Create one"
+  // link first.
+  function goSignUp() {
+    go('s-login');
+    setTimeout(() => { if (window.toggleAuthMode) toggleAuthMode('signup'); }, 30);
+  }
+  window.goSignUp = goSignUp;
+
   function signOut() {
     if (!confirm('Sign out and return to the login screen?')) return;
     clearSession();

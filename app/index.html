@@ -258,61 +258,191 @@
 </div>
 
 <!-- ════════════════════════════════════
-  S0 — LANDING
+  S0 — LANDING. Scrolling marketing page for first-time visitors.
+  Every CTA routes to goSignUp() except the explicit "I already have
+  an account" link. Copy is intentionally factual — claims listed
+  here all map onto features in the current build.
 ════════════════════════════════════ -->
 <div class="shell" id="s-land">
   <div class="sb sb-dk"></div>
-  <div style="position:relative;flex:1;background:var(--ink);overflow:hidden">
-    <!-- Background gradient -->
-    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 70% 20%,rgba(15,76,92,.18) 0%,transparent 60%),radial-gradient(ellipse at 20% 80%,rgba(79,122,82,.1) 0%,transparent 50%)"></div>
-    <div style="position:relative;z-index:2;display:flex;flex-direction:column;height:100%;padding:20px 24px calc(32px + env(safe-area-inset-bottom))">
+  <div class="scroll" style="background:var(--ink);color:white">
 
-      <!-- Logo -->
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:auto" id="land-logo">
-        <div style="width:40px;height:40px;background:var(--ink2);border-radius:11px;display:flex;align-items:center;justify-content:center">
+    <!-- ── HERO ────────────────────────────────────────────── -->
+    <div style="position:relative;padding:20px 22px 36px;overflow:hidden">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 70% 0%,rgba(30,122,134,.22) 0%,transparent 60%),radial-gradient(ellipse at 0% 85%,rgba(79,122,82,.10) 0%,transparent 55%);pointer-events:none"></div>
+
+      <!-- Brand mark + sign-in link -->
+      <div style="display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;margin-bottom:32px">
+        <div style="display:flex;align-items:center;gap:10px">
           <svg width="32" height="32" viewBox="0 0 64 64" fill="none" aria-hidden="true">
             <rect x="6" y="6" width="52" height="52" rx="12" fill="#0F4C5C"/>
             <path d="M18 33 L28 43 L46 22" stroke="#F3F5F4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
+          <span style="font-size:22px;font-weight:700;color:white;letter-spacing:-.4px;font-family:var(--fn-display)">CodedOK</span>
         </div>
-        <span style="font-size:24px;font-weight:800;color:white;letter-spacing:-.4px">CodedOK</span>
+        <button onclick="go('s-login')" style="background:transparent;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.8);font-size:12px;font-weight:600;padding:7px 12px;border-radius:9px;cursor:pointer;font-family:var(--fn)">Sign in</button>
       </div>
 
-      <!-- Hero -->
-      <div style="margin-bottom:32px">
-        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(220,38,38,.2);border:1px solid rgba(220,38,38,.35);border-radius:7px;padding:5px 12px;margin-bottom:20px">
-          <span style="font-size:11px">⚠️</span>
-          <span style="font-size:11px;color:rgba(255,140,140,1);font-weight:600">New MCA Code in force — Dec 2025</span>
+      <!-- Headline + sub -->
+      <div style="position:relative;z-index:1;margin-bottom:24px">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(30,122,134,.18);border:1px solid rgba(30,122,134,.32);border-radius:7px;padding:5px 11px;margin-bottom:18px">
+          <span style="font-size:10px;color:#7ED9E6;font-weight:700;letter-spacing:.06em;text-transform:uppercase">SPV Code 2025 · Workboat Code Ed 3 · Irish PBL</span>
         </div>
-        <h1 style="font-size:36px;font-weight:700;color:white;line-height:1.1;margin-bottom:14px;letter-spacing:-.5px">
-          Always ready<br>for inspection.
+        <h1 style="font-size:38px;font-weight:700;color:white;line-height:1.05;margin-bottom:16px;letter-spacing:-.5px;font-family:var(--fn-display)">
+          Inspection-ready,<br>every day.
         </h1>
-        <p style="font-size:14px;color:rgba(255,255,255,.55);line-height:1.65;max-width:300px">The inspection-readiness system for UK coded vessel operators. Know your status before the MCA does.</p>
-        
-        <!-- Proof stats -->
-        <div style="display:flex;gap:20px;margin-top:20px">
-          <div><div style="font-size:20px;font-weight:700;color:white">10k+</div><div style="font-size:11px;color:rgba(255,255,255,.4)">Coded vessels</div></div>
-          <div style="width:1px;background:rgba(255,255,255,.1)"></div>
-          <div><div style="font-size:20px;font-weight:700;color:white">Dec '25</div><div style="font-size:11px;color:rgba(255,255,255,.4)">New MCA Code</div></div>
-          <div style="width:1px;background:rgba(255,255,255,.1)"></div>
-          <div><div style="font-size:20px;font-weight:700;color:white">UK &amp; IE</div><div style="font-size:11px;color:rgba(255,255,255,.4)">Jurisdiction aware</div></div>
-        </div>
+        <p style="font-size:15px;color:rgba(255,255,255,.7);line-height:1.6;max-width:340px">The compliance app built for UK &amp; Irish coded vessel skippers. Track every certificate, piece of equipment and crew qualification — and bring your surveyor into the same app.</p>
       </div>
 
-      <!-- CTAs -->
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <button class="btn btn-sea btn-full" onclick="go('s-onboard')">Get inspection-ready — Free trial</button>
-        <button class="btn btn-out btn-full" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15)" onclick="go('s-login')">I already have an account →</button>
-      </div>
-
-      <!-- Feature chips -->
-      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:18px">
-        <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:5px 10px;font-size:11px;color:rgba(255,255,255,.6);font-weight:500">📋 MCA 2025 ready</span>
-        <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:5px 10px;font-size:11px;color:rgba(255,255,255,.6);font-weight:500">🤖 AI doc scan</span>
-        <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:5px 10px;font-size:11px;color:rgba(255,255,255,.6);font-weight:500">📄 Inspection pack</span>
-        <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:5px 10px;font-size:11px;color:rgba(255,255,255,.6);font-weight:500">👥 Crew tracking</span>
+      <!-- Primary CTA stack -->
+      <div style="position:relative;z-index:1;display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
+        <button class="btn btn-sea btn-full" onclick="goSignUp()" style="height:52px;font-weight:700;font-size:15px">Start free →</button>
+        <div style="text-align:center;font-size:12px;color:rgba(255,255,255,.5)">Free forever for solo skippers. No card. Cancel anytime on paid plans.</div>
       </div>
     </div>
+
+    <!-- ── THREE-PILLAR DIFFERENTIATORS ─────────────────────── -->
+    <div style="background:var(--page);color:var(--text);padding:30px 22px 22px">
+      <div style="font-size:11px;color:var(--sea);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Why CodedOK</div>
+      <h2 style="font-size:26px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.15;margin-bottom:22px;font-family:var(--fn-display)">Three sides of the same boat.<br>One app.</h2>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card" style="padding:16px;border-left:4px solid var(--sea)">
+          <div style="font-size:22px;margin-bottom:4px">⛵</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Skippers &amp; operators</div>
+          <div style="font-size:13px;color:var(--mid);line-height:1.55">Add your boat. Snap your certs. Watch the compliance ring fill up. Push notifications nudge you 30, 7 and 0 days before anything expires.</div>
+        </div>
+        <div class="card" style="padding:16px;border-left:4px solid var(--seal)">
+          <div style="font-size:22px;margin-bottom:4px">🔍</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Surveyors</div>
+          <div style="font-size:13px;color:var(--mid);line-height:1.55">Operators invite you per vessel. You see their full record, raise deficiencies, sign inspections, and quote new jobs from your own portfolio dashboard.</div>
+        </div>
+        <div class="card" style="padding:16px;border-left:4px solid var(--green)">
+          <div style="font-size:22px;margin-bottom:4px">🎓</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Crew</div>
+          <div style="font-size:13px;color:var(--mid);line-height:1.55">Your own login. Your tickets, medicals and renewals — visible to you and to the operators who've added you to their vessels.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FEATURE GRID ─────────────────────────────────────── -->
+    <div style="background:var(--slate);color:var(--text);padding:30px 22px">
+      <div style="font-size:11px;color:var(--sea);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">What you get</div>
+      <h2 style="font-size:24px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2;margin-bottom:20px;font-family:var(--fn-display)">Everything a coded vessel records team needs.</h2>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="card" style="padding:14px"><div style="font-size:20px;margin-bottom:4px">📋</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Certificate tracker</div><div style="font-size:11px;color:var(--mid);line-height:1.5">Every cert, every renewal date, colour-coded against the Code.</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:20px;margin-bottom:4px">🦺</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Equipment log</div><div style="font-size:11px;color:var(--mid);line-height:1.5">Liferafts, EPIRBs, lifejackets, fire kit — with service dates.</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:20px;margin-bottom:4px">📷</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">AI cert scan</div><div style="font-size:11px;color:var(--mid);line-height:1.5">Snap a paper cert. Issuer, number, dates extracted automatically.</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:20px;margin-bottom:4px">📝</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">SMS builder</div><div style="font-size:11px;color:var(--mid);line-height:1.5">AI-assisted Safety Management System drafted for your vessel.</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:20px;margin-bottom:4px">🔔</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Push &amp; email reminders</div><div style="font-size:11px;color:var(--mid);line-height:1.5">30, 7 and 0 days before every expiry. Crew get theirs too.</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:20px;margin-bottom:4px">📄</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Inspection pack</div><div style="font-size:11px;color:var(--mid);line-height:1.5">One-tap PDF with every cert, equipment item and crew qual.</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:20px;margin-bottom:4px">👥</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Crew &amp; team</div><div style="font-size:11px;color:var(--mid);line-height:1.5">Invite crew by email. Permissions per person.</div></div>
+        <div class="card" style="padding:14px"><div style="font-size:20px;margin-bottom:4px">📡</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Works offline</div><div style="font-size:11px;color:var(--mid);line-height:1.5">Edits queue locally and sync when you're back in coverage.</div></div>
+      </div>
+    </div>
+
+    <!-- ── PRICING ─────────────────────────────────────────── -->
+    <div style="background:var(--page);color:var(--text);padding:30px 22px">
+      <div style="font-size:11px;color:var(--sea);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Plans</div>
+      <h2 style="font-size:24px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2;margin-bottom:6px;font-family:var(--fn-display)">Free for solo skippers.</h2>
+      <p style="font-size:13px;color:var(--mid);line-height:1.55;margin-bottom:20px">Everything is free during early access — pick the plan you'll eventually want and we'll lock the price in when payment goes live.</p>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card" style="padding:18px;border:2px solid var(--bdr);border-radius:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.2px">Solo skipper</div>
+            <div style="font-size:18px;font-weight:700;color:var(--sea);font-family:var(--fn-display)">£0<span style="font-size:11px;font-weight:500;color:var(--mid)">/mo</span></div>
+          </div>
+          <div style="font-size:12px;color:var(--mid);line-height:1.55;margin-bottom:10px">For one operator with up to two vessels. Free, forever.</div>
+          <ul style="list-style:none;padding:0;margin:0">
+            <li style="font-size:12px;color:var(--text);margin:3px 0;display:flex;gap:6px"><span style="color:var(--green);font-weight:700">✓</span>Certs, equipment, crew quals</li>
+            <li style="font-size:12px;color:var(--text);margin:3px 0;display:flex;gap:6px"><span style="color:var(--green);font-weight:700">✓</span>Push &amp; email reminders</li>
+            <li style="font-size:12px;color:var(--text);margin:3px 0;display:flex;gap:6px"><span style="color:var(--green);font-weight:700">✓</span>SMS builder &amp; inspection-pack PDF</li>
+          </ul>
+        </div>
+
+        <div class="card" style="padding:18px;border:2px solid var(--sea);border-radius:16px;position:relative">
+          <span style="position:absolute;top:-10px;left:18px;background:var(--sea);color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:.05em">RECOMMENDED</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.2px">Pro</div>
+            <div style="font-size:18px;font-weight:700;color:var(--sea);font-family:var(--fn-display)">£19<span style="font-size:11px;font-weight:500;color:var(--mid)">/mo</span></div>
+          </div>
+          <div style="font-size:12px;color:var(--mid);line-height:1.55;margin-bottom:10px">Unlimited vessels and full surveyor access.</div>
+          <ul style="list-style:none;padding:0;margin:0">
+            <li style="font-size:12px;color:var(--text);margin:3px 0;display:flex;gap:6px"><span style="color:var(--green);font-weight:700">✓</span>Everything in Solo</li>
+            <li style="font-size:12px;color:var(--text);margin:3px 0;display:flex;gap:6px"><span style="color:var(--green);font-weight:700">✓</span>Unlimited vessels</li>
+            <li style="font-size:12px;color:var(--text);margin:3px 0;display:flex;gap:6px"><span style="color:var(--green);font-weight:700">✓</span>Surveyor invite + cross-org access</li>
+            <li style="font-size:12px;color:var(--text);margin:3px 0;display:flex;gap:6px"><span style="color:var(--green);font-weight:700">✓</span>AI cert OCR</li>
+          </ul>
+        </div>
+
+        <div class="card" style="padding:18px;border:2px solid var(--bdr);border-radius:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.2px">Team</div>
+            <div style="font-size:18px;font-weight:700;color:var(--sea);font-family:var(--fn-display)">£49<span style="font-size:11px;font-weight:500;color:var(--mid)">/mo</span></div>
+          </div>
+          <div style="font-size:12px;color:var(--mid);line-height:1.55;margin-bottom:10px">For charter fleets with multiple skippers.</div>
+          <ul style="list-style:none;padding:0;margin:0">
+            <li style="font-size:12px;color:var(--text);margin:3px 0;display:flex;gap:6px"><span style="color:var(--green);font-weight:700">✓</span>Everything in Pro</li>
+            <li style="font-size:12px;color:var(--text);margin:3px 0;display:flex;gap:6px"><span style="color:var(--green);font-weight:700">✓</span>Unlimited team members</li>
+            <li style="font-size:12px;color:var(--text);margin:3px 0;display:flex;gap:6px"><span style="color:var(--green);font-weight:700">✓</span>Per-member permissions</li>
+            <li style="font-size:12px;color:var(--text);margin:3px 0;display:flex;gap:6px"><span style="color:var(--green);font-weight:700">✓</span>Audit log &amp; priority support</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="background:rgba(15,76,92,.06);border:1px solid rgba(15,76,92,.15);border-radius:10px;padding:10px 12px;margin-top:14px;font-size:11px;color:var(--mid);line-height:1.55">
+        <strong style="color:var(--sea)">No card during early access.</strong> Payment goes live later — your plan is locked in at the listed price.
+      </div>
+    </div>
+
+    <!-- ── FAQ ─────────────────────────────────────────────── -->
+    <div style="background:var(--page);color:var(--text);padding:8px 22px 30px">
+      <div style="font-size:11px;color:var(--sea);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Questions</div>
+      <h2 style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2;margin-bottom:16px;font-family:var(--fn-display)">Things people ask before signing up.</h2>
+
+      <div class="card" style="padding:0;margin-bottom:10px">
+        <details style="padding:14px 16px"><summary style="font-size:14px;font-weight:700;color:var(--text);cursor:pointer">Is CodedOK affiliated with the MCA?</summary><div style="font-size:13px;color:var(--mid);line-height:1.6;margin-top:8px">No. CodedOK is an independent recordkeeping aid. The Sport or Pleasure Vessel Code 2025 and Workboat Code Edition 3 are published by the Maritime and Coastguard Agency; CodedOK isn't endorsed by or affiliated with them.</div></details>
+      </div>
+      <div class="card" style="padding:0;margin-bottom:10px">
+        <details style="padding:14px 16px"><summary style="font-size:14px;font-weight:700;color:var(--text);cursor:pointer">Does it replace my MCA survey?</summary><div style="font-size:13px;color:var(--mid);line-height:1.6;margin-top:8px">No. CodedOK helps you stay inspection-ready between surveys — the actual survey and certification still happen with your recognised surveyor or certifying authority.</div></details>
+      </div>
+      <div class="card" style="padding:0;margin-bottom:10px">
+        <details style="padding:14px 16px"><summary style="font-size:14px;font-weight:700;color:var(--text);cursor:pointer">What codes do you cover?</summary><div style="font-size:13px;color:var(--mid);line-height:1.6;margin-top:8px">UK Sport or Pleasure Vessel Code 2025 and Workboat Code Edition 3; Irish Passenger Boat Licensing. CodedOK is jurisdiction-aware — you select where each vessel operates and the relevant requirements load automatically.</div></details>
+      </div>
+      <div class="card" style="padding:0;margin-bottom:10px">
+        <details style="padding:14px 16px"><summary style="font-size:14px;font-weight:700;color:var(--text);cursor:pointer">Does it work offshore with no signal?</summary><div style="font-size:13px;color:var(--mid);line-height:1.6;margin-top:8px">Yes. Once installed as a PWA on your phone, the app works offline. Edits queue locally and sync to the cloud when you're back in coverage.</div></details>
+      </div>
+      <div class="card" style="padding:0;margin-bottom:10px">
+        <details style="padding:14px 16px"><summary style="font-size:14px;font-weight:700;color:var(--text);cursor:pointer">What happens to my data?</summary><div style="font-size:13px;color:var(--mid);line-height:1.6;margin-top:8px">It's stored in Supabase (EU region) and on your device. You can delete your account from Account → Sign out and email us — full erasure within 30 days. See the <a href="javascript:go('s-privacy')" style="color:var(--sea)">Privacy Policy</a> for the detail.</div></details>
+      </div>
+      <div class="card" style="padding:0;margin-bottom:10px">
+        <details style="padding:14px 16px"><summary style="font-size:14px;font-weight:700;color:var(--text);cursor:pointer">When does payment start?</summary><div style="font-size:13px;color:var(--mid);line-height:1.6;margin-top:8px">Not yet. We're in early access — pick a plan today and you won't be charged until we email you to opt in. Solo skipper stays free either way.</div></details>
+      </div>
+    </div>
+
+    <!-- ── FINAL CTA ───────────────────────────────────────── -->
+    <div style="background:var(--ink);color:white;padding:36px 22px;text-align:center;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(30,122,134,.22) 0%,transparent 60%);pointer-events:none"></div>
+      <div style="position:relative;z-index:1">
+        <h2 style="font-size:26px;font-weight:700;color:white;letter-spacing:-.3px;line-height:1.15;margin-bottom:10px;font-family:var(--fn-display)">Ready before your next survey.</h2>
+        <p style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.55;max-width:300px;margin:0 auto 18px">Sign up in 90 seconds, add your first vessel, walk into your next inspection with everything in one app.</p>
+        <button class="btn btn-sea btn-full" onclick="goSignUp()" style="height:52px;font-weight:700;font-size:15px;max-width:340px;margin:0 auto">Start free →</button>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:12px">No card · Cancel anytime on paid plans</div>
+      </div>
+    </div>
+
+    <!-- ── FOOTER ──────────────────────────────────────────── -->
+    <div style="background:var(--ink);color:rgba(255,255,255,.5);padding:20px 22px calc(28px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.06);font-size:11px;line-height:1.7">
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px">
+        <a href="javascript:go('s-terms')"   style="color:rgba(255,255,255,.7)">Terms</a>
+        <a href="javascript:go('s-privacy')" style="color:rgba(255,255,255,.7)">Privacy</a>
+        <a href="mailto:hello@codedok.app"   style="color:rgba(255,255,255,.7)">Contact</a>
+      </div>
+      <div>© 2026 CodedOK. An independent compliance app — not affiliated with or endorsed by the Maritime and Coastguard Agency.</div>
+    </div>
+
   </div>
 </div>
 
