@@ -186,7 +186,7 @@
         </div>
 
         <div class="auth-fineprint">
-          By continuing you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
+          By continuing you agree to our <a href="javascript:go('s-terms')" style="color:rgba(255,255,255,.8)">Terms</a> and <a href="javascript:go('s-privacy')" style="color:rgba(255,255,255,.8)">Privacy Policy</a>.
         </div>
       </div>
 
@@ -233,7 +233,7 @@
         </div>
 
         <div class="auth-fineprint">
-          By creating an account you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
+          By creating an account you agree to our <a href="javascript:go('s-terms')" style="color:rgba(255,255,255,.8)">Terms</a> and <a href="javascript:go('s-privacy')" style="color:rgba(255,255,255,.8)">Privacy Policy</a>.
         </div>
       </div>
 
@@ -1631,13 +1631,80 @@
   </div>
 </div>
 
-<!-- Supabase config — anon key is safe to commit; RLS protects the data -->
+<!-- ════════════════════════════════════
+  S-TERMS, S-PRIVACY — Placeholder legal pages. The copy below is a
+  starting skeleton, NOT a vetted legal document. Replace with proper
+  text reviewed by a UK/IE solicitor before charging customers or
+  collecting PII from real users (GDPR, UK DPA 2018).
+════════════════════════════════════ -->
+<div class="shell" id="s-terms">
+  <div class="sb sb-cd"></div>
+  <div class="tbar">
+    <button class="back" onclick="history.length > 1 ? history.back() : go('s-login')">‹ Back</button>
+    <div class="ttl">Terms of Service</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll pb24" style="padding:20px;font-size:14px;line-height:1.65;color:var(--text)">
+    <p style="background:rgba(245,158,11,.08);border-left:3px solid var(--or);padding:10px 12px;border-radius:6px;font-size:12px;color:var(--mid);margin-bottom:18px"><strong>Draft — not yet reviewed by a lawyer.</strong> Replace this text with vetted terms before going live with paying customers.</p>
+    <h2 style="font-size:18px;margin:0 0 8px">Using CodedOK</h2>
+    <p style="margin:0 0 14px">CodedOK is a compliance-tracking tool for UK and Irish coded vessel operators. You're responsible for the accuracy of the data you enter, and ultimately for your vessel's compliance with the MCA Sport or Pleasure Vessel Code 2025 and Workboat Code Edition 3. CodedOK is a recordkeeping aid — it does not certify or replace inspections by a recognised surveyor.</p>
+    <h2 style="font-size:18px;margin:14px 0 8px">Your account</h2>
+    <p style="margin:0 0 14px">You agree to keep your sign-in credentials confidential and to notify us if you suspect unauthorised access. We may suspend accounts that violate these terms or that we reasonably believe pose a risk to other users.</p>
+    <h2 style="font-size:18px;margin:14px 0 8px">Payment and trial</h2>
+    <p style="margin:0 0 14px">New accounts receive a 14-day free trial of the full feature set. Paid plans are not yet available; this section will be updated before charging starts. You may delete your account at any time from the Account screen — your data is removed within 30 days.</p>
+    <h2 style="font-size:18px;margin:14px 0 8px">Liability</h2>
+    <p style="margin:0 0 14px">CodedOK is provided on an "as is" basis. We do our best to keep it running and accurate, but we don't guarantee uptime, freedom from bugs, or that the app catches every compliance issue. To the extent permitted by law, our liability is limited to the fees you've paid us in the preceding 12 months.</p>
+    <h2 style="font-size:18px;margin:14px 0 8px">Changes</h2>
+    <p style="margin:0 0 14px">We'll notify you in the app before any material change to these terms. Continued use after a change means you accept the updated terms.</p>
+    <h2 style="font-size:18px;margin:14px 0 8px">Contact</h2>
+    <p style="margin:0 0 14px">Questions: <a href="mailto:hello@codedok.app">hello@codedok.app</a></p>
+    <p style="font-size:12px;color:var(--mid);margin-top:24px">Last updated: 13 May 2026.</p>
+  </div>
+</div>
+
+<div class="shell" id="s-privacy">
+  <div class="sb sb-cd"></div>
+  <div class="tbar">
+    <button class="back" onclick="history.length > 1 ? history.back() : go('s-login')">‹ Back</button>
+    <div class="ttl">Privacy Policy</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll pb24" style="padding:20px;font-size:14px;line-height:1.65;color:var(--text)">
+    <p style="background:rgba(245,158,11,.08);border-left:3px solid var(--or);padding:10px 12px;border-radius:6px;font-size:12px;color:var(--mid);margin-bottom:18px"><strong>Draft — not yet reviewed by a lawyer.</strong> Get this checked against UK GDPR / DPA 2018 (and Irish DPC requirements) before launch.</p>
+    <h2 style="font-size:18px;margin:0 0 8px">What we collect</h2>
+    <p style="margin:0 0 8px">When you use CodedOK we collect:</p>
+    <ul style="margin:0 0 14px;padding-left:20px">
+      <li>Your name, email address and (optionally) business name when you sign up.</li>
+      <li>The vessel, certificate, equipment, crew and SMS information you enter into the app.</li>
+      <li>Notification subscription details (web-push endpoint + keys) if you opt in to reminders.</li>
+      <li>Standard server logs (IP address, browser, timestamps) for security and debugging.</li>
+    </ul>
+    <h2 style="font-size:18px;margin:14px 0 8px">How we use it</h2>
+    <p style="margin:0 0 14px">To run the service, deliver expiry reminders, support you, and improve the app. We don't sell your data and don't share it with third parties for marketing.</p>
+    <h2 style="font-size:18px;margin:14px 0 8px">Who hosts your data</h2>
+    <p style="margin:0 0 14px">Application database and authentication: Supabase (data hosted in the EU region). Static app delivery: Cloudflare. Email delivery: Resend. Error monitoring: Sentry (if enabled). All process data as our data processor under appropriate Data Processing Agreements.</p>
+    <h2 style="font-size:18px;margin:14px 0 8px">Your rights (UK GDPR / DPA 2018)</h2>
+    <p style="margin:0 0 14px">You can request access, correction, portability, or deletion of your personal data at any time. To delete your account, go to Account → Sign out, then email us to confirm full erasure. We'll respond within 30 days.</p>
+    <h2 style="font-size:18px;margin:14px 0 8px">Cookies</h2>
+    <p style="margin:0 0 14px">We use localStorage for offline functionality and a session token for sign-in. No third-party advertising or tracking cookies.</p>
+    <h2 style="font-size:18px;margin:14px 0 8px">Contact</h2>
+    <p style="margin:0 0 14px">Data queries: <a href="mailto:privacy@codedok.app">privacy@codedok.app</a></p>
+    <p style="font-size:12px;color:var(--mid);margin-top:24px">Last updated: 13 May 2026.</p>
+  </div>
+</div>
+
+<!-- Supabase config — anon key is safe to commit; RLS protects the data.
+     sentryDsn is optional; when set, init-sentry.js loads the browser
+     SDK from CDN and captures uncaught errors + unhandled rejections. -->
 <script>
   window.CodedOkConfig = {
     supabaseUrl: 'https://zftoqqrqsxctehltebad.supabase.co',
-    supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdG9xcXJxc3hjdGVobHRlYmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzcxODIsImV4cCI6MjA5NDE1MzE4Mn0.T-gUL06oNQ7dfMJEA2zOVShcM9cwqsV6oH9CbQgi6j8'
+    supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdG9xcXJxc3hjdGVobHRlYmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzcxODIsImV4cCI6MjA5NDE1MzE4Mn0.T-gUL06oNQ7dfMJEA2zOVShcM9cwqsV6oH9CbQgi6j8',
+    sentryDsn: '',          // paste Sentry DSN here to enable error monitoring
+    sentryEnv: 'production' // 'production' | 'preview' | 'dev'
   };
 </script>
+<script src="init-sentry.js" defer></script>
 <script src="codes.js" defer></script>
 <script src="store.js" defer></script>
 <script src="supabase-client.js" defer></script>

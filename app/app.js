@@ -124,12 +124,72 @@
     });
   }
 
-  // Resize + recompress an uploaded image before we store it. Avoids
-  // 20MB phone snaps wrecking localStorage / sync payloads. Non-image
-  // files (PDF, DOC) and SVGs pass through unchanged. On decode failure
-  // (rare formats) we fall back to the raw data URL so the user never
-  // loses their upload.
+  // Convert a data URL (compressImage output) into a Blob suitable for
+  // multipart upload to Supabase Storage. Pure-JS, no deps.
+  function dataUrlToBlob(dataUrl) {
+    const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+    if (!m) return null;
+    const mime = m[1];
+    const bin = atob(m[2]);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  function extForMime(mime) {
+    return ({
+      'image/webp': 'webp',
+      'image/jpeg': 'jpg',
+      'image/png':  'png',
+      'image/svg+xml': 'svg',
+      'application/pdf': 'pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx'
+    })[mime] || 'bin';
+  }
+
+  // Upload a Blob (or a data URL we'll convert) to Supabase Storage and
+  // return the public URL. Used for vessel photos and surveyor logos —
+  // keeps the heavy binary out of localStorage and the row payloads.
   //
+  // On any failure (offline, Supabase down, RLS denial) we fall back to
+  // returning the data URL itself so the user never loses their upload —
+  // the row just goes back to the legacy base64 storage path.
+  async function uploadToStorage(bucket, folder, blob) {
+    if (!window.Supa || !window.Supa.ready) return null;
+    try {
+      const client = await window.Supa.getClient();
+      const ext = extForMime(blob.type);
+      const filename = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      const path = folder + '/' + filename;
+      const { error } = await client.storage
+        .from(bucket)
+        .upload(path, blob, { upsert: false, contentType: blob.type, cacheControl: '31536000' });
+      if (error) throw error;
+      const { data } = client.storage.from(bucket).getPublicUrl(path);
+      return data && data.publicUrl ? data.publicUrl : null;
+    } catch (err) {
+      console.warn('Storage upload failed (' + bucket + '):', err && err.message);
+      return null;
+    }
+  }
+
+  // Convenience: compress a file then upload to storage, returning the
+  // resulting public URL. Falls back to the compressed data URL if
+  // Storage isn't available — the rest of the app treats either as a
+  // valid <img src>, so the UX degrades cleanly.
+  async function compressAndUpload(file, bucket, folder, compressOpts) {
+    const dataUrl = await compressImage(file, compressOpts);
+    const blob = dataUrlToBlob(dataUrl);
+    if (!blob) return dataUrl;
+    const publicUrl = await uploadToStorage(bucket, folder, blob);
+    return publicUrl || dataUrl;
+  }
+  window.compressAndUpload = compressAndUpload;
+
+  // Resize + recompress an uploaded image. Avoids 20MB phone snaps
+  // wrecking localStorage / sync payloads. Non-image files (PDF, DOC)
+  // and SVGs pass through unchanged. On decode failure we fall back
+  // to the raw data URL so the user never loses their upload.
   // Defaults: 1600px max edge, WebP/JPEG at 0.82 quality. Pass
   // { preserveAlpha: true } for logos / icons where transparency matters.
   async function compressImage(file, opts) {
@@ -3188,10 +3248,13 @@
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!file || !pendingVesselPhotoId) return;
+    const vesselId = pendingVesselPhotoId;
     // No file-size cap any more — compressImage will reduce any size
-    // down to a 1600px-edge WebP/JPEG before we store.
-    compressImage(file, { maxEdge: 1600, quality: 0.82 }).then((dataUrl) => {
-      Store.setVesselPhoto(pendingVesselPhotoId, dataUrl);
+    // down to a 1600px-edge WebP/JPEG, then we upload to Supabase
+    // Storage and store only the resulting URL. Falls back to inline
+    // base64 if Storage isn't available (offline / unauthenticated).
+    compressAndUpload(file, 'vessel-photos', vesselId, { maxEdge: 1600, quality: 0.82 }).then((url) => {
+      Store.setVesselPhoto(vesselId, url);
       pendingVesselPhotoId = null;
       renderHome();
       if (document.getElementById('s-vessels').classList.contains('on')) renderVesselsList();
@@ -4060,10 +4123,12 @@
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!file) return;
-    // Logos compress to 800px max edge with alpha preserved — high
-    // quality for the small-size renders in the header / invoices.
-    compressImage(file, { maxEdge: 800, quality: 0.92, preserveAlpha: true }).then((dataUrl) => {
-      Store.setSurveyorLogo(dataUrl);
+    const me = (window.Store && Store.getCurrentUser()) || {};
+    const folder = me.id || 'anon';
+    // Logos compress to 800px max edge with alpha preserved, then upload
+    // to Storage. Falls back to inline base64 if Storage is unavailable.
+    compressAndUpload(file, 'surveyor-logos', folder, { maxEdge: 800, quality: 0.92, preserveAlpha: true }).then((url) => {
+      Store.setSurveyorLogo(url);
       renderSurveyorHome();
     }).catch((err) => {
       console.error('surveyor logo upload failed', err);
@@ -6556,14 +6621,93 @@ ${sectionsHtml}
             </div>
             ${c.file_url ? `<a class="chev" href="${escapeHtml(c.file_url)}" target="_blank" rel="noopener" style="text-decoration:none">›</a>` : '<span class="chev"></span>'}
           </div>`;
-      }).join('') : `<div class="row"><div class="row-body"><div class="row-sub" style="color:var(--mid)">No qualifications on file yet. Ask your operator to upload them, or send them to yourself.</div></div></div>`;
+      }).join('') : `<div class="row"><div class="row-body"><div class="row-sub" style="color:var(--mid)">No qualifications on file yet. Add your first below or ask your operator to add it.</div></div></div>`;
 
-      body.innerHTML = header + `<div class="card mx" style="margin:0">${rows}</div>`;
+      // Add a tail row that opens the add-qualification form. RLS allows
+      // crew members to insert crew_certs against their own crew row.
+      const addRow = `
+        <div class="row" onclick="openAddMyQual('${crewRow.data.id}')">
+          <div class="row-ic bl">＋</div>
+          <div class="row-body">
+            <div class="row-name" style="color:var(--sea)">Add a qualification</div>
+            <div class="row-sub">RYA ticket, ENG1 medical, first aid, anything else</div>
+          </div>
+          <span class="chev">›</span>
+        </div>`;
+
+      body.innerHTML = header + `<div class="card mx" style="margin:0">${rows}${addRow}</div>`;
     } catch (err) {
       console.warn('renderMyQuals failed', err);
       body.innerHTML = `<div class="card" style="padding:16px"><div style="font-size:13px;color:#fca5a5;line-height:1.5">Could not load qualifications: ${escapeHtml(err && err.message || String(err))}</div></div>`;
     }
   }
+
+  // Add-qualification modal — crew member self-adds a crew_cert. RLS
+  // on crew_certs allows insert when person_id refers to a crew row
+  // linked to the current user.
+  function openAddMyQual(crewRowId) {
+    if (!crewRowId) return;
+    const old = document.getElementById('add-my-qual-modal');
+    if (old) old.remove();
+    const modal = document.createElement('div');
+    modal.id = 'add-my-qual-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = `
+      <div class="card" style="max-width:440px;width:100%;padding:20px;border-radius:16px;background:var(--bg);max-height:92vh;overflow:auto">
+        <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px;letter-spacing:-.2px">Add a qualification</div>
+        <div style="font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:14px">Name + (optional) issuer, number, expiry. You can upload the certificate file too — it stays private.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Name</label>
+        <input class="fi" id="myqual-name" type="text" placeholder="RYA Day Skipper (Commercial)" style="width:100%;margin-bottom:10px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Issuer</label>
+        <input class="fi" id="myqual-issuer" type="text" placeholder="RYA / NHS Approved Doctor / etc." style="width:100%;margin-bottom:10px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Certificate number</label>
+        <input class="fi" id="myqual-number" type="text" placeholder="optional" style="width:100%;margin-bottom:10px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Expires</label>
+        <input class="fi" id="myqual-expires" type="date" style="width:100%;margin-bottom:14px">
+
+        <div id="myqual-err" style="display:none;font-size:12px;color:#fca5a5;margin-bottom:10px;line-height:1.5"></div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sea" style="flex:1;height:42px;font-weight:700" onclick="submitAddMyQual('${crewRowId}')">Save</button>
+          <button class="btn btn-out" style="flex:1;height:42px" onclick="document.getElementById('add-my-qual-modal').remove()">Cancel</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  window.openAddMyQual = openAddMyQual;
+
+  async function submitAddMyQual(crewRowId) {
+    const name    = ((document.getElementById('myqual-name') || {}).value || '').trim();
+    const issuer  = ((document.getElementById('myqual-issuer') || {}).value || '').trim();
+    const number  = ((document.getElementById('myqual-number') || {}).value || '').trim();
+    const expires = ((document.getElementById('myqual-expires') || {}).value || '').trim();
+    const errEl = document.getElementById('myqual-err');
+    function fail(msg) { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } }
+    if (!name) return fail('Name is required.');
+    if (!window.Supa || !window.Supa.ready) return fail('Cloud sync is not available — try again when online.');
+    try {
+      const client = await window.Supa.getClient();
+      const row = {
+        id: 'cc_' + Math.random().toString(36).slice(2, 12),
+        person_id: crewRowId,
+        name,
+        issuer: issuer || null,
+        number: number || null,
+        expires_at: expires || null
+      };
+      const { error } = await client.from('crew_certs').insert(row);
+      if (error) throw error;
+      document.getElementById('add-my-qual-modal').remove();
+      renderMyQuals();
+    } catch (err) {
+      fail('Could not save: ' + (err && err.message ? err.message : err));
+    }
+  }
+  window.submitAddMyQual = submitAddMyQual;
 
   // ─────────────────────────────────────────────────────────────
   // Crew home — separate, stripped-down screen for crew members.
