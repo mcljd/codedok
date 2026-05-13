@@ -8003,39 +8003,118 @@ ${sectionsHtml}
   }
   window.goSignUp = goSignUp;
 
-  // Scroll-reveal for the landing page. Elements marked [data-reveal]
-  // fade in + slide up as they enter the viewport. Idempotent — safe
-  // to call on every render. Falls back to instant-visible if
-  // IntersectionObserver isn't available.
+  // Scroll-driven choreography for the landing page. Wires up:
+  //   1. [data-reveal]   — fade-up on scroll into viewport
+  //   2. [data-count-to] — number counts up from 0 when revealed
+  //   3. [data-parallax] — slow translation tied to scroll position
+  //   4. .ld-stickynav   — opaque nav appears after hero scrolls past
+  //   5. .ld-floatcta    — floating Start-free bar appears past hero
+  // Idempotent — armed once per page load via go('s-land').
   let _landReveal = null;
+  let _landScrollBound = false;
   function armLandingReveal() {
-    const targets = document.querySelectorAll('#s-land [data-reveal]:not(.in)');
-    if (!targets.length) return;
-    if (!('IntersectionObserver' in window)) {
-      targets.forEach((el) => el.classList.add('in'));
-      return;
-    }
-    if (!_landReveal) {
-      _landReveal = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('in');
-            _landReveal.unobserve(e.target);
+    const root = document.getElementById('s-land');
+    if (!root) return;
+
+    // --- 1. Reveal observer for [data-reveal] ---
+    const revealTargets = root.querySelectorAll('[data-reveal]:not(.in)');
+    if (revealTargets.length) {
+      if (!('IntersectionObserver' in window)) {
+        revealTargets.forEach((el) => el.classList.add('in'));
+      } else {
+        if (!_landReveal) {
+          _landReveal = new IntersectionObserver((entries) => {
+            entries.forEach((e) => {
+              if (e.isIntersecting) {
+                e.target.classList.add('in');
+                _landReveal.unobserve(e.target);
+                // Kick off any number counters inside the revealed block.
+                e.target.querySelectorAll('[data-count-to]:not(.counted)').forEach(startCounter);
+                if (e.target.matches && e.target.matches('[data-count-to]:not(.counted)')) startCounter(e.target);
+              }
+            });
+          }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
+        }
+        revealTargets.forEach((el) => _landReveal.observe(el));
+      }
+      // Trigger reveals already in the viewport on first paint.
+      requestAnimationFrame(() => {
+        revealTargets.forEach((el) => {
+          const r = el.getBoundingClientRect();
+          if (r.top < window.innerHeight * 0.9) {
+            el.classList.add('in');
+            el.querySelectorAll('[data-count-to]:not(.counted)').forEach(startCounter);
+            if (el.matches && el.matches('[data-count-to]:not(.counted)')) startCounter(el);
           }
         });
-      }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
-    }
-    targets.forEach((el) => _landReveal.observe(el));
-    // Trigger reveals already in the viewport on first paint so the
-    // hero doesn't sit invisible while the user is looking at it.
-    requestAnimationFrame(() => {
-      targets.forEach((el) => {
-        const r = el.getBoundingClientRect();
-        if (r.top < window.innerHeight * 0.9) el.classList.add('in');
       });
-    });
+    }
+
+    // --- 2. Scroll-tied state: sticky nav, floating CTA, parallax ---
+    if (_landScrollBound) return;
+    _landScrollBound = true;
+    const scroller = root.querySelector('.scroll');
+    if (!scroller) return;
+    const nav  = document.getElementById('ld-stickynav');
+    const cta  = document.getElementById('ld-floatcta');
+    const parallaxers = root.querySelectorAll('[data-parallax]');
+
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = scroller.scrollTop;
+        // Show sticky nav + floating CTA after we've scrolled past the
+        // hero (~520px). Hide again when the user scrolls all the way
+        // back to the top.
+        const show = y > 420;
+        if (nav) nav.classList.toggle('visible', show);
+        // Hide the floating CTA when we get near the footer's final
+        // CTA so we're not duplicating the same call to action.
+        const finalCta = root.querySelector('section[style*="padding:80px 22px"]');
+        let nearFinalCta = false;
+        if (finalCta) {
+          const r = finalCta.getBoundingClientRect();
+          nearFinalCta = r.top < window.innerHeight * 0.9;
+        }
+        if (cta) cta.classList.toggle('visible', show && !nearFinalCta);
+        // Parallax — translateY a fraction of scrollTop.
+        parallaxers.forEach((el) => {
+          const factor = parseFloat(el.dataset.parallax) || 0.1;
+          el.style.setProperty('--y', (-(y * factor)).toFixed(1) + 'px');
+        });
+        ticking = false;
+      });
+    }
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
   }
   window.armLandingReveal = armLandingReveal;
+
+  // Animated number counter. Reads data-count-to (the target), counts
+  // from 0 to that number in ~900ms with ease-out, then appends any
+  // data-count-suffix string (e.g. "s", "-day").
+  function startCounter(el) {
+    if (!el || el.classList.contains('counted')) return;
+    el.classList.add('counted');
+    const target = parseFloat(el.dataset.countTo);
+    const suffix = el.dataset.countSuffix || '';
+    if (!isFinite(target)) return;
+    const dur = 900;
+    const t0 = performance.now();
+    const isInt = Number.isInteger(target);
+    function tick(now) {
+      const t = Math.min(1, (now - t0) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const v = target * eased;
+      el.textContent = (isInt ? Math.round(v) : v.toFixed(1)) + suffix;
+      if (t < 1) requestAnimationFrame(tick);
+      else el.textContent = target + suffix;
+    }
+    requestAnimationFrame(tick);
+  }
+  window.startCounter = startCounter;
 
   function signOut() {
     if (!confirm('Sign out and return to the login screen?')) return;

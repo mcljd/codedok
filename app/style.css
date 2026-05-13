@@ -1018,6 +1018,171 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   background: linear-gradient(90deg, transparent 0%, var(--bdr) 50%, transparent 100%);
 }
 
+/* ──────────────────────────────────────────────────────────────
+   PREMIUM TOUCHES — sticky nav, floating CTA, hero logo entrance,
+   live-counting numbers, watermark, parallax.
+   ────────────────────────────────────────────────────────────── */
+
+/* Sticky nav that materialises after the hero scrolls past. iOS-style
+   backdrop blur. Hidden by default; .visible state is toggled by the
+   landing scroll listener. */
+#s-land .ld-stickynav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 90;
+  padding: 12px 22px;
+  background: rgba(28,37,43,.72);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  display: flex; align-items: center; justify-content: space-between;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform .35s var(--ease), opacity .35s var(--ease);
+  font-family: var(--fn);
+}
+#s-land .ld-stickynav.visible { transform: translateY(0); opacity: 1; }
+#s-land .ld-stickynav .brand {
+  display: flex; align-items: center; gap: 9px;
+  color: white; font-family: var(--fn-display);
+  font-size: 17px; font-weight: 700; letter-spacing: -.02em;
+}
+#s-land .ld-stickynav .actions { display: flex; align-items: center; gap: 8px; }
+#s-land .ld-stickynav .signin {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.85);
+  font-size: 13px; font-weight: 600;
+  padding: 8px 14px; border-radius: 10px;
+  cursor: pointer; font-family: var(--fn);
+}
+#s-land .ld-stickynav .start {
+  background: var(--sea); color: white;
+  border: none; padding: 9px 16px; border-radius: 10px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: var(--fn); letter-spacing: -.005em;
+  box-shadow: 0 2px 8px rgba(15,76,92,.32);
+}
+
+/* Floating bottom Start-free bar — slides up on scroll past hero.
+   Mobile-first: full-width pill at the foot of viewport. */
+#s-land .ld-floatcta {
+  position: fixed;
+  left: 16px; right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 91;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px 12px 18px;
+  background: rgba(15,76,92,.96);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  backdrop-filter: saturate(180%) blur(12px);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04);
+  transform: translateY(140%);
+  opacity: 0;
+  transition: transform .4s var(--ease), opacity .4s var(--ease);
+  color: white; font-family: var(--fn);
+}
+#s-land .ld-floatcta.visible { transform: translateY(0); opacity: 1; }
+#s-land .ld-floatcta .blurb { flex: 1; min-width: 0; }
+#s-land .ld-floatcta .l1 { font-size: 14px; font-weight: 700; letter-spacing: -.01em; line-height: 1.15; }
+#s-land .ld-floatcta .l2 { font-size: 11px; color: rgba(255,255,255,.65); margin-top: 2px; }
+#s-land .ld-floatcta .btn-go {
+  background: white; color: var(--sea);
+  border: none; padding: 10px 16px; border-radius: 11px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: var(--fn); letter-spacing: -.005em;
+  white-space: nowrap;
+  transition: transform .15s var(--ease);
+}
+#s-land .ld-floatcta .btn-go:active { transform: scale(.96); }
+@media (min-width: 720px) {
+  #s-land .ld-floatcta { left: auto; right: 24px; bottom: 24px; max-width: 380px; }
+}
+
+/* Hero brand-mark — bigger, with a soft entrance animation on first
+   paint. The mark itself is the existing inline SVG; this just adds
+   a wrapper that drops + scales in. */
+#s-land .ld-hero-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 26px;
+  animation: ld-mark-in 800ms cubic-bezier(.22, 1, .36, 1) both;
+}
+#s-land .ld-hero-mark svg { filter: drop-shadow(0 12px 28px rgba(30,122,134,.45)); }
+#s-land .ld-hero-mark .name {
+  font-family: var(--fn-display);
+  font-size: 30px; font-weight: 700;
+  color: white; letter-spacing: -.025em;
+}
+@keyframes ld-mark-in {
+  0%   { opacity: 0; transform: translateY(-12px) scale(.92); }
+  100% { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* Watermark brand-mark behind certain sections — sits low and large,
+   adds visual continuity between full-bleed sections. */
+#s-land .ld-watermark {
+  position: absolute;
+  pointer-events: none;
+  opacity: .04;
+  z-index: 0;
+}
+
+/* Live-counting numbers — they're rendered to their final value first
+   so the page validates without JS, then JS replaces with 0 and counts
+   up on scroll-in. CSS gives them the display face automatically. */
+#s-land .ld-count {
+  font-family: var(--fn-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -.025em;
+}
+
+/* "Trusted by" / proof strip — a flexible row that can hold logos or
+   a stats run. */
+#s-land .ld-proof {
+  background: white;
+  border-top: 1px solid var(--bdr);
+  border-bottom: 1px solid var(--bdr);
+  padding: 26px 22px;
+}
+#s-land .ld-proof-grid {
+  max-width: 1100px; margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 22px;
+  text-align: center;
+}
+#s-land .ld-proof-stat .num {
+  font-family: var(--fn-display);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  color: var(--sea);
+  line-height: 1;
+  letter-spacing: -.025em;
+}
+#s-land .ld-proof-stat .lbl {
+  font-size: 11px; color: var(--mid);
+  text-transform: uppercase; letter-spacing: .12em;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+/* Parallax hook — the hero illustration shifts slightly slower than
+   the scroll. Applied via JS by adjusting --y on the element. */
+#s-land [data-parallax] {
+  will-change: transform;
+  transform: translate3d(0, var(--y, 0px), 0);
+}
+
+/* Magnetic press — every primary CTA gets a tactile press feel. */
+#s-land .btn { transition: transform .15s var(--ease), filter .15s var(--ease), box-shadow .25s var(--ease); }
+#s-land .btn:active { transform: scale(.97); filter: brightness(.95); }
+#s-land .btn-sea:hover { box-shadow: 0 8px 22px rgba(15,76,92,.28); }
+
 /* Asymmetric feature grid — desktop 2-col, mobile 1-col. */
 #s-land .ld-features {
   display: grid;

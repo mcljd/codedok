@@ -265,6 +265,32 @@
 ════════════════════════════════════ -->
 <div class="shell" id="s-land">
   <div class="sb sb-dk"></div>
+
+  <!-- Sticky nav that materialises after the hero scrolls past.
+       Visibility toggled by armLandingReveal() on scroll. -->
+  <div class="ld-stickynav" id="ld-stickynav">
+    <a href="javascript:goHome()" class="brand">
+      <svg width="26" height="26" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+        <rect x="6" y="6" width="52" height="52" rx="12" fill="#0F4C5C"/>
+        <path d="M18 33 L28 43 L46 22" stroke="#F3F5F4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      CodedOK
+    </a>
+    <div class="actions">
+      <button class="signin" onclick="go('s-login')">Sign in</button>
+      <button class="start"  onclick="goSignUp()">Start free</button>
+    </div>
+  </div>
+
+  <!-- Floating bottom Start-free bar. -->
+  <div class="ld-floatcta" id="ld-floatcta" role="complementary" aria-label="Quick sign-up">
+    <div class="blurb">
+      <div class="l1">Free for solo skippers</div>
+      <div class="l2">No card · Sign up in 90 seconds</div>
+    </div>
+    <button class="btn-go" onclick="goSignUp()">Start free →</button>
+  </div>
+
   <div class="scroll" style="background:var(--ink);color:white;overflow-x:hidden">
 
     <!-- ── HERO ────────────────────────────────────────────── -->
@@ -280,8 +306,9 @@
       <!-- Subtle horizontal rule grid, gives the section structure under the type -->
       <div aria-hidden="true" style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px);background-size:100% 88px;background-position:0 -44px;pointer-events:none;opacity:.5"></div>
 
-      <!-- Nav: brand + sign in -->
-      <nav style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;margin-bottom:64px">
+      <!-- Inline top nav (visible at the very top; once you scroll past
+           the hero, the sticky nav at the top of the document takes over). -->
+      <nav style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;margin-bottom:48px">
         <a href="javascript:go('s-land')" style="display:flex;align-items:center;gap:11px;text-decoration:none">
           <svg width="34" height="34" viewBox="0 0 64 64" fill="none" aria-hidden="true">
             <rect x="6" y="6" width="52" height="52" rx="12" fill="#0F4C5C"/>
@@ -289,12 +316,23 @@
           </svg>
           <span style="font-size:22px;font-weight:700;color:white;letter-spacing:-.025em;font-family:var(--fn-display)">CodedOK</span>
         </a>
-        <button onclick="go('s-login')" style="background:transparent;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.85);font-size:13px;font-weight:600;padding:9px 16px;border-radius:10px;cursor:pointer;font-family:var(--fn);transition:all .2s var(--ease)" onmouseover="this.style.borderColor='rgba(255,255,255,.35)';this.style.color='white'" onmouseout="this.style.borderColor='rgba(255,255,255,.18)';this.style.color='rgba(255,255,255,.85)'">Sign in</button>
+        <button onclick="go('s-login')" style="background:transparent;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.85);font-size:13px;font-weight:600;padding:9px 16px;border-radius:10px;cursor:pointer;font-family:var(--fn)">Sign in</button>
       </nav>
 
       <!-- Hero grid: copy left, phone mock right on wide viewports -->
       <div class="ld-hero-grid" style="position:relative;z-index:1">
         <div data-reveal>
+          <!-- Big animated brand mark — drops + scales in on first paint.
+               Anchors the hero with the logo prominently before the
+               headline rather than burying it in the top nav. -->
+          <div class="ld-hero-mark">
+            <svg width="72" height="72" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+              <rect x="6" y="6" width="52" height="52" rx="12" fill="#0F4C5C"/>
+              <path d="M18 33 L28 43 L46 22" stroke="#F3F5F4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="name">CodedOK</span>
+          </div>
+
           <!-- Code-tag credibility row, monospace -->
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px">
             <span class="ld-code-tag">SPV Code 2025</span>
@@ -315,8 +353,9 @@
 
         <!-- Phone mockup — mirrors the real s-home layout one-for-one
              so the marketing image and the in-app reality are the
-             same picture. -->
-        <div class="ld-mock" data-reveal aria-hidden="true">
+             same picture. Has parallax: scroll position is mapped to
+             a small translateY by the landing scroll listener. -->
+        <div class="ld-mock" data-reveal data-parallax="0.06" aria-hidden="true">
           <div class="ld-mock-screen">
             <div class="ld-mock-notch"></div>
 
@@ -393,6 +432,31 @@
               <span class="ld-mock-bnav-item">⚙️</span>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PROOF STRIP ─────────────────────────────────────── -->
+    <!-- Animated counters fire when this strip enters the viewport.
+         Final values are rendered statically too (no flash if JS is
+         disabled). -->
+    <section class="ld-proof" data-reveal>
+      <div class="ld-proof-grid">
+        <div class="ld-proof-stat">
+          <div class="num"><span class="ld-count" data-count-to="3" data-count-suffix="">3</span></div>
+          <div class="lbl">UK + IE codes supported</div>
+        </div>
+        <div class="ld-proof-stat">
+          <div class="num"><span class="ld-count" data-count-to="14" data-count-suffix="-day">14-day</span></div>
+          <div class="lbl">Free trial on paid plans</div>
+        </div>
+        <div class="ld-proof-stat">
+          <div class="num">£<span class="ld-count" data-count-to="0">0</span></div>
+          <div class="lbl">Forever for solo skippers</div>
+        </div>
+        <div class="ld-proof-stat">
+          <div class="num"><span class="ld-count" data-count-to="60" data-count-suffix="s">60s</span></div>
+          <div class="lbl">Add your first vessel</div>
         </div>
       </div>
     </section>
