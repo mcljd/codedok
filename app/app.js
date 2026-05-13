@@ -440,40 +440,35 @@
   }
 
   // CodedOK icon mark — refined vector, scales cleanly from 22 to 1024.
-  // Two stylised cyan waves above a green compliance circle with a white tick.
-  // `tone`: 'color' (default), 'mono-light' (white on dark), 'mono-dark' (navy on light).
+  // CodedOK brand mark — Route 1 "Verified Record". Rounded card in
+  // Deep Tide with a Fog White tick. Three tones so it sits cleanly on
+  // any background: 'color' (default brand), 'mono-light' (white on
+  // dark), 'mono-dark' (Harbour Black on light).
+  //
+  // Master SVG also committed at codedok-brand/2026/route-1-verified-record/
+  // — keep the two in sync if you tweak proportions.
   function codedOkMark(size, tone) {
     size = size || 64;
     tone = tone || 'color';
 
-    let topStroke, botStroke, circleFill, tickStroke;
+    let cardFill, tickStroke;
     if (tone === 'mono-light') {
-      topStroke = '#FFFFFF';
-      botStroke = '#FFFFFF';
-      circleFill = '#FFFFFF';
-      tickStroke = '#0A1628';
+      cardFill   = '#F3F5F4';   // Fog White card on dark surface
+      tickStroke = '#0F4C5C';   // Deep Tide tick
     } else if (tone === 'mono-dark') {
-      topStroke = '#0A1628';
-      botStroke = '#0A1628';
-      circleFill = '#0A1628';
+      cardFill   = '#1C252B';   // Harbour Black card on light surface
       tickStroke = '#FFFFFF';
     } else {
-      topStroke = '#0891B2';
-      botStroke = '#0891B2';
-      circleFill = '#16A34A';
-      tickStroke = '#FFFFFF';
+      cardFill   = '#0F4C5C';   // Deep Tide card
+      tickStroke = '#F3F5F4';   // Fog White tick
     }
 
-    // ViewBox 64×64 means strokes/curves scale linearly with the requested size.
     return `
       <svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M6 22 C 11 14, 17 14, 22 22 S 33 30, 38 22 S 49 14, 58 22"
-              stroke="${topStroke}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M6 34 C 11 26, 17 26, 22 34 S 33 42, 38 34 S 49 26, 58 34"
-              stroke="${botStroke}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
-        <circle cx="47" cy="49" r="13" fill="${circleFill}"/>
-        <path d="M41 49 L45.5 53.5 L53 44.5"
-              stroke="${tickStroke}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="6" y="6" width="52" height="52" rx="12" fill="${cardFill}"/>
+        <path d="M18 33 L28 43 L46 22"
+              stroke="${tickStroke}" stroke-width="6"
+              stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
   }
   window.codedOkMark = codedOkMark;

@@ -4,7 +4,7 @@
 //     get the latest when online, fall back to cache when offline)
 //   - Fonts / icons / images: cache-first (rarely change, big files)
 // Bump CACHE_VERSION whenever you ship — old caches are deleted on activate.
-const CACHE_VERSION = 'codedok-v53';
+const CACHE_VERSION = 'codedok-v54';
 const SHELL = [
   './',
   './index.html',
@@ -23,6 +23,7 @@ const SHELL = [
   './icons/icon-167.png',
   './icons/icon-180.png',
   './icons/icon-512.png',
+  './icons/codedok-mark.svg',
   './icons/mccollam.webp'
 ];
 
