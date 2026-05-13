@@ -500,6 +500,7 @@
     if (id === 's-admin-home')         renderAdminHome();
     if (id === 's-admin-review')       renderAdminReview();
     if (id === 's-my-quals')           renderMyQuals();
+    if (id === 's-crew-home')          renderCrewHome();
   }
   window.go = go;
 
@@ -2649,6 +2650,57 @@
         </div>
       </div>` : '';
 
+    // Today card — the most pressing action right now, surfaced above
+    // every tab so a surveyor opening the app sees what needs them.
+    // Priorities, top to bottom: quote pending in inbox → mark complete
+    // → chase old unpaid invoice → renew expiring own-issued cert →
+    // all clear.
+    const todayCard = (() => {
+      const pendingQuote = inbox.length;
+      const activeJobs = Store.jobsForSurveyor(me.id).filter((j) => j.status === 'in_progress' || j.status === 'accepted');
+      const myInvoices = Store.invoicesForSurveyor(me.id);
+      const overdueInvoices = myInvoices.filter((iv) => {
+        if (iv.status !== 'sent' && iv.status !== 'overdue') return false;
+        return iv.due_at && Store.daysUntil(iv.due_at) < 0;
+      });
+
+      let icon, title, sub, target, edge;
+      if (pendingQuote > 0) {
+        icon = '📥'; edge = 'var(--sea)';
+        title = `${pendingQuote} request${pendingQuote === 1 ? '' : 's'} waiting for a quote`;
+        sub = 'Open inbox and respond';
+        target = `setSurveyorTab('inbox')`;
+      } else if (activeJobs.length > 0) {
+        icon = '🛠️'; edge = 'var(--or)';
+        title = `${activeJobs.length} job${activeJobs.length === 1 ? '' : 's'} in progress`;
+        sub = 'Mark complete when the work is done';
+        target = `setSurveyorTab('jobs')`;
+      } else if (overdueInvoices.length > 0) {
+        const due = overdueInvoices.reduce((s, iv) => s + (iv.total || 0), 0);
+        icon = '💷'; edge = '#ef4444';
+        title = `£${due.toLocaleString()} in overdue invoices`;
+        sub = `${overdueInvoices.length} client${overdueInvoices.length === 1 ? '' : 's'} to chase`;
+        target = `setSurveyorTab('earnings')`;
+      } else {
+        icon = '🌤️'; edge = 'var(--gn)';
+        title = 'All clear';
+        sub = 'Nothing needs you right now.';
+        target = `setSurveyorTab('vessels')`;
+      }
+      return `
+        <div style="padding:14px 16px 0">
+          <div class="card" onclick="${target}" style="padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid ${edge}">
+            <div style="font-size:26px;flex-shrink:0">${icon}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Today</div>
+              <div style="font-size:14px;font-weight:700;color:var(--text);line-height:1.3">${escapeHtml(title)}</div>
+              <div style="font-size:11px;color:var(--mid);margin-top:2px">${escapeHtml(sub)}</div>
+            </div>
+            <span class="chev">›</span>
+          </div>
+        </div>`;
+    })();
+
     // Tab content
     let tabHtml = '';
     if (surveyorTab === 'vessels')   tabHtml = renderSurveyorVesselsTab(me);
@@ -2656,7 +2708,7 @@
     else if (surveyorTab === 'jobs')    tabHtml = renderSurveyorJobsTab(me);
     else if (surveyorTab === 'earnings') tabHtml = renderSurveyorEarningsTab(me);
     else if (surveyorTab === 'account')  tabHtml = renderSurveyorAccountTab(me);
-    wrap.innerHTML = desktopBanner + tabHtml;
+    wrap.innerHTML = todayCard + desktopBanner + tabHtml;
   }
 
   function renderSurveyorVesselsTab(me) {
@@ -6368,6 +6420,156 @@ ${sectionsHtml}
   }
 
   // ─────────────────────────────────────────────────────────────
+  // Crew home — separate, stripped-down screen for crew members.
+  // Their assigned vessel(s), their personal certs, and the install
+  // / reminders nudges. No fleet-level controls.
+  // ─────────────────────────────────────────────────────────────
+  async function renderCrewHome() {
+    const scroll = document.getElementById('crew-home-scroll');
+    if (!scroll) return;
+    const greetEl = document.getElementById('crew-greeting');
+    const subEl   = document.getElementById('crew-greeting-sub');
+    const avEl    = document.getElementById('crew-avatar');
+    const qualsEl = document.getElementById('crew-stat-quals');
+    const dueEl   = document.getElementById('crew-stat-due');
+    const overEl  = document.getElementById('crew-stat-overdue');
+
+    // Loading state.
+    scroll.innerHTML = `<div style="padding:18px;opacity:.6;font-size:13px;color:var(--mid)">Loading your dashboard…</div>`;
+    if (qualsEl) qualsEl.textContent = '—';
+    if (dueEl)   dueEl.textContent   = '—';
+    if (overEl)  overEl.textContent  = '—';
+
+    if (!window.Supa || !window.Supa.ready) {
+      scroll.innerHTML = `<div style="padding:18px"><div class="card" style="padding:16px"><div style="font-size:13px;color:var(--mid);line-height:1.55">Cloud sync isn't configured.</div></div></div>`;
+      return;
+    }
+
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) { go('s-login'); return; }
+
+      const me = await client.from('users').select('id, name, email').eq('auth_user_id', user.id).maybeSingle();
+      if (!me.data) throw new Error('User profile missing.');
+      const myName = me.data.name || (user.email || '').split('@')[0];
+      const initials = myName.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'CR';
+      const hour = new Date().getHours();
+      const tod = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
+      if (greetEl) greetEl.textContent = `${tod}, ${myName.split(' ')[0]}`;
+      if (avEl) avEl.textContent = initials;
+
+      // Crew row + org for context.
+      const crewRow = await client.from('crew')
+        .select('id, name, role, org_id, vessel_ids')
+        .eq('user_id', me.data.id)
+        .maybeSingle();
+
+      let orgName = '';
+      let vesselsList = [];
+      let certs = [];
+
+      if (crewRow.data) {
+        if (subEl) subEl.textContent = `Crew · ${crewRow.data.role || 'team member'}`;
+        const org = await client.from('organizations').select('name').eq('id', crewRow.data.org_id).maybeSingle();
+        orgName = (org.data && org.data.name) || '';
+
+        const vesselIds = crewRow.data.vessel_ids || [];
+        if (vesselIds.length) {
+          const v = await client.from('vessels').select('id, name, type, port, category').in('id', vesselIds);
+          vesselsList = v.data || [];
+        }
+
+        const c = await client.from('crew_certs')
+          .select('id, name, expires_at')
+          .eq('person_id', crewRow.data.id);
+        certs = c.data || [];
+      } else {
+        if (subEl) subEl.textContent = 'Crew · welcome aboard';
+        // Still show their memberships' org name if any.
+        const memb = await client.from('memberships').select('org_id').eq('user_id', me.data.id).maybeSingle();
+        if (memb.data) {
+          const org = await client.from('organizations').select('name').eq('id', memb.data.org_id).maybeSingle();
+          orgName = (org.data && org.data.name) || '';
+        }
+      }
+
+      // Stat tiles.
+      let overdue = 0, due30 = 0;
+      certs.forEach((c) => {
+        if (!c.expires_at) return;
+        const d = Store.daysUntil(c.expires_at);
+        if (d < 0) overdue++;
+        else if (d <= 30) due30++;
+      });
+      if (qualsEl) qualsEl.textContent = String(certs.length);
+      if (dueEl)   dueEl.textContent   = String(due30);
+      if (overEl)  overEl.textContent  = String(overdue);
+
+      // Body.
+      const noCrewLink = !crewRow.data;
+      const vesselCards = vesselsList.length ? vesselsList.map((v) => `
+        <div class="row">
+          <div class="row-ic bl">⛵</div>
+          <div class="row-body">
+            <div class="row-name">${escapeHtml(v.name)}</div>
+            <div class="row-sub">${escapeHtml([v.type, v.category, v.port].filter(Boolean).join(' · '))}</div>
+          </div>
+        </div>`).join('') : '';
+
+      const qualPreview = certs.slice(0, 4).sort((a, b) => {
+        const da = a.expires_at ? Store.daysUntil(a.expires_at) : 9999;
+        const db = b.expires_at ? Store.daysUntil(b.expires_at) : 9999;
+        return da - db;
+      }).map((c) => {
+        const d = c.expires_at ? Store.daysUntil(c.expires_at) : Infinity;
+        const exp = d < 0, due = !exp && d <= 30;
+        const colour = exp ? 'rd' : (due ? 'or' : 'gn');
+        const sub = c.expires_at
+          ? (exp ? `Expired ${Math.abs(d)}d ago` : `${d}d left`)
+          : 'No expiry';
+        return `
+          <div class="row" onclick="go('s-my-quals')">
+            <div class="row-ic ${colour}">🎓</div>
+            <div class="row-body"><div class="row-name">${escapeHtml(c.name)}</div><div class="row-sub">${escapeHtml(sub)}</div></div>
+            <span class="chev">›</span>
+          </div>`;
+      }).join('');
+
+      scroll.innerHTML = `
+        <div style="padding:16px 16px 0">
+          ${orgName ? `<div style="font-size:12px;color:var(--lt);margin-bottom:8px">Crew at <strong style="color:var(--text)">${escapeHtml(orgName)}</strong></div>` : ''}
+
+          ${noCrewLink ? `
+            <div class="card" style="padding:16px;margin-bottom:14px;border-left:4px solid var(--or)">
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Waiting on your operator</div>
+              <div style="font-size:12px;color:var(--mid);line-height:1.55">Ask them to add you to a vessel's crew list using <strong>${escapeHtml(user.email || '')}</strong> — your qualifications will appear here automatically.</div>
+            </div>` : ''}
+
+          ${vesselCards ? `
+            <div class="slbl" style="padding:6px 4px 6px">My vessels</div>
+            <div class="card" style="margin-bottom:14px">${vesselCards}</div>` : ''}
+
+          <div class="slbl" style="padding:6px 4px 6px">My qualifications</div>
+          <div class="card" style="margin-bottom:14px">
+            ${qualPreview || `<div class="row"><div class="row-body"><div class="row-sub" style="color:var(--mid)">No qualifications on file yet.</div></div></div>`}
+            <div class="row" onclick="go('s-my-quals')">
+              <div class="row-ic bl">📋</div>
+              <div class="row-body"><div class="row-name" style="color:var(--sea)">See all qualifications</div></div>
+              <span class="chev">›</span>
+            </div>
+          </div>
+        </div>`;
+
+      // Re-render the install + reminders banners under the home content.
+      ensurePushUi();
+    } catch (err) {
+      console.warn('renderCrewHome failed', err);
+      scroll.innerHTML = `<div style="padding:18px"><div class="card" style="padding:16px"><div style="font-size:13px;color:#fca5a5;line-height:1.55">Could not load your dashboard: ${escapeHtml((err && err.message) || String(err))}</div></div></div>`;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
   // Permission gate. Returns true if the signed-in user has the
   // permission on their current org. Falls back to true for the
   // demo seed (where the active user is always u_jm = owner).
@@ -6759,6 +6961,23 @@ ${sectionsHtml}
     badge.style.display = (session && session.mode === 'demo') ? 'block' : 'none';
   }
 
+  // Returns true if the signed-in operator-kind user has no owner
+  // memberships — i.e. they're crew at someone else's org, not their
+  // own skipper. Used by handleSignedIn to pick the right home screen.
+  async function detectCrewOnly(client, userId) {
+    try {
+      const memb = await client.from('memberships')
+        .select('role', { count: 'exact', head: false })
+        .eq('user_id', userId);
+      if (memb.error || !memb.data) return false;
+      const rows = memb.data;
+      if (!rows.length) return false; // No memberships yet — fresh signup.
+      return !rows.some((m) => m.role === 'owner');
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Called from the Supabase auth state listener when a real user is
   // signed in (either fresh from a magic-link redirect or returning to
   // an existing session). Ensures our users table has a row for them,
@@ -6858,8 +7077,13 @@ ${sectionsHtml}
       } else if (row.kind === 'builder') {
         window.location.href = 'web/index.html#builder';
       } else {
+        // Operator-kind users split into two homes:
+        //   - skipper / org owner  → s-home  (full fleet management)
+        //   - crew member          → s-crew-home  (read-only + own quals)
+        // The signal is whether any membership names this user as owner.
         Store.setMode('operator');
-        go('s-home');
+        const isCrew = await detectCrewOnly(client, row.id);
+        go(isCrew ? 's-crew-home' : 's-home');
       }
 
       // If they arrived via a surveyor invite link, claim the grant
@@ -7162,6 +7386,17 @@ ${sectionsHtml}
   }
   window.goBackFromOnboard = goBackFromOnboard;
 
+  // Smart "Home" router: operator and crew live on different home
+  // screens. Most bnav Home buttons hardcode `go('s-home')`; this
+  // helper picks the right one based on the user's membership role.
+  function goHome() {
+    const me = Store && Store.getCurrentUser();
+    const myMemb = me ? (Store.snapshot().memberships || []).filter((m) => m.user_id === me.id) : [];
+    const isCrew = myMemb.length > 0 && !myMemb.some((m) => m.role === 'owner');
+    go(isCrew ? 's-crew-home' : 's-home');
+  }
+  window.goHome = goHome;
+
   function signOut() {
     if (!confirm('Sign out and return to the login screen?')) return;
     clearSession();
@@ -7309,7 +7544,14 @@ ${sectionsHtml}
       applyDesktopAdmin();
       go('s-admin-home');
     } else {
-      go('s-home');
+      // Operator-mode session may be a skipper (s-home) or crew at
+      // someone else's org (s-crew-home). Use local membership cache
+      // to pick the right home synchronously; handleSignedIn will
+      // re-route after the next Supabase round-trip if the cache lied.
+      const me = Store.getCurrentUser();
+      const myMemb = me ? (Store.snapshot().memberships || []).filter((m) => m.user_id === me.id) : [];
+      const isCrew = myMemb.length > 0 && !myMemb.some((m) => m.role === 'owner');
+      go(isCrew ? 's-crew-home' : 's-home');
     }
   });
 })();
