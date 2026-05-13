@@ -427,7 +427,11 @@
     const logo = me.surveyor && me.surveyor.logo;
     const company = (me.surveyor && me.surveyor.company) || me.name || 'Your business';
     if (logo) {
-      return `<img class="sv-brand-logo" alt="${escapeHtml(company)} logo" src="${logo}" style="width:${size}px;height:${size}px;border-radius:6px;object-fit:contain;background:white;padding:2px;flex-shrink:0">`;
+      // Height-locked with auto width so wordmark-style logos render
+      // at their natural aspect rather than getting squashed into a
+      // tiny square. Capped so a freakishly wide logo doesn't break
+      // the header layout.
+      return `<img class="sv-brand-logo" alt="${escapeHtml(company)} logo" src="${logo}" style="height:${size}px;width:auto;max-width:${size * 5}px;border-radius:6px;object-fit:contain;background:white;padding:3px 6px;flex-shrink:0;display:block">`;
     }
     const initials = me.initials || company.split(/\s+/).map((p) => p[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || 'S';
     return `<div class="sv-brand-placeholder" style="width:${size}px;height:${size}px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-size:${Math.max(10, Math.round(size * 0.4))}px;font-weight:700;flex-shrink:0;border:1px solid rgba(255,255,255,.12)">${escapeHtml(initials)}</div>`;
@@ -1779,6 +1783,20 @@
       header.classList.add('hero');
       header.style.borderRadius = '0';
       header.style.padding = '12px 18px 18px';
+      // If the operator has uploaded a vessel photo, use it as the
+      // hero background. Dark gradient overlay keeps the title +
+      // chips legible regardless of the photo's tone.
+      if (v.photo) {
+        header.style.backgroundImage = `linear-gradient(rgba(8,16,32,.55), rgba(8,16,32,.92) 92%), url('${String(v.photo).replace(/'/g, "%27")}')`;
+        header.style.backgroundSize = 'cover';
+        header.style.backgroundPosition = 'center';
+        header.style.backgroundRepeat = 'no-repeat';
+        header.style.minHeight = '220px';
+      } else {
+        header.style.backgroundImage = '';
+        header.style.backgroundColor = 'var(--ink)';
+        header.style.minHeight = '';
+      }
       header.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <button class="back" onclick="go('s-vessels')" style="color:rgba(255,255,255,.6)">‹ Vessels</button>
