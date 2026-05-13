@@ -7129,7 +7129,7 @@ ${sectionsHtml}
       //     so the verification email lands in the same inbox.
       const emailLc = (authUser.email || '').toLowerCase();
       const isDemoOperator = emailLc === 'mcljd303@icloud.com';
-      const isDemoSurveyor = /(?:^|\+)mccollam@/i.test(emailLc);
+      const isDemoSurveyor = /(?:^|\+)mccollam@|@mccollammarine\.com$/i.test(emailLc);
       const isDemoAccount = isDemoOperator || isDemoSurveyor;
       if (window.Store) {
         if (isDemoAccount) {
