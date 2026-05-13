@@ -124,6 +124,61 @@
     });
   }
 
+  // Resize + recompress an uploaded image before we store it. Avoids
+  // 20MB phone snaps wrecking localStorage / sync payloads. Non-image
+  // files (PDF, DOC) and SVGs pass through unchanged. On decode failure
+  // (rare formats) we fall back to the raw data URL so the user never
+  // loses their upload.
+  //
+  // Defaults: 1600px max edge, WebP/JPEG at 0.82 quality. Pass
+  // { preserveAlpha: true } for logos / icons where transparency matters.
+  async function compressImage(file, opts) {
+    opts = opts || {};
+    const maxEdge = opts.maxEdge || 1600;
+    const quality = opts.quality || 0.82;
+    const preserveAlpha = !!opts.preserveAlpha;
+    if (!file || !file.type || !file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+      return readFileAsDataUrl(file);
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const im = new Image();
+        im.onload  = () => resolve(im);
+        im.onerror = () => reject(new Error('decode failed'));
+        im.src = url;
+      });
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (!w || !h) return readFileAsDataUrl(file);
+      if (Math.max(w, h) > maxEdge) {
+        const scale = maxEdge / Math.max(w, h);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return readFileAsDataUrl(file);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, w, h);
+      // Prefer WebP (better compression + alpha). Browsers that can't
+      // encode it return 'data:image/png' from toDataURL — fall back
+      // to JPEG (or PNG when we need transparency).
+      let out = canvas.toDataURL('image/webp', quality);
+      if (!out.startsWith('data:image/webp')) {
+        out = canvas.toDataURL(preserveAlpha ? 'image/png' : 'image/jpeg', quality);
+      }
+      return out;
+    } catch (err) {
+      console.warn('compressImage failed; storing original:', err);
+      return readFileAsDataUrl(file);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+  window.compressImage = compressImage;
+
   function fmtBytes(n) {
     if (!n && n !== 0) return '—';
     if (n < 1024) return n + ' B';
@@ -137,7 +192,7 @@
       alert(`That file is ${fmtBytes(file.size)}. Please choose one under ${fmtBytes(MAX_FILE_BYTES)} for the prototype.`);
       return;
     }
-    const data_url = await readFileAsDataUrl(file);
+    const data_url = await compressImage(file);
     pendingScan = {
       kind: 'cert',
       categoryHint: categoryHint || 'vessel',
@@ -163,7 +218,7 @@
       alert(`That file is ${fmtBytes(file.size)}. Please choose one under ${fmtBytes(MAX_FILE_BYTES)} for the prototype.`);
       return;
     }
-    const data_url = await readFileAsDataUrl(file);
+    const data_url = await compressImage(file);
     const f = { name: file.name, type: file.type, size: file.size, data_url, added_at: new Date().toISOString() };
     if (attachContext && attachContext.mode === 'equipment') {
       Store.attachFileToEquipment(attachContext.id, f);
@@ -3113,19 +3168,18 @@
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!file || !pendingVesselPhotoId) return;
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Vessel photo must be under 2 MB.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      Store.setVesselPhoto(pendingVesselPhotoId, reader.result);
+    // No file-size cap any more — compressImage will reduce any size
+    // down to a 1600px-edge WebP/JPEG before we store.
+    compressImage(file, { maxEdge: 1600, quality: 0.82 }).then((dataUrl) => {
+      Store.setVesselPhoto(pendingVesselPhotoId, dataUrl);
       pendingVesselPhotoId = null;
       renderHome();
       if (document.getElementById('s-vessels').classList.contains('on')) renderVesselsList();
       if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
-    };
-    reader.readAsDataURL(file);
+    }).catch((err) => {
+      console.error('vessel photo upload failed', err);
+      alert('Could not process that image. Try a different one.');
+    });
   }
 
   function dismissPwaInstall() {
@@ -3986,16 +4040,15 @@
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > 1024 * 1024) {
-      alert('Logo must be under 1 MB. Try a smaller PNG or SVG.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      Store.setSurveyorLogo(reader.result);
+    // Logos compress to 800px max edge with alpha preserved — high
+    // quality for the small-size renders in the header / invoices.
+    compressImage(file, { maxEdge: 800, quality: 0.92, preserveAlpha: true }).then((dataUrl) => {
+      Store.setSurveyorLogo(dataUrl);
       renderSurveyorHome();
-    };
-    reader.readAsDataURL(file);
+    }).catch((err) => {
+      console.error('surveyor logo upload failed', err);
+      alert('Could not process that logo. Try a different image.');
+    });
   }
   window.handleSurveyorLogoUpload = handleSurveyorLogoUpload;
 
