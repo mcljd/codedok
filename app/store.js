@@ -55,7 +55,7 @@
       users: [
         { id: 'u_jm',  email: 'joseph@codedok.com',     name: 'Joseph McLaughlin', initials: 'JM', kind: 'operator', phone: '+44 7700 900111' },
         { id: 'u_sv1', email: 'mccollam@example.com',   name: 'McCollam Marine',   initials: 'MM', kind: 'surveyor',
-          surveyor: { qualifications: ['MCA-recognised surveyor', 'Naval Architect MRINA'], certifying_bodies: ['YDSA'], regions: ['Northern Ireland', 'Irish Sea'], company: 'McCollam Marine', phone: '+44 28 9012 3456' } },
+          surveyor: { qualifications: ['Naval Architect MRINA', 'MCA-recognised surveyor'], certifying_bodies: ['YDSA'], regions: ['Northern Ireland', 'Irish Sea'], company: 'McCollam Marine', tagline: 'Naval Architects · Marine Surveyors', phone: '+44 28 9012 3456', logo: 'icons/mccollam.webp' } },
         { id: 'u_rb',  email: 'service@redbayboats.com', name: 'Redbay Boats',     initials: 'RB', kind: 'builder',
           builder: { company: 'Redbay Boats', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] } },
         { id: 'u_admin', email: 'admin@codedok.com',    name: 'Joe (CodedOK)',     initials: 'JD', kind: 'admin' }

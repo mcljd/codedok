@@ -388,6 +388,7 @@
   }
   function surveyorTagline() {
     const me = (window.Store && Store.getCurrentUser()) || {};
+    if (me.surveyor && me.surveyor.tagline) return me.surveyor.tagline;
     if (me.surveyor && me.surveyor.qualifications && me.surveyor.qualifications.length > 0) return me.surveyor.qualifications[0];
     if (me.surveyor && me.surveyor.regions && me.surveyor.regions.length > 0) return me.surveyor.regions[0];
     return 'Marine surveyor';
