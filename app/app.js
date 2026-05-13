@@ -8130,7 +8130,11 @@ ${sectionsHtml}
       session = null;
     }
     if (!session) {
-      go('s-login');
+      // First-time / signed-out visitors land on the marketing page,
+      // not the bare auth form. The landing page itself has clear
+      // "Start free →" + "Sign in" CTAs so the user always knows
+      // their next move.
+      go('s-land');
       return;
     }
     // If a non-demo user is returning to the app and the Store still
