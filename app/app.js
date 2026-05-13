@@ -7225,10 +7225,24 @@ ${sectionsHtml}
       const isDemoSurveyor = /(?:^|\+)mccollam@|@mccollammarine\.com$/i.test(emailLc);
       const isDemoAccount = isDemoOperator || isDemoSurveyor;
       if (window.Store) {
-        if (isDemoAccount) {
+        // Always reset the session pointer first so a previous user's
+        // mode/user_id doesn't leak in. attachAuthenticatedUser below
+        // will set them correctly for this user.
+        if (Store.resetSession) Store.resetSession();
+        if (isDemoOperator) {
+          // Re-seed only if the local store doesn't already have demo
+          // fixtures, so mcljd303's edits persist across sessions.
           if (!Store.hasDemoFixtures()) Store.applyDemoSeed();
-          if (isDemoSurveyor) Store.adoptSeededSurveyor(row.id);
+        } else if (isDemoSurveyor) {
+          // McCollam demo: ALWAYS re-apply the seed so a prior
+          // adoptSeededSurveyor stamping (which renamed u_sv1 to the
+          // previous McCollam user's id) doesn't corrupt the data for
+          // a new sign-in. Then re-stamp for this auth user.
+          Store.applyDemoSeed();
+          Store.adoptSeededSurveyor(row.id);
         } else if (Store.hasDemoFixtures()) {
+          // Real (non-demo) user landing on a device that still has
+          // demo fixtures from a prior session — wipe them.
           Store.resetToEmpty();
         }
         // Mirror the Supabase users row into the local Store so the rest
@@ -7571,6 +7585,15 @@ ${sectionsHtml}
   function signOut() {
     if (!confirm('Sign out and return to the login screen?')) return;
     clearSession();
+    // Reset the local Store's session pointer so the next sign-in
+    // doesn't inherit the previous user's mode/user_id. Without this,
+    // signing out of McCollam (surveyor) and back in as mcljd
+    // (operator) flashed the surveyor home before handleSignedIn
+    // could correct routing.
+    if (window.Store && Store.resetSession) Store.resetSession();
+    // Strip any view-mode body classes (admin / surveyor desktop).
+    document.body.classList.remove('desktop-surveyor');
+    document.body.classList.remove('desktop-admin');
     // Best-effort Supabase sign-out — keeps the next session clean.
     if (window.Supa && window.Supa.signOut) {
       window.Supa.signOut().catch(() => {});

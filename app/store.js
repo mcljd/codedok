@@ -1357,6 +1357,16 @@
     save(state);
   }
 
+  // Clear just the session pointer (user_id + mode). Called on sign-out
+  // so the next sign-in doesn't inherit the previous user's mode — e.g.
+  // signing out as McCollam-surveyor and back in as mcljd-operator would
+  // otherwise see the lingering 'surveyor' mode on boot and route to
+  // the surveyor home before handleSignedIn has a chance to correct it.
+  function resetSession() {
+    state.session = { user_id: null, mode: 'operator' };
+    save(state);
+  }
+
   function hasDemoFixtures() {
     return looksLikeDemo(state);
   }
@@ -1466,6 +1476,7 @@
     applyDemoSeed,
     adoptSeededSurveyor,
     resetToEmpty,
+    resetSession,
     hasDemoFixtures,
     attachAuthenticatedUser,
     clearAll
