@@ -7034,6 +7034,45 @@ ${sectionsHtml}
     badge.style.display = (session && session.mode === 'demo') ? 'block' : 'none';
   }
 
+  // Offline / sync-pending indicator. Fixed at the bottom-right above
+  // the bnav, only visible when there's something to communicate:
+  //   - Offline & writes queued / not yet pushed
+  //   - Online + actively syncing
+  // Idle (online, queue empty, last pull recent) → hidden.
+  function renderSyncBadge(detail) {
+    if (!detail) return;
+    let badge = document.getElementById('sync-badge');
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.id = 'sync-badge';
+      badge.style.cssText = 'position:fixed;right:14px;bottom:calc(70px + env(safe-area-inset-bottom));z-index:9000;display:none;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;color:white;box-shadow:0 4px 14px rgba(0,0,0,.18);font-family:var(--fn);pointer-events:none;letter-spacing:-.1px';
+      document.body.appendChild(badge);
+    }
+    const { online, inFlight, pending } = detail;
+    if (!online) {
+      badge.style.background = '#ef4444';
+      badge.textContent = pending > 0
+        ? `Offline · ${pending} change${pending === 1 ? '' : 's'} queued`
+        : 'Offline';
+      badge.style.display = 'block';
+    } else if (inFlight && pending > 0) {
+      badge.style.background = '#f59e0b';
+      badge.textContent = `Syncing ${pending}…`;
+      badge.style.display = 'block';
+    } else if (pending > 0) {
+      badge.style.background = '#f59e0b';
+      badge.textContent = `${pending} pending`;
+      badge.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+  window.addEventListener('codedok-sync', (e) => renderSyncBadge(e.detail));
+  // Surface the initial state once Sync has booted.
+  setTimeout(() => {
+    if (window.Sync && window.Sync.status) renderSyncBadge(window.Sync.status());
+  }, 1800);
+
   // Returns true if the signed-in operator-kind user has no owner
   // memberships — i.e. they're crew at someone else's org, not their
   // own skipper. Used by handleSignedIn to pick the right home screen.

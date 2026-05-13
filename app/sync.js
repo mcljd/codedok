@@ -59,15 +59,22 @@
   }
 
   // Called by a wrapped Store.save (see initStoreWrap below).
+  // Always stamps updated_at on the row so the server / pullChanges
+  // last-write-wins comparison has something to work with — local
+  // mutations don't otherwise set it.
   function queueWrite(table, row) {
     if (!row || !row.id) return;
+    const stampedRow = Object.assign({}, row, {
+      updated_at: row.updated_at || new Date().toISOString()
+    });
     pushQueue({
       table,
       id: row.id,
       op: row.deleted_at ? 'delete' : 'upsert',
-      row: row,
+      row: stampedRow,
       at: new Date().toISOString()
     });
+    emitStatus();
   }
 
   async function flushQueue() {
@@ -148,22 +155,42 @@
   async function now() {
     if (inFlight || !online) return;
     inFlight = true;
+    emitStatus();
     try {
       await flushQueue();
       await pullChanges();
     } finally {
       inFlight = false;
+      emitStatus();
     }
+  }
+
+  // Broadcast the current status to any UI listeners (offline badge etc).
+  // Cheap to call — listeners decide whether anything actually changed.
+  function emitStatus() {
+    if (typeof window === 'undefined' || !window.dispatchEvent) return;
+    try {
+      window.dispatchEvent(new CustomEvent('codedok-sync', {
+        detail: {
+          online,
+          inFlight,
+          pending: loadQueue().length,
+          ready: !!(window.Supa && window.Supa.ready),
+          lastPullAt: localStorage.getItem(LAST_PULL_KEY)
+        }
+      }));
+    } catch (_) {}
   }
 
   function start() {
     if (timer) return;
     if (typeof window !== 'undefined') {
-      window.addEventListener('online',  () => { online = true;  now(); });
-      window.addEventListener('offline', () => { online = false; });
+      window.addEventListener('online',  () => { online = true;  emitStatus(); now(); });
+      window.addEventListener('offline', () => { online = false; emitStatus(); });
     }
     timer = setInterval(now, 60 * 1000);     // every 60 seconds
     setTimeout(now, 1500);                   // initial pass shortly after load
+    setTimeout(emitStatus, 100);             // surface initial state to UI
   }
 
   function stop() {
@@ -172,7 +199,6 @@
 
   // ---- Wrap Store.save so every write queues for sync ----
   function initStoreWrap() {
-    if (!window.Store || !window.Store._wrappedForSync) return;
     if (!window.Store) return;
     if (window.Store._wrappedForSync) return;
 
@@ -180,25 +206,53 @@
     // state. Until we refactor, intercept the public mutators we care
     // about. Each one returns the new row, so we queue it.
     const fan = [
+      // Vessels
       ['addVessel',       'vessels'],
       ['updateVessel',    'vessels'],
       ['deleteVessel',    'vessels'],
       ['setVesselPhoto',  'vessels'],
+      // Certs + equipment
       ['addCert',         'certs'],
+      ['updateCert',      'certs'],
+      ['deleteCert',      'certs'],
+      ['attachFileToCert',     'certs'],
+      ['detachFileFromCert',   'certs'],
       ['addEquipment',    'equipment'],
+      ['attachFileToEquipment',   'equipment'],
+      ['detachFileFromEquipment', 'equipment'],
+      ['recordEquipmentService',  'equipment'],
+      // Deficiencies + inspections
       ['addDeficiency',   'deficiencies'],
       ['resolveDeficiency','deficiencies'],
+      ['startInspection',     'inspections'],
+      ['completeInspection',  'inspections'],
+      // Crew
+      ['addCrew',         'crew'],
+      ['assignCrewToVessel',   'crew'],
+      ['removeCrewFromVessel', 'crew'],
+      ['updateCrewRole',  'crew'],
+      ['addCrewCert',     'crewCerts'],
+      // SMS
       ['addSmsDocument',  'sms_documents'],
       ['updateSmsDocument','sms_documents'],
+      ['deliverSmsToOperator','sms_documents'],
+      ['ackSms',          'sms_documents'],
+      ['revokeSmsAck',    'sms_documents'],
+      ['createSmsShareToken', 'sms_documents'],
+      ['appendSmsEdit',   'sms_documents'],
+      // Jobs + invoices
       ['createJob',       'jobs'],
       ['quoteJob',        'jobs'],
+      ['declineJob',      'jobs'],
+      ['startJob',        'jobs'],
+      ['completeJob',     'jobs'],
+      ['deliverJob',      'jobs'],
       ['payInvoice',      'invoices'],
+      // Surveyor grants
       ['inviteSurveyor',  'surveyor_grants'],
       ['revokeSurveyor',  'surveyor_grants'],
-      ['setSurveyorLogo', 'users'],
-      ['ackSms',          'sms_documents'],
-      ['createSmsShareToken', 'sms_documents'],
-      ['appendSmsEdit',   'sms_documents']
+      // User profile
+      ['setSurveyorLogo', 'users']
     ];
     for (const [fn, table] of fan) {
       const orig = Store[fn];
@@ -234,6 +288,7 @@
     queueLength: () => loadQueue().length,
     status: () => ({
       online,
+      inFlight,
       ready: !!(window.Supa && window.Supa.ready),
       pending: loadQueue().length,
       lastPullAt: localStorage.getItem(LAST_PULL_KEY)
