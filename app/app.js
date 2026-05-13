@@ -2812,14 +2812,86 @@
     return html;
   }
 
+  // Suggest the next workday at least `minOffset` days out, skipping
+  // weekends. Used by the port-cluster scheduler so visits land on
+  // weekdays (operators are mostly available then) and far enough
+  // ahead to give the operator notice.
+  function suggestVisitDate(weeksOut) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 7 * (weeksOut + 1));
+    // Bias toward Tue/Wed/Thu for inspections.
+    const targetDay = 2; // Tuesday
+    const diff = (targetDay - d.getDay() + 7) % 7;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Cluster the surveyor's unscheduled work by port. Surveyors do a
+  // lot of driving between marinas; grouping by port lets them
+  // batch nearby visits into one trip. Only shown when there's
+  // genuine opportunity to cluster (≥2 jobs at one port).
+  function renderSurveyorPortClusters(me) {
+    const open = Store.jobsForSurveyor(me.id).filter((j) =>
+      j.status === 'requested' || j.status === 'quoted' || j.status === 'paid'
+    );
+    if (open.length < 2) return '';
+
+    const byPort = new Map();
+    open.forEach((j) => {
+      const v = Store.getVessel(j.vessel_id);
+      const port = (v && v.port) ? v.port.trim() : '';
+      if (!port) return;
+      if (!byPort.has(port)) byPort.set(port, []);
+      byPort.get(port).push({ job: j, vessel: v });
+    });
+
+    const clusters = Array.from(byPort.entries())
+      .filter(([_, items]) => items.length >= 2)
+      .sort((a, b) => b[1].length - a[1].length);
+    if (!clusters.length) return '';
+
+    const cards = clusters.map(([port, items], idx) => {
+      const date = suggestVisitDate(idx);
+      const vesselsList = [...new Set(items.map((it) => it.vessel ? it.vessel.name : null).filter(Boolean))].join(' · ');
+      const chips = items.map((it) => `
+        <button class="chip chip-bl" style="cursor:pointer;border:none;font-family:var(--fn)" onclick="event.stopPropagation();openSurveyorJob('${it.job.id}')">${escapeHtml(jobTypeLabel(it.job.type))}</button>
+      `).join(' ');
+      return `
+        <div class="card" style="padding:14px;border-left:4px solid var(--gn)">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">
+            <div style="min-width:0">
+              <div style="font-size:10px;font-weight:700;color:var(--gn);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Cluster · ${items.length} jobs</div>
+              <div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.2px">${escapeHtml(port)}</div>
+              <div style="font-size:11px;color:var(--mid);margin-top:2px">${escapeHtml(vesselsList)}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:10px;color:var(--lt);font-weight:600;text-transform:uppercase;letter-spacing:.08em">Suggested visit</div>
+              <div style="font-size:13px;font-weight:700;color:var(--sea)">${fmtDate(date)}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">${chips}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="padding:14px 16px 6px">
+        <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Drive smart · cluster visits</div>
+        <div style="font-size:11px;color:var(--mid);line-height:1.5;margin-bottom:10px">Group nearby jobs into a single trip. Tap a job to quote the suggested day.</div>
+      </div>
+      <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px;margin-bottom:14px">${cards}</div>`;
+  }
+
   function renderSurveyorJobsTab(me) {
     const all = Store.jobsForSurveyor(me.id);
     const active = all.filter((j) => ['quoted', 'paid', 'in_progress'].includes(j.status));
     const completed = all.filter((j) => j.status === 'completed');
     const declined = all.filter((j) => j.status === 'declined');
 
+    const clustersHtml = renderSurveyorPortClusters(me);
+
     if (all.length === 0) {
-      return `
+      return clustersHtml + `
         <div class="empty">
           <div class="empty-art">🛠️</div>
           <div class="empty-h">No jobs yet</div>
@@ -2850,7 +2922,7 @@
         </div>`;
     }
 
-    let html = '<div style="padding:14px 16px">';
+    let html = clustersHtml + '<div style="padding:14px 16px">';
     if (active.length) {
       html += `<div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Active · ${active.length}</div>`;
       active.forEach((j) => html += jobRow(j));
