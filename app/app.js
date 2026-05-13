@@ -1695,6 +1695,14 @@
       : days < 0
         ? `<span class="cb rd"><span class="cb-num">${Math.abs(days)}</span><span class="cb-lbl">days late</span></span>`
         : `<span class="cb ${days <= 30 ? 'rd' : days <= 60 ? 'am' : 'ok'}"><span class="cb-num">${days}</span><span class="cb-lbl">days left</span></span>`;
+    // Vessel chip — crew may be assigned to multiple vessels; show the
+    // first one as context. Only when the fleet has >1 vessel.
+    const fleetSize = (Store.snapshot().vessels || []).length;
+    const firstVesselId = person && person.vessel_ids && person.vessel_ids[0];
+    const vessel = firstVesselId ? Store.getVessel(firstVesselId) : null;
+    const vesselChip = (fleetSize > 1 && vessel)
+      ? `<span class="ticket-vessel">${escapeHtml(vessel.icon || '⛵')} ${escapeHtml(vessel.name)}${(person && person.vessel_ids && person.vessel_ids.length > 1) ? ' +' + (person.vessel_ids.length - 1) : ''}</span>`
+      : '';
     const subParts = [];
     if (person) subParts.push(escapeHtml(person.role) + ' · ' + escapeHtml(person.name));
     if (cc.issuer) subParts.push(escapeHtml(cc.issuer));
@@ -1706,7 +1714,7 @@
           <div class="ticket-ic">🎓</div>
           <div class="ticket-text">
             <div class="ticket-name">${escapeHtml(cc.name)}</div>
-            <div class="ticket-sub">${subParts.join(' · ')}</div>
+            <div class="ticket-sub">${vesselChip}${subParts.join(' · ')}</div>
           </div>
           <div class="ticket-end">${cb}</div>
         </div>
@@ -1827,10 +1835,16 @@
     if (!v) return;
     activeVesselId = v.id;
 
-    // Hero header
+    // Hero header. Use the stable id rather than a style-attribute
+    // selector — once we set a backgroundImage on first render with a
+    // photo, the original `background:var(--ink)` string disappears
+    // from the style attribute and the old selector would silently
+    // fail to find the element. That meant subsequent vessel taps
+    // didn't refresh the hero (you'd see Tsunami's hero while looking
+    // at Lagavulin's detail).
     const screen = document.getElementById('s-vessel-detail');
     if (!screen) return;
-    const header = screen.querySelector('div[style*="background:var(--ink)"]');
+    const header = document.getElementById('vd-hero');
     if (header) {
       const ready = Store.isInspectionReady(v.id);
       const score = Store.complianceScore(v.id);
@@ -1956,6 +1970,15 @@
           ? `<span class="cb ${days <= 30 ? 'rd' : 'am'}"><span class="cb-num">${days}</span><span class="cb-lbl">days left</span></span>`
           : `<span class="cb ok"><span class="cb-num">✓</span><span class="cb-lbl">Valid</span></span>`;
 
+    // Vessel context — Records aggregates across the whole fleet,
+    // so every row needs to say which boat it belongs to. Only show
+    // when the org has more than one vessel (otherwise it's noise).
+    const fleetSize = (Store.snapshot().vessels || []).length;
+    const vessel = item.vessel_id ? Store.getVessel(item.vessel_id) : null;
+    const vesselChip = (fleetSize > 1 && vessel)
+      ? `<span class="ticket-vessel">${escapeHtml(vessel.icon || '⛵')} ${escapeHtml(vessel.name)}</span>`
+      : '';
+
     const subParts = [];
     if (kind === 'cert') {
       if (item.issuer) subParts.push(escapeHtml(item.issuer));
@@ -1983,7 +2006,7 @@
           <div class="ticket-ic">${item.icon || (kind === 'cert' ? '📋' : '🔧')}</div>
           <div class="ticket-text">
             <div class="ticket-name">${escapeHtml(item.name)}${clip}${issuedBy}</div>
-            <div class="ticket-sub">${subParts.join(' · ')}</div>
+            <div class="ticket-sub">${vesselChip}${subParts.join(' · ')}</div>
           </div>
           <div class="ticket-end">${cb}</div>
         </div>

@@ -755,6 +755,20 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .ticket-text { flex: 1; min-width: 0; }
 .ticket-name { font-size: 14px; font-weight: 600; color: var(--text); }
 .ticket-sub { font-size: 11px; color: var(--lt); margin-top: 2px; line-height: 1.45; }
+/* Vessel context chip on Records rows — Records aggregates across the
+   whole fleet, so each row needs to declare which boat it belongs to. */
+.ticket-vessel {
+  display: inline-block;
+  background: var(--slate);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-right: 6px;
+  vertical-align: middle;
+  letter-spacing: -.1px;
+}
 .ticket-end {
   display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
   flex-shrink: 0;
