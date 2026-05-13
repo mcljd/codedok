@@ -219,8 +219,8 @@
         <input class="auth-input" id="signup-name" type="text" autocomplete="name" placeholder="Joseph McLaughlin">
 
         <div id="signup-business-wrap">
-          <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 8px">Business name</label>
-          <input class="auth-input" id="signup-business" type="text" autocomplete="organization" placeholder="McLaughlin Charters">
+          <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 8px">Business name <span style="font-weight:500;text-transform:none;letter-spacing:0;color:rgba(255,255,255,.4)">— optional, leave blank for solo</span></label>
+          <input class="auth-input" id="signup-business" type="text" autocomplete="organization" placeholder="e.g. McLaughlin Charters">
         </div>
 
         <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 8px">Email</label>
@@ -1546,6 +1546,14 @@
         </div>
         <span class="chev">›</span>
       </div>
+      <div class="row" onclick="go('s-plans')">
+        <div class="row-ic bl">💳</div>
+        <div class="row-body">
+          <div class="row-name">Plan</div>
+          <div class="row-sub" id="account-plan-summary">Free trial · pick a plan</div>
+        </div>
+        <span class="chev">›</span>
+      </div>
     </div>
 
     <!-- TEAM — owner-managed crew + admin invites with per-member permissions.
@@ -1615,6 +1623,28 @@
     <button class="bni" onclick="go('s-tools')"><div class="bni-ic">🛠️</div><div class="bni-lb">Tools</div></button>
     <button class="bni on"><div class="bni-ic">⚙️</div><div class="bni-lb">Account</div></button>
   </nav>
+</div>
+
+<!-- ════════════════════════════════════
+  S-PLANS — Plan picker. Payment isn't wired yet; selecting a plan
+  just writes organizations.plan and surfaces the change in the
+  trial banner. When Stripe lands, this screen becomes the Stripe
+  checkout entry point and the writes move into the webhook.
+════════════════════════════════════ -->
+<div class="shell" id="s-plans">
+  <div class="sb sb-cd"></div>
+  <div class="tbar">
+    <button class="back" onclick="go('s-account')">‹ Account</button>
+    <div class="ttl">Plans</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll pb24">
+    <div style="padding:18px 16px 8px">
+      <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:4px;font-family:var(--fn-display)">Pick a plan that fits</div>
+      <div style="font-size:13px;color:var(--mid);line-height:1.55">Everything is free during the rollout — pick the plan you'll eventually want and we'll lock the price in when payment goes live.</div>
+    </div>
+    <div id="plans-body" style="padding:8px 16px 0"></div>
+  </div>
 </div>
 
 <!-- ════════════════════════════════════

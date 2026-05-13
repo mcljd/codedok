@@ -554,14 +554,19 @@
         orgId = myMembership.org_id;
       } else if (me) {
         orgId = uid('org');
+        const isSolo = !me.business_name;
         const orgName = me.business_name
-          || (me.name ? me.name + "'s fleet" : 'My fleet');
+          || (me.name ? me.name + "'s vessels" : 'My vessels');
         state.organizations.push({
           id: orgId,
           name: orgName,
           plan: 'trial',
           trial_ends_at: isoOffset(14),
-          stripe_customer_id: null
+          stripe_customer_id: null,
+          // Solo organizations are flagged so the UI can hide team
+          // features (invite members etc.) when there's never going
+          // to be a second person on this account.
+          solo_user_id: isSolo ? me.id : null
         });
         state.memberships.push({
           org_id: orgId, user_id: me.id, role: 'owner',

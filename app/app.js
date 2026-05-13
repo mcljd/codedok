@@ -618,6 +618,7 @@
     if (id === 's-admin-review')       renderAdminReview();
     if (id === 's-my-quals')           renderMyQuals();
     if (id === 's-crew-home')          renderCrewHome();
+    if (id === 's-plans')              renderPlans();
   }
   window.go = go;
 
@@ -6579,24 +6580,53 @@ ${sectionsHtml}
       const me = await client.from('users').select('id, name').eq('auth_user_id', user.id).maybeSingle();
       if (!me.data) throw new Error('User profile missing.');
 
-      const crewRow = await client.from('crew').select('id, name, role, vessel_ids').eq('user_id', me.data.id).maybeSingle();
-      if (!crewRow.data) {
-        body.innerHTML = `
-          <div class="card" style="padding:18px">
-            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">No crew record linked yet</div>
-            <div style="font-size:13px;color:var(--mid);line-height:1.55;margin-bottom:6px">When the operator adds you to a vessel's crew list with your email, your tickets and medicals will show up here.</div>
-            <div style="font-size:12px;color:var(--lt);line-height:1.5">Tip: ask them to use the email <strong>${escapeHtml(user.email || '')}</strong> when they add you.</div>
-          </div>`;
-        return;
+      let crewRow = (await client.from('crew')
+        .select('id, name, role, vessel_ids')
+        .eq('user_id', me.data.id)
+        .maybeSingle()).data;
+
+      // No crew record yet — lazy-create one tied to whichever org this
+      // user owns (solo skipper) or belongs to (team member). Makes "My
+      // qualifications" Just Work for solo users without needing an
+      // operator to add them.
+      if (!crewRow) {
+        const myOrg = await client.from('memberships')
+          .select('org_id, role')
+          .eq('user_id', me.data.id)
+          .order('role', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (myOrg.data && myOrg.data.org_id) {
+          const personId = 'p_' + Math.random().toString(36).slice(2, 12);
+          const ins = await client.from('crew').insert({
+            id: personId,
+            org_id: myOrg.data.org_id,
+            user_id: me.data.id,
+            name: me.data.name || (user.email || '').split('@')[0],
+            email: user.email,
+            role: 'Skipper',
+            vessel_ids: []
+          }).select('id, name, role, vessel_ids').single();
+          if (!ins.error) crewRow = ins.data;
+        }
+        if (!crewRow) {
+          body.innerHTML = `
+            <div class="card" style="padding:18px">
+              <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">Add a vessel first</div>
+              <div style="font-size:13px;color:var(--mid);line-height:1.55">Your qualifications live on the same account as your vessels. Add at least one vessel to set things up, then come back here.</div>
+              <button class="btn btn-sea" style="margin-top:14px;height:42px;font-weight:700" onclick="go('s-onboard')">+ Add a vessel</button>
+            </div>`;
+          return;
+        }
       }
 
-      const certs = await client.from('crew_certs').select('id, name, issuer, number, expires_at, file_url').eq('person_id', crewRow.data.id).order('expires_at', { ascending: true, nullsFirst: false });
+      const certs = await client.from('crew_certs').select('id, name, issuer, number, expires_at, file_url').eq('person_id', crewRow.id).order('expires_at', { ascending: true, nullsFirst: false });
       const list = certs.data || [];
 
       const header = `
         <div style="padding:0 0 14px">
-          <div style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.3px">${escapeHtml(crewRow.data.name || me.data.name || 'Crew member')}</div>
-          <div style="font-size:13px;color:var(--mid);margin-top:2px">${escapeHtml(crewRow.data.role || 'Crew')} · ${list.length} qualification${list.length === 1 ? '' : 's'}</div>
+          <div style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.3px">${escapeHtml(crewRow.name || me.data.name || 'Crew member')}</div>
+          <div style="font-size:13px;color:var(--mid);margin-top:2px">${escapeHtml(crewRow.role || 'Crew')} · ${list.length} qualification${list.length === 1 ? '' : 's'}</div>
         </div>`;
 
       const rows = list.length ? list.map((c) => {
@@ -6621,7 +6651,7 @@ ${sectionsHtml}
       // Add a tail row that opens the add-qualification form. RLS allows
       // crew members to insert crew_certs against their own crew row.
       const addRow = `
-        <div class="row" onclick="openAddMyQual('${crewRow.data.id}')">
+        <div class="row" onclick="openAddMyQual('${crewRow.id}')">
           <div class="row-ic bl">＋</div>
           <div class="row-body">
             <div class="row-name" style="color:var(--sea)">Add a qualification</div>
@@ -6703,6 +6733,132 @@ ${sectionsHtml}
     }
   }
   window.submitAddMyQual = submitAddMyQual;
+
+  // ─────────────────────────────────────────────────────────────
+  // Plans — pick a tier. Free of charge for now (no Stripe). The
+  // chosen plan persists to organizations.plan; UI gates can read
+  // it later when paid features are switched on.
+  // ─────────────────────────────────────────────────────────────
+  const PLAN_DEFS = [
+    {
+      id: 'solo', label: 'Solo skipper', price: '£0',
+      sub: 'For one operator with up to two vessels.',
+      perks: [
+        'Track certs, equipment & crew quals',
+        'Inspection-readiness score',
+        'Push reminders 30 / 7 / 0 days out',
+        'SMS builder & PDF export'
+      ]
+    },
+    {
+      id: 'pro', label: 'Pro', price: '£0',
+      sub: 'Unlimited vessels and full surveyor access.',
+      perks: [
+        'Everything in Solo',
+        'Unlimited vessels',
+        'Surveyor invite + cross-org access',
+        'AI cert extraction',
+        'Email reminders to crew'
+      ],
+      recommended: true
+    },
+    {
+      id: 'team', label: 'Team', price: '£0',
+      sub: 'For charter fleets with multiple skippers.',
+      perks: [
+        'Everything in Pro',
+        'Unlimited team members',
+        'Per-member permissions',
+        'Audit log & action history',
+        'Priority support'
+      ]
+    }
+  ];
+
+  async function renderPlans() {
+    const body = document.getElementById('plans-body');
+    if (!body) return;
+    body.innerHTML = `<div style="opacity:.6;font-size:13px;color:var(--mid);padding:12px 0">Loading…</div>`;
+
+    let currentPlan = 'trial';
+    let orgId = null;
+    if (window.Supa && window.Supa.ready) {
+      try {
+        const client = await window.Supa.getClient();
+        const { data: { user } } = await client.auth.getUser();
+        if (user) {
+          const me = await client.from('users').select('id').eq('auth_user_id', user.id).maybeSingle();
+          if (me.data) {
+            const memb = await client.from('memberships').select('org_id').eq('user_id', me.data.id).eq('role','owner').maybeSingle();
+            if (memb.data) {
+              orgId = memb.data.org_id;
+              const org = await client.from('organizations').select('plan').eq('id', orgId).maybeSingle();
+              if (org.data && org.data.plan) currentPlan = org.data.plan;
+            }
+          }
+        }
+      } catch (err) { console.warn('renderPlans lookup failed', err); }
+    }
+
+    if (!orgId) {
+      body.innerHTML = `
+        <div class="card" style="padding:18px;margin-top:12px">
+          <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Add a vessel first</div>
+          <div style="font-size:13px;color:var(--mid);line-height:1.55">Your organisation is set up when you add your first vessel — once that's done you can pick a plan here.</div>
+          <button class="btn btn-sea" style="margin-top:14px;height:42px;font-weight:700" onclick="go('s-onboard')">+ Add a vessel</button>
+        </div>`;
+      return;
+    }
+
+    const cards = PLAN_DEFS.map((p) => {
+      const isCurrent = p.id === currentPlan;
+      const edge = isCurrent ? 'var(--green)' : (p.recommended ? 'var(--sea)' : 'var(--bdr)');
+      const tag = isCurrent
+        ? '<span class="chip chip-ok" style="margin-left:8px">Current</span>'
+        : (p.recommended ? '<span class="chip chip-bl" style="margin-left:8px">Recommended</span>' : '');
+      const cta = isCurrent
+        ? `<button class="btn btn-out btn-full" style="height:46px;font-weight:700" disabled>You're on this plan</button>`
+        : `<button class="btn btn-sea btn-full" style="height:46px;font-weight:700" onclick="selectPlan('${p.id}','${orgId}')">Switch to ${escapeHtml(p.label)}</button>`;
+      const perks = p.perks.map((x) => `<li style="font-size:13px;color:var(--text);line-height:1.55;margin:4px 0;display:flex;gap:8px"><span style="color:var(--green);font-weight:700">✓</span><span>${escapeHtml(x)}</span></li>`).join('');
+      return `
+        <div class="card" style="padding:18px;border:2px solid ${edge};border-radius:16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.2px">${escapeHtml(p.label)}${tag}</div>
+            <div style="font-size:20px;font-weight:700;color:var(--sea);font-family:var(--fn-display)">${escapeHtml(p.price)}<span style="font-size:11px;font-weight:500;color:var(--mid)">/mo</span></div>
+          </div>
+          <div style="font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:12px">${escapeHtml(p.sub)}</div>
+          <ul style="list-style:none;padding:0;margin:0 0 14px">${perks}</ul>
+          ${cta}
+        </div>`;
+    }).join('');
+
+    body.innerHTML = `
+      <div style="background:rgba(15,76,92,.06);border:1px solid rgba(15,76,92,.15);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:var(--mid);line-height:1.55">
+        <strong style="color:var(--sea)">Payment goes live soon.</strong> Picking a plan now just records your choice — you won't be charged until we email you to opt in.
+      </div>
+      ${cards}`;
+  }
+  window.renderPlans = renderPlans;
+
+  async function selectPlan(planId, orgId) {
+    if (!planId || !orgId) return;
+    if (!window.Supa || !window.Supa.ready) { alert('Cloud sync not available right now.'); return; }
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client
+        .from('organizations')
+        .update({ plan: planId, plan_changed_at: new Date().toISOString() })
+        .eq('id', orgId);
+      if (error) throw error;
+      // Re-render to flip the "Current" pill, and refresh the trial banner.
+      renderPlans();
+      if (typeof renderTrialBanner === 'function') renderTrialBanner();
+    } catch (err) {
+      console.error('selectPlan failed', err);
+      alert('Could not switch plan: ' + (err && err.message ? err.message : err));
+    }
+  }
+  window.selectPlan = selectPlan;
 
   // ─────────────────────────────────────────────────────────────
   // Crew home — separate, stripped-down screen for crew members.
@@ -6911,25 +7067,35 @@ ${sectionsHtml}
 
       const plan = org.data.plan || 'trial';
       const endsRaw = org.data.trial_ends_at;
-      if (plan !== 'trial') return; // Already paid — no banner.
+      // Update the Plan-row subtitle on Account to mirror the current plan.
+      const planSummaryEl = document.getElementById('account-plan-summary');
+      if (planSummaryEl) {
+        const PLAN_LABELS = { trial: 'Free trial', solo: 'Solo skipper', pro: 'Pro', team: 'Team', expired: 'Trial expired' };
+        const label = PLAN_LABELS[plan] || plan;
+        planSummaryEl.textContent = (plan === 'trial')
+          ? `${label} · tap to pick a plan`
+          : `${label} · all features unlocked`;
+      }
+      if (plan !== 'trial') return; // Already on a paid plan — no banner.
       if (!endsRaw) return;
       const days = Store.daysUntil(endsRaw);
       const expired = days < 0;
-      const colour = expired ? '#ef4444' : (days <= 3 ? '#f59e0b' : 'var(--sea)');
+      const colour = expired ? 'var(--red)' : (days <= 3 ? 'var(--amber)' : 'var(--sea)');
       const msg = expired
-        ? 'Trial ended. Upgrade soon to keep adding records.'
+        ? 'Trial ended. Pick a plan to keep going — it\'s still free for now.'
         : `Trial: ${days} day${days === 1 ? '' : 's'} left. Everything stays free until ${fmtDate(endsRaw)}.`;
 
       banner = document.createElement('div');
       banner.id = 'account-trial-banner';
       banner.innerHTML = `
         <div style="padding:14px 16px 0">
-          <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:12px;border-left:4px solid ${colour}">
+          <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid ${colour}" onclick="go('s-plans')">
             <div style="font-size:22px;flex-shrink:0">${expired ? '⏰' : '🎁'}</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(msg)}</div>
-              <div style="font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5">Payment goes live soon — nothing to do today.</div>
+              <div style="font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5">Tap to pick a plan — still free during rollout.</div>
             </div>
+            <span class="chev">›</span>
           </div>
         </div>`;
       const scroll = host.querySelector('.scroll');
@@ -7639,9 +7805,8 @@ ${sectionsHtml}
     if (!name) return showSignupError('Enter your name.');
     if (!email.includes('@')) return showSignupError('Enter a valid email.');
     if (password.length < 8) return showSignupError('Password must be at least 8 characters.');
-    if (signupRole === 'operator' && !businessName) {
-      return showSignupError('Enter your business name.');
-    }
+    // Business name is optional — solo skippers leave it blank, the org
+    // gets lazy-created and named after them on first vessel add.
 
     if (!window.Supa || !window.CodedOkConfig || !window.CodedOkConfig.supabaseUrl) {
       return showSignupError("Cloud sign-up isn't configured.");
