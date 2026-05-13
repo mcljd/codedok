@@ -208,7 +208,15 @@
           </button>
         </div>
 
-        <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Email</label>
+        <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Your name</label>
+        <input class="auth-input" id="signup-name" type="text" autocomplete="name" placeholder="Joseph McLaughlin">
+
+        <div id="signup-business-wrap">
+          <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 8px">Business name</label>
+          <input class="auth-input" id="signup-business" type="text" autocomplete="organization" placeholder="McLaughlin Charters">
+        </div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 8px">Email</label>
         <input class="auth-input" id="signup-email" type="email" autocomplete="email" placeholder="you@example.com" inputmode="email">
 
         <label style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 8px">Password (8+ characters)</label>
@@ -1520,6 +1528,21 @@
       <div class="row"><div class="row-ic bl">🔒</div><div class="row-body"><div class="row-name">Privacy &amp; data</div></div><span class="chev">›</span></div>
       <div class="row"><div class="row-ic bl">❓</div><div class="row-body"><div class="row-name">Help &amp; support</div></div><span class="chev">›</span></div>
       <div class="row" onclick="signOut()"><div class="row-ic rd">↩️</div><div class="row-body"><div class="row-name">Sign out</div><div class="row-sub">Return to the login screen</div></div><span class="chev">›</span></div>
+    </div>
+
+    <!-- TEAM — owner-managed crew + admin invites with per-member permissions.
+         Populated by renderAccountTeam(); hidden for non-operators. -->
+    <div class="slbl" id="account-team-label" style="display:none">Team</div>
+    <div class="card mx" id="account-team-card" style="display:none">
+      <div id="account-team-list"></div>
+      <div class="row" onclick="openInviteTeamMember()">
+        <div class="row-ic bl">＋</div>
+        <div class="row-body">
+          <div class="row-name">Invite team member</div>
+          <div class="row-sub">Email them a link; pick what they can do.</div>
+        </div>
+        <span class="chev">›</span>
+      </div>
     </div>
 
     <!-- Mode switch — demo account only. Toggled by renderAccount() based on

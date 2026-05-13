@@ -5781,9 +5781,14 @@
       const { data, error } = await client.rpc('accept_invitation', { p_token: token });
       if (error) throw new Error(error.message);
       try { localStorage.removeItem('codedok-pending-invite'); } catch (_) {}
-      const vName = data && data.vessel_id ? Store.getVessel(data.vessel_id) : null;
-      alert('Invite accepted — you now have surveyor access to ' + (vName ? vName.name : 'the vessel') + '.');
-      // Clear the hash so a refresh doesn't re-trigger anything.
+      let msg = 'Invitation accepted.';
+      if (data && data.kind === 'surveyor' && data.vessel_id) {
+        const v = Store.getVessel(data.vessel_id);
+        msg = 'Surveyor access granted for ' + (v ? v.name : 'the vessel') + '.';
+      } else if (data && data.kind === 'team') {
+        msg = 'You\'ve joined the team. Pull down to refresh and you\'ll see their vessels.';
+      }
+      alert(msg);
       if (window.location.hash) history.replaceState(null, '', window.location.pathname);
       return true;
     } catch (err) {
@@ -6098,6 +6103,205 @@ ${sectionsHtml}
     const demoCard  = document.getElementById('account-demo-card');
     if (demoLabel) demoLabel.style.display = isDemoAccount ? '' : 'none';
     if (demoCard)  demoCard.style.display  = isDemoAccount ? '' : 'none';
+
+    renderAccountTeam();
+    renderTrialBanner();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Team management — list members + invite UI in Account.
+  // Only operators (the org owner role) get this section.
+  // ─────────────────────────────────────────────────────────────
+  async function renderAccountTeam() {
+    const label = document.getElementById('account-team-label');
+    const card  = document.getElementById('account-team-card');
+    const list  = document.getElementById('account-team-list');
+    if (!label || !card || !list) return;
+
+    const me = window.Store ? Store.getCurrentUser() : null;
+    if (!me || me.kind !== 'operator') {
+      label.style.display = 'none';
+      card.style.display  = 'none';
+      return;
+    }
+    label.style.display = '';
+    card.style.display  = '';
+
+    list.innerHTML = `<div class="row" style="opacity:.6"><div class="row-body"><div class="row-sub">Loading team…</div></div></div>`;
+
+    if (!window.Supa || !window.Supa.ready) { list.innerHTML = ''; return; }
+    try {
+      const client = await window.Supa.getClient();
+      // org_id from any of the user's memberships where they're an owner.
+      const memb = await client.from('memberships')
+        .select('org_id, role, permissions, user_id')
+        .order('role', { ascending: true });
+      if (memb.error) throw memb.error;
+      const rows = memb.data || [];
+      if (!rows.length) { list.innerHTML = `<div class="row" style="opacity:.7"><div class="row-body"><div class="row-sub">No team members yet — add your first vessel to create the org.</div></div></div>`; return; }
+
+      const userIds = [...new Set(rows.map((r) => r.user_id))];
+      const users = await client.from('users').select('id, name, email, kind').in('id', userIds);
+      const byId = new Map((users.data || []).map((u) => [u.id, u]));
+
+      list.innerHTML = rows.map((r) => {
+        const u = byId.get(r.user_id) || { name: 'Unknown', email: '' };
+        const isOwner = r.role === 'owner';
+        const isMe = u.id === me.id;
+        const perms = (r.permissions || []).filter((p) => p !== 'view_all');
+        const permsText = isOwner ? 'Full access' : (perms.length ? perms.map(prettyPerm).join(', ') : 'View only');
+        return `
+          <div class="row">
+            <div class="row-ic ${isOwner ? 'gn' : 'bl'}">${escapeHtml(u.name ? u.name[0].toUpperCase() : '?')}</div>
+            <div class="row-body">
+              <div class="row-name">${escapeHtml(u.name || u.email)}${isMe ? ' <span style="color:var(--lt);font-size:11px;font-weight:500">(you)</span>' : ''}</div>
+              <div class="row-sub">${escapeHtml(permsText)}</div>
+            </div>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      console.warn('renderAccountTeam failed', err);
+      list.innerHTML = `<div class="row" style="opacity:.7"><div class="row-body"><div class="row-sub">Could not load team list.</div></div></div>`;
+    }
+  }
+
+  function prettyPerm(p) {
+    return ({
+      manage_vessels: 'Vessels',
+      manage_crew:    'Crew',
+      manage_certs:   'Certs & equipment',
+      manage_sms:     'SMS docs',
+      manage_team:    'Team admin'
+    })[p] || p;
+  }
+
+  function openInviteTeamMember() {
+    const old = document.getElementById('team-invite-modal');
+    if (old) old.remove();
+    const modal = document.createElement('div');
+    modal.id = 'team-invite-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = `
+      <div class="card" style="max-width:440px;width:100%;padding:20px;border-radius:16px;background:var(--bg);max-height:90vh;overflow:auto">
+        <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px;letter-spacing:-.2px">Invite a team member</div>
+        <div style="font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:14px">Send a link they can open on their phone. They'll sign up with the email below and join your org with the permissions you pick.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Email</label>
+        <input class="fi" id="team-invite-email" type="email" placeholder="crew@example.com" style="width:100%;margin-bottom:12px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">They can manage…</label>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+          ${[
+            ['manage_vessels','Vessels — add, edit, delete'],
+            ['manage_certs','Certificates & equipment'],
+            ['manage_crew','Crew records & qualifications'],
+            ['manage_sms','SMS documents & reviews'],
+            ['manage_team','Team admin (invite / remove others)']
+          ].map(([id, label]) => `
+            <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bdr);border-radius:10px;cursor:pointer">
+              <input type="checkbox" class="team-perm" value="${id}" style="accent-color:var(--sea)">
+              <span style="font-size:13px;color:var(--text)">${escapeHtml(label)}</span>
+            </label>`).join('')}
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sea" style="flex:1;height:42px;font-weight:700" onclick="submitTeamInvite()">Create invite</button>
+          <button class="btn btn-out" style="flex:1;height:42px" onclick="document.getElementById('team-invite-modal').remove()">Cancel</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  window.openInviteTeamMember = openInviteTeamMember;
+
+  async function submitTeamInvite() {
+    const email = ((document.getElementById('team-invite-email') || {}).value || '').trim();
+    if (!email.includes('@')) { alert('Enter a valid email.'); return; }
+    const perms = Array.from(document.querySelectorAll('.team-perm:checked')).map((el) => el.value);
+    // Everyone can at least view; add manage_* on top of that.
+    const permissions = ['view_all'].concat(perms);
+
+    if (!window.Supa || !window.Supa.ready) { alert('Cloud sync not configured.'); return; }
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) throw new Error('Sign in first.');
+      const me = await client.from('users').select('id').eq('auth_user_id', user.id).maybeSingle();
+      if (me.error || !me.data) throw new Error('User profile missing.');
+      // Pick the org the operator owns.
+      const memb = await client.from('memberships').select('org_id').eq('user_id', me.data.id).eq('role', 'owner').maybeSingle();
+      if (memb.error || !memb.data) throw new Error('You need to add a vessel first — that creates your org.');
+
+      const id = 'inv_' + Math.random().toString(36).slice(2, 12);
+      const ins = await client.from('invitations').insert({
+        id,
+        kind: 'team',
+        org_id: memb.data.org_id,
+        invited_email: email,
+        invited_by_user_id: me.data.id,
+        permissions
+      }).select('token').single();
+      if (ins.error) throw ins.error;
+
+      document.getElementById('team-invite-modal').remove();
+      const base = window.location.origin + window.location.pathname;
+      const url  = base + '#invite=' + ins.data.token;
+      showInvitationShare(email, url);
+    } catch (err) {
+      console.error('submitTeamInvite failed', err);
+      alert('Could not create invite: ' + (err && err.message ? err.message : err));
+    }
+  }
+  window.submitTeamInvite = submitTeamInvite;
+
+  // ─────────────────────────────────────────────────────────────
+  // Trial countdown banner — shows on Account screen.
+  // ─────────────────────────────────────────────────────────────
+  async function renderTrialBanner() {
+    const host = document.getElementById('s-account');
+    if (!host) return;
+    let banner = document.getElementById('account-trial-banner');
+    if (banner) banner.remove();
+
+    if (!window.Supa || !window.Supa.ready) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) return;
+      const me = await client.from('users').select('id, kind').eq('auth_user_id', user.id).maybeSingle();
+      if (!me.data || me.data.kind !== 'operator') return;
+      const memb = await client.from('memberships').select('org_id').eq('user_id', me.data.id).eq('role','owner').maybeSingle();
+      if (!memb.data) return;
+      const org = await client.from('organizations').select('plan, trial_ends_at').eq('id', memb.data.org_id).maybeSingle();
+      if (!org.data) return;
+
+      const plan = org.data.plan || 'trial';
+      const endsRaw = org.data.trial_ends_at;
+      if (plan !== 'trial') return; // Already paid — no banner.
+      if (!endsRaw) return;
+      const days = Store.daysUntil(endsRaw);
+      const expired = days < 0;
+      const colour = expired ? '#ef4444' : (days <= 3 ? '#f59e0b' : 'var(--sea)');
+      const msg = expired
+        ? 'Trial ended. Upgrade soon to keep adding records.'
+        : `Trial: ${days} day${days === 1 ? '' : 's'} left. Everything stays free until ${fmtDate(endsRaw)}.`;
+
+      banner = document.createElement('div');
+      banner.id = 'account-trial-banner';
+      banner.innerHTML = `
+        <div style="padding:14px 16px 0">
+          <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:12px;border-left:4px solid ${colour}">
+            <div style="font-size:22px;flex-shrink:0">${expired ? '⏰' : '🎁'}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(msg)}</div>
+              <div style="font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5">Payment goes live soon — nothing to do today.</div>
+            </div>
+          </div>
+        </div>`;
+      const scroll = host.querySelector('.scroll');
+      if (scroll) scroll.insertBefore(banner, scroll.firstChild);
+    } catch (err) {
+      console.warn('renderTrialBanner failed', err);
+    }
   }
 
   // ---------- Onboarding jurisdiction screen — wire codes-driven cert preview ----------
@@ -6442,22 +6646,33 @@ ${sectionsHtml}
         ? chosenKind
         : (row && row.kind) || inferred;
 
+      const meta = authUser.user_metadata || {};
       if (!row) {
-        const initials = (authUser.email || '?').slice(0, 2).toUpperCase();
-        const name = (authUser.user_metadata && authUser.user_metadata.name) || authUser.email.split('@')[0];
+        const initials = (meta.name || authUser.email || '?').trim().split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || authUser.email.slice(0, 2).toUpperCase();
+        const name = meta.name || authUser.email.split('@')[0];
         const id = 'u_' + Math.random().toString(36).slice(2, 9);
         const newUser = {
           id, auth_user_id: authUser.id,
           email: authUser.email, name, initials, kind: desiredKind
         };
+        if (desiredKind === 'operator' && meta.business_name) newUser.business_name = meta.business_name;
         if (desiredKind === 'builder') newUser.builder = { slug: 'redbay', company: 'Redbay Boats' };
         const ins = await client.from('users').insert(newUser).select().single();
         if (ins.error) throw new Error('users insert: ' + ins.error.message);
         row = ins.data;
-      } else if (row.kind !== desiredKind && chosenKind) {
-        // Existing user signed up again with a different role — update.
-        const upd = await client.from('users').update({ kind: desiredKind }).eq('id', row.id).select().single();
-        if (!upd.error) row = upd.data;
+      } else {
+        // Returning user — patch in any of: role change, name change,
+        // business name backfill (if signup metadata is newer than the row).
+        const patch = {};
+        if (row.kind !== desiredKind && chosenKind) patch.kind = desiredKind;
+        if (meta.name && !row.name) patch.name = meta.name;
+        if (meta.business_name && !row.business_name && desiredKind === 'operator') {
+          patch.business_name = meta.business_name;
+        }
+        if (Object.keys(patch).length) {
+          const upd = await client.from('users').update(patch).eq('id', row.id).select().single();
+          if (!upd.error) row = upd.data;
+        }
       }
 
       // Bridge with the existing localStorage session.
@@ -6688,6 +6903,10 @@ ${sectionsHtml}
       btn.style.background = isActive ? 'rgba(8,145,178,.2)' : 'rgba(255,255,255,.04)';
       btn.style.borderColor = isActive ? 'var(--seal)' : 'rgba(255,255,255,.08)';
     });
+    // Surveyors don't have a business they're billing under — the field
+    // only makes sense for operators.
+    const bizWrap = document.getElementById('signup-business-wrap');
+    if (bizWrap) bizWrap.style.display = (role === 'operator') ? '' : 'none';
   }
   window.setSignupRole = setSignupRole;
 
@@ -6696,22 +6915,30 @@ ${sectionsHtml}
     if (authInFlight) return;
     const email = ((document.getElementById('signup-email') || {}).value || '').trim();
     const password = (document.getElementById('signup-password') || {}).value || '';
+    const name = ((document.getElementById('signup-name') || {}).value || '').trim();
+    const businessName = ((document.getElementById('signup-business') || {}).value || '').trim();
     const errEl = document.getElementById('signup-error');
     if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
 
+    if (!name) return showSignupError('Enter your name.');
     if (!email.includes('@')) return showSignupError('Enter a valid email.');
     if (password.length < 8) return showSignupError('Password must be at least 8 characters.');
-
-    if (!window.Supa || !window.CodedOkConfig || !window.CodedOkConfig.supabaseUrl) {
-      return showSignupError("Cloud sign-up isn't configured. Use the demo button instead.");
+    if (signupRole === 'operator' && !businessName) {
+      return showSignupError('Enter your business name.');
     }
 
-    // Pass the chosen role through Supabase auth user_metadata so it
-    // survives the email-verification round-trip. handleSignedIn() reads
-    // it when creating the public.users row.
+    if (!window.Supa || !window.CodedOkConfig || !window.CodedOkConfig.supabaseUrl) {
+      return showSignupError("Cloud sign-up isn't configured.");
+    }
+
+    // Pass the chosen role + display name through Supabase auth
+    // user_metadata so they survive the email-verification round-trip.
+    // handleSignedIn() reads these when creating the public.users row.
     authInFlight = true;
     try {
-      await window.Supa.signUpWithPassword(email, password, { kind: signupRole });
+      const meta = { kind: signupRole, name };
+      if (signupRole === 'operator' && businessName) meta.business_name = businessName;
+      await window.Supa.signUpWithPassword(email, password, meta);
       // If email confirmation is on, the session is null until they click the link.
       // If it's off, they're signed in immediately — onAuthChange fires.
       const lineEl = document.getElementById('login-sent-line');

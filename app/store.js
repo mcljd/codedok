@@ -554,14 +554,19 @@
         orgId = myMembership.org_id;
       } else if (me) {
         orgId = uid('org');
+        const orgName = me.business_name
+          || (me.name ? me.name + "'s fleet" : 'My fleet');
         state.organizations.push({
           id: orgId,
-          name: (me.name ? me.name + "'s fleet" : 'My fleet'),
+          name: orgName,
           plan: 'trial',
           trial_ends_at: isoOffset(14),
           stripe_customer_id: null
         });
-        state.memberships.push({ org_id: orgId, user_id: me.id, role: 'owner' });
+        state.memberships.push({
+          org_id: orgId, user_id: me.id, role: 'owner',
+          permissions: ['view_all','manage_vessels','manage_crew','manage_certs','manage_sms','manage_team']
+        });
       } else {
         // No signed-in user (shouldn't happen in normal flow); fall back to
         // the demo org so legacy seed paths keep working.
