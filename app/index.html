@@ -307,22 +307,85 @@
           <div style="font-size:12px;color:rgba(255,255,255,.45);letter-spacing:.01em">Free forever for solo skippers · No card · Works on iPhone &amp; Android</div>
         </div>
 
-        <!-- Phone mockup, hidden on narrow viewports via grid collapse -->
+        <!-- Phone mockup — mirrors the real s-home layout one-for-one
+             so the marketing image and the in-app reality are the
+             same picture. -->
         <div class="ld-mock" data-reveal aria-hidden="true">
-          <div class="ld-mock-ring">
-            <div class="ld-mock-ring-text">
-              <div class="pct">82<span style="font-size:18px;color:rgba(255,255,255,.55)">%</span></div>
-              <div class="lbl">Fleet score</div>
+          <div class="ld-mock-screen">
+            <div class="ld-mock-notch"></div>
+
+            <!-- Dark top strip + greeting -->
+            <div class="ld-mock-status">
+              <div class="ld-mock-status-row">
+                <div>
+                  <div class="ld-mock-greet">GOOD MORNING</div>
+                  <div class="ld-mock-h">Fleet Status</div>
+                </div>
+                <div class="ld-mock-avatar">JM</div>
+              </div>
             </div>
-          </div>
-          <div style="text-align:center;font-family:var(--fn);color:white;margin-bottom:14px">
-            <div style="font-size:11px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.12em;margin-bottom:2px">Tsunami IV</div>
-            <div style="font-size:12px;font-weight:600">Ready for survey</div>
-          </div>
-          <div class="ld-mock-tiles">
-            <div class="ld-mock-tile"><div class="n">12</div><div class="l">Certs</div></div>
-            <div class="ld-mock-tile"><div class="n">1</div><div class="l">Due 30d</div></div>
-            <div class="ld-mock-tile"><div class="n">0</div><div class="l">Overdue</div></div>
+
+            <!-- Hero with score ring + summary + tile strip -->
+            <div class="ld-mock-hero">
+              <div class="ld-mock-hero-row">
+                <div class="ld-mock-ring">
+                  <div class="ld-mock-ring-text">82<span>%</span></div>
+                </div>
+                <div class="ld-mock-summary">
+                  <div class="label">Fleet compliance</div>
+                  <div class="headline">On course</div>
+                  <div class="sub">2 vessels · 1 item due in 30 days</div>
+                </div>
+              </div>
+              <div class="ld-mock-tiles">
+                <div class="ld-mock-tile"><div class="n rd">0</div><div class="l">Overdue</div></div>
+                <div class="ld-mock-tile"><div class="n am">1</div><div class="l">Due 30d</div></div>
+                <div class="ld-mock-tile"><div class="n gn">14</div><div class="l">Valid</div></div>
+              </div>
+            </div>
+
+            <!-- Vessels section -->
+            <div class="ld-mock-section">
+              <div class="ld-mock-section-lbl">My vessels</div>
+              <div class="ld-mock-card" style="margin-bottom:6px">
+                <div class="ld-mock-photo">
+                  <!-- Boat silhouette -->
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 17h18l-1.5 3h-15L3 17z"/>
+                    <path d="M5 14V8l7-4 7 4v6"/>
+                    <path d="M12 4v10"/>
+                  </svg>
+                </div>
+                <div class="ld-mock-card-body">
+                  <div class="ld-mock-card-name">Tsunami IV <span class="ld-mock-pill gn">READY</span></div>
+                  <div class="ld-mock-card-sub">Cat 2 · 8.5m · Ballycastle</div>
+                </div>
+                <div class="ld-mock-mini-ring gn">94</div>
+              </div>
+              <div class="ld-mock-card">
+                <div class="ld-mock-photo" style="background:linear-gradient(135deg,#4F7A52 0%,#0F4C5C 100%)">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 17h18l-1.5 3h-15L3 17z"/>
+                    <path d="M5 14V9c0-1 1-2 2-2h10c1 0 2 1 2 2v5"/>
+                    <path d="M8 7V4h8v3"/>
+                  </svg>
+                </div>
+                <div class="ld-mock-card-body">
+                  <div class="ld-mock-card-name">Lagavulin <span class="ld-mock-pill rd">1 OV</span></div>
+                  <div class="ld-mock-card-sub">Cat 2 · 11m · Ballycastle</div>
+                </div>
+                <div class="ld-mock-mini-ring am">71</div>
+              </div>
+            </div>
+
+            <!-- Bottom nav -->
+            <div class="ld-mock-bnav">
+              <span class="ld-mock-bnav-item on">🏠</span>
+              <span class="ld-mock-bnav-item">⛵</span>
+              <span class="ld-mock-bnav-item">📋</span>
+              <span class="ld-mock-bnav-item">🛠️</span>
+              <span class="ld-mock-bnav-item">⚙️</span>
+            </div>
           </div>
         </div>
       </div>
@@ -378,6 +441,35 @@
         </div>
       </div>
     </section>
+
+    <!-- ── HOW IT WORKS ─────────────────────────────────────── -->
+    <section style="background:var(--page);color:var(--text);padding:24px 22px 72px">
+      <div style="max-width:1100px;margin:0 auto">
+        <div data-reveal style="margin-bottom:36px">
+          <div class="ld-eyebrow">How it works</div>
+          <h2 class="ld-h2">Up and running before the kettle boils.</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:36px">
+          <div data-reveal>
+            <div class="ld-step-num">01</div>
+            <h3 style="font-family:var(--fn-display);font-size:22px;font-weight:700;color:var(--text);margin:14px 0 8px;letter-spacing:-.015em">Add your vessel</h3>
+            <p style="font-size:14px;color:var(--mid);line-height:1.6;margin:0">Name, length, category, where she operates. About 60 seconds. CodedOK pre-loads every certificate and bit of kit you're required to carry.</p>
+          </div>
+          <div data-reveal>
+            <div class="ld-step-num">02</div>
+            <h3 style="font-family:var(--fn-display);font-size:22px;font-weight:700;color:var(--text);margin:14px 0 8px;letter-spacing:-.015em">Snap your paperwork</h3>
+            <p style="font-size:14px;color:var(--mid);line-height:1.6;margin:0">Photograph each certificate or drop the PDF. AI reads the issuer, certificate number and expiry — no retyping. PLI, coding cert, radio licence, the lot.</p>
+          </div>
+          <div data-reveal>
+            <div class="ld-step-num">03</div>
+            <h3 style="font-family:var(--fn-display);font-size:22px;font-weight:700;color:var(--text);margin:14px 0 8px;letter-spacing:-.015em">Walk in survey-ready</h3>
+            <p style="font-size:14px;color:var(--mid);line-height:1.6;margin:0">Compliance score on your home screen. Nudges before anything expires. Inspection pack PDF in one tap. Your surveyor sees the same record you do.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ld-divider"></div>
 
     <!-- ── FEATURE GRID ─────────────────────────────────────── -->
     <section style="background:var(--slate);color:var(--text);padding:72px 22px">
