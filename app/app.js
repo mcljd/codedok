@@ -3312,6 +3312,11 @@
     if (typeof renderHome === 'function' && document.getElementById('s-home')) {
       try { renderHome(); } catch (_) {}
     }
+    // Reveal the hero install CTA on the landing now that we can fire
+    // the native prompt.
+    if (typeof updateHeroInstallBtn === 'function') {
+      try { updateHeroInstallBtn(); } catch (_) {}
+    }
   });
 
   window.addEventListener('appinstalled', () => {
@@ -3319,6 +3324,8 @@
     try { localStorage.setItem('codedok-pwa-installed-dismissed', '1'); } catch (_) {}
     const el = document.getElementById('home-pwa-install');
     if (el) el.remove();
+    const heroBtn = document.getElementById('hero-install-btn');
+    if (heroBtn) heroBtn.style.display = 'none';
   });
 
   async function installPwa() {
@@ -3340,6 +3347,93 @@
     }
   }
   window.installPwa = installPwa;
+
+  // ─────────────────────────────────────────────────────────────
+  // Universal "Add to Home Screen" CTA — wired to the hero button
+  // on the landing. Real one-tap install on Chromium (Android +
+  // desktop Chrome/Edge) via the captured beforeinstallprompt
+  // event. On iOS Safari, Apple blocks programmatic install, so
+  // we show a guided modal explaining Share → Add to Home Screen.
+  // Hidden entirely on already-installed PWAs and on browsers that
+  // don't expose the install event after a fair wait.
+  // ─────────────────────────────────────────────────────────────
+  function isStandaloneInstall() {
+    return window.navigator.standalone === true
+      || window.matchMedia('(display-mode: standalone)').matches;
+  }
+
+  function updateHeroInstallBtn() {
+    const btn = document.getElementById('hero-install-btn');
+    if (!btn) return;
+    if (isStandaloneInstall()) { btn.style.display = 'none'; return; }
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPhone|iPad|iPod/.test(ua) && !/CriOS|FxiOS/.test(ua);
+    const canPrompt = !!window.__codedokInstallEvent;
+    // Show on: iOS Safari (instructions path), or any browser where
+    // we've captured the install event. Hide elsewhere (e.g. Firefox
+    // desktop without install support) so we don't promise something
+    // we can't deliver.
+    btn.style.display = (canPrompt || isIOS) ? '' : 'none';
+  }
+  window.updateHeroInstallBtn = updateHeroInstallBtn;
+
+  function openIosInstallModal() {
+    closeIosInstallModal();
+    const overlay = document.createElement('div');
+    overlay.id = 'ios-install-modal';
+    overlay.className = 'qr-modal-overlay';
+    overlay.innerHTML = `
+      <div class="qr-modal-card" role="dialog" aria-labelledby="ios-install-title" style="max-width:340px">
+        <button class="qr-close" type="button" aria-label="Close" onclick="closeIosInstallModal()">×</button>
+        <div style="font-size:40px;margin-bottom:4px">📲</div>
+        <h3 id="ios-install-title">Two taps to install</h3>
+        <p style="margin-bottom:18px">iOS only lets you add apps from the Share menu. Here's the path:</p>
+        <ol style="text-align:left;margin:0 0 6px;padding:0 0 0 22px;font-size:14px;color:#475569;line-height:1.7">
+          <li>Tap <strong style="color:#0F4C5C">Share</strong>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin:0 2px;color:#0F4C5C"><path d="M12 3v12M7 8l5-5 5 5M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>
+            in the Safari toolbar
+          </li>
+          <li>Scroll down and tap <strong style="color:#0F4C5C">Add to Home Screen</strong></li>
+          <li>Tap <strong style="color:#0F4C5C">Add</strong> in the top-right</li>
+        </ol>
+        <p style="font-size:12px;color:#94a3b8;margin:18px 0 0">CodedOK will open like a native app — full-screen, offline-ready, works at sea.</p>
+      </div>
+    `;
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeIosInstallModal(); });
+    document.body.appendChild(overlay);
+  }
+  window.openIosInstallModal = openIosInstallModal;
+
+  function closeIosInstallModal() {
+    const el = document.getElementById('ios-install-modal');
+    if (el) el.remove();
+  }
+  window.closeIosInstallModal = closeIosInstallModal;
+
+  async function installFromCta() {
+    if (isStandaloneInstall()) {
+      const b = document.getElementById('hero-install-btn');
+      if (b) b.style.display = 'none';
+      return;
+    }
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPhone|iPad|iPod/.test(ua) && !/CriOS|FxiOS/.test(ua);
+    if (isIOS) {
+      openIosInstallModal();
+      return;
+    }
+    // Chromium path: fire the captured install event.
+    if (window.__codedokInstallEvent && typeof installPwa === 'function') {
+      await installPwa();
+      updateHeroInstallBtn();
+      return;
+    }
+    // Fallback: no install event available — open the QR popup so
+    // the user can install on their phone instead. Better than a
+    // dead button.
+    if (typeof openQrPopup === 'function') openQrPopup();
+  }
+  window.installFromCta = installFromCta;
 
   function dismissLandingSmartBanner() {
     try { localStorage.setItem('codedok-pwa-installed-dismissed', '1'); } catch (_) {}
@@ -8353,6 +8447,7 @@ ${sectionsHtml}
 
     renderDemoBadge();
     ensureDesktopQrFab();
+    updateHeroInstallBtn();
 
     // Real auth: when Supabase is wired, listen for sign-in / sign-out
     // events. handleSignedIn ensures a row exists in our users table,
