@@ -7858,6 +7858,12 @@ ${sectionsHtml}
         user_id: row.id,
         signed_in_at: new Date().toISOString()
       });
+      // Remember that this device has signed in at least once. The
+      // soft gate uses this to skip the marketing landing for
+      // returning users — once they've made the conversion they
+      // shouldn't see the pitch on every visit, only the sign-in
+      // screen (or the app, if their session is still live).
+      try { localStorage.setItem('codedok-knows-user', '1'); } catch (_) {}
 
       // Demo-account gating. Two seeded experiences:
       //   mcljd303@icloud.com               → operator demo (skipper view)
@@ -8589,22 +8595,29 @@ ${sectionsHtml}
       session = null;
     }
     if (!session) {
-      // Soft gate. Two paths:
-      //  - Browser visitors with no session → marketing landing.
-      //    Lets prospects discover the product before signing up.
-      //  - Installed PWA (standalone display mode) with no session →
-      //    sign-in screen. Once you've added CodedOK to your home
-      //    screen you should never see the marketing page again —
-      //    you're past that conversion step. Tapping the icon should
-      //    feel like opening any other app.
+      // Soft gate — three signals decide where unauth visitors go:
       //
-      // /welcome and /?welcome are kept as backward-compat for
-      // anything sharing those URLs, but they no longer behave
-      // differently from /.
+      //  1. Installed PWA (standalone display mode). Once they've
+      //     added CodedOK to their home screen, tapping the icon
+      //     should feel like opening any native app — never a
+      //     marketing page.
+      //
+      //  2. Returning user (codedok-knows-user flag, set the first
+      //     time handleSignedIn runs). They've been pitched and
+      //     converted before; even if they signed out, the landing
+      //     adds zero value to them. Send them straight to sign-in.
+      //
+      //  3. Fresh visitor (no PWA install, never signed in here)
+      //     → marketing landing. This is the discovery path that
+      //     justifies the landing existing in the first place.
+      //
       // Authenticated users skip this block entirely (session truthy).
       const standalone = window.navigator.standalone === true
         || window.matchMedia('(display-mode: standalone)').matches;
-      go(standalone ? 's-login' : 's-land');
+      let knowsUser = '0';
+      try { knowsUser = localStorage.getItem('codedok-knows-user') || '0'; } catch (_) {}
+      const skipLanding = standalone || knowsUser === '1';
+      go(skipLanding ? 's-login' : 's-land');
       return;
     }
     // If a non-demo user is returning to the app and the Store still
