@@ -619,7 +619,8 @@
     if (id === 's-my-quals')           renderMyQuals();
     if (id === 's-crew-home')          renderCrewHome();
     if (id === 's-plans')              renderPlans();
-    if (id === 's-land')               armLandingReveal();
+    if (id === 's-land')               { armLandingReveal(); ensureLandingSmartBanner(); }
+    else { const sb = document.getElementById('landing-smart-banner'); if (sb) sb.remove(); }
   }
   window.go = go;
 
@@ -3305,6 +3306,11 @@
     if (typeof renderHome === 'function' && document.getElementById('s-home')) {
       try { renderHome(); } catch (_) {}
     }
+    // Re-render the landing smart-banner if the marketing page is showing.
+    const land = document.getElementById('s-land');
+    if (land && land.classList.contains('on') && typeof ensureLandingSmartBanner === 'function') {
+      try { ensureLandingSmartBanner(); } catch (_) {}
+    }
   });
 
   window.addEventListener('appinstalled', () => {
@@ -3323,6 +3329,8 @@
       if (outcome === 'accepted') {
         const el = document.getElementById('home-pwa-install');
         if (el) el.remove();
+        const land = document.getElementById('landing-smart-banner');
+        if (land) land.remove();
       }
     } catch (err) {
       console.warn('installPwa failed:', err);
@@ -3331,6 +3339,63 @@
     }
   }
   window.installPwa = installPwa;
+
+  function dismissLandingSmartBanner() {
+    try { localStorage.setItem('codedok-pwa-installed-dismissed', '1'); } catch (_) {}
+    const el = document.getElementById('landing-smart-banner');
+    if (el) el.remove();
+  }
+  window.dismissLandingSmartBanner = dismissLandingSmartBanner;
+
+  function ensureLandingSmartBanner() {
+    const old = document.getElementById('landing-smart-banner');
+    if (old) old.remove();
+    const ua = navigator.userAgent || '';
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+    if (!isMobile) return;
+    const isStandalone = window.navigator.standalone === true
+      || window.matchMedia('(display-mode: standalone)').matches;
+    if (isStandalone) return;
+    let dismissed = '0';
+    try { dismissed = localStorage.getItem('codedok-pwa-installed-dismissed') || '0'; } catch (_) {}
+    if (dismissed === '1') return;
+    const isIOS = /iPhone|iPad|iPod/.test(ua);
+    const canPrompt = !!window.__codedokInstallEvent;
+    const cta = canPrompt
+      ? `<button onclick="installPwa()" style="background:#0F4C5C;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer">Install</button>`
+      : (isIOS
+          ? `<span style="color:#cbd5e1;font-size:12px;line-height:1.4">Tap <strong style="color:#fff">Share</strong> → <strong style="color:#fff">Add to Home Screen</strong></span>`
+          : ``);
+    const banner = document.createElement('div');
+    banner.id = 'landing-smart-banner';
+    banner.style.cssText = [
+      'position:fixed',
+      'left:12px',
+      'right:12px',
+      'bottom:calc(12px + env(safe-area-inset-bottom, 0px))',
+      'z-index:9999',
+      'background:rgba(15,76,92,0.97)',
+      'color:#fff',
+      'border-radius:14px',
+      'box-shadow:0 10px 30px rgba(0,0,0,0.25)',
+      'padding:12px 14px',
+      'display:flex',
+      'align-items:center',
+      'gap:12px',
+      'font-family:inherit',
+    ].join(';');
+    banner.innerHTML = `
+      <div style="font-size:22px;flex-shrink:0">📲</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:800">Use CodedOK as an app</div>
+        <div style="font-size:11px;color:#cbd5e1;margin-top:2px;line-height:1.4">Works offline, on-the-water ready.</div>
+      </div>
+      ${cta}
+      <button onclick="dismissLandingSmartBanner()" aria-label="Dismiss" style="background:none;border:0;color:#cbd5e1;font-size:22px;cursor:pointer;padding:2px 6px;line-height:1">×</button>
+    `;
+    document.body.appendChild(banner);
+  }
+  window.ensureLandingSmartBanner = ensureLandingSmartBanner;
 
   // ─────────────────────────────────────────────────────────────
   // Web push reminders — opt-in flow.
@@ -8248,16 +8313,16 @@ ${sectionsHtml}
       session = null;
     }
     if (!session) {
-      // URL-based split between the app and the marketing landing:
-      //   /            → s-login (the app proper)
-      //   /welcome     → s-land  (the marketing landing for prospects)
-      //   /?welcome    → s-land  (query-string fallback)
-      // Share /welcome for sales; share / for getting users into the
-      // product.
-      const path = (window.location.pathname || '/').toLowerCase();
-      const isWelcome = /\/welcome\/?$/.test(path)
-        || /[?&#]welcome\b/i.test(window.location.search + window.location.hash);
-      go(isWelcome ? 's-land' : 's-login');
+      // Soft gate: unauthenticated visitors always land on the marketing
+      // page (s-land), regardless of /, /welcome, or /?welcome. The app
+      // proper (s-login → s-home etc.) is only reachable via the "Sign in"
+      // CTAs on s-land, or by clicking a magic-link email which sets a
+      // session before this block runs.
+      //   /            → s-land
+      //   /welcome     → s-land
+      //   /?welcome    → s-land
+      // Authenticated users skip this block entirely (session truthy).
+      go('s-land');
       return;
     }
     // If a non-demo user is returning to the app and the Store still
