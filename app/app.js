@@ -3646,6 +3646,14 @@
     const steps = document.querySelectorAll('.ldx-step');
     const cards = document.querySelectorAll('.ldx-scrolly-card');
     if (!steps.length || !cards.length) return;
+    // On mobile the sticky phone is hidden and the steps render as
+    // plain content cards. No observer needed — just force everything
+    // visible and bail. Avoids any per-scroll work on phones.
+    if (window.matchMedia('(max-width: 720px)').matches) {
+      steps.forEach((s) => s.classList.add('on'));
+      cards.forEach((c) => c.classList.add('on'));
+      return;
+    }
     if (!('IntersectionObserver' in window)) {
       // Older browsers — just show everything.
       steps.forEach((s) => s.classList.add('on'));

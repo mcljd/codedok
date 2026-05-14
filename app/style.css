@@ -4476,4 +4476,34 @@ body:has(#s-land.on) { background: #050614 !important; }
 
   /* 4. No will-change / no transforms that promote layers needlessly */
   #s-land .ldx-scrolly-phone { transform: none !important; }
+
+  /* 5. Kill the floating bottom CTA on mobile — it's fixed-position
+        with backdrop-filter, a known iOS Safari freeze pattern when
+        combined with momentum scrolling. The hero CTAs already cover
+        the same call-to-action a viewport up. */
+  #s-land .ld-floatcta { display: none !important; }
+
+  /* 6. Sticky nav: keep visible but solid (no backdrop-filter) and
+        no longer "sticky" — switch to plain block so we don't pin a
+        composited layer to the top of every scroll frame. */
+  #s-land .ld-stickynav {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: #0a0f1a !important;
+    position: static !important;
+  }
+
+  /* 7. The wave SVG in the auth shell has a perpetual translateX
+        animation. The auth shell isn't shown on landing, but the
+        @keyframes still parses — pause it explicitly so iOS doesn't
+        decide to pre-compose anything. */
+  @media (max-width: 720px) {
+    @keyframes wave-drift { from { transform: none; } to { transform: none; } }
+  }
+
+  /* 8. Disable shell entry animation on mobile — was opacity-only so
+        cheap, but eliminating any per-frame work helps. */
+  #s-land.on { animation: none !important; }
+  #s-land .ldx-cell { animation: none !important; }
+  [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
