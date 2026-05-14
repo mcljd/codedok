@@ -912,7 +912,9 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
    avatar, hero block with score ring + 3 tiles, a vessel card, and
    a fixed bnav. Update when the real app changes. */
 #s-land .ld-mock {
-  width: 264px; flex-shrink: 0;
+  width: 100%;
+  max-width: 264px;
+  flex-shrink: 0;
   border-radius: 38px;
   background: #000;
   padding: 7px;
@@ -921,6 +923,16 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
     0 0 0 1px rgba(255,255,255,.06),
     inset 0 0 0 1px rgba(255,255,255,.04);
   position: relative;
+}
+/* On narrow viewports the mockup sits below the hero copy. Centre it
+   and cap the width so it never overflows. */
+@media (max-width: 720px) {
+  #s-land .ld-mock { margin: 32px auto 0; }
+}
+/* On the desktop hero grid, prevent the column from trying to expand
+   beyond the mockup's natural width. */
+@media (min-width: 720px) {
+  #s-land .ld-hero-grid > .ld-mock { justify-self: end; }
 }
 #s-land .ld-mock-screen {
   border-radius: 32px;

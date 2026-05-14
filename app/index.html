@@ -293,6 +293,16 @@
 
   <div class="scroll" style="background:var(--ink);color:white;overflow-x:hidden">
 
+    <!-- ── ALERT STRIP ─────────────────────────────────────── -->
+    <!-- New regulation landing in Dec 2025; surfaces it without crying
+         wolf. Amber base, single line, links to the FAQ entry on what
+         changes. -->
+    <aside style="background:rgba(197,138,42,.16);border-bottom:1px solid rgba(197,138,42,.32);color:#FCBF60;font-family:var(--fn);font-size:13px;font-weight:500;text-align:center;padding:10px 18px;letter-spacing:.01em">
+      <a href="#faq-mca-2025" style="color:inherit;text-decoration:none">
+        <strong style="color:#FFD58C">⚠ New MCA Sport &amp; Pleasure Vessel Code in force December 2025.</strong> See what changes →
+      </a>
+    </aside>
+
     <!-- ── HERO ────────────────────────────────────────────── -->
     <section style="position:relative;padding:24px 22px 56px;overflow:hidden">
       <!-- Boat illustration behind a heavy dark overlay so the type
@@ -306,16 +316,10 @@
       <!-- Subtle horizontal rule grid, gives the section structure under the type -->
       <div aria-hidden="true" style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px);background-size:100% 88px;background-position:0 -44px;pointer-events:none;opacity:.5"></div>
 
-      <!-- Inline top nav (visible at the very top; once you scroll past
-           the hero, the sticky nav at the top of the document takes over). -->
-      <nav style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;margin-bottom:48px">
-        <a href="javascript:go('s-land')" style="display:flex;align-items:center;gap:11px;text-decoration:none">
-          <svg width="34" height="34" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-            <rect x="6" y="6" width="52" height="52" rx="12" fill="#0F4C5C"/>
-            <path d="M18 33 L28 43 L46 22" stroke="#F3F5F4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span style="font-size:22px;font-weight:700;color:white;letter-spacing:-.025em;font-family:var(--fn-display)">CodedOK</span>
-        </a>
+      <!-- Top utility row — sign-in only. The big animated brand mark
+           below carries the logo identity; no need for a duplicate small
+           lockup here. -->
+      <nav style="position:relative;z-index:2;display:flex;align-items:center;justify-content:flex-end;margin-bottom:32px">
         <button onclick="go('s-login')" style="background:transparent;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.85);font-size:13px;font-weight:600;padding:9px 16px;border-radius:10px;cursor:pointer;font-family:var(--fn)">Sign in</button>
       </nav>
 
@@ -368,15 +372,15 @@
             </div>
           </div>
 
-          <h1 class="ld-h1" data-reveal>Inspection-ready,<br>every day at sea.</h1>
+          <h1 class="ld-h1" data-reveal>One record.<br>Three codes.<br><span style="color:var(--seal)">UK and Ireland.</span></h1>
 
-          <p class="ld-sub" style="margin-bottom:32px">The compliance app built for UK&nbsp;&amp;&nbsp;Irish coded vessel skippers. Track every certificate, piece of equipment and crew qualification — and bring your surveyor into the same record.</p>
+          <p class="ld-sub" style="margin-bottom:32px">Inspection-readiness for UK and Irish small commercial vessel operators. Track every certificate, piece of equipment and crew qualification — and bring your surveyor into the same record.</p>
 
-          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:14px">
-            <button class="btn btn-sea" onclick="goSignUp()" style="height:54px;padding:0 28px;font-weight:700;font-size:15px;letter-spacing:-.005em;border-radius:12px">Start free →</button>
-            <button onclick="go('s-login')" style="background:transparent;border:none;color:rgba(255,255,255,.7);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--fn);padding:14px 10px;text-decoration:underline;text-underline-offset:5px;text-decoration-color:rgba(255,255,255,.25);transition:all .2s var(--ease)" onmouseover="this.style.color='white';this.style.textDecorationColor='white'" onmouseout="this.style.color='rgba(255,255,255,.7)';this.style.textDecorationColor='rgba(255,255,255,.25)'">I have an account</button>
+          <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:14px">
+            <button onclick="goSignUp()" style="height:56px;padding:0 30px;font-weight:700;font-size:15px;letter-spacing:-.005em;border-radius:12px;background:#22D3EE;color:#0F4C5C;border:none;cursor:pointer;font-family:var(--fn);box-shadow:0 14px 32px rgba(34,211,238,.28);transition:transform .2s cubic-bezier(.32,.72,0,1),box-shadow .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 18px 38px rgba(34,211,238,.36)'" onmouseout="this.style.transform='';this.style.boxShadow='0 14px 32px rgba(34,211,238,.28)'">Start free →</button>
+            <button onclick="go('s-login')" style="background:transparent;border:1px solid rgba(255,255,255,.22);color:rgba(255,255,255,.9);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--fn);height:56px;padding:0 22px;border-radius:12px;transition:all .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.borderColor='rgba(255,255,255,.5)';this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.borderColor='rgba(255,255,255,.22)';this.style.background='transparent'">See live demo</button>
           </div>
-          <div style="font-size:12px;color:rgba(255,255,255,.45);letter-spacing:.01em">Free forever for solo skippers · No card · Works on iPhone &amp; Android</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.45);letter-spacing:.01em">Free trial · No card to start · Works on iPhone &amp; Android</div>
         </div>
 
         <!-- Phone mockup — mirrors the real s-home layout one-for-one
@@ -464,27 +468,39 @@
       </div>
     </section>
 
-    <!-- ── PROOF STRIP ─────────────────────────────────────── -->
-    <!-- Animated counters fire when this strip enters the viewport.
-         Final values are rendered statically too (no flash if JS is
-         disabled). -->
-    <section class="ld-proof" data-reveal>
-      <div class="ld-proof-grid">
-        <div class="ld-proof-stat">
-          <div class="num"><span class="ld-count" data-count-to="3" data-count-suffix="">3</span></div>
-          <div class="lbl">UK + IE codes supported</div>
-        </div>
-        <div class="ld-proof-stat">
-          <div class="num"><span class="ld-count" data-count-to="14" data-count-suffix="-day">14-day</span></div>
-          <div class="lbl">Free trial on paid plans</div>
-        </div>
-        <div class="ld-proof-stat">
-          <div class="num">£<span class="ld-count" data-count-to="0">0</span></div>
-          <div class="lbl">Forever for solo skippers</div>
-        </div>
-        <div class="ld-proof-stat">
-          <div class="num"><span class="ld-count" data-count-to="60" data-count-suffix="s">60s</span></div>
-          <div class="lbl">Add your first vessel</div>
+    <!-- ── BUILT-FOR STRIP ──────────────────────────────────── -->
+    <!-- Six audience types in one tight row. Subordinate to the hero —
+         small inline icons, no cards, hairline divider top + bottom. -->
+    <section style="background:var(--page);color:var(--mid);padding:22px;border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);font-family:var(--fn)">
+      <div style="max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 28px;font-size:13px;font-weight:500;color:var(--mid)">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--lt)">Built for</span>
+        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 14h19l-2 5h-15l-2-5z"/><path d="M5 14V8l7-4 7 4v6"/><path d="M12 4v10"/></svg> Skippers</span>
+        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg> Charter fleets</span>
+        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg> Angling operators</span>
+        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg> Surveyors</span>
+        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg> Sailing schools</span>
+        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V8M5 12l7-7 7 7"/></svg> Owner-operators</span>
+      </div>
+    </section>
+
+    <!-- ── IRISH PBL MOAT ──────────────────────────────────── -->
+    <!-- The widest defensible claim: nobody else tracks Irish PBL +
+         UK MCA in one record. Promoted above all other sections. -->
+    <section style="background:var(--page);color:var(--text);padding:80px 22px" data-reveal>
+      <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:36px;align-items:center">
+        <div>
+          <div class="ld-eyebrow">The moat · Ireland</div>
+          <h2 class="ld-h2">The only tool that tracks Irish PBL alongside UK MCA.</h2>
+          <p class="ld-sub on-light" style="margin:14px 0 20px">Cross-border operators carry two rulebooks — the MCA Sport &amp; Pleasure Vessel Code in the UK, the Marine Survey Office Passenger Boat Licence (Classes P1–P6) in Ireland. UK coding does not satisfy Irish PBL. CodedOK keeps both lines of evidence in one record per vessel.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px">
+            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P1 — Open inland</span>
+            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P2 — Inland 1-2 mile</span>
+            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P3 — Smooth water</span>
+            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P4 — Sheltered water</span>
+            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P5 — Partial coast</span>
+            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P6 — Sea-going</span>
+          </div>
+          <button class="btn btn-sea" onclick="goSignUp()" style="height:46px;padding:0 22px;font-weight:700;border-radius:11px">See how Irish operators use CodedOK →</button>
         </div>
       </div>
     </section>
@@ -536,6 +552,39 @@
             <p>Your own login. Your tickets, medicals and renewals — visible to you and to the operators who've added you. Solo skippers track their own quals here too.</p>
           </div>
 
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PROBLEM (three real costs of getting it wrong) ──── -->
+    <section style="background:var(--page);color:var(--text);padding:72px 22px 24px">
+      <div style="max-width:1100px;margin:0 auto">
+        <div data-reveal style="margin-bottom:36px;max-width:580px">
+          <div class="ld-eyebrow">Why this matters</div>
+          <h2 class="ld-h2">A missing pyro card grounds the boat.<br>The clock catches you out either way.</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px">
+          <div class="ld-feature" data-reveal>
+            <div class="ld-feature-ic" style="background:rgba(161,74,59,.10);color:var(--red)">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4"/><circle cx="12" cy="17" r="1" fill="currentColor"/><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </div>
+            <h3>An expired flare grounds the boat</h3>
+            <p>A £40 oversight on a SOLAS pyro pack cancels a £1,500 charter trip. Every passenger refund + every hour off the water comes back to a checklist you didn't run.</p>
+          </div>
+          <div class="ld-feature" data-reveal>
+            <div class="ld-feature-ic" style="background:rgba(197,138,42,.10);color:var(--amber)">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            </div>
+            <h3>Renewals stack at the worst times</h3>
+            <p>Coding cert, PLI, liferaft service, EPIRB, radio licence, ENG1 medical, first aid, VHF SRC — fifteen separate clocks all running at different speeds. One spreadsheet doesn't catch them. CodedOK does.</p>
+          </div>
+          <div class="ld-feature" data-reveal>
+            <div class="ld-feature-ic" style="background:rgba(15,76,92,.10);color:var(--sea)">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>
+            </div>
+            <h3>December 2025 raises the bar</h3>
+            <p>The new MCA Sport &amp; Pleasure Vessel Code 2025 lands in force this December. New stability evidence, new SMS requirements, new owner declarations. The transition is the riskiest year — most surveyors flag the most issues.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -705,6 +754,23 @@
       </div>
     </section>
 
+    <!-- ── CODES ALIGNMENT BAND ─────────────────────────────── -->
+    <!-- One-line citation strip. Every framework we cover with the
+         exact source. Reads as evidence, not marketing. -->
+    <section style="background:var(--ink);color:rgba(255,255,255,.85);padding:48px 22px;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)" data-reveal>
+      <div style="max-width:1100px;margin:0 auto">
+        <div class="ld-eyebrow on-dark" style="margin-bottom:18px">Codes aligned</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 28px;font-family:var(--fn);font-size:13px;line-height:1.55">
+          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">SPV Code 2025</strong> <span style="color:rgba(255,255,255,.55)">— Appendix 7 §2 mapped</span></div></div>
+          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">Workboat Code 3.0</strong> <span style="color:rgba(255,255,255,.55)">— full schedule</span></div></div>
+          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">Irish PBL</strong> <span style="color:rgba(255,255,255,.55)">— Classes P1–P6</span></div></div>
+          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">YDSA Coding</strong> <span style="color:rgba(255,255,255,.55)">— Categories 2–6</span></div></div>
+          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">MGN 280</strong> <span style="color:rgba(255,255,255,.55)">— small-passenger guidance</span></div></div>
+          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">MARPOL Annex I</strong> <span style="color:rgba(255,255,255,.55)">— oil-record-aware</span></div></div>
+        </div>
+      </div>
+    </section>
+
     <!-- ── PRICING ─────────────────────────────────────────── -->
     <section style="background:var(--page);color:var(--text);padding:72px 22px">
       <div style="max-width:1100px;margin:0 auto">
@@ -760,43 +826,119 @@
 
         </div>
 
+        <div data-reveal style="margin-top:32px">
+          <div class="ld-eyebrow" style="margin-bottom:10px">Also available</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+            <div style="background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px">
+              <div>
+                <div style="font-family:var(--fn-display);font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em">AI gap analysis</div>
+                <div style="font-size:12px;color:var(--mid);margin-top:3px;line-height:1.5">One-off audit of a vessel against the active code.</div>
+              </div>
+              <div style="font-family:var(--fn-display);font-size:18px;font-weight:700;color:var(--sea);letter-spacing:-.02em;white-space:nowrap">£49<span style="font-size:11px;font-weight:500;color:var(--mid)">/vessel</span></div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px">
+              <div>
+                <div style="font-family:var(--fn-display);font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em">SMS generation</div>
+                <div style="font-size:12px;color:var(--mid);margin-top:3px;line-height:1.5">AI-drafted Safety Management System with surveyor review.</div>
+              </div>
+              <div style="font-family:var(--fn-display);font-size:18px;font-weight:700;color:var(--sea);letter-spacing:-.02em;white-space:nowrap;text-align:right">£60<span style="font-size:11px;font-weight:500;color:var(--mid)">+£150</span></div>
+            </div>
+          </div>
+        </div>
+
         <div data-reveal style="background:rgba(15,76,92,.06);border:1px solid rgba(15,76,92,.15);border-radius:12px;padding:14px 18px;margin-top:24px;font-size:13px;color:var(--mid);line-height:1.55">
           <strong style="color:var(--sea)">No card during early access.</strong> Payment goes live later — you'll get an email before anything is charged. Solo skipper stays free either way.
         </div>
       </div>
     </section>
 
+    <!-- ── SURVEYOR SECTION ─────────────────────────────────── -->
+    <!-- Separate block, visually distinct, its own CTA. Stops skippers
+         clicking the wrong button. -->
+    <section style="background:var(--ink);color:white;padding:72px 22px;position:relative;overflow:hidden" data-reveal>
+      <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(ellipse 50% 80% at 100% 50%,rgba(30,122,134,.18) 0%,transparent 60%);pointer-events:none"></div>
+      <div style="max-width:1100px;margin:0 auto;position:relative;z-index:1">
+        <div style="display:grid;grid-template-columns:1fr;gap:32px;align-items:center">
+          <div>
+            <div class="ld-eyebrow on-dark">For surveyors</div>
+            <h2 class="ld-h2 on-dark" style="max-width:680px">A cross-client portfolio in your pocket.</h2>
+            <p class="ld-sub" style="margin:14px 0 24px">Each operator invites you per vessel. You get one inbox across the lot — quote requests, inspections, deficiencies, signed jobs. Free seat, paid by your operator clients on their side.</p>
+            <ul style="list-style:none;padding:0;margin:0 0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 24px">
+              <li style="font-size:14px;color:rgba(255,255,255,.85);display:flex;gap:8px"><span style="color:var(--seal);font-weight:700">✓</span>Multi-client vessel portfolio</li>
+              <li style="font-size:14px;color:rgba(255,255,255,.85);display:flex;gap:8px"><span style="color:var(--seal);font-weight:700">✓</span>Port-clustered job scheduling</li>
+              <li style="font-size:14px;color:rgba(255,255,255,.85);display:flex;gap:8px"><span style="color:var(--seal);font-weight:700">✓</span>Quote + invoice through the app</li>
+              <li style="font-size:14px;color:rgba(255,255,255,.85);display:flex;gap:8px"><span style="color:var(--seal);font-weight:700">✓</span>Signed-inspection PDFs to the operator</li>
+            </ul>
+            <button onclick="goSignUp()" style="height:50px;padding:0 26px;font-weight:700;font-size:14px;border-radius:11px;background:transparent;border:1px solid rgba(255,255,255,.3);color:white;cursor:pointer;font-family:var(--fn);transition:all .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.background='rgba(255,255,255,.08)';this.style.borderColor='rgba(255,255,255,.6)'" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,.3)'">Request surveyor access →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PROVENANCE ──────────────────────────────────────── -->
+    <!-- Honest social proof when we don't yet have public customer
+         testimonials. Names what's real: Northern Ireland origin,
+         working operators on the Antrim coast, McCollam Marine
+         surveyor partner. -->
+    <section style="background:var(--page);color:var(--text);padding:48px 22px;border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr)" data-reveal>
+      <div style="max-width:860px;margin:0 auto;text-align:center">
+        <div class="ld-eyebrow" style="margin-bottom:14px">Built in Northern Ireland</div>
+        <p style="font-family:var(--fn-display);font-size:clamp(20px, 2.4vw, 26px);font-weight:600;line-height:1.4;letter-spacing:-.015em;color:var(--text);margin:0 0 14px">Designed with working skippers and surveyors on the Antrim coast — including <strong>McCollam Marine</strong>, naval architects and marine surveyors covering Northern Ireland and the Irish Sea.</p>
+        <p style="font-size:13px;color:var(--mid);line-height:1.6;margin:0">Early access, founder-led. Email <a href="mailto:hello@codedok.app" style="color:var(--sea)">hello@codedok.app</a> with feedback.</p>
+      </div>
+    </section>
+
     <!-- ── FAQ ─────────────────────────────────────────────── -->
-    <section style="background:var(--page);color:var(--text);padding:24px 22px 80px">
+    <section id="faq" style="background:var(--page);color:var(--text);padding:24px 22px 80px">
       <div style="max-width:760px;margin:0 auto">
         <div data-reveal style="margin-bottom:28px">
           <div class="ld-eyebrow">Questions</div>
           <h2 class="ld-h2">Before you sign up.</h2>
         </div>
 
-        <details class="ld-faq" data-reveal>
-          <summary>Is CodedOK affiliated with the MCA?</summary>
-          <div class="ld-faq-body">No. CodedOK is an independent recordkeeping aid. The Sport or Pleasure Vessel Code 2025 and Workboat Code Edition 3 are published by the Maritime and Coastguard Agency; CodedOK is not endorsed by or affiliated with them.</div>
+        <details class="ld-faq" data-reveal id="faq-pbl">
+          <summary>Does CodedOK actually cover Irish PBL?</summary>
+          <div class="ld-faq-body">Yes. The full Marine Survey Office Passenger Boat Licence — Classes P1 through P6 — is loaded as a jurisdiction option per vessel. When you pick "Ireland — PBL" on a vessel, the relevant equipment, manning, and survey requirements load alongside (or instead of) the UK MCA set, depending on where the vessel actually operates.</div>
+        </details>
+
+        <details class="ld-faq" data-reveal id="faq-mca-2025">
+          <summary>What changes when the MCA SPV Code 2025 comes in?</summary>
+          <div class="ld-faq-body">The Sport &amp; Pleasure Vessel Code 2025 replaces the old MGN 280 framework on 1 December 2025. Headline shifts: a single-route stability declaration for under-15m vessels, a mandatory Safety Management System for charter operations, refreshed equipment carriage tables, and clearer owner-declaration requirements. CodedOK rolls the new schedule out automatically on the date — your existing vessels show what's already aligned and what needs new evidence.</div>
         </details>
 
         <details class="ld-faq" data-reveal>
-          <summary>Does it replace my MCA survey?</summary>
-          <div class="ld-faq-body">No. CodedOK helps you stay inspection-ready between surveys. The actual survey and certification still happen with your recognised surveyor or certifying authority.</div>
+          <summary>What counts as "evidence" in CodedOK?</summary>
+          <div class="ld-faq-body">A dated photograph or PDF of a certificate, equipment serial / service receipt, crew qualification card, signed inspection report, or surveyor-issued document — attached to the relevant record. Evidence has a source, a date, and ideally an expiry. CodedOK timestamps when you uploaded each piece and keeps the original file alongside the extracted fields.</div>
         </details>
 
         <details class="ld-faq" data-reveal>
-          <summary>What codes do you cover?</summary>
-          <div class="ld-faq-body">UK Sport or Pleasure Vessel Code 2025 and Workboat Code Edition 3; Irish Passenger Boat Licensing. CodedOK is jurisdiction-aware — you select where each vessel operates and the relevant requirements load automatically.</div>
+          <summary>Is CodedOK affiliated with the MCA or YDSA?</summary>
+          <div class="ld-faq-body">No. CodedOK is an independent recordkeeping aid. The SPV Code 2025, Workboat Code Edition 3, MGN 280, and YDSA category schedules are published by their respective authorities; CodedOK is not endorsed by or affiliated with any of them.</div>
+        </details>
+
+        <details class="ld-faq" data-reveal>
+          <summary>Does it replace my MCA or PBL survey?</summary>
+          <div class="ld-faq-body">No. CodedOK helps you stay inspection-ready between surveys and hand a clean record to your surveyor on the day. The survey itself, and the certification or licence that comes out of it, still happen with your recognised surveyor or the Marine Survey Office.</div>
+        </details>
+
+        <details class="ld-faq" data-reveal>
+          <summary>How does the surveyor handoff work?</summary>
+          <div class="ld-faq-body">Your surveyor gets a free seat per vessel you invite them to. They see your full record — certs, equipment, crew quals, deficiencies, prior inspections — from their own login. On survey day they raise deficiencies, sign the inspection in the app, and the signed pack lands in your inbox. No PDF email chase, no version mismatches.</div>
         </details>
 
         <details class="ld-faq" data-reveal>
           <summary>Does it work offshore with no signal?</summary>
-          <div class="ld-faq-body">Yes. Once installed as a PWA on your phone, the app works fully offline. Edits queue locally and sync to the cloud when you're back in coverage. No data lost.</div>
+          <div class="ld-faq-body">Yes. Installed as a PWA on your phone, the app works fully offline. Edits queue locally and sync to the cloud when you're back in coverage. No data lost in a tunnel or 20 miles offshore.</div>
         </details>
 
         <details class="ld-faq" data-reveal>
           <summary>What happens to my data?</summary>
-          <div class="ld-faq-body">Your data is stored in Supabase (EU region) and on your device. You can delete your account from Account → Sign out and email us — full erasure within 30 days. See the <a href="javascript:go('s-privacy')" style="color:var(--sea)">Privacy Policy</a> for the detail.</div>
+          <div class="ld-faq-body">Evidence is stored in Supabase (EU region) and cached on your device. You can delete your account from Account → Sign out and email <a href="mailto:privacy@codedok.app" style="color:var(--sea)">privacy@codedok.app</a> — full erasure within 30 days. See the <a href="javascript:go('s-privacy')" style="color:var(--sea)">Privacy Policy</a> for the detail.</div>
+        </details>
+
+        <details class="ld-faq" data-reveal>
+          <summary>Can I cancel any time?</summary>
+          <div class="ld-faq-body">Yes. Pro and Team are monthly with no contract — cancel from Account and you'll keep access until the end of the billing month. Your evidence stays exportable as PDF for 90 days after cancellation, then is purged on request.</div>
         </details>
 
         <details class="ld-faq" data-reveal>
@@ -810,9 +952,9 @@
     <section style="background:var(--ink);color:white;padding:80px 22px;text-align:center;position:relative;overflow:hidden">
       <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 100% at 50% -10%,rgba(30,122,134,.32) 0%,transparent 60%),radial-gradient(ellipse 50% 80% at 50% 110%,rgba(79,122,82,.16) 0%,transparent 60%);pointer-events:none"></div>
       <div data-reveal style="position:relative;z-index:1;max-width:600px;margin:0 auto">
-        <h2 class="ld-h2 on-dark" style="margin-bottom:16px">Ready before your next survey.</h2>
-        <p class="ld-sub" style="margin:0 auto 28px">Sign up in 90 seconds, add your first vessel, and walk into your next inspection with everything you need in one app.</p>
-        <button class="btn btn-sea" onclick="goSignUp()" style="height:54px;padding:0 32px;font-weight:700;font-size:15px;border-radius:12px">Start free →</button>
+        <h2 class="ld-h2 on-dark" style="margin-bottom:16px">Stop dreading your annual check.</h2>
+        <p class="ld-sub" style="margin:0 auto 28px">Sign up in 90 seconds, add your first vessel, and walk into your next inspection with every cert, equipment service and crew qualification in one record.</p>
+        <button onclick="goSignUp()" style="height:56px;padding:0 32px;font-weight:700;font-size:15px;border-radius:12px;background:#22D3EE;color:#0F4C5C;border:none;cursor:pointer;font-family:var(--fn);box-shadow:0 14px 32px rgba(34,211,238,.28);transition:transform .2s cubic-bezier(.32,.72,0,1),box-shadow .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 18px 38px rgba(34,211,238,.36)'" onmouseout="this.style.transform='';this.style.boxShadow='0 14px 32px rgba(34,211,238,.28)'">Start free →</button>
         <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:16px;letter-spacing:.01em">No card · Cancel anytime on paid plans</div>
       </div>
     </section>
@@ -835,7 +977,8 @@
             <a href="javascript:go('s-login')"   style="color:rgba(255,255,255,.7);text-decoration:none">Sign in</a>
           </div>
         </div>
-        <div style="font-size:11px;color:rgba(255,255,255,.35);line-height:1.6">© 2026 CodedOK. An independent compliance app — not affiliated with or endorsed by the Maritime and Coastguard Agency. SPV Code 2025 and Workboat Code Edition 3 are published by the MCA.</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.65;max-width:780px;margin-bottom:10px"><strong style="color:rgba(255,255,255,.8)">CodedOK helps you manage compliance evidence and deadlines. It does not certify your vessel.</strong> SPV Code 2025, Workboat Code Edition 3, MGN 280, and YDSA category schedules are published by their respective authorities; CodedOK is independent and not affiliated with or endorsed by any of them. Irish Passenger Boat Licensing is administered by the Marine Survey Office.</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.35);line-height:1.6">© 2026 CodedOK · Built in Cushendall, Northern Ireland</div>
       </div>
     </footer>
 
