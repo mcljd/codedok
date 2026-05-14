@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /onboard
+
+Sitemap: https://codedok.com/sitemap.xml

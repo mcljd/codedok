@@ -9,7 +9,7 @@
 //
 // Secrets required:
 //   RESEND_API_KEY — from https://resend.com (free tier is plenty)
-//   RESEND_FROM    — e.g. 'CodedOK <reminders@codedok.app>'
+//   RESEND_FROM    — e.g. 'CodedOK <reminders@codedok.com>'
 //                    (the sending domain must be verified at Resend)
 //
 // Invoke (test):
@@ -29,7 +29,7 @@ const cors = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_KEY   = Deno.env.get("RESEND_API_KEY");
-const RESEND_FROM  = Deno.env.get("RESEND_FROM") || "CodedOK <reminders@codedok.app>";
+const RESEND_FROM  = Deno.env.get("RESEND_FROM") || "CodedOK <reminders@codedok.com>";
 // true → only email users who DON'T have a push subscription on file
 // false → email everyone with expiring items (push + email belt-and-braces)
 const FALLBACK_ONLY = (Deno.env.get("EMAIL_FALLBACK_ONLY") ?? "true").toLowerCase() !== "false";

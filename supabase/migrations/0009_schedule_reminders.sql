@@ -12,7 +12,7 @@
 --   3. In Edge Functions → send-reminders → Secrets, add:
 --        VAPID_PUBLIC_KEY  — BESwTm9pizzS1pXWoABM-oQH2p0ZN6ZGWGc_IAmFgCn7-ZMnxCnQhGRgiIv039pVWtdlt2TrThY0K_9OXi2q6_Y
 --        VAPID_PRIVATE_KEY — _qtQgjFNCqGAA_HRaQCpDZ_N5204Ga-geFoOG_SaVuY
---        VAPID_SUBJECT     — mailto:hello@codedok.app  (or your own contact)
+--        VAPID_SUBJECT     — mailto:hello@codedok.com  (or your own contact)
 
 create extension if not exists pg_cron with schema extensions;
 create extension if not exists pg_net  with schema extensions;

@@ -13,7 +13,7 @@
 // Secrets required:
 //   VAPID_PUBLIC_KEY   — same as in app.js (base64url)
 //   VAPID_PRIVATE_KEY  — paired private key (base64url)
-//   VAPID_SUBJECT      — mailto:you@codedok.app or https://codedok.app
+//   VAPID_SUBJECT      — mailto:you@codedok.com or https://codedok.com
 //
 // Invoke (manual test):
 //   curl -X POST https://<project>.supabase.co/functions/v1/send-reminders \
@@ -32,7 +32,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:hello@codedok.app";
+const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:hello@codedok.com";
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 

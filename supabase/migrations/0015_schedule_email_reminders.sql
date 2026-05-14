@@ -5,7 +5,7 @@
 -- Requires the Vault secrets project_url + service_role_key set
 -- previously for 0009. Edge function secrets needed on send-reminder-emails:
 --   RESEND_API_KEY        — get one at https://resend.com
---   RESEND_FROM           — 'CodedOK <reminders@codedok.app>' (verified domain)
+--   RESEND_FROM           — 'CodedOK <reminders@codedok.com>' (verified domain)
 --   EMAIL_FALLBACK_ONLY   — 'true' (default) to skip users who already
 --                            have a push subscription; 'false' to email
 --                            everyone with expiring items.
