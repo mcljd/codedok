@@ -178,7 +178,7 @@
      Preconnect avoids a render-blocking Google round-trip. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="print.css" media="print">
 
@@ -403,14 +403,14 @@
   <div class="ld-stickynav" id="ld-stickynav">
     <a href="javascript:goHome()" class="brand">
       <svg width="26" height="26" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-        <rect x="6" y="6" width="52" height="52" rx="12" fill="#22d3ee"/>
-        <path d="M18 33 L28 43 L46 22" stroke="#0a0f1a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="6" y="6" width="52" height="52" rx="12" fill="#0891b2"/>
+        <path d="M18 33 L28 43 L46 22" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       CodedOK
     </a>
     <div class="actions">
       <button class="signin" onclick="go('s-login')">Sign in</button>
-      <button class="start"  onclick="goSignUp()">Secure your fleet</button>
+      <button class="start"  onclick="goSignUp()">Start free</button>
     </div>
   </div>
 
@@ -434,81 +434,43 @@
       </a>
     </aside>
 
-    <!-- ── 2. HERO — Deep Sea Technical ────────────────────── -->
-    <section class="ldx-hero">
+    <!-- ── 2. HERO ───────────────────────────────────── -->
+    <section class="ld-hero">
+      <div aria-hidden="true" class="ld-hero-glow"></div>
+
+      <!-- Top utility row (sign-in only — the big brand mark below carries identity) -->
       <nav class="ld-hero-nav">
         <a href="javascript:go('s-land')" class="ld-hero-brand">
           <svg width="32" height="32" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-            <rect x="6" y="6" width="52" height="52" rx="12" fill="#22d3ee"/>
-            <path d="M18 33 L28 43 L46 22" stroke="#0a0f1a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="6" y="6" width="52" height="52" rx="12" fill="#0891b2"/>
+            <path d="M18 33 L28 43 L46 22" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <span>CodedOK</span>
-          <span class="ldx-trust" style="margin-left:10px">v.2025.12</span>
         </a>
         <button class="ld-hero-signin" onclick="go('s-login')">Sign in</button>
       </nav>
 
-      <div class="ldx-hero-inner">
-        <div class="ldx-hero-copy" data-reveal>
-          <span class="ldx-hero-eyebrow-chip">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-            <span class="ldx-trust">SPV Code 2025 · Workboat Ed.3 · Irish PBL</span>
+      <div class="ld-hero-grid">
+        <div class="ld-hero-copy" data-reveal>
+          <span class="ld-hero-eyebrow">
+            <span class="ld-hero-eyebrow-dot" aria-hidden="true"></span>
+            Built for the new MCA Sport &amp; Pleasure Vessel Code 2025
           </span>
-          <h1 class="ldx-h1">Compliance Simplified.<br>Fines Avoided.<br><span class="grad">The UK &amp; Ireland Maritime Standard.</span></h1>
-          <p class="ldx-hero-sub">Built for the 2025 SPV Code. Total fleet visibility, 20 miles offshore.</p>
-          <div class="ldx-hero-ctas">
-            <button class="ldx-cta ldx-cta-primary" onclick="goSignUp()">Secure Your Fleet
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </button>
-            <button class="ldx-cta ldx-cta-ghost" onclick="document.getElementById('compliance-roadmap').scrollIntoView({behavior:'smooth'})">View Compliance Roadmap</button>
-            <button id="hero-install-btn" class="ldx-cta ldx-cta-ghost" onclick="installFromCta()" style="display:none">
-              <span style="font-size:16px;margin-right:2px">📲</span>Install
+          <h1 class="ld-h1">Coded vessel<br>compliance,<br><span class="hl">made easy.</span></h1>
+          <p class="ld-hero-sub"><strong>AI does the paperwork. You go boating.</strong> Snap a certificate, AI extracts the expiry. Drop your last survey, AI fills the record. CodedOK tracks every requirement under the new MCA Sport &amp; Pleasure Vessel Code 2025, the Workboat Code Edition 3, and Irish PBL Classes P1&ndash;P6 — in one record per vessel.</p>
+          <div class="ld-hero-ctas">
+            <button class="ld-cta ld-cta-primary" onclick="goSignUp()">Start free →</button>
+            <button class="ld-cta ld-cta-ghost"  onclick="go('s-login')">See live demo</button>
+            <button id="hero-install-btn" class="ld-cta ld-cta-ghost" onclick="installFromCta()" style="display:none">
+              <span style="font-size:16px;margin-right:6px">📲</span>Add to Home Screen
             </button>
           </div>
-          <ul class="ldx-hero-trust-row" style="list-style:none;padding:0">
-            <li class="ldx-trust"><span class="v">v.2025.12</span> SPV Code ready</li>
-            <li class="ldx-trust"><span class="v">EU</span> Data residency</li>
-            <li class="ldx-trust"><span class="v">GDPR</span> Aligned</li>
-          </ul>
-        </div>
-
-        <!-- Compliance ring — three concentric arcs, pulsing -->
-        <div class="ldx-ring-wrap" data-reveal>
-          <div class="ldx-ring">
-            <!-- SVG rotates -90deg via CSS so arcs start at 12 o'clock.
-                 stroke-dasharray = "<filled> <gap>" where filled =
-                 pct × circumference. Calculations inline so they're
-                 auditable. -->
-            <svg viewBox="0 0 240 240">
-              <!-- Track circles -->
-              <circle cx="120" cy="120" r="100" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="7"/>
-              <circle cx="120" cy="120" r="82"  fill="none" stroke="rgba(255,255,255,.05)" stroke-width="7"/>
-              <circle cx="120" cy="120" r="64"  fill="none" stroke="rgba(255,255,255,.05)" stroke-width="7"/>
-              <!-- OK · 82%   · r=100  · C=628.3 · filled=515.2 -->
-              <circle cx="120" cy="120" r="100" fill="none" stroke="#10b981" stroke-width="7" stroke-linecap="round"
-                stroke-dasharray="515.2 113.1"
-                style="filter:drop-shadow(0 0 8px rgba(16,185,129,.55))"/>
-              <!-- WARN · 14% · r=82   · C=515.2 · filled=72.1 -->
-              <circle cx="120" cy="120" r="82" fill="none" stroke="#f59e0b" stroke-width="7" stroke-linecap="round"
-                stroke-dasharray="72.1 443.1"
-                style="filter:drop-shadow(0 0 8px rgba(245,158,11,.55))"/>
-              <!-- CRIT · 8%  · r=64   · C=402.1 · filled=32.2 -->
-              <circle cx="120" cy="120" r="64" fill="none" stroke="#ef4444" stroke-width="7" stroke-linecap="round"
-                stroke-dasharray="32.2 369.9"
-                style="filter:drop-shadow(0 0 8px rgba(239,68,68,.55))"/>
-            </svg>
-            <div class="ldx-ring-center">
-              <div class="ldx-ring-num">82<span class="pct">%</span></div>
-              <div class="ldx-ring-label">Fleet compliance</div>
-            </div>
-          </div>
-          <div class="ldx-ring-tiles">
-            <div class="ldx-ring-tile crit"><div class="num">4</div><span class="l">Overdue</span></div>
-            <div class="ldx-ring-tile warn"><div class="num">1</div><span class="l">Due 30d</span></div>
-            <div class="ldx-ring-tile ok"  ><div class="num">17</div><span class="l">Valid</span></div>
+          <div class="ld-hero-trust">
+            <span><span class="t-tick" aria-hidden="true">✓</span> Free · no card</span>
+            <span><span class="t-tick" aria-hidden="true">✓</span> AI cert OCR</span>
+            <span><span class="t-tick" aria-hidden="true">✓</span> Works offline at sea</span>
           </div>
         </div>
-      </div>
 
         <!-- Phone mockup — mirrors the real s-home screen 1:1. The
              compliance card, urgent badge, action cards and bottom
@@ -592,160 +554,236 @@
       </div>
     </section>
 
-    <!-- ── 3. BENTO GRID — capabilities ───────────────────── -->
-    <section class="ldx-bento" id="capabilities">
-      <div class="ldx-bento-head" data-reveal>
-        <div class="ldx-trust">Capabilities</div>
-        <h2>One platform. Every code. Every vessel.</h2>
-      </div>
-      <div class="ldx-bento-grid">
-
-        <!-- A · Automated survey readiness (large) -->
-        <article class="ldx-cell ldx-bento-a" data-reveal>
-          <header class="ldx-cell-head">
-            <span class="ldx-cell-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 14l2 2 4-4"/></svg></span>
-            <span class="ldx-trust">01 · Survey readiness</span>
-          </header>
-          <h3>Inspection ready, before they ask.</h3>
-          <p>Every certificate, equipment item and crew qualification — auto-validated against the live MCA SPV / Workboat / PBL schedules.</p>
-          <div class="ldx-vessel-panel">
-            <div class="ldx-vessel-row">
-              <span class="ldx-vessel-name">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1"/><path d="M19.4 17l1.6-4-9-7-9 7 1.6 4"/></svg>
-                MV TSUNAMI IV
-              </span>
-              <span class="ldx-pill ok">● Ready</span>
-            </div>
-            <ul class="ldx-vessel-list">
-              <li><span class="k">Coding cert · YDSA/2024/TS/4892</span><span class="v ok">Valid · 287d</span></li>
-              <li><span class="k">Life raft service · LR-9821</span><span class="v warn">Due · 31d</span></li>
-              <li><span class="k">SOLAS pyro · PYR-4421</span><span class="v crit">Overdue · 6d</span></li>
-            </ul>
-          </div>
-        </article>
-
-        <!-- B · Offline sync -->
-        <article class="ldx-cell" data-reveal>
-          <header class="ldx-cell-head">
-            <span class="ldx-cell-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></span>
-            <span class="ldx-trust">02 · Offline-first</span>
-          </header>
-          <h3>Works 20 miles offshore.</h3>
-          <p>Edits queue locally. Sync resumes the moment a signal returns. Nothing lost in the tunnel.</p>
-          <div class="ldx-sync">
-            <div class="ldx-sync-ic">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
-            </div>
-            <div>
-              <div class="ldx-sync-label">Syncing 4 records…</div>
-              <div class="ldx-sync-sub">Synced 12s ago</div>
-            </div>
-          </div>
-        </article>
-
-        <!-- C · Multi-code support -->
-        <article class="ldx-cell" data-reveal>
-          <header class="ldx-cell-head">
-            <span class="ldx-cell-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg></span>
-            <span class="ldx-trust">03 · Multi-code</span>
-          </header>
-          <h3>Cross-border, one record.</h3>
-          <div class="ldx-codetabs" role="tablist">
-            <button class="ldx-codetab on" data-code-tab="mca" onclick="ldxToggleCode('mca')">MCA SPV 2025</button>
-            <button class="ldx-codetab"    data-code-tab="ie"  onclick="ldxToggleCode('ie')">Irish PBL P1–P6</button>
-          </div>
-          <ul class="ldx-codelist on" data-code-view="mca">
-            <li><span class="k">Cat 2 · 60 nm</span><span class="v ok">Active</span></li>
-            <li><span class="k">SMS · SPV 2025</span><span class="v warn">Required</span></li>
-            <li><span class="k">Stability decl.</span><span class="v ok">On file</span></li>
-          </ul>
-          <ul class="ldx-codelist" data-code-view="ie">
-            <li><span class="k">Class P3 · 15 mi</span><span class="v ok">Licensed</span></li>
-            <li><span class="k">Stability (P4)</span><span class="v ok">On file</span></li>
-            <li><span class="k">MSO annual</span><span class="v warn">Due 14d</span></li>
-          </ul>
-        </article>
-
-        <!-- D · AI document scanner (wide) -->
-        <article class="ldx-cell ldx-bento-d" data-reveal>
-          <header class="ldx-cell-head">
-            <span class="ldx-cell-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></span>
-            <span class="ldx-trust">04 · AI document scanner</span>
-          </header>
-          <h3>Photograph paper. Skip the typing.</h3>
-          <p>Computer vision extracts issuer, expiry and serial directly from a phone photo — even creased, faded or partially obscured paperwork.</p>
-          <div class="ldx-scan-grid">
-            <div class="ldx-scan-paper">
-              <div class="label">MCA — Certificate of compliance</div>
-              <div class="row">YDSA / 2024 / TS / 4892</div>
-              <div class="row">Tsunami IV — Cat 2 · 8.5m</div>
-              <div class="row" style="margin-top:6px">Expiry: 18 May 2026</div>
-              <div class="ldx-scan-line" aria-hidden="true"></div>
-            </div>
-            <pre class="ldx-scan-json">{
-  <span class="key">"kind"</span>: <span class="str">"coding"</span>,
-  <span class="key">"number"</span>: <span class="str">"YDSA/2024/TS/4892"</span>,
-  <span class="key">"vessel"</span>: <span class="str">"Tsunami IV"</span>,
-  <span class="key">"category"</span>: <span class="str">"Cat 2"</span>,
-  <span class="key">"expires_at"</span>: <span class="str">"2026-05-18"</span>,
-  <span class="key">"issuer"</span>: <span class="str">"YDSA"</span>,
-  <span class="key">"confidence"</span>: <span class="num">0.97</span>
-}</pre>
-          </div>
-        </article>
+    <!-- ── 3. BUILT-FOR STRIP ─────────────────────────── -->
+    <section class="ld-builtfor">
+      <div class="ld-wrap">
+        <span class="ld-builtfor-label">Built for</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 14h19l-2 5h-15l-2-5z"/><path d="M5 14V8l7-4 7 4v6"/><path d="M12 4v10"/></svg> Skippers</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg> Charter fleets</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg> Angling operators</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg> Surveyors</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg> Sailing schools</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V8M5 12l7-7 7 7"/></svg> Owner-operators</span>
       </div>
     </section>
 
-    <!-- ── 3.5 SCROLLYTELLING — three steps with sticky phone ─ -->
-    <section class="ldx-scrolly" id="compliance-roadmap">
-      <div class="ldx-scrolly-head" data-reveal>
-        <div class="ldx-trust">From signup to inspection-ready</div>
-        <h2>Three steps. One afternoon.</h2>
-      </div>
-      <div class="ldx-scrolly-grid">
-        <div class="ldx-scrolly-steps">
-          <div class="ldx-step" data-step="1">
-            <span class="ldx-step-num">STEP 01</span>
-            <h3>Add your vessel.</h3>
-            <p>Name, length, persons, MCA category. Sixty seconds. CodedOK auto-loads every certificate and piece of gear required for the chosen code.</p>
-          </div>
-          <div class="ldx-step" data-step="2">
-            <span class="ldx-step-num">STEP 02</span>
-            <h3>Drop your last survey.</h3>
-            <p>One PDF in. Every certificate, expiry and deficiency parsed and attached to the right vessel. The five-hour onboarding spreadsheet is gone.</p>
-          </div>
-          <div class="ldx-step" data-step="3">
-            <span class="ldx-step-num">STEP 03</span>
-            <h3>Stay inspection-ready.</h3>
-            <p>Push and email reminders, surveyor cross-org access, signed inspection-pack PDF on demand. You never miss a renewal again.</p>
-          </div>
+    <!-- ── 3.5 AI — THE DIFFERENTIATOR ────────────────── -->
+    <section class="ld-section ld-section--dark" data-reveal id="ai">
+      <div class="ld-wrap">
+        <div class="ld-section-head ld-section-head--center">
+          <div class="ld-eyebrow ld-eyebrow--on-dark">Why CodedOK is different</div>
+          <h2 class="ld-h2 ld-h2--on-dark">Photograph it. Drop it. Done.</h2>
+          <p class="ld-lead">Every other compliance tool asks you to type. CodedOK reads. The boring bit — pulling expiries off a coding cert, listing every piece of gear from a survey report, writing your Safety Management System — handled.</p>
         </div>
-        <div class="ldx-scrolly-phone-wrap" aria-hidden="true">
-          <div class="ldx-scrolly-phone-sticky">
-            <div class="ldx-scrolly-phone">
-              <div class="ldx-scrolly-phone-notch"></div>
-              <div class="ldx-scrolly-phone-screen">
-                <div class="ldx-trust">CodedOK · Operator</div>
-                <h4 style="margin:8px 0 12px;font-size:22px;font-weight:600;letter-spacing:-.4px;color:#f1f5f9">Your boats</h4>
-                <div class="ldx-scrolly-card" data-card="1">
-                  <div class="lbl">Vessel · added</div>
-                  <div class="body">MV TSUNAMI IV</div>
-                  <div class="sub">Cat 2 · 8.5m · Ballycastle</div>
-                </div>
-                <div class="ldx-scrolly-card" data-card="2">
-                  <div class="lbl">Survey · imported</div>
-                  <div class="body">14 records · 1 deficiency</div>
-                  <div class="sub">YDSA · 2024-06-18</div>
-                </div>
-                <div class="ldx-scrolly-card ok" data-card="3">
-                  <div class="lbl">Inspection ready</div>
-                  <div class="body">82% · 17 valid · 1 due 30d</div>
-                  <div class="sub">Pack exported</div>
-                </div>
-              </div>
+        <div class="ld-grid-3">
+          <article class="ld-pcard ld-pcard--cyan">
+            <div class="ld-pcard-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </div>
+            <h3>Snap a certificate</h3>
+            <p>Point your camera at any cert — coding, PLI, liferaft service, radio licence, ENG1. AI extracts the issuer, the expiry, the serial number. No retyping, no spreadsheet. Works for paper, PDF, or photograph.</p>
+          </article>
+          <article class="ld-pcard ld-pcard--cyan">
+            <div class="ld-pcard-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13l2 2 4-4"/></svg>
+            </div>
+            <h3>Drop your last survey</h3>
+            <p>One PDF in, every cert and deficiency out. AI parses the surveyor's report into structured evidence — categorised, dated, attached to the right vessel. The five-hour spreadsheet onboarding is gone.</p>
+          </article>
+          <article class="ld-pcard ld-pcard--cyan">
+            <div class="ld-pcard-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/></svg>
+            </div>
+            <h3>Generate your SMS</h3>
+            <p>Answer six questions about your operation. AI drafts a tailored 11-section Safety Management System under the new SPV Code — emergency procedures, drills schedule, owner declarations, the lot. Edit, sign, ship.</p>
+          </article>
+        </div>
+        <div style="margin-top:32px;text-align:center">
+          <button class="ld-cta ld-cta-primary" onclick="goSignUp()">Try it free →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 4. IRISH PBL — THE MOAT ────────────────────── -->
+    <section class="ld-section ld-section--light" data-reveal>
+      <div class="ld-wrap ld-wrap--narrow">
+        <div class="ld-eyebrow">The moat · Ireland</div>
+        <h2 class="ld-h2">The only tool that tracks Irish PBL alongside UK MCA.</h2>
+        <p class="ld-lead">Cross-border operators carry two rulebooks — the MCA Sport &amp; Pleasure Vessel Code in the UK, and the Marine Survey Office Passenger Boat Licence (Classes P1–P6) in Ireland. UK coding does not satisfy Irish PBL. CodedOK keeps both lines of evidence in one record per vessel.</p>
+        <div class="ld-pbl-chips">
+          <span class="ld-pbl-chip"><strong>P1</strong> Open inland</span>
+          <span class="ld-pbl-chip"><strong>P2</strong> Inland 1–2 mile</span>
+          <span class="ld-pbl-chip"><strong>P3</strong> Smooth water</span>
+          <span class="ld-pbl-chip"><strong>P4</strong> Sheltered water</span>
+          <span class="ld-pbl-chip"><strong>P5</strong> Partial coast</span>
+          <span class="ld-pbl-chip"><strong>P6</strong> Sea-going</span>
+        </div>
+        <button class="ld-cta ld-cta-primary ld-cta-sm" onclick="goSignUp()">See how Irish operators use CodedOK →</button>
+      </div>
+    </section>
+
+    <!-- ── 5. PROBLEM ─────────────────────────────────── -->
+    <section class="ld-section ld-section--offwhite" data-reveal>
+      <div class="ld-wrap">
+        <div class="ld-section-head">
+          <div class="ld-eyebrow">Why this matters</div>
+          <h2 class="ld-h2">A missing pyro card grounds the boat.<br>The clock catches you out either way.</h2>
+        </div>
+        <div class="ld-grid-3">
+          <article class="ld-pcard ld-pcard--red">
+            <div class="ld-pcard-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4"/><circle cx="12" cy="17" r="1" fill="currentColor"/><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </div>
+            <h3>An expired flare grounds the boat</h3>
+            <p>A £40 oversight on a SOLAS pyro pack cancels a £1,500 charter trip. Every passenger refund and every hour off the water comes back to a checklist you didn't run.</p>
+          </article>
+          <article class="ld-pcard ld-pcard--amber">
+            <div class="ld-pcard-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            </div>
+            <h3>Renewals stack at the worst times</h3>
+            <p>Coding cert, PLI, liferaft service, EPIRB, radio licence, ENG1, first aid, VHF SRC. Fifteen clocks all running at different speeds. A spreadsheet doesn't catch them. CodedOK does.</p>
+          </article>
+          <article class="ld-pcard ld-pcard--cyan">
+            <div class="ld-pcard-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>
+            </div>
+            <h3>December 2025 raises the bar</h3>
+            <p>The new MCA Sport &amp; Pleasure Vessel Code 2025 lands in December. New stability evidence, new SMS requirements, new owner declarations. The transition year is when surveyors flag the most issues.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 6. HOW IT WORKS (dark) ─────────────────────── -->
+    <section class="ld-section ld-section--dark" data-reveal>
+      <div class="ld-wrap">
+        <div class="ld-section-head ld-section-head--center">
+          <div class="ld-eyebrow ld-eyebrow--on-dark">How it works</div>
+          <h2 class="ld-h2 ld-h2--on-dark">Three steps to survey-ready.</h2>
+          <p class="ld-lead ld-lead--on-dark">Add a vessel, photograph the certs, you're running a compliant fleet from your phone.</p>
+        </div>
+        <div class="ld-grid-3">
+          <div class="ld-step">
+            <div class="ld-step-num">01</div>
+            <h3>Add your vessel</h3>
+            <p>Name, length, category, where she operates. CodedOK pre-loads every certificate and piece of equipment you're required to carry — so you start with the right tray, not a blank sheet.</p>
+          </div>
+          <div class="ld-step">
+            <div class="ld-step-num">02</div>
+            <h3>Photograph your certs</h3>
+            <p>Snap each cert with your phone. AI reads the issuer, certificate number and expiry. PLI, coding cert, radio licence, the lot — no retyping. Drop in PDFs the same way.</p>
+          </div>
+          <div class="ld-step">
+            <div class="ld-step-num">03</div>
+            <h3>Walk in survey-ready</h3>
+            <p>Compliance score on your home screen. Nudges 30, 7, and 0 days before anything expires. Inspection-pack PDF in one tap. Your surveyor sees the same record you do.</p>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ── 7. FEATURES ────────────────────────────────── -->
+    <section class="ld-section ld-section--offwhite" data-reveal>
+      <div class="ld-wrap">
+        <div class="ld-section-head">
+          <div class="ld-eyebrow">Features</div>
+          <h2 class="ld-h2">Everything a coded-vessel records team needs. No more, no less.</h2>
+        </div>
+        <div class="ld-grid-features">
+          <article class="ld-feature">
+            <div class="ld-feature-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="18" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <h3>Certificate tracker</h3>
+            <p>Every cert, every renewal date, colour-coded against the active code. Coding cert, radio licence, PLI, pyrotechnics — visible at a glance.</p>
+          </article>
+          <article class="ld-feature">
+            <div class="ld-feature-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <h3>Equipment log</h3>
+            <p>Liferafts, EPIRBs, lifejackets, fire kit. Logged with make, serial, last service and next service date.</p>
+          </article>
+          <article class="ld-feature">
+            <div class="ld-feature-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="4"/><path d="M9 6l1-3h4l1 3"/></svg>
+            </div>
+            <h3>AI document scan</h3>
+            <p>Photograph a paper cert or drop in a PDF. The issuer, certificate number and dates are extracted automatically — no retyping.</p>
+          </article>
+          <article class="ld-feature">
+            <div class="ld-feature-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h10l4 4v12H5V4z"/><path d="M15 4v4h4"/><path d="M9 13h6M9 16h6M9 19h3"/></svg>
+            </div>
+            <h3>SMS builder</h3>
+            <p>AI-assisted Safety Management System drafted for your vessel and operation. Review, edit, export as a survey-ready PDF.</p>
+          </article>
+          <article class="ld-feature">
+            <div class="ld-feature-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17h12v-3c0-4-2-7-6-7s-6 3-6 7v3z"/><path d="M10 21h4"/><circle cx="12" cy="4" r="1"/></svg>
+            </div>
+            <h3>Push &amp; email reminders</h3>
+            <p>30, 7 and 0 days before every expiry. Push to the installed app, email as a fallback. Crew get their own personal reminders.</p>
+          </article>
+          <article class="ld-feature">
+            <div class="ld-feature-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7V3z"/><path d="M14 3v4h4"/><path d="M10 12h5M10 15h5M10 18h3"/></svg>
+            </div>
+            <h3>Inspection-pack PDF</h3>
+            <p>One tap, one PDF, every cert + equipment item + crew qualification. Walk into your survey with everything in one document.</p>
+          </article>
+          <article class="ld-feature">
+            <div class="ld-feature-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3"/><path d="M3 19c0-3.5 2.5-6 6-6s6 2.5 6 6"/><circle cx="17" cy="8" r="2.5"/><path d="M15 19c0-2.5 2.5-4 5-4"/></svg>
+            </div>
+            <h3>Crew &amp; team</h3>
+            <p>Invite crew by email. Each person gets their own login and their own quals. Granular permissions per role.</p>
+          </article>
+          <article class="ld-feature">
+            <div class="ld-feature-ic">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15c0-3 2-5 5-5 1-3 4-4 7-3"/><path d="M21 15H10"/><path d="M3 3l18 18"/></svg>
+            </div>
+            <h3>Works offline</h3>
+            <p>Installable as a PWA. Edits queue locally and sync the moment you're back in coverage. No data lost in a tunnel or 20 miles offshore.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 8. CODES ALIGNMENT BAND (dark) ─────────────── -->
+    <section class="ld-section ld-section--dark ld-codes" data-reveal>
+      <div class="ld-wrap">
+        <div class="ld-eyebrow ld-eyebrow--on-dark">Codes aligned</div>
+        <div class="ld-codes-grid">
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>SPV Code 2025</strong> Appendix 7 §2 mapped</div></div>
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>Workboat Code Edition 3.0</strong> Full schedule</div></div>
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>Irish PBL</strong> Classes P1–P6</div></div>
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>YDSA Coding</strong> Categories 2–6</div></div>
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>MGN 280</strong> Small-passenger guidance</div></div>
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>MARPOL Annex I</strong> Oil-record-aware</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 9. EDITORIAL: IN THE FIELD ─────────────────── -->
+    <section class="ld-editorial ld-editorial--field">
+      <div aria-hidden="true" class="ld-editorial-bg ld-editorial-bg--field"></div>
+      <div class="ld-editorial-content" data-reveal>
+        <div class="ld-eyebrow ld-eyebrow--on-dark">Built for the deck, not the desk</div>
+        <p class="ld-editorial-quote">Your record. Your surveyor's record. Same record.</p>
+        <p class="ld-editorial-sub">One source of truth between operator and surveyor — no PDF emails, no version mismatches, no chasing the latest draft.</p>
+      </div>
+    </section>
+
+    <!-- ── 10. EDITORIAL: SURVEY DAY ──────────────────── -->
+    <section class="ld-editorial ld-editorial--yard">
+      <div aria-hidden="true" class="ld-editorial-bg ld-editorial-bg--yard"></div>
+      <div class="ld-editorial-content ld-editorial-content--bottom" data-reveal>
+        <div class="ld-eyebrow ld-eyebrow--on-dark">Survey day</div>
+        <h2 class="ld-h2 ld-h2--on-dark">Records ready before the surveyor steps aboard.</h2>
+        <p class="ld-editorial-sub">Every certificate, equipment item and crew qualification in one tap. The surveyor sees the same record you do, signs off in the app, and the inspection-pack PDF lands in your inbox.</p>
+        <button class="ld-cta ld-cta-primary ld-cta-sm" onclick="goSignUp()">Start free →</button>
       </div>
     </section>
 
@@ -825,6 +863,15 @@
       </div>
     </section>
 
+    <!-- ── 13. PROVENANCE / Cushendall ────────────────── -->
+    <section class="ld-provenance" data-reveal>
+      <div class="ld-wrap ld-wrap--narrow ld-provenance-inner">
+        <div class="ld-eyebrow">Built in Northern Ireland</div>
+        <p class="ld-provenance-quote">Designed with working skippers and naval architects on the Antrim coast — built for Northern Ireland, the Irish Sea, and every UK and Irish coded vessel beyond.</p>
+        <p class="ld-provenance-sub">Early access, founder-led. Email <a href="mailto:hello@codedok.com">hello@codedok.com</a> with feedback.</p>
+      </div>
+    </section>
+
     <!-- ── 14. FAQ ───────────────────────────────────── -->
     <section class="ld-section ld-section--white" id="faq" data-reveal>
       <div class="ld-wrap ld-wrap--narrow">
@@ -890,17 +937,19 @@
       </div>
     </section>
 
-    <!-- ── 15. FINAL CTA — Deep Sea ───────────────────────── -->
-    <section class="ldx-finalcta-wrap" data-reveal>
-      <div class="ldx-finalcta-card">
-        <div class="ldx-trust">December 2025</div>
-        <h2>Stop chasing certificates.<br>Start sailing past inspection.</h2>
-        <p>Free to start. No card. Ready in five minutes — on the dockside, on your phone, in your pocket.</p>
-        <div class="ldx-hero-ctas">
-          <button class="ldx-cta ldx-cta-primary" onclick="goSignUp()">Secure Your Fleet
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </button>
-          <button class="ldx-cta ldx-cta-ghost" onclick="document.getElementById('compliance-roadmap').scrollIntoView({behavior:'smooth'})">View Compliance Roadmap</button>
+    <!-- ── 15. FINAL CTA (rounded card) ───────────────── -->
+    <section class="ld-finalcta-wrap">
+      <div class="ld-finalcta" data-reveal>
+        <div aria-hidden="true" class="ld-finalcta-glow-a"></div>
+        <div aria-hidden="true" class="ld-finalcta-glow-b"></div>
+        <div class="ld-finalcta-inner">
+          <h2 class="ld-h2 ld-h2--on-dark">Stop dreading your annual check.</h2>
+          <p class="ld-finalcta-sub">Sign up in 90 seconds. Add your first vessel. Walk into your next inspection with every cert, equipment service and crew qualification in one record.</p>
+          <div class="ld-finalcta-ctas">
+            <button class="ld-cta ld-cta-primary" onclick="goSignUp()">Start free trial</button>
+            <button class="ld-cta ld-cta-ghost-dark" onclick="go('s-login')">Sign in</button>
+          </div>
+          <div class="ld-finalcta-trust">No card to start · Cancel any time</div>
         </div>
       </div>
     </section>

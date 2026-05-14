@@ -3623,69 +3623,6 @@
   window.maybeShowWelcomeToast = maybeShowWelcomeToast;
 
   // ─────────────────────────────────────────────────────────────
-  // Landing v6 — Deep Sea Technical. Two interactive widgets:
-  //
-  //   1. Bento card C (multi-code support) — toggle between MCA SPV
-  //      and Irish PBL views.
-  //   2. Scrollytelling — IntersectionObserver flips an `.on` class
-  //      on the step closest to viewport centre, and the matching
-  //      data-card on the sticky phone fades in. Pure CSS handles
-  //      the transitions; this just decides which slot is active.
-  // ─────────────────────────────────────────────────────────────
-  function ldxToggleCode(which) {
-    document.querySelectorAll('[data-code-tab]').forEach((el) => {
-      el.classList.toggle('on', el.dataset.codeTab === which);
-    });
-    document.querySelectorAll('[data-code-view]').forEach((el) => {
-      el.classList.toggle('on', el.dataset.codeView === which);
-    });
-  }
-  window.ldxToggleCode = ldxToggleCode;
-
-  function setupScrollytelling() {
-    const steps = document.querySelectorAll('.ldx-step');
-    const cards = document.querySelectorAll('.ldx-scrolly-card');
-    if (!steps.length || !cards.length) return;
-    // On mobile the sticky phone is hidden and the steps render as
-    // plain content cards. No observer needed — just force everything
-    // visible and bail. Avoids any per-scroll work on phones.
-    if (window.matchMedia('(max-width: 720px)').matches) {
-      steps.forEach((s) => s.classList.add('on'));
-      cards.forEach((c) => c.classList.add('on'));
-      return;
-    }
-    if (!('IntersectionObserver' in window)) {
-      // Older browsers — just show everything.
-      steps.forEach((s) => s.classList.add('on'));
-      cards.forEach((c) => c.classList.add('on'));
-      return;
-    }
-    const setActive = (n) => {
-      steps.forEach((s) => s.classList.toggle('on', s.dataset.step === String(n)));
-      // Cards stack — show 1, then 1+2, then 1+2+3.
-      cards.forEach((c) => {
-        const cn = Number(c.dataset.card);
-        c.classList.toggle('on', cn <= n);
-      });
-    };
-    const io = new IntersectionObserver(
-      (entries) => {
-        // Pick the most-visible step.
-        let best = null;
-        entries.forEach((e) => {
-          if (e.isIntersecting && (!best || e.intersectionRatio > best.intersectionRatio)) best = e;
-        });
-        if (best) setActive(Number(best.target.dataset.step));
-      },
-      { rootMargin: '-35% 0% -35% 0%', threshold: [0, 0.25, 0.5, 0.75, 1] }
-    );
-    steps.forEach((s) => io.observe(s));
-    // Default state — step 1 on at boot so the phone shows something.
-    setActive(1);
-  }
-  window.setupScrollytelling = setupScrollytelling;
-
-  // ─────────────────────────────────────────────────────────────
   // Web push reminders — opt-in flow.
   // VAPID public key is safe to ship in the client.
   // ─────────────────────────────────────────────────────────────
@@ -8517,7 +8454,6 @@ ${sectionsHtml}
     renderDemoBadge();
     ensureDesktopQrFab();
     updateHeroInstallBtn();
-    setupScrollytelling();
 
     // Real auth: when Supabase is wired, listen for sign-in / sign-out
     // events. handleSignedIn ensures a row exists in our users table,
