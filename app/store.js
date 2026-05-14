@@ -54,10 +54,10 @@
       // Users — operators and surveyors all live here.
       users: [
         { id: 'u_jm',  email: 'joseph@codedok.com',     name: 'Joseph McLaughlin', initials: 'JM', kind: 'operator', phone: '+44 7700 900111' },
-        { id: 'u_sv1', email: 'mccollam@example.com',   name: 'McCollam Marine',   initials: 'MM', kind: 'surveyor',
-          surveyor: { qualifications: ['Naval Architect MRINA', 'MCA-recognised surveyor'], certifying_bodies: ['YDSA'], regions: ['Northern Ireland', 'Irish Sea'], company: 'McCollam Marine', tagline: 'Naval Architects · Marine Surveyors', phone: '+44 28 9012 3456', logo: 'icons/mccollam.webp' } },
-        { id: 'u_rb',  email: 'service@redbayboats.com', name: 'Redbay Boats',     initials: 'RB', kind: 'builder',
-          builder: { company: 'Redbay Boats', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] } },
+        { id: 'u_sv1', email: 'mccollam@example.com',   name: 'Anchor Marine',   initials: 'MM', kind: 'surveyor',
+          surveyor: { qualifications: ['Naval Architect MRINA', 'MCA-recognised surveyor'], certifying_bodies: ['YDSA'], regions: ['Northern Ireland', 'Irish Sea'], company: 'Anchor Marine', tagline: 'Naval Architects · Marine Surveyors', phone: '+44 28 9012 3456', logo: 'icons/mccollam.webp' } },
+        { id: 'u_rb',  email: 'service@redbayboats.com', name: 'Stormrider Marine',     initials: 'RB', kind: 'builder',
+          builder: { company: 'Stormrider Marine', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] } },
         { id: 'u_admin', email: 'admin@codedok.com',    name: 'Joe (CodedOK)',     initials: 'JD', kind: 'admin' }
       ],
 
@@ -75,12 +75,12 @@
         { id: 'v_silver_sands', org_id: 'org_jm', name: 'Tsunami IV', type: 'Open RIB charter', category: 'Cat 2',
           ssr: '987654', length: 8.5, persons: 10, port: 'Ballycastle', certifier: 'YDSA',
           icon: '⛵', photo: 'icons/vessels/tsunami.jpg', jurisdictions: ['UK'],
-          make: 'Redbay Stormforce', engine: 'Suzuki 300hp 4-stroke',
+          make: 'Stormrider RIB', engine: 'Suzuki 300hp 4-stroke',
           built_by: 'redbay', hull_number: 'RB-487', built_at: isoOffset(-720) },
         { id: 'v_cormorant',    org_id: 'org_jm', name: 'Lagavulin',    type: 'Cabin RIB charter', category: 'Cat 2',
           ssr: '456789', length: 11.0, persons: 12, port: 'Ballycastle', certifier: 'YDSA',
           icon: '🚤', photo: 'icons/vessels/lagavulin.jpg', jurisdictions: ['UK'],
-          make: 'Redbay Stormforce Cabin', engine: 'Twin Suzuki 4-stroke',
+          make: 'Stormrider Cabin RIB', engine: 'Twin Suzuki 4-stroke',
           built_by: 'redbay', hull_number: 'RB-512', built_at: isoOffset(-400) }
       ],
 
@@ -91,7 +91,7 @@
         { id: 'c3',  vessel_id: 'v_silver_sands', kind: 'coding',       name: 'YDSA Coding Certificate',icon: '📋', expires_at: isoOffset(18),  category: 'vessel',    issuer: 'YDSA',      number: 'YDSA/2024/TS/4892' },
         { id: 'c4',  vessel_id: 'v_silver_sands', kind: 'pli',          name: 'Public Liability Insurance', icon: '🛡️', expires_at: isoOffset(200), category: 'insurance', issuer: 'Pantaenius', number: 'PL-225887' },
         { id: 'c5',  vessel_id: 'v_silver_sands', kind: 'radio',        name: 'Ship Radio Licence (VHF)',icon: '📡', expires_at: isoOffset(640), category: 'vessel',    issuer: 'Ofcom',     number: 'GBRT-559220' },
-        { id: 'c8',  vessel_id: 'v_silver_sands', kind: 'stability',    name: 'Stability book',         icon: '📋', expires_at: null,            category: 'vessel',    issuer: 'McCollam Marine', number: 'STAB-2022-19' },
+        { id: 'c8',  vessel_id: 'v_silver_sands', kind: 'stability',    name: 'Stability book',         icon: '📋', expires_at: null,            category: 'vessel',    issuer: 'Anchor Marine', number: 'STAB-2022-19' },
         // Lagavulin — all clear
         { id: 'c10', vessel_id: 'v_cormorant',    kind: 'pli',          name: 'P&I Insurance',          icon: '🛡️', expires_at: isoOffset(240), category: 'insurance', issuer: 'Topsail',  number: 'P-118832' },
         { id: 'c11', vessel_id: 'v_cormorant',    kind: 'coding',       name: 'YDSA Coding Certificate',icon: '📋', expires_at: isoOffset(280), category: 'vessel',    issuer: 'YDSA',      number: 'YDSA/2024/LG/4901' },
@@ -244,8 +244,8 @@
       });
       if (parsed.users && parsed.users.length && !parsed.users.find((u) => u.id === 'u_rb') && parsed.users.find((u) => u.id === 'u_jm')) {
         parsed.users.push({
-          id: 'u_rb', email: 'service@redbayboats.com', name: 'Redbay Boats', initials: 'RB', kind: 'builder',
-          builder: { company: 'Redbay Boats', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] }
+          id: 'u_rb', email: 'service@redbayboats.com', name: 'Stormrider Marine', initials: 'RB', kind: 'builder',
+          builder: { company: 'Stormrider Marine', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] }
         });
         migrated = true;
       }
@@ -256,7 +256,7 @@
           v.length = 8.5;
           v.persons = 10;
           v.port = 'Ballycastle';
-          v.make = 'Redbay Stormforce';
+          v.make = 'Stormrider RIB';
           v.engine = 'Suzuki 300hp 4-stroke';
           v.photo = v.photo || null;
           migrated = true;
@@ -268,7 +268,7 @@
           v.length = 11.0;
           v.persons = 12;
           v.port = 'Ballycastle';
-          v.make = 'Redbay Stormforce Cabin';
+          v.make = 'Stormrider Cabin RIB';
           v.engine = 'Twin Suzuki 4-stroke';
           v.photo = v.photo || null;
           migrated = true;
@@ -933,7 +933,7 @@
 
   // Append a record to the SMS edit log. Used to show audit trail in
   // the builder footer + the inspection-pack PDF — "last edited 12 Sep
-  // by Joseph; reviewed 14 Sep by McCollam Marine" is the surveyor
+  // by Joseph; reviewed 14 Sep by Anchor Marine" is the surveyor
   // trust signal Sea-Flux's cloud library can't show.
   function appendSmsEdit(docId, info) {
     const d = (state.sms_documents || []).find((x) => x.id === docId);
@@ -1318,7 +1318,7 @@
     save(state);
   }
 
-  // Swap every reference to the seeded McCollam Marine user (u_sv1) over
+  // Swap every reference to the seeded Anchor Marine user (u_sv1) over
   // to the real auth user's id. Used when the McCollam demo email signs
   // in: the demo seed is loaded once with hardcoded ids, then this
   // re-stamps the surveyor side so the signed-in user sees the seeded

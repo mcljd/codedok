@@ -53,7 +53,7 @@
             <div class="fg"><label class="fl">SSR / reg.</label><input class="fi" id="ev-ssr" value="${escapeHtml(v.ssr || '')}"></div>
           </div>
           <div class="fg"><label class="fl">Home port</label><input class="fi" id="ev-port" value="${escapeHtml(v.port || '')}"></div>
-          <div class="fg"><label class="fl">Make / model</label><input class="fi" id="ev-make" value="${escapeHtml(v.make || '')}" placeholder="e.g. Redbay Stormforce"></div>
+          <div class="fg"><label class="fl">Make / model</label><input class="fi" id="ev-make" value="${escapeHtml(v.make || '')}" placeholder="e.g. Stormrider RIB"></div>
           <div class="fg"><label class="fl">Engine</label><input class="fi" id="ev-engine" value="${escapeHtml(v.engine || '')}" placeholder="e.g. Suzuki 300hp 4-stroke"></div>
           <button class="btn btn-sea btn-full" onclick="submitEditVessel('${v.id}')" style="margin-top:8px">Save changes</button>
           <button class="btn btn-out btn-full" onclick="confirmDeleteVessel('${v.id}')" style="margin-top:8px;color:var(--red);border-color:rgba(220,38,38,.3)">🗑️ Delete vessel</button>
@@ -475,7 +475,7 @@
 
   // Generic surveyor brand block — uses the surveyor's uploaded logo from
   // user.surveyor.logo if set, otherwise an initials placeholder. Replaces
-  // the old hardcoded McCollam Marine wordmark.
+  // the old hardcoded Anchor Marine wordmark.
   function surveyorMark(size) {
     size = size || 28;
     const me = (window.Store && Store.getCurrentUser()) || {};
@@ -3728,7 +3728,7 @@
     if (!q) {
       out.innerHTML = `
         <div style="padding:32px 24px;text-align:center;color:var(--lt);font-size:13px;line-height:1.55">
-          Try "Tsunami", "liferaft", "MMSI", "McCollam" — searches every vessel, certificate, equipment item, deficiency and surveyor.
+          Try "Tsunami", "liferaft", "MMSI", "Anchor" — searches every vessel, certificate, equipment item, deficiency and surveyor.
         </div>`;
       return;
     }
@@ -3842,7 +3842,7 @@
             <div style="font-size:30px;flex-shrink:0;width:48px;text-align:center">4️⃣</div>
             <div>
               <div style="font-size:16px;font-weight:700;color:var(--text)">Stuck? Tap the surveyor</div>
-              <div style="font-size:14px;color:var(--mid);margin-top:3px;line-height:1.55">Book McCollam Marine right in the app for a quote, survey, or signed SMS. Pay through the app — no chasing invoices.</div>
+              <div style="font-size:14px;color:var(--mid);margin-top:3px;line-height:1.55">Book Anchor Marine right in the app for a quote, survey, or signed SMS. Pay through the app — no chasing invoices.</div>
             </div>
           </div>
           <button class="btn btn-sea btn-full" onclick="closeHelp()" style="margin-top:14px">Got it</button>
@@ -5175,7 +5175,7 @@
             <div style="font-size:28px">✨</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px">Generate with AI — £10 one-off</div>
-              <div style="font-size:12px;color:var(--mid);margin-top:3px;line-height:1.55">Answer 6 questions about your operation. We generate a tailored 11-section SMS, you edit and sign. McCollam Marine reviews if you want.</div>
+              <div style="font-size:12px;color:var(--mid);margin-top:3px;line-height:1.55">Answer 6 questions about your operation. We generate a tailored 11-section SMS, you edit and sign. Anchor Marine reviews if you want.</div>
             </div>
             <span class="chev">›</span>
           </div>
@@ -5669,7 +5669,7 @@
             <div style="height:1px;background:var(--bdr);margin:8px 0"></div>
             <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800"><span>Total today</span><span>£10</span></div>
           </div>
-          <div style="font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:12px">Mock checkout — production uses Stripe. You'll receive a generated draft you can review, edit, and send to McCollam Marine (or any approved surveyor) for sign-off.</div>
+          <div style="font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:12px">Mock checkout — production uses Stripe. You'll receive a generated draft you can review, edit, and send to Anchor Marine (or any approved surveyor) for sign-off.</div>
           <button class="btn btn-sea btn-full" onclick="runSmsGeneration()">💷 Pay £10 &amp; generate now</button>
           <button class="btn btn-out btn-full" style="margin-top:8px" onclick="smsAiBack()">‹ Back</button>
         </div>
@@ -6297,7 +6297,7 @@
     const draft = loadSmsDraft();
     if (!draft) return;
     showCheckoutSheet({
-      title: 'McCollam Marine — SMS Review',
+      title: 'Anchor Marine — SMS Review',
       price: '£195.00',
       lineItems: [
         ['SMS technical review (annotated)', '£165.00'],
@@ -6314,8 +6314,8 @@
           d.last_reviewed_at = null;
         }
         // Persist by saving via a no-op mutation
-        Store.addSmsDocument({ vessel_id: draft.vessel_id, type: 'review_request', title: 'Review request sent', body: 'Sent to McCollam Marine', status: 'review', built_by_codedok: false, version: 1 });
-        alert('Sent to McCollam Marine. They\'ll be in touch within 1 working day with confirmation and ETA.');
+        Store.addSmsDocument({ vessel_id: draft.vessel_id, type: 'review_request', title: 'Review request sent', body: 'Sent to Anchor Marine', status: 'review', built_by_codedok: false, version: 1 });
+        alert('Sent to Anchor Marine. They\'ll be in touch within 1 working day with confirmation and ETA.');
         clearSmsDraft();
         go('s-sms');
       }
@@ -6352,7 +6352,7 @@
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 12px;background:var(--seap);border-radius:10px">
             <span style="font-size:14px">🔒</span>
-            <div style="font-size:11px;color:var(--mid);line-height:1.5">Mock checkout for prototype. Production will use Stripe Checkout — secure card entry, instant receipt, McCollam Marine paid out after sign-off delivered.</div>
+            <div style="font-size:11px;color:var(--mid);line-height:1.5">Mock checkout for prototype. Production will use Stripe Checkout — secure card entry, instant receipt, Anchor Marine paid out after sign-off delivered.</div>
           </div>
           <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
             <button class="btn btn-sea btn-full" id="checkout-confirm">Pay ${escapeHtml(opts.price)} (mock)</button>
@@ -7429,7 +7429,7 @@ ${sectionsHtml}
           </div>
           ${issuedBySurveyor ? `
             <div style="text-align:right;border-left:2px solid #1C252B;padding-left:14px">
-              <div style="font-family:'Times New Roman',serif;font-size:18px;font-weight:700;color:#1C252B;letter-spacing:.5px">McCollam Marine</div>
+              <div style="font-family:'Times New Roman',serif;font-size:18px;font-weight:700;color:#1C252B;letter-spacing:.5px">Anchor Marine</div>
               <div style="font-family:'Times New Roman',serif;font-size:9px;color:#475569;letter-spacing:.15em;text-transform:uppercase;margin-top:2px">Naval Architects · Marine Surveyors</div>
               <div style="font-size:11px;color:#94a3b8;margin-top:6px">${escapeHtml((surveyor.surveyor && surveyor.surveyor.regions || []).join(' · '))}</div>
               ${surveyor.surveyor && surveyor.surveyor.phone ? `<div style="font-size:11px;color:#475569;margin-top:2px">${escapeHtml(surveyor.surveyor.phone)}</div>` : ''}
@@ -7739,7 +7739,7 @@ ${sectionsHtml}
           email: authUser.email, name, initials, kind: desiredKind
         };
         if (desiredKind === 'operator' && meta.business_name) newUser.business_name = meta.business_name;
-        if (desiredKind === 'builder') newUser.builder = { slug: 'redbay', company: 'Redbay Boats' };
+        if (desiredKind === 'builder') newUser.builder = { slug: 'redbay', company: 'Stormrider Marine' };
         const ins = await client.from('users').insert(newUser).select().single();
         if (ins.error) throw new Error('users insert: ' + ins.error.message);
         row = ins.data;
@@ -8443,25 +8443,44 @@ ${sectionsHtml}
 
     // Boot routing.
     // ────────────────────────────────────────────────────────────
-    // Demo link: https://codedok.com/demo  (or any URL with ?demo=1)
-    // Seeds a synthetic operator session + sample vessels so prospects
-    // can poke around the app interior without signing up. Local-only;
-    // no Supabase round-trip. Sign out from inside the app to leave.
+    // Demo share links — local-only, no Supabase round-trip. Both
+    // share the same seeded vessel data; the only difference is the
+    // role/home they land on:
+    //
+    //   https://codedok.com/demo              → operator (skipper) demo
+    //   https://codedok.com/demo/surveyor     → surveyor demo
+    //   https://codedok.com/?demo=1           → operator (query fallback)
+    //   https://codedok.com/?demo=surveyor    → surveyor (query fallback)
+    //
+    // Sign out from inside the app dumps them back at the landing
+    // and clears the seeded fixtures (stale-demo wipe below).
     // ────────────────────────────────────────────────────────────
     {
       const dpath = (window.location.pathname || '/').toLowerCase();
       const dsearch = window.location.search || '';
       const dhash = window.location.hash || '';
-      const isDemoUrl = /^\/demo\/?$/.test(dpath)
-        || /[?&]demo(=1)?\b/i.test(dsearch + dhash);
-      if (isDemoUrl) {
-        saveSession({ mode: 'demo', email: 'demo@codedok.com', name: 'Demo skipper' });
+      const surveyorPath = /^\/demo\/surveyor\/?$/.test(dpath);
+      const surveyorQuery = /[?&]demo=surveyor\b/i.test(dsearch + dhash);
+      const operatorPath = /^\/demo\/?$/.test(dpath);
+      const operatorQuery = /[?&]demo(=1)?\b(?!=surveyor)/i.test(dsearch + dhash);
+      const isSurveyorDemo = surveyorPath || surveyorQuery;
+      const isOperatorDemo = !isSurveyorDemo && (operatorPath || operatorQuery);
+      if (isSurveyorDemo || isOperatorDemo) {
+        const name = isSurveyorDemo ? 'Demo surveyor' : 'Demo skipper';
+        const email = isSurveyorDemo ? 'demo+surveyor@codedok.com' : 'demo@codedok.com';
+        saveSession({ mode: 'demo', email, name });
         if (window.Store) {
           if (Store.hasDemoFixtures()) Store.resetToEmpty();
           Store.applyDemoSeed();
+          Store.setMode(isSurveyorDemo ? 'surveyor' : 'operator');
         }
         try { renderDemoBadge(); } catch (_) {}
-        go('s-home');
+        if (isSurveyorDemo) {
+          try { applyDesktopSurveyor(); } catch (_) {}
+          go('s-surveyor-home');
+        } else {
+          go('s-home');
+        }
         return;
       }
     }
