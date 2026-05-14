@@ -4507,3 +4507,135 @@ body:has(#s-land.on) { background: #050614 !important; }
   #s-land .ldx-cell { animation: none !important; }
   [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   MOBILE REBUILD — "keep simple"
+   The desktop Deep Sea design with its bento widgets, animated scan
+   line, JSON blocks, toggleable code tabs, SVG compliance ring and
+   sticky scrollytelling phone is a desktop-only treat. On phones
+   the user reported freezing — and even when not frozen, the small-
+   viewport rendering was busy and hard to parse.
+   This block turns the mobile landing into a stack of plain content
+   blocks: solid colours, no glass, no animation, no SVG ring, no
+   in-card widgets. The COPY survives — what gets stripped is every
+   decorative pixel that doesn't add information at a phone size.
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 720px) {
+
+  /* --- HERO: drop the ring, simplify the layout ----------------- */
+  /* The compliance ring + tile triplet is desktop-only flavour.
+     On mobile we replace it with a small, solid stat strip below
+     the CTAs, then hide the SVG ring entirely. */
+  #s-land .ldx-ring,
+  #s-land .ldx-ring-wrap > .ldx-ring { display: none !important; }
+  #s-land .ldx-ring-wrap {
+    width: 100%;
+    margin-top: 8px;
+  }
+  #s-land .ldx-ring-tiles {
+    max-width: none;
+    width: 100%;
+  }
+  /* Hero eyebrow chip flatter, no chip shape — just a tinted strip */
+  #s-land .ldx-hero-eyebrow-chip {
+    border-radius: 8px;
+    padding: 6px 10px;
+  }
+  /* Tighten the trust row */
+  #s-land .ldx-hero-trust-row { display: none !important; }
+
+  /* --- BENTO: hide all in-card widgets, keep title + body ------- */
+  /* Card A — vessel-status panel hidden */
+  #s-land .ldx-vessel-panel { display: none !important; }
+  /* Card B — sync indicator hidden */
+  #s-land .ldx-sync { display: none !important; }
+  /* Card C — code toggle + lists hidden */
+  #s-land .ldx-codetabs,
+  #s-land .ldx-codelist { display: none !important; }
+  /* Card D — animated scan paper + JSON hidden */
+  #s-land .ldx-scan-grid { display: none !important; }
+
+  /* Make sure cards don't have leftover bottom padding now that
+     their internals are gone */
+  #s-land .ldx-cell { padding: 18px 20px; min-height: 0; }
+  #s-land .ldx-cell h3 { margin-top: 12px; font-size: 18px; }
+  #s-land .ldx-cell p {
+    font-size: 14px;
+    line-height: 1.55;
+    margin-top: 8px;
+    /* allow longer paragraphs since there's no widget eating space */
+    margin-bottom: 0;
+  }
+
+  /* Bento grid: simple 1-column stack, slightly tighter gap */
+  #s-land .ldx-bento-grid {
+    grid-template-columns: 1fr !important;
+    grid-auto-rows: auto !important;
+    gap: 10px !important;
+  }
+  #s-land .ldx-bento-a,
+  #s-land .ldx-bento-d {
+    grid-column: auto !important;
+  }
+
+  /* --- SCROLLYTELLING: numbered cards, flat ---------------------- */
+  #s-land .ldx-scrolly-phone-wrap { display: none !important; }
+  #s-land .ldx-scrolly-grid { display: block !important; }
+  #s-land .ldx-step {
+    background: #0d1424;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 18px 20px !important;
+    margin-bottom: 10px;
+  }
+  #s-land .ldx-step h3 { font-size: 20px !important; margin-top: 8px !important; }
+  #s-land .ldx-step p { font-size: 14px !important; margin-top: 8px !important; }
+
+  /* --- ALERT TAPE: simpler -------------------------------------- */
+  #s-land .ld-alert { padding: 10px 16px; }
+
+  /* --- SECTIONS: tight padding, no extras ----------------------- */
+  #s-land .ldx-bento,
+  #s-land .ldx-scrolly { padding: 48px 16px !important; }
+  #s-land .ldx-hero { padding: 28px 16px 56px !important; }
+  #s-land .ldx-bento-head,
+  #s-land .ldx-scrolly-head { margin-bottom: 24px !important; }
+  #s-land .ldx-bento-head h2,
+  #s-land .ldx-scrolly-head h2 {
+    font-size: 28px !important;
+    line-height: 1.1 !important;
+  }
+
+  /* --- FINAL CTA: solid + smaller ------------------------------- */
+  #s-land .ldx-finalcta-wrap { padding: 48px 16px 72px !important; }
+  #s-land .ldx-finalcta-card {
+    padding: 32px 22px !important;
+    border-radius: 16px !important;
+    background: #0d1424 !important;
+  }
+  #s-land .ldx-finalcta-card::before { display: none !important; }
+  #s-land .ldx-finalcta-card h2 { font-size: 26px !important; line-height: 1.15 !important; }
+
+  /* --- PRICING + FAQ: drop heavy decoration --------------------- */
+  /* Make sure the existing cinematic plan cards stay readable */
+  #s-land .ld-plan {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: #0d1424 !important;
+  }
+  #s-land .ld-faq-q {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: #0d1424 !important;
+  }
+  #s-land .ld-footer-disclaimer {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* --- ANY remaining backdrop-filter, anywhere in the landing --- */
+  #s-land * {
+    -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+  }
+}
