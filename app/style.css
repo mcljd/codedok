@@ -4421,3 +4421,59 @@ body:has(#s-land.on) { background: #050614 !important; }
 @media (max-width: 720px) {
   #s-land .ldx-hero { padding-top: 28px; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   MOBILE PERFORMANCE PASS — "still frozen" fix
+   The Deep Sea design uses:
+     - backdrop-filter: blur(20px) saturate(140%) on every bento cell
+       and the final-CTA card
+     - mask-image: radial-gradient(...) on the blueprint grid overlay
+     - perpetual CSS animations on the ring (ping pulse), card B icon
+       (spin), card D (scan-line)
+   All three are brutal on iOS Safari GPU at small viewports; combined
+   they can lock up the page entirely (the "frozen" symptom). Below
+   we kill them on mobile in favour of solid surfaces + still imagery,
+   keeping the visual language intact (still dark glass with steel
+   borders, still mono trust signals) but cheap enough to scroll
+   smoothly on a 3-year-old iPhone.
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 720px) {
+  /* 1. Kill backdrop-filter on every glassy surface */
+  #s-land .ldx-cell,
+  #s-land .ldx-hero-eyebrow-chip,
+  #s-land .ldx-cta-ghost,
+  #s-land .ldx-finalcta-card,
+  #s-land .ldx-sync-ic,
+  #s-land .ldx-scrolly-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  /* Replace blur with solid surfaces so cards stay legible */
+  #s-land .ldx-cell { background: #0d1424 !important; }
+  #s-land .ldx-hero-eyebrow-chip { background: #0d1424 !important; }
+  #s-land .ldx-cta-ghost { background: #0d1424 !important; }
+  #s-land .ldx-finalcta-card { background: #0d1424 !important; }
+
+  /* 2. Strip the blueprint grid overlay on mobile.
+        The radial-gradient mask is the most expensive op on the page;
+        a flat dark canvas is more than fine for the small-screen feel. */
+  #s-land .scroll::before { display: none !important; }
+  #s-land .scroll::after  {
+    /* Keep just one cheap glow, no mask. */
+    background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(34,211,238,.08) 0%, transparent 70%) !important;
+  }
+
+  /* 3. Stop perpetual animations on mobile.
+        - Ring ping: was scaling+fading every 3s, GPU-heavy
+        - Sync icon: was spinning forever
+        - Scan line: was translating every 2s
+        Each is replaced by a static finished-state. The visual story
+        survives (you see a glow halo, a sync icon, a scan-line bar)
+        — they just don't move. Desktop keeps the motion. */
+  #s-land .ldx-ring::before { animation: none !important; opacity: .25; transform: scale(1.05); }
+  #s-land .ldx-sync-ic     { animation: none !important; }
+  #s-land .ldx-scan-line   { animation: none !important; top: 60% !important; }
+
+  /* 4. No will-change / no transforms that promote layers needlessly */
+  #s-land .ldx-scrolly-phone { transform: none !important; }
+}
