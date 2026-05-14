@@ -8244,11 +8244,16 @@ ${sectionsHtml}
       session = null;
     }
     if (!session) {
-      // First-time / signed-out visitors land on the marketing page,
-      // not the bare auth form. The landing page itself has clear
-      // "Start free →" + "Sign in" CTAs so the user always knows
-      // their next move.
-      go('s-land');
+      // URL-based split between the app and the marketing landing:
+      //   /            → s-login (the app proper)
+      //   /welcome     → s-land  (the marketing landing for prospects)
+      //   /?welcome    → s-land  (query-string fallback)
+      // Share /welcome for sales; share / for getting users into the
+      // product.
+      const path = (window.location.pathname || '/').toLowerCase();
+      const isWelcome = /\/welcome\/?$/.test(path)
+        || /[?&#]welcome\b/i.test(window.location.search + window.location.hash);
+      go(isWelcome ? 's-land' : 's-login');
       return;
     }
     // If a non-demo user is returning to the app and the Store still

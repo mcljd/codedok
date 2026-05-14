@@ -4,7 +4,7 @@
 //     get the latest when online, fall back to cache when offline)
 //   - Fonts / icons / images: cache-first (rarely change, big files)
 // Bump CACHE_VERSION whenever you ship — old caches are deleted on activate.
-const CACHE_VERSION = 'codedok-v66';
+const CACHE_VERSION = 'codedok-v67';
 const SHELL = [
   './',
   './index.html',
@@ -39,7 +39,11 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-function isAppShell(url) {
+function isAppShell(url, req) {
+  // HTML navigations (the user typing a URL or clicking a link) always
+  // get the app-shell treatment, regardless of path shape. Covers
+  // /welcome, /something/else, /, and /index.html.
+  if (req && req.mode === 'navigate') return true;
   return /(\.html|\.css|\.js|\.json|\/)$/.test(url.pathname) && !/\.woff2?$/.test(url.pathname);
 }
 
@@ -55,7 +59,7 @@ self.addEventListener('fetch', (e) => {
   // type"). Let the browser handle these directly.
   if (url.origin !== self.location.origin) return;
 
-  if (isAppShell(url)) {
+  if (isAppShell(url, req)) {
     // Network-first for code/markup — never serve stale UI when online.
     e.respondWith(
       fetch(req).then((res) => {
