@@ -1,6 +1,13 @@
+# CodedOK robots.txt
+# The site is a single PWA; every public path serves the same shell
+# and reveals different content client-side. Google indexes the root
+# and /welcome; /demo is a share link for prospects (not indexed —
+# it'd just show a demo session in the index); auth-only paths
+# resolve to the same shell so there's nothing for Google to find.
 User-agent: *
 Allow: /
-Disallow: /app
+Disallow: /demo
+Disallow: /demo/
 Disallow: /onboard
 
 Sitemap: https://codedok.com/sitemap.xml

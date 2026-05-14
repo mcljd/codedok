@@ -21,6 +21,121 @@
 <meta name="twitter:description" content="Track every cert, equipment item and crew qualification across MCA and Irish PBL — in one record per vessel.">
 <meta name="twitter:image" content="https://codedok.com/icons/icon-512.png">
 
+<!-- Structured data for Google. Three schemas: SoftwareApplication
+     so we show up in "compliance app" / SaaS-style queries with a
+     rich card; Organization so the brand panel is correct in SERP;
+     FAQPage so the MCA SPV / Workboat / PBL questions appear as
+     expandable rich results under the listing. Every Q&A here is a
+     verbatim subset of the FAQ section below — Google rejects
+     FAQPage schema whose answers don't match the visible page copy. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "CodedOK",
+  "alternateName": "CodedOK — Coded vessel compliance",
+  "url": "https://codedok.com",
+  "description": "Inspection-readiness app for UK and Irish coded vessel operators. Tracks certificates, equipment and crew qualifications against the MCA Sport & Pleasure Vessel Code 2025, Workboat Code Edition 3, and Irish PBL Classes P1–P6.",
+  "applicationCategory": "BusinessApplication",
+  "applicationSubCategory": "Maritime compliance",
+  "operatingSystem": "Web, iOS, Android",
+  "image": "https://codedok.com/icons/icon-512.png",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "GBP",
+    "availability": "https://schema.org/InStock",
+    "category": "Free trial"
+  },
+  "featureList": [
+    "MCA Sport & Pleasure Vessel Code 2025 record",
+    "Workboat Code Edition 3 record",
+    "Irish PBL Classes P1–P6 record",
+    "Certificate expiry reminders (push + email)",
+    "Safety Management System builder",
+    "Inspection-pack PDF export",
+    "Surveyor cross-org access",
+    "Offline-first PWA for use at sea"
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "CodedOK",
+  "url": "https://codedok.com",
+  "logo": "https://codedok.com/icons/icon-512.png",
+  "email": "hello@codedok.com",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Cushendall",
+    "addressRegion": "Northern Ireland",
+    "addressCountry": "GB"
+  },
+  "areaServed": [
+    { "@type": "Country", "name": "United Kingdom" },
+    { "@type": "Country", "name": "Ireland" }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does CodedOK actually cover Irish PBL?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. The full Marine Survey Office Passenger Boat Licence — Classes P1 through P6 — is loaded as a jurisdiction option per vessel. When you pick \"Ireland — PBL\" on a vessel, the relevant equipment, manning, and survey requirements load alongside (or instead of) the UK MCA set, depending on where the vessel actually operates."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What changes when the MCA SPV Code 2025 comes in?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The Sport & Pleasure Vessel Code 2025 replaces the old MGN 280 framework on 1 December 2025. Headline shifts: a single-route stability declaration for under-15m vessels, a mandatory Safety Management System for charter operations, refreshed equipment carriage tables, and clearer owner-declaration requirements. CodedOK rolls the new schedule out automatically on the date — your existing vessels show what's already aligned and what needs new evidence."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is CodedOK affiliated with the MCA or YDSA?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. CodedOK is an independent recordkeeping aid. The SPV Code 2025, Workboat Code Edition 3, MGN 280, and YDSA category schedules are published by their respective authorities; CodedOK is not endorsed by or affiliated with any of them."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it replace my MCA or PBL survey?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. CodedOK helps you stay inspection-ready between surveys and hand a clean record to your surveyor on the day. The survey itself, and the certification or licence that comes out of it, still happen with your recognised surveyor or the Marine Survey Office."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it work offshore with no signal?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Installed as a PWA on your phone, the app works fully offline. Edits queue locally and sync to the cloud when you're back in coverage. No data lost in a tunnel or 20 miles offshore."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does the surveyor handoff work?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Your surveyor gets a free seat per vessel you invite them to. They see your full record — certs, equipment, crew quals, deficiencies, prior inspections — from their own login. On survey day they raise deficiencies, sign the inspection in the app, and the signed pack lands in your inbox. No PDF email chase, no version mismatches."
+      }
+    }
+  ]
+}
+</script>
+
 <!-- Self-healing escape hatch. If app.js fails to parse / load (broken
      cached bundle, network blip during initial install), the page would
      otherwise sit there silently with no working buttons. After 4
