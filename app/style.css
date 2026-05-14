@@ -843,12 +843,27 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
 #s-land .ld-h1 {
   font-family: var(--fn-display);
-  font-size: clamp(46px, 9vw, 104px);
+  /* Apple-tier hero — pushes to 140px on a wide laptop. The clamp
+     keeps it readable on a 360px phone (~52px) without media queries. */
+  font-size: clamp(52px, 12vw, 140px);
   font-weight: 700;
-  line-height: .94;
-  letter-spacing: -.035em;
+  line-height: .92;
+  letter-spacing: -.045em;
   color: white;
-  margin: 0 0 22px;
+  margin: 0 0 26px;
+}
+/* Words inside .ld-h1 are wrapped in <span class="word"> by JS so
+   each can fade up independently with a stagger. */
+#s-land .ld-h1 .word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.4em);
+  transition: opacity .9s cubic-bezier(.32, .72, 0, 1),
+              transform .9s cubic-bezier(.32, .72, 0, 1);
+}
+#s-land .ld-h1.in .word {
+  opacity: 1;
+  transform: translateY(0);
 }
 #s-land .ld-h2 {
   font-family: var(--fn-display);
@@ -1178,10 +1193,65 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   transform: translate3d(0, var(--y, 0px), 0);
 }
 
-/* Magnetic press — every primary CTA gets a tactile press feel. */
-#s-land .btn { transition: transform .15s var(--ease), filter .15s var(--ease), box-shadow .25s var(--ease); }
+/* Magnetic press — every primary CTA gets a tactile press feel.
+   Apple-tier easing curve: cubic-bezier(.32, .72, 0, 1). */
+#s-land .btn { transition: transform .2s cubic-bezier(.32, .72, 0, 1), filter .2s cubic-bezier(.32, .72, 0, 1), box-shadow .3s cubic-bezier(.32, .72, 0, 1); }
 #s-land .btn:active { transform: scale(.97); filter: brightness(.95); }
 #s-land .btn-sea:hover { box-shadow: 0 8px 22px rgba(15,76,92,.28); }
+
+/* Marquee credibility band — endlessly scrolling row of code names.
+   Uses two copies of the same content so the loop is seamless. */
+#s-land .ld-marquee {
+  position: relative;
+  overflow: hidden;
+  margin: 0 0 30px;
+  padding: 6px 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+}
+#s-land .ld-marquee-track {
+  display: flex;
+  gap: 28px;
+  width: max-content;
+  animation: ld-marquee 32s linear infinite;
+  font-family: var(--fn-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,.7);
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+#s-land .ld-marquee-track span { display: inline-flex; align-items: center; gap: 28px; }
+#s-land .ld-marquee-track svg { opacity: .55; flex-shrink: 0; }
+@keyframes ld-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #s-land .ld-marquee-track { animation: none; }
+}
+
+/* Full-viewport editorial sections — when the photo IS the moment,
+   give it the whole screen. Override the previous fixed min-heights
+   on the in-the-field and in-the-yard sections via .ld-vh class. */
+#s-land .ld-vh {
+  min-height: 92vh !important;
+  display: flex;
+  align-items: center;
+}
+#s-land .ld-vh.bottom { align-items: flex-end; }
+@media (max-width: 720px) {
+  /* On phones, 92vh is too aggressive — the user can't see the whole
+     beat in one tap. Drop to 70vh for usable storytelling rhythm. */
+  #s-land .ld-vh { min-height: 70vh !important; }
+}
+
+/* Flatter, Apple-y card surfaces — strip box-shadows that read as
+   web-templatey, replace with a single hairline border. */
+#s-land .ld-feature { box-shadow: none; }
+#s-land .ld-feature:hover { box-shadow: 0 6px 18px rgba(28,37,43,.06); }
+#s-land .ld-plan { box-shadow: none; }
+#s-land .ld-plan.featured { box-shadow: 0 18px 44px rgba(15,76,92,.10); }
 
 /* Asymmetric feature grid — desktop 2-col, mobile 1-col. */
 #s-land .ld-features {

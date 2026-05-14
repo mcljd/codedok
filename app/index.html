@@ -333,14 +333,42 @@
             <span class="name">CodedOK</span>
           </div>
 
-          <!-- Code-tag credibility row, monospace -->
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px">
-            <span class="ld-code-tag">SPV Code 2025</span>
-            <span class="ld-code-tag">Workboat Code Ed 3</span>
-            <span class="ld-code-tag">Irish PBL</span>
+          <!-- Endlessly scrolling band of supported codes, mono type.
+               Reads as a tech credibility marquee instead of static chips. -->
+          <div class="ld-marquee" aria-hidden="true">
+            <div class="ld-marquee-track">
+              <span>
+                SPV Code 2025
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+                Workboat Code Edition 3
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+                Irish PBL
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+                MGN 280
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+                MARPOL Annex I
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+                YDSA Coding
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+              </span>
+              <span>
+                SPV Code 2025
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+                Workboat Code Edition 3
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+                Irish PBL
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+                MGN 280
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+                MARPOL Annex I
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+                YDSA Coding
+                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
+              </span>
+            </div>
           </div>
 
-          <h1 class="ld-h1">Inspection-ready,<br>every day at sea.</h1>
+          <h1 class="ld-h1" data-reveal>Inspection-ready,<br>every day at sea.</h1>
 
           <p class="ld-sub" style="margin-bottom:32px">The compliance app built for UK&nbsp;&amp;&nbsp;Irish coded vessel skippers. Track every certificate, piece of equipment and crew qualification — and bring your surveyor into the same record.</p>
 
@@ -544,7 +572,7 @@
          Uses img/landing/in-the-field.jpg (RIB at speed). Gradient
          overlay keeps the pull-quote readable; falls back to a
          brand-tinted slab if the image isn't uploaded yet. -->
-    <section style="position:relative;min-height:380px;display:flex;align-items:center;color:white;overflow:hidden">
+    <section class="ld-vh" style="position:relative;color:white;overflow:hidden">
       <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(90deg, rgba(28,37,43,.85) 0%, rgba(15,76,92,.55) 60%, rgba(15,76,92,.25) 100%), url('img/landing/in-the-field.jpg') center/cover no-repeat, url('img/landing/in-the-field.svg') center/cover no-repeat #0F4C5C"></div>
       <div data-reveal style="position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:64px 22px;width:100%">
         <div class="ld-eyebrow on-dark">Built for the deck, not the desk</div>
@@ -667,7 +695,7 @@
     <!-- Boat-on-the-lift shot. Uses img/landing/in-the-yard.jpg with
          a vertical fade so the headline + CTA sit on a darker base
          while the boat above stays visible. -->
-    <section style="position:relative;min-height:480px;display:flex;align-items:flex-end;color:white;overflow:hidden">
+    <section class="ld-vh bottom" style="position:relative;color:white;overflow:hidden">
       <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(28,37,43,.15) 0%, rgba(28,37,43,.55) 55%, rgba(28,37,43,.95) 100%), url('img/landing/in-the-yard.jpg') center/cover no-repeat, url('img/landing/in-the-yard.svg') center/cover no-repeat #1C252B"></div>
       <div data-reveal style="position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:120px 22px 56px;width:100%">
         <div class="ld-eyebrow on-dark">Survey day</div>
