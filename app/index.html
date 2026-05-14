@@ -45,7 +45,7 @@
      Preconnect avoids a render-blocking Google round-trip. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="print.css" media="print">
 
@@ -377,7 +377,7 @@
           <p class="ld-sub" style="margin-bottom:32px">Inspection-readiness for UK and Irish small commercial vessel operators. Track every certificate, piece of equipment and crew qualification — and bring your surveyor into the same record.</p>
 
           <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:14px">
-            <button onclick="goSignUp()" style="height:56px;padding:0 30px;font-weight:700;font-size:15px;letter-spacing:-.005em;border-radius:12px;background:#22D3EE;color:#0F4C5C;border:none;cursor:pointer;font-family:var(--fn);box-shadow:0 14px 32px rgba(34,211,238,.28);transition:transform .2s cubic-bezier(.32,.72,0,1),box-shadow .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 18px 38px rgba(34,211,238,.36)'" onmouseout="this.style.transform='';this.style.boxShadow='0 14px 32px rgba(34,211,238,.28)'">Start free →</button>
+            <button onclick="goSignUp()" style="height:56px;padding:0 30px;font-weight:700;font-size:15px;letter-spacing:-.005em;border-radius:12px;background:#0891b2;color:#ffffff;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;box-shadow:0 14px 32px rgba(8,145,178,.28);transition:transform .2s cubic-bezier(.32,.72,0,1),box-shadow .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.transform='translateY(-1px)';this.style.background='#0b7a96';this.style.boxShadow='0 18px 38px rgba(8,145,178,.36)'" onmouseout="this.style.transform='';this.style.background='#0891b2';this.style.boxShadow='0 14px 32px rgba(8,145,178,.28)'">Start free →</button>
             <button onclick="go('s-login')" style="background:transparent;border:1px solid rgba(255,255,255,.22);color:rgba(255,255,255,.9);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--fn);height:56px;padding:0 22px;border-radius:12px;transition:all .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.borderColor='rgba(255,255,255,.5)';this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.borderColor='rgba(255,255,255,.22)';this.style.background='transparent'">See live demo</button>
           </div>
           <div style="font-size:12px;color:rgba(255,255,255,.45);letter-spacing:.01em">Free trial · No card to start · Works on iPhone &amp; Android</div>
@@ -948,14 +948,62 @@
       </div>
     </section>
 
-    <!-- ── FINAL CTA ───────────────────────────────────────── -->
-    <section style="background:var(--ink);color:white;padding:80px 22px;text-align:center;position:relative;overflow:hidden">
-      <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 100% at 50% -10%,rgba(30,122,134,.32) 0%,transparent 60%),radial-gradient(ellipse 50% 80% at 50% 110%,rgba(79,122,82,.16) 0%,transparent 60%);pointer-events:none"></div>
-      <div data-reveal style="position:relative;z-index:1;max-width:600px;margin:0 auto">
-        <h2 class="ld-h2 on-dark" style="margin-bottom:16px">Stop dreading your annual check.</h2>
-        <p class="ld-sub" style="margin:0 auto 28px">Sign up in 90 seconds, add your first vessel, and walk into your next inspection with every cert, equipment service and crew qualification in one record.</p>
-        <button onclick="goSignUp()" style="height:56px;padding:0 32px;font-weight:700;font-size:15px;border-radius:12px;background:#22D3EE;color:#0F4C5C;border:none;cursor:pointer;font-family:var(--fn);box-shadow:0 14px 32px rgba(34,211,238,.28);transition:transform .2s cubic-bezier(.32,.72,0,1),box-shadow .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 18px 38px rgba(34,211,238,.36)'" onmouseout="this.style.transform='';this.style.boxShadow='0 14px 32px rgba(34,211,238,.28)'">Start free →</button>
-        <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:16px;letter-spacing:.01em">No card · Cancel anytime on paid plans</div>
+    <!-- ── PARTNERS ────────────────────────────────────────── -->
+    <!-- The real ones from the brand pack — Redbay Boats (Cushendall
+         RIB builder) + McCollam Marine (naval architects + surveyors).
+         Logos live in codedok-brand/partners/ and app/icons/. -->
+    <section style="background:#fff;color:var(--text);padding:80px 22px;border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr)" data-reveal>
+      <div style="max-width:1100px;margin:0 auto">
+        <div style="text-align:center;max-width:720px;margin:0 auto 48px">
+          <div class="ld-eyebrow">Built with</div>
+          <h2 class="ld-h2">The boatbuilders and surveyors<br>skippers already trust.</h2>
+          <p class="ld-sub on-light" style="margin:14px auto 0;color:var(--mid)">CodedOK works with the people who build the boats and sign the paperwork on this coast — so your vessel, your evidence and your compliance story all line up.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr;gap:22px">
+          <!-- Redbay -->
+          <div style="background:#fff;border:1px solid var(--bdr);border-radius:18px;padding:30px;box-shadow:0 1px 3px rgba(0,0,0,.04),0 6px 24px rgba(0,0,0,.04)">
+            <div style="height:84px;display:flex;align-items:center;border-bottom:1px solid var(--bdr);margin-bottom:18px;padding-bottom:18px"><img alt="Redbay Boats" src="../codedok-brand/partners/redbay.png" onerror="this.style.display='none'" style="max-height:64px;max-width:300px"></div>
+            <div style="font-family:var(--fn-display);font-size:22px;font-weight:800;letter-spacing:-.015em;color:var(--text);margin-bottom:4px">Redbay Boats</div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--sea);margin-bottom:14px">Commercial RIB Builder · Cushendall</div>
+            <p style="font-size:14px;color:var(--mid);line-height:1.6;margin:0 0 16px">Redbay build high-performance RIBs trusted by commercial operators, pilots, dive schools and enforcement agencies. New Redbays delivered to CodedOK customers arrive with their compliance profile pre-loaded — saving the buyer an afternoon of setup and a year of guesswork.</p>
+            <ul style="list-style:none;padding:0;margin:0">
+              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> New-build category &amp; cert requirements pre-configured</li>
+              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> Stability data &amp; equipment manifest imported at handover</li>
+              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> Warranty &amp; refit records synced into vessel history</li>
+            </ul>
+          </div>
+          <!-- McCollam Marine -->
+          <div style="background:#fff;border:1px solid var(--bdr);border-radius:18px;padding:30px;box-shadow:0 1px 3px rgba(0,0,0,.04),0 6px 24px rgba(0,0,0,.04)">
+            <div style="height:84px;display:flex;align-items:center;border-bottom:1px solid var(--bdr);margin-bottom:18px;padding-bottom:18px"><img alt="McCollam Marine — Naval Architects and Marine Surveyors" src="icons/mccollam.webp" onerror="this.style.display='none'" style="max-height:64px;max-width:300px"></div>
+            <div style="font-family:var(--fn-display);font-size:22px;font-weight:800;letter-spacing:-.015em;color:var(--text);margin-bottom:4px">McCollam Marine</div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--sea);margin-bottom:14px">Naval Architects · Marine Surveyors</div>
+            <p style="font-size:14px;color:var(--mid);line-height:1.6;margin:0 0 16px">McCollam Marine provide the naval architecture and survey work that sits behind an MCA-coded vessel. When their reports land in CodedOK, they arrive as structured evidence — not a PDF you have to interpret. Stability letters, survey findings and recommendations feed straight into your record.</p>
+            <ul style="list-style:none;padding:0;margin:0">
+              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> MCA coding surveys + renewals under SPV / Workboat codes</li>
+              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> Stability assessments, load line, tonnage, incline experiments</li>
+              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> Survey reports delivered as structured evidence, not just PDF</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FINAL CTA — rounded-card banner ──────────────────── -->
+    <!-- Dark navy card with radial sheens, sat inside white margin
+         rather than full-bleed. Matches the original landing's pattern. -->
+    <section style="padding:0 16px 72px;background:#fff">
+      <div data-reveal style="max-width:1100px;margin:0 auto;background:linear-gradient(135deg,#0a1628 0%,#1a3560 100%);border-radius:24px;padding:64px 36px;text-align:center;position:relative;overflow:hidden;color:white">
+        <div aria-hidden="true" style="position:absolute;top:-150px;right:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(8,145,178,.32),transparent 70%);pointer-events:none"></div>
+        <div aria-hidden="true" style="position:absolute;bottom:-200px;left:-100px;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(6,182,212,.14),transparent 70%);pointer-events:none"></div>
+        <div style="position:relative;z-index:1;max-width:620px;margin:0 auto">
+          <h2 class="ld-h2 on-dark" style="margin-bottom:14px">Stop dreading your annual check.</h2>
+          <p style="font-size:17px;color:rgba(255,255,255,.78);line-height:1.6;margin:0 0 30px">Sign up in 90 seconds. Add your first vessel. Walk into your next inspection with every cert, equipment service and crew qualification in one record.</p>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            <button onclick="goSignUp()" style="height:54px;padding:0 30px;font-weight:700;font-size:15px;border-radius:12px;background:#0891b2;color:#ffffff;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;box-shadow:0 14px 32px rgba(8,145,178,.32);transition:all .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.background='#0b7a96';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#0891b2';this.style.transform=''">Start free trial</button>
+            <button onclick="go('s-login')" style="height:54px;padding:0 26px;font-weight:700;font-size:14px;border-radius:12px;background:transparent;border:1.5px solid rgba(255,255,255,.3);color:white;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.borderColor='rgba(255,255,255,.7)';this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.borderColor='rgba(255,255,255,.3)';this.style.background='transparent'">Sign in</button>
+          </div>
+          <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:18px">No card to start · Cancel any time</div>
+        </div>
       </div>
     </section>
 

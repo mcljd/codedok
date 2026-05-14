@@ -824,11 +824,30 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
 /* ════════════════════════════════════════════════════════════════
    LANDING (s-land) — break out of the mobile shell on desktop and
-   give the marketing surface a magazine-style layout. Everything
-   in here is scoped to #s-land so it can't bleed into the app.
+   give the marketing surface a magazine-style layout. The landing
+   uses its OWN brand pack (navy + cyan + Plus Jakarta Sans, the
+   original CodedOK identity) — scoped via custom-property overrides
+   so the rest of the app keeps Deep Tide / Signal Teal / Barlow.
    ════════════════════════════════════════════════════════════════ */
 
-#s-land .scroll { padding-bottom: 0; }
+#s-land {
+  --ink:   #0a1628; --ink2: #1a3560; --ink3: #1e3454;
+  --sea:   #0891b2; --seal: #06b6d4; --seap: rgba(8,145,178,.12);
+  --green: #16a34a; --grnp: rgba(22,163,74,.12);
+  --amber: #d97706; --ampp: rgba(217,119,6,.13);
+  --red:   #dc2626; --redp: rgba(220,38,38,.12);
+  --slate: #f1f5f9; --bdr:  #e2e8f0;
+  --text:  #0f172a; --mid:  #475569; --lt:   #94a3b8;
+  --page:  #f8fafc; --card: #ffffff;
+  --fn-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --fn:         'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--fn);
+  background: var(--page);
+  color: var(--text);
+  letter-spacing: -.005em;
+}
+
+#s-land .scroll { padding-bottom: 0; background: var(--page); color: var(--text); }
 
 #s-land .ld-eyebrow {
   font-family: var(--fn);
@@ -843,15 +862,25 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
 #s-land .ld-h1 {
   font-family: var(--fn-display);
-  /* Apple-tier hero — pushes to 140px on a wide laptop. The clamp
-     keeps it readable on a 360px phone (~52px) without media queries. */
-  font-size: clamp(52px, 12vw, 140px);
-  font-weight: 700;
-  line-height: .92;
-  letter-spacing: -.045em;
+  /* Big confident hero type — Plus Jakarta 800 has the right weight
+     for this scale. Clamps from ~46px on phones to ~96px on laptops. */
+  font-size: clamp(46px, 9.5vw, 96px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -.025em;
   color: white;
-  margin: 0 0 26px;
+  margin: 0 0 22px;
 }
+#s-land .ld-h2 {
+  font-family: var(--fn-display);
+  font-size: clamp(28px, 4.6vw, 42px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -.018em;
+  color: var(--text);
+  margin: 0 0 16px;
+}
+#s-land .ld-h2.on-dark { color: white; }
 /* Words inside .ld-h1 are wrapped in <span class="word"> by JS so
    each can fade up independently with a stagger. */
 #s-land .ld-h1 .word {
