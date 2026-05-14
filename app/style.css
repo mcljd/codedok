@@ -3414,3 +3414,49 @@ body:has(#s-land.on) { background: #050614 !important; }
 @media (min-width: 768px) {
   #s-land .ld-section { padding-top: 120px !important; padding-bottom: 120px !important; }
 }
+
+/* CINEMATIC PATCH — additional landing classes that the first sweep
+   missed. These selectors had hardcoded `background: #fff` and were
+   rendering as bright white panels on the now-dark canvas, with the
+   inner text invisible because the text colours had already been
+   flipped to white by the cinematic overlay. */
+
+/* Problem cards (5. Problem section). Class is .ld-pcard (NOT
+   .ld-problem-card as the first sweep guessed). */
+#s-land .ld-pcard {
+  background: rgba(15,17,28,.65) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+#s-land .ld-pcard:hover {
+  border-color: rgba(6,182,212,.35) !important;
+  box-shadow: 0 14px 32px rgba(0,0,0,.30) !important;
+}
+#s-land .ld-pcard h3 { color: #f8fafc !important; }
+#s-land .ld-pcard p  { color: rgba(248,250,252,.70) !important; }
+
+/* Irish PBL pill chips (4. PBL moat section). Class is .ld-pbl-chip. */
+#s-land .ld-pbl-chip {
+  background: rgba(15,17,28,.65) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  color: rgba(248,250,252,.75) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#s-land .ld-pbl-chip strong {
+  background: rgba(6,182,212,.16) !important;
+  color: #67e8f9 !important;
+}
+
+/* Final CTA wrapper had a light grey background that became a
+   bright slab in dark mode. */
+#s-land .ld-finalcta-wrap {
+  background: #050614 !important;
+}
+
+/* Hero "Sign in" pill hover — was flashing to white on hover. */
+#s-land .ld-hero-signin:hover {
+  background: rgba(255,255,255,.10) !important;
+  border-color: rgba(255,255,255,.22) !important;
+}
