@@ -862,8 +862,6 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
 #s-land .ld-h1 {
   font-family: var(--fn-display);
-  /* Big confident hero type — Plus Jakarta 800 has the right weight
-     for this scale. Clamps from ~46px on phones to ~96px on laptops. */
   font-size: clamp(46px, 9.5vw, 96px);
   font-weight: 800;
   line-height: 1.02;
@@ -871,6 +869,10 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   color: white;
   margin: 0 0 22px;
 }
+/* Highlight class on the H1's last line — used to be an inline
+   style="color:..." span, which broke when the headline ran through
+   the word-splitter. Now a stable class. */
+#s-land .ld-h1 .hl { color: var(--seal); }
 #s-land .ld-h2 {
   font-family: var(--fn-display);
   font-size: clamp(28px, 4.6vw, 42px);
@@ -881,19 +883,6 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   margin: 0 0 16px;
 }
 #s-land .ld-h2.on-dark { color: white; }
-/* Words inside .ld-h1 are wrapped in <span class="word"> by JS so
-   each can fade up independently with a stagger. */
-#s-land .ld-h1 .word {
-  display: inline-block;
-  opacity: 0;
-  transform: translateY(0.4em);
-  transition: opacity .9s cubic-bezier(.32, .72, 0, 1),
-              transform .9s cubic-bezier(.32, .72, 0, 1);
-}
-#s-land .ld-h1.in .word {
-  opacity: 1;
-  transform: translateY(0);
-}
 #s-land .ld-h2 {
   font-family: var(--fn-display);
   font-size: clamp(30px, 5vw, 52px);

@@ -8016,29 +8016,9 @@ ${sectionsHtml}
     const root = document.getElementById('s-land');
     if (!root) return;
 
-    // --- 0. Word-split the hero headline once so each word animates
-    //         in independently. Idempotent — only runs if the headline
-    //         hasn't been split yet. ---
-    const h1 = root.querySelector('.ld-h1');
-    if (h1 && !h1.dataset.split) {
-      const html = h1.innerHTML;
-      const wrapped = html
-        .split(/(<br\s*\/?>)/i)
-        .map((chunk) => {
-          if (/^<br/i.test(chunk)) return chunk;
-          return chunk.split(/(\s+)/).map((piece) => {
-            if (/^\s+$/.test(piece)) return piece;
-            if (!piece) return '';
-            return '<span class="word">' + piece + '</span>';
-          }).join('');
-        }).join('');
-      h1.innerHTML = wrapped;
-      h1.dataset.split = '1';
-      // Stagger transition-delay so words ripple in left-to-right.
-      h1.querySelectorAll('.word').forEach((w, i) => {
-        w.style.transitionDelay = (i * 60) + 'ms';
-      });
-    }
+    // (Word-split reveal removed — it tokenised raw HTML and broke any
+    // headline containing inline tags. The parent [data-reveal] fade-up
+    // is enough.)
 
     // --- 1. Reveal observer for [data-reveal] ---
     const revealTargets = root.querySelectorAll('[data-reveal]:not(.in)');
