@@ -4638,4 +4638,48 @@ body:has(#s-land.on) { background: #050614 !important; }
     -webkit-backdrop-filter: none !important;
             backdrop-filter: none !important;
   }
+
+  /* ──────────────────────────────────────────────────────────────
+     CRITICAL — scroll context fix
+     iOS Safari needs every one of these on the inner scroll element
+     when the body is overflow:hidden + 100dvh. If even one is
+     missing, touch-scroll silently fails.
+     ────────────────────────────────────────────────────────────── */
+  #s-land .scroll {
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    flex: 1 1 auto !important;
+    /* Force the scroll element to be its own paint layer — fixes a
+       known iOS bug where stuff inside an overflow:hidden ancestor
+       can't be scrolled until something promotes the layer. */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+
+  /* Hide the sticky nav entirely on mobile — it's not the scroll
+     blocker by itself, but with position changes back and forth
+     it's the most likely victim of an iOS layout caching bug. The
+     hero already carries the Sign in / Secure your fleet CTAs. */
+  #s-land .ld-stickynav { display: none !important; }
+
+  /* Nothing inside .scroll should clip its own overflow in a way
+     that traps touches. The bento cell had overflow:hidden to clip
+     the scan-line; that widget is hidden on mobile anyway. */
+  #s-land .ldx-cell { overflow: visible !important; }
+  #s-land .ldx-hero { overflow: visible !important; }
+  #s-land .ldx-scrolly,
+  #s-land .ldx-bento,
+  #s-land .ldx-finalcta-wrap { overflow: visible !important; }
+
+  /* Make sure no descendant pseudo-element is sitting on top of
+     the content swallowing touches. */
+  #s-land .scroll::before,
+  #s-land .scroll::after {
+    pointer-events: none !important;
+  }
 }
