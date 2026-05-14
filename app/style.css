@@ -3060,13 +3060,19 @@ h1, h2, h3, .slbl {
    ════════════════════════════════════════════════════════════════ */
 
 #s-land {
-  --ink:   #050614 !important;
-  --ink2:  #0a0d22 !important;
-  --ink3:  #11142e !important;
+  /* IMPORTANT: in the original landing pack --ink / --ink2 / --ink3
+     are *text* colors (dark navy on a light page). The dark-mode
+     overlay flips the page background, so --ink also has to flip
+     to a LIGHT colour or every h3 / .ld-pcard h3 / .ld-feature h3
+     / .ld-also-name (which use `color: var(--ink)`) will render
+     dark-on-dark and disappear. */
+  --ink:   #f8fafc !important;
+  --ink2:  #cbd5e1 !important;
+  --ink3:  rgba(248,250,252,.65) !important;
   --sea:   #06b6d4 !important;
   --seal:  #67e8f9 !important;
   --seap:  rgba(6,182,212,.12) !important;
-  --slate: #0a0d22 !important;
+  --slate: rgba(255,255,255,.04) !important;
   --bdr:   rgba(255,255,255,.08) !important;
   --text:  #f8fafc !important;
   --mid:   rgba(248,250,252,.65) !important;

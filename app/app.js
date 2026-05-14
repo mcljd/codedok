@@ -8589,16 +8589,22 @@ ${sectionsHtml}
       session = null;
     }
     if (!session) {
-      // Soft gate: unauthenticated visitors always land on the marketing
-      // page (s-land), regardless of /, /welcome, or /?welcome. The app
-      // proper (s-login → s-home etc.) is only reachable via the "Sign in"
-      // CTAs on s-land, or by clicking a magic-link email which sets a
-      // session before this block runs.
-      //   /            → s-land
-      //   /welcome     → s-land
-      //   /?welcome    → s-land
+      // Soft gate. Two paths:
+      //  - Browser visitors with no session → marketing landing.
+      //    Lets prospects discover the product before signing up.
+      //  - Installed PWA (standalone display mode) with no session →
+      //    sign-in screen. Once you've added CodedOK to your home
+      //    screen you should never see the marketing page again —
+      //    you're past that conversion step. Tapping the icon should
+      //    feel like opening any other app.
+      //
+      // /welcome and /?welcome are kept as backward-compat for
+      // anything sharing those URLs, but they no longer behave
+      // differently from /.
       // Authenticated users skip this block entirely (session truthy).
-      go('s-land');
+      const standalone = window.navigator.standalone === true
+        || window.matchMedia('(display-mode: standalone)').matches;
+      go(standalone ? 's-login' : 's-land');
       return;
     }
     // If a non-demo user is returning to the app and the Store still
