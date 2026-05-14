@@ -2862,4 +2862,174 @@ h1, h2, h3, .slbl {
 .def-meta{font-size:11px;color:var(--lt);margin-top:2px;line-height:1.5;}
 .def-jur{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;background:var(--seap);color:var(--sea);border-radius:4px;padding:2px 6px;margin-top:4px;}
 .disclaimer{background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.15);border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;margin:0 16px;}
+
+/* ════════════════════════════════════════════════════════════════
+   DESKTOP — break the auth shell out of the 393px mobile column.
+   Same pattern as the landing's body:has(#s-land.on) override:
+   keep the centered mobile preview for the app interior, but let
+   the entry-point screens (login/signup, onboarding) fill the
+   viewport on desktop so first impressions look like a real product.
+   ════════════════════════════════════════════════════════════════ */
+@media (min-width: 520px) {
+  body:has(#s-login.on),
+  body:has(#s-onboard.on) {
+    display: block !important;
+    padding: 0 !important;
+    align-items: stretch !important;
+  }
+  body:has(#s-login.on) #s-login.on,
+  body:has(#s-onboard.on) #s-onboard.on {
+    width: 100vw !important;
+    max-width: none !important;
+    min-height: 100vh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  /* Two-column hero + form layout for sign-in / sign-up on desktop.
+     The form card stays a comfortable reading width; the left half
+     carries the brand + tagline so the screen doesn't feel empty. */
+  #s-login.on .auth-content {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 48px 64px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+    min-height: 100vh;
+  }
+  #s-login.on .auth-mark { margin: 0 0 24px; }
+  #s-login.on .auth-h1 {
+    text-align: left;
+    font-size: 56px;
+    line-height: 1.05;
+    letter-spacing: -1.5px;
+    margin-top: 0;
+  }
+  #s-login.on .auth-sub {
+    text-align: left;
+    font-size: 18px;
+    line-height: 1.55;
+    max-width: 480px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 16px;
+  }
+  #s-login.on .auth-card {
+    margin: 0;
+    max-width: 460px;
+    width: 100%;
+    padding: 32px;
+    justify-self: end;
+  }
+  /* Stack the hero above the form when there isn't quite enough room
+     for two columns to breathe (e.g. small laptops in split-screen). */
+  @media (max-width: 880px) {
+    #s-login.on .auth-content {
+      grid-template-columns: 1fr;
+      gap: 32px;
+      padding: 48px 32px 64px;
+    }
+    #s-login.on .auth-h1 { font-size: 40px; text-align: center; }
+    #s-login.on .auth-sub { text-align: center; margin: 16px auto 0; }
+    #s-login.on .auth-mark { margin: 0 auto 24px; }
+    #s-login.on .auth-card { justify-self: stretch; max-width: 480px; margin: 0 auto; }
+  }
+  #s-onboard.on .scroll {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   QR POPUP — desktop-only "Open on phone" floating button + modal.
+   Hidden on mobile (the app is already on the phone) and on
+   standalone PWA installs. The QR encodes https://codedok.com so
+   scanning lands the visitor on the same site, where the mobile
+   smart-banner offers Add-to-Home-Screen.
+   ════════════════════════════════════════════════════════════════ */
+.qr-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 9998;
+  background: #0F4C5C;
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 12px 30px rgba(0,0,0,.25), 0 0 0 1px rgba(255,255,255,.08);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+.qr-fab:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(0,0,0,.30); }
+.qr-fab svg { width: 18px; height: 18px; }
+.qr-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,22,40,.62);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  animation: qrFade 180ms ease both;
+}
+@keyframes qrFade { from { opacity: 0 } to { opacity: 1 } }
+.qr-modal-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 40px 100px rgba(0,0,0,.40);
+  color: #0f172a;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  position: relative;
+}
+.qr-modal-card h3 {
+  font-size: 22px; font-weight: 800; letter-spacing: -.5px;
+  margin: 0 0 6px;
+}
+.qr-modal-card p {
+  font-size: 14px; color: #475569; line-height: 1.5;
+  margin: 0 0 22px;
+}
+.qr-modal-card img {
+  width: 220px; height: 220px;
+  display: block;
+  margin: 0 auto 18px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+}
+.qr-modal-card .qr-url {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: #0F4C5C;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+.qr-modal-card .qr-close {
+  position: absolute;
+  top: 12px; right: 14px;
+  background: none; border: 0;
+  font-size: 26px; line-height: 1;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.qr-modal-card .qr-close:hover { color: #0f172a; }
+@media (max-width: 519px) {
+  /* Phone visitors don't need a "scan to open on phone" prompt. */
+  .qr-fab, .qr-modal-overlay { display: none !important; }
+}
 .disclaimer-txt{font-size:11px;color:var(--mid);line-height:1.6;}

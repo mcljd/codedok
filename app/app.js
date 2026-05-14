@@ -619,8 +619,11 @@
     if (id === 's-my-quals')           renderMyQuals();
     if (id === 's-crew-home')          renderCrewHome();
     if (id === 's-plans')              renderPlans();
-    if (id === 's-land')               { armLandingReveal(); ensureLandingSmartBanner(); }
+    if (id === 's-land')               { armLandingReveal(); ensureLandingSmartBanner(); maybeAutoShowQrOnLanding(); }
     else { const sb = document.getElementById('landing-smart-banner'); if (sb) sb.remove(); }
+    if (id === 's-home' || id === 's-crew-home' || id === 's-surveyor-home' || id === 's-admin-home') {
+      maybeShowWelcomeToast();
+    }
   }
   window.go = go;
 
@@ -3396,6 +3399,136 @@
     document.body.appendChild(banner);
   }
   window.ensureLandingSmartBanner = ensureLandingSmartBanner;
+
+  // ─────────────────────────────────────────────────────────────
+  // Desktop "Open on phone" QR popup.
+  // Mobile devices and PWA standalone installs see nothing.
+  // The FAB stays visible for the whole session; clicking opens
+  // a modal with a scannable QR for https://codedok.com. We also
+  // auto-show the modal once per session on the landing page so
+  // first-time desktop visitors notice the mobile path.
+  // ─────────────────────────────────────────────────────────────
+  function isQrEligible() {
+    if (!window.matchMedia('(min-width: 520px)').matches) return false;
+    const ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod|Android/i.test(ua)) return false;
+    const standalone = window.navigator.standalone === true
+      || window.matchMedia('(display-mode: standalone)').matches;
+    if (standalone) return false;
+    return true;
+  }
+
+  function ensureDesktopQrFab() {
+    if (!isQrEligible()) {
+      const f = document.getElementById('qr-fab');
+      if (f) f.remove();
+      return;
+    }
+    if (document.getElementById('qr-fab')) return;
+    const btn = document.createElement('button');
+    btn.id = 'qr-fab';
+    btn.className = 'qr-fab';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Open CodedOK on your phone');
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <path d="M14 14h3v3M21 14v3M14 21h7"/>
+      </svg>
+      Open on phone
+    `;
+    btn.onclick = openQrPopup;
+    document.body.appendChild(btn);
+  }
+  window.ensureDesktopQrFab = ensureDesktopQrFab;
+
+  function openQrPopup() {
+    closeQrPopup();
+    const url = 'https://codedok.com';
+    const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=8&data=' + encodeURIComponent(url);
+    const overlay = document.createElement('div');
+    overlay.id = 'qr-modal';
+    overlay.className = 'qr-modal-overlay';
+    overlay.innerHTML = `
+      <div class="qr-modal-card" role="dialog" aria-labelledby="qr-modal-title">
+        <button class="qr-close" type="button" aria-label="Close" onclick="closeQrPopup()">×</button>
+        <h3 id="qr-modal-title">Open CodedOK on your phone</h3>
+        <p>CodedOK is built for boats — use the QR below to open this app on your phone and add it to your home screen.</p>
+        <img src="${qrSrc}" alt="QR code for ${url}" width="220" height="220">
+        <span class="qr-url">${url}</span>
+      </div>
+    `;
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeQrPopup(); });
+    document.body.appendChild(overlay);
+  }
+  window.openQrPopup = openQrPopup;
+
+  function closeQrPopup() {
+    const el = document.getElementById('qr-modal');
+    if (el) el.remove();
+  }
+  window.closeQrPopup = closeQrPopup;
+
+  function maybeAutoShowQrOnLanding() {
+    if (!isQrEligible()) return;
+    let shown = '0';
+    try { shown = sessionStorage.getItem('codedok-qr-shown') || '0'; } catch (_) {}
+    if (shown === '1') return;
+    try { sessionStorage.setItem('codedok-qr-shown', '1'); } catch (_) {}
+    // Small delay so the landing reveal animation isn't fighting the modal.
+    setTimeout(openQrPopup, 1200);
+  }
+  window.maybeAutoShowQrOnLanding = maybeAutoShowQrOnLanding;
+
+  // ─────────────────────────────────────────────────────────────
+  // Welcome toast — fired once after sign-up, when the user
+  // actually lands inside the app (any of the home shells).
+  // ─────────────────────────────────────────────────────────────
+  function maybeShowWelcomeToast() {
+    let pending = '0';
+    try { pending = sessionStorage.getItem('codedok-welcome-pending') || '0'; } catch (_) {}
+    if (pending !== '1') return;
+    try { sessionStorage.removeItem('codedok-welcome-pending'); } catch (_) {}
+    if (document.getElementById('welcome-toast')) return;
+    const toast = document.createElement('div');
+    toast.id = 'welcome-toast';
+    toast.style.cssText = [
+      'position:fixed',
+      'top:calc(20px + env(safe-area-inset-top, 0px))',
+      'left:50%',
+      'transform:translateX(-50%) translateY(-20px)',
+      'z-index:9997',
+      'background:#0F4C5C',
+      'color:#fff',
+      'border-radius:14px',
+      'padding:12px 18px',
+      'font-family:inherit',
+      'font-size:14px',
+      'font-weight:600',
+      'box-shadow:0 12px 30px rgba(0,0,0,.25)',
+      'display:flex',
+      'align-items:center',
+      'gap:10px',
+      'opacity:0',
+      'transition:opacity 240ms ease, transform 240ms ease',
+      'max-width:calc(100vw - 32px)',
+    ].join(';');
+    toast.innerHTML = `<span style="font-size:18px">👋</span><span>Welcome to CodedOK — you're in. Verify your email when convenient.</span>`;
+    document.body.appendChild(toast);
+    // Animate in.
+    requestAnimationFrame(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(-20px)';
+      setTimeout(() => toast.remove(), 280);
+    }, 5000);
+  }
+  window.maybeShowWelcomeToast = maybeShowWelcomeToast;
 
   // ─────────────────────────────────────────────────────────────
   // Web push reminders — opt-in flow.
@@ -7969,14 +8102,22 @@ ${sectionsHtml}
     try {
       const meta = { kind: signupRole, name };
       if (signupRole === 'operator' && businessName) meta.business_name = businessName;
-      await window.Supa.signUpWithPassword(email, password, meta);
-      // If email confirmation is on, the session is null until they click the link.
-      // If it's off, they're signed in immediately — onAuthChange fires.
-      const lineEl = document.getElementById('login-sent-line');
-      const roleLabel = signupRole === 'surveyor' ? 'surveyor' : 'skipper';
-      if (lineEl) lineEl.innerHTML = `${roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1)} account created. We've sent a verification link to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email, tap the link, then come back to sign in.`;
+      const signUpData = await window.Supa.signUpWithPassword(email, password, meta);
       setAuthLoading(false);
-      toggleAuthMode('sent');
+      // When "Confirm email" is OFF in Supabase, signUp returns a live
+      // session and onAuthChange will fire SIGNED_IN — let it route the
+      // user into the app, and queue a welcome toast.
+      // When confirmation is ON, session is null and we fall back to the
+      // "check your inbox" interstitial so the user knows to verify.
+      if (signUpData && signUpData.session) {
+        try { sessionStorage.setItem('codedok-welcome-pending', '1'); } catch (_) {}
+        // onAuthStateChange handles routing; nothing more to do here.
+      } else {
+        const lineEl = document.getElementById('login-sent-line');
+        const roleLabel = signupRole === 'surveyor' ? 'surveyor' : 'skipper';
+        if (lineEl) lineEl.innerHTML = `${roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1)} account created. We've sent a verification link to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email, tap the link, then come back to sign in.`;
+        toggleAuthMode('sent');
+      }
     } catch (err) {
       setAuthLoading(false);
       const msg = (err && err.message) ? err.message : 'sign-up failed';
@@ -8213,6 +8354,7 @@ ${sectionsHtml}
     if (mark) mark.innerHTML = codedOkMark(38);
 
     renderDemoBadge();
+    ensureDesktopQrFab();
 
     // Real auth: when Supabase is wired, listen for sign-in / sign-out
     // events. handleSignedIn ensures a row exists in our users table,
