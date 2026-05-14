@@ -4297,3 +4297,107 @@ body:has(#s-land.on) { background: #050614 !important; }
   margin-top: 32px;
   justify-content: center;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   DEEP SEA — MOBILE PASS
+   The desktop layout works as a wide grid. On phones we need to:
+     - shrink the compliance ring + tighten hero padding
+     - make hero/final CTAs stack full-width so they're thumb-friendly
+     - flatten the scrollytelling section (no 70vh-per-step + no
+       opacity choreography — the phone is hidden on mobile so the
+       scroll-driven moment had nothing to drive)
+     - keep the bento card D JSON readable (mono + small + scrollable)
+     - prevent the long cert IDs and JSON keys from overflowing cards
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 720px) {
+  #s-land .ldx-hero { padding: 56px 18px 64px; }
+  #s-land .ldx-hero-inner { gap: 40px; }
+  #s-land .ldx-h1 {
+    margin-top: 22px;
+    letter-spacing: -.02em;
+    line-height: 1.04;
+  }
+  #s-land .ldx-hero-sub { font-size: 16px; margin-top: 18px; }
+  #s-land .ldx-hero-ctas {
+    margin-top: 24px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #s-land .ldx-cta {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 18px;
+  }
+  #s-land .ldx-hero-trust-row {
+    margin-top: 28px;
+    column-gap: 14px;
+    row-gap: 6px;
+    font-size: 10px;
+  }
+
+  /* Compliance ring — scale down so it doesn't dominate the viewport */
+  #s-land .ldx-ring { width: 220px; height: 220px; }
+  #s-land .ldx-ring-num { font-size: 44px; }
+  #s-land .ldx-ring-num .pct { font-size: 22px; }
+  #s-land .ldx-ring-label { font-size: 9px; }
+  #s-land .ldx-ring-tiles { max-width: 240px; }
+  #s-land .ldx-ring-tile .num { font-size: 18px; }
+  #s-land .ldx-ring-tile .l { font-size: 8px; }
+
+  /* Bento + scrollytelling section padding */
+  #s-land .ldx-bento,
+  #s-land .ldx-scrolly { padding: 64px 18px; }
+  #s-land .ldx-bento-head { margin-bottom: 32px; }
+  #s-land .ldx-bento-grid { gap: 12px; }
+  #s-land .ldx-cell { padding: 20px; }
+  #s-land .ldx-cell h3 { font-size: 19px; margin-top: 14px; }
+  #s-land .ldx-cell p  { font-size: 13.5px; }
+
+  /* Card A — long cert IDs would otherwise overflow */
+  #s-land .ldx-vessel-list .k { font-size: 10.5px; }
+  #s-land .ldx-vessel-list .v { font-size: 9.5px; }
+
+  /* Card D — JSON block: smaller mono, horizontal scroll for safety */
+  #s-land .ldx-scan-grid { gap: 10px; }
+  #s-land .ldx-scan-paper { min-height: 130px; padding: 12px; }
+  #s-land .ldx-scan-paper .row { font-size: 10.5px; }
+  #s-land .ldx-scan-json {
+    font-size: 10px;
+    padding: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* SCROLLYTELLING on mobile — no sticky phone (it's hidden), so
+     remove the 70vh-per-step + opacity choreography. Steps become
+     ordinary content cards separated by hairlines. The .on flip
+     from IntersectionObserver still happens but is a no-op once
+     opacity is forced to 1. */
+  #s-land .ldx-scrolly-grid { gap: 0; }
+  #s-land .ldx-scrolly-steps { gap: 0; }
+  #s-land .ldx-step {
+    min-height: 0;
+    opacity: 1;
+    padding: 28px 0;
+    border-top: 1px solid #1e293b;
+    justify-content: flex-start;
+  }
+  #s-land .ldx-step:first-of-type { border-top: 0; padding-top: 0; }
+  #s-land .ldx-step h3 { font-size: 26px; }
+  #s-land .ldx-step p { font-size: 15px; }
+
+  /* Final CTA */
+  #s-land .ldx-finalcta-wrap { padding: 64px 18px 88px; }
+  #s-land .ldx-finalcta-card { padding: 40px 22px; border-radius: 20px; }
+  #s-land .ldx-finalcta-card h2 { font-size: 30px; }
+  #s-land .ldx-finalcta-card p { font-size: 15px; margin-top: 16px; }
+  #s-land .ldx-finalcta-card .ldx-hero-ctas { margin-top: 24px; }
+}
+
+/* Tiny phones (iPhone SE etc.) — extra squeeze */
+@media (max-width: 380px) {
+  #s-land .ldx-hero { padding-left: 14px; padding-right: 14px; }
+  #s-land .ldx-h1 { font-size: 38px; }
+  #s-land .ldx-ring { width: 200px; height: 200px; }
+  #s-land .ldx-ring-num { font-size: 40px; }
+}
