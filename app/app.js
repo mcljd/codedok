@@ -619,8 +619,11 @@
     if (id === 's-my-quals')           renderMyQuals();
     if (id === 's-crew-home')          renderCrewHome();
     if (id === 's-plans')              renderPlans();
-    if (id === 's-land')               { armLandingReveal(); ensureLandingSmartBanner(); maybeAutoShowQrOnLanding(); }
-    else { const sb = document.getElementById('landing-smart-banner'); if (sb) sb.remove(); }
+    if (id === 's-land')               { armLandingReveal(); maybeAutoShowQrOnLanding(); }
+    // Smart-banner removed from marketing landing (was covering the hero copy
+    // on mobile). The post-signin home banner is the only Add-to-Home-Screen
+    // nudge now. Strip any stale banner that v74 may have left in the DOM.
+    { const sb = document.getElementById('landing-smart-banner'); if (sb) sb.remove(); }
     if (id === 's-home' || id === 's-crew-home' || id === 's-surveyor-home' || id === 's-admin-home') {
       maybeShowWelcomeToast();
     }
@@ -3308,11 +3311,6 @@
     // Re-render the home banner so the Install button appears.
     if (typeof renderHome === 'function' && document.getElementById('s-home')) {
       try { renderHome(); } catch (_) {}
-    }
-    // Re-render the landing smart-banner if the marketing page is showing.
-    const land = document.getElementById('s-land');
-    if (land && land.classList.contains('on') && typeof ensureLandingSmartBanner === 'function') {
-      try { ensureLandingSmartBanner(); } catch (_) {}
     }
   });
 
@@ -8443,12 +8441,34 @@ ${sectionsHtml}
       }
     } catch (_) {}
 
-    // Boot routing
+    // Boot routing.
+    // ────────────────────────────────────────────────────────────
+    // Demo link: https://codedok.com/demo  (or any URL with ?demo=1)
+    // Seeds a synthetic operator session + sample vessels so prospects
+    // can poke around the app interior without signing up. Local-only;
+    // no Supabase round-trip. Sign out from inside the app to leave.
+    // ────────────────────────────────────────────────────────────
+    {
+      const dpath = (window.location.pathname || '/').toLowerCase();
+      const dsearch = window.location.search || '';
+      const dhash = window.location.hash || '';
+      const isDemoUrl = /^\/demo\/?$/.test(dpath)
+        || /[?&]demo(=1)?\b/i.test(dsearch + dhash);
+      if (isDemoUrl) {
+        saveSession({ mode: 'demo', email: 'demo@codedok.com', name: 'Demo skipper' });
+        if (window.Store) {
+          if (Store.hasDemoFixtures()) Store.resetToEmpty();
+          Store.applyDemoSeed();
+        }
+        try { renderDemoBadge(); } catch (_) {}
+        go('s-home');
+        return;
+      }
+    }
     let session = loadSession();
-    // Stale `mode: 'demo'` sessions are no longer honoured — the only
-    // seeded experience is mcljd303@icloud.com signing in for real.
-    // Clear the session and any leftover demo fixtures so the user lands
-    // on the login screen with a clean Store instead of demo data.
+    // Stale `mode: 'demo'` sessions from old visits still get cleared on
+    // any non-/demo URL — visiting /welcome or / shouldn't resurrect a
+    // half-broken demo state from a previous session.
     if (session && session.mode === 'demo') {
       clearSession();
       if (window.Store && Store.hasDemoFixtures()) Store.resetToEmpty();
