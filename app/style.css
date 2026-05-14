@@ -4401,3 +4401,23 @@ body:has(#s-land.on) { background: #050614 !important; }
   #s-land .ldx-ring { width: 200px; height: 200px; }
   #s-land .ldx-ring-num { font-size: 40px; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   STATUS BAR FIX
+   .sb-dk is the iOS-safe-area-top spacer at the top of every shell;
+   its base rule (line 99) sets `background: var(--ink)`. The Deep
+   Sea overlay flipped --ink to a LIGHT colour so h3s reading
+   `color: var(--ink)` would render white-on-dark — but that also
+   flipped the .sb-dk *background* to white, producing a bright bar
+   at the very top of the landing on every device.
+   Override here, after both the cinematic and deep-sea variable
+   declarations, so the status-bar reads as page background.
+   ════════════════════════════════════════════════════════════════ */
+#s-land .sb-dk { background: #0a0f1a !important; }
+
+/* Pad the page a touch less at the very top on mobile so the hero
+   eyebrow chip doesn't sit in a sea of dark with nothing for the
+   eye to land on. */
+@media (max-width: 720px) {
+  #s-land .ldx-hero { padding-top: 28px; }
+}
