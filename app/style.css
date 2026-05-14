@@ -2698,6 +2698,15 @@ h1, h2, h3, .slbl {
   flex: 1;
   display: flex; flex-direction: column;
   padding: 0 28px calc(32px + env(safe-area-inset-bottom));
+  /* Make the auth shell scrollable. On mobile the parent .shell.on
+     is overflow:hidden + fixed-height, so .auth-content has to own
+     the scroll context — otherwise the sign-up form (taller than a
+     phone viewport once role-picker + name + business + email +
+     password + create button are stacked) gets clipped at the
+     bottom with no way to reach Submit. */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
 }
 
 .auth-mark {
@@ -2733,7 +2742,13 @@ h1, h2, h3, .slbl {
 }
 
 .auth-card {
-  margin-top: auto; margin-bottom: 20px;
+  /* margin-top: auto pushed the card to the bottom of the viewport
+     when content fit, which looked elegant — but when the sign-up
+     form grows past the viewport height the auto margin combined
+     with overflow:hidden parent ate the top half of the card. Use
+     a normal top margin so it flows from the hero copy down and
+     scrolls naturally. */
+  margin: 28px 0 28px;
   background: rgba(255,255,255,.04);
   border: 1px solid rgba(255,255,255,.08);
   border-radius: 18px;
@@ -2741,6 +2756,7 @@ h1, h2, h3, .slbl {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   animation: auth-fade-up .5s .16s cubic-bezier(.32,.72,0,1) both;
+  flex-shrink: 0;
 }
 
 .auth-input {
@@ -3033,3 +3049,362 @@ h1, h2, h3, .slbl {
   .qr-fab, .qr-modal-overlay { display: none !important; }
 }
 .disclaimer-txt{font-size:11px;color:var(--mid);line-height:1.6;}
+
+/* ════════════════════════════════════════════════════════════════
+   LANDING — CINEMATIC DARK OVERLAY
+   Flips the entire s-land brand pack to a deep navy-black palette
+   with cyan accents, massive editorial type, subtle gradient meshes
+   and elevated dark cards. No HTML restructuring — overrides the
+   existing .ld-* class system so the reveal animations and section
+   flow stay intact. Tone: Apple / Anthropic, not bright SaaS.
+   ════════════════════════════════════════════════════════════════ */
+
+#s-land {
+  --ink:   #050614 !important;
+  --ink2:  #0a0d22 !important;
+  --ink3:  #11142e !important;
+  --sea:   #06b6d4 !important;
+  --seal:  #67e8f9 !important;
+  --seap:  rgba(6,182,212,.12) !important;
+  --slate: #0a0d22 !important;
+  --bdr:   rgba(255,255,255,.08) !important;
+  --text:  #f8fafc !important;
+  --mid:   rgba(248,250,252,.65) !important;
+  --lt:    rgba(248,250,252,.40) !important;
+  --page:  #050614 !important;
+  --card:  #0f111c !important;
+  background: #050614 !important;
+  color: #f8fafc !important;
+}
+body:has(#s-land.on) { background: #050614 !important; }
+
+/* Flip every section variant to dark. Original landing used white/
+   off-white/light to stagger the page rhythm — we keep the rhythm
+   via subtle gradient shifts but never break the dark canvas. */
+#s-land .ld-section--white,
+#s-land .ld-section--offwhite {
+  background: #050614 !important;
+  color: #f8fafc !important;
+}
+#s-land .ld-section--light {
+  background: linear-gradient(180deg, #050614 0%, #0a0d22 100%) !important;
+  color: #f8fafc !important;
+}
+#s-land .ld-section--dark {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(6,182,212,.10) 0%, transparent 50%),
+    linear-gradient(180deg, #0a0d22 0%, #050614 100%) !important;
+  color: #f8fafc !important;
+}
+
+/* HERO — full-bleed cinematic, twin glows, massive type */
+#s-land .ld-hero {
+  background: #050614 !important;
+  position: relative;
+  isolation: isolate;
+}
+#s-land .ld-hero-glow {
+  background:
+    radial-gradient(ellipse 60% 50% at 25% 25%, rgba(6,182,212,.22) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(8,145,178,.14) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(11,52,82,.30) 0%, transparent 70%) !important;
+  opacity: 1 !important;
+}
+
+/* TYPOGRAPHY — cinematic display sizing */
+#s-land .ld-h1 {
+  font-size: clamp(48px, 9vw, 104px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -3.5px !important;
+  line-height: 0.96 !important;
+  color: #f8fafc !important;
+}
+#s-land .ld-h1 .hl {
+  color: #67e8f9 !important;
+  background: linear-gradient(135deg, #67e8f9 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+#s-land .ld-h2 {
+  font-size: clamp(34px, 5vw, 64px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -1.5px !important;
+  line-height: 1.05 !important;
+  color: #f8fafc !important;
+}
+#s-land .ld-h2--on-dark,
+#s-land .ld-h2.on-dark { color: #f8fafc !important; }
+#s-land .ld-h3 {
+  color: #f8fafc !important;
+  font-weight: 700 !important;
+  letter-spacing: -.4px !important;
+}
+#s-land .ld-sub,
+#s-land .ld-lead,
+#s-land .ld-hero-sub,
+#s-land .ld-section p,
+#s-land .ld-feature-body,
+#s-land .ld-feature-blurb {
+  color: rgba(248,250,252,.65) !important;
+  font-size: 18px !important;
+  line-height: 1.55 !important;
+}
+#s-land .ld-sub.on-light,
+#s-land .ld-section--light p,
+#s-land .ld-section--light .ld-lead,
+#s-land .ld-section--offwhite p,
+#s-land .ld-section--offwhite .ld-lead {
+  color: rgba(248,250,252,.65) !important;
+}
+#s-land .ld-eyebrow,
+#s-land .ld-hero-eyebrow {
+  color: #67e8f9 !important;
+  text-transform: uppercase;
+  letter-spacing: .22em !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+#s-land .ld-eyebrow.on-dark,
+#s-land .ld-eyebrow--on-dark { color: #67e8f9 !important; }
+#s-land .ld-hero-eyebrow-dot { background: #67e8f9 !important; box-shadow: 0 0 12px #67e8f9; }
+
+/* TRUST ROW */
+#s-land .ld-hero-trust { color: rgba(248,250,252,.55) !important; }
+#s-land .ld-hero-trust .t-tick { color: #67e8f9 !important; }
+
+/* CTAs — cinematic buttons */
+#s-land .ld-cta {
+  font-family: var(--fn) !important;
+  font-weight: 700 !important;
+  transition: transform 180ms cubic-bezier(.22,1,.36,1), box-shadow 180ms ease, background 180ms ease !important;
+}
+#s-land .ld-cta-primary {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+  color: #050614 !important;
+  border: 0 !important;
+  box-shadow: 0 12px 40px rgba(6,182,212,.35), inset 0 1px 0 rgba(255,255,255,.25) !important;
+}
+#s-land .ld-cta-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 55px rgba(6,182,212,.50), inset 0 1px 0 rgba(255,255,255,.30) !important;
+}
+#s-land .ld-cta-ghost,
+#s-land .ld-cta-ghost-dark {
+  background: rgba(255,255,255,.04) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+#s-land .ld-cta-ghost:hover,
+#s-land .ld-cta-ghost-dark:hover {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.22) !important;
+  transform: translateY(-1px);
+}
+
+/* HERO SIGN-IN BUTTON */
+#s-land .ld-hero-signin {
+  background: rgba(255,255,255,.04) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  font-weight: 600 !important;
+}
+#s-land .ld-hero-brand,
+#s-land .ld-hero-brand span { color: #f8fafc !important; }
+
+/* ALERT TAPE — top */
+#s-land .ld-alert {
+  background: rgba(6,182,212,.08) !important;
+  border-bottom: 1px solid rgba(6,182,212,.18) !important;
+  color: #f8fafc !important;
+}
+#s-land .ld-alert a,
+#s-land .ld-alert a:hover { color: #f8fafc !important; text-decoration: none; }
+#s-land .ld-alert strong { color: #f8fafc !important; }
+#s-land .ld-alert-link { color: #67e8f9 !important; }
+#s-land .ld-alert-dot {
+  background: #67e8f9 !important;
+  box-shadow: 0 0 12px rgba(103,232,249,.7) !important;
+}
+
+/* STICKY NAV */
+#s-land .ld-stickynav {
+  background: rgba(5,6,20,.80) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+}
+#s-land .ld-stickynav .brand,
+#s-land .ld-stickynav .brand * { color: #f8fafc !important; }
+#s-land .ld-stickynav .signin {
+  color: #f8fafc !important;
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+}
+#s-land .ld-stickynav .start {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+  color: #050614 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 8px 24px rgba(6,182,212,.30) !important;
+}
+
+/* FLOATING BOTTOM CTA */
+#s-land .ld-floatcta {
+  background: rgba(15,17,28,.92) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 24px 60px rgba(0,0,0,.50) !important;
+  color: #f8fafc !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+#s-land .ld-floatcta .l1 { color: #f8fafc !important; }
+#s-land .ld-floatcta .l2 { color: rgba(248,250,252,.55) !important; }
+#s-land .ld-floatcta .btn-go {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+  color: #050614 !important;
+  font-weight: 700 !important;
+}
+
+/* BUILT-FOR STRIP */
+#s-land .ld-builtfor {
+  background: rgba(255,255,255,.02) !important;
+  border-top: 1px solid rgba(255,255,255,.06) !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+}
+#s-land .ld-builtfor-label { color: rgba(248,250,252,.45) !important; }
+#s-land .ld-builtfor-item { color: rgba(248,250,252,.75) !important; }
+
+/* CARDS — features, plans, partners, FAQ */
+#s-land .ld-plan,
+#s-land .ld-card,
+#s-land .ld-feature,
+#s-land .ld-feature-card,
+#s-land .ld-partner,
+#s-land .ld-faq-q,
+#s-land .ld-quote-card,
+#s-land .ld-step,
+#s-land .ld-pbl-item,
+#s-land .ld-problem-card {
+  background: rgba(15,17,28,.65) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  color: #f8fafc !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+#s-land .ld-feature h3,
+#s-land .ld-feature-name,
+#s-land .ld-faq-q h3,
+#s-land .ld-step-title,
+#s-land .ld-pbl-title,
+#s-land .ld-partner-name,
+#s-land .ld-plan-name {
+  color: #f8fafc !important;
+}
+#s-land .ld-plan-blurb,
+#s-land .ld-feature-blurb,
+#s-land .ld-step-blurb,
+#s-land .ld-pbl-body,
+#s-land .ld-partner-kind {
+  color: rgba(248,250,252,.65) !important;
+}
+#s-land .ld-plan-price { color: #f8fafc !important; }
+#s-land .ld-plan-price small { color: rgba(248,250,252,.55) !important; }
+#s-land .ld-plan-list li,
+#s-land .ld-partner-list li {
+  color: rgba(248,250,252,.75) !important;
+}
+#s-land .ld-plan--featured {
+  background: linear-gradient(180deg, rgba(17,20,46,.95) 0%, rgba(11,15,40,.95) 100%) !important;
+  border-color: rgba(6,182,212,.45) !important;
+  box-shadow: 0 30px 90px rgba(6,182,212,.18), 0 0 0 1px rgba(6,182,212,.18) inset !important;
+}
+#s-land .ld-plan-tag {
+  background: #06b6d4 !important;
+  color: #050614 !important;
+  font-weight: 800 !important;
+}
+
+/* CODES ALIGNMENT — keep dark band tight */
+#s-land .ld-codes { padding-top: 96px !important; padding-bottom: 96px !important; }
+#s-land .ld-code-tag {
+  background: rgba(6,182,212,.12) !important;
+  color: #67e8f9 !important;
+  border: 1px solid rgba(6,182,212,.30) !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+}
+
+/* PROVENANCE */
+#s-land .ld-provenance {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(6,182,212,.08) 0%, transparent 70%),
+    #0a0d22 !important;
+  color: #f8fafc !important;
+}
+#s-land .ld-provenance-quote { color: #f8fafc !important; }
+#s-land .ld-provenance-sub { color: rgba(248,250,252,.55) !important; }
+#s-land .ld-provenance-sub a { color: #67e8f9 !important; }
+
+/* EDITORIAL SECTIONS — kept but recolored cinematic */
+#s-land .ld-editorial {
+  background: #050614 !important;
+}
+#s-land .ld-editorial-bg {
+  filter: brightness(.55) saturate(1.1);
+}
+#s-land .ld-editorial-quote { color: #f8fafc !important; }
+#s-land .ld-editorial-sub { color: rgba(248,250,252,.75) !important; }
+
+/* FINAL CTA */
+#s-land .ld-finalcta-wrap {
+  background: #050614 !important;
+}
+#s-land .ld-finalcta {
+  background:
+    radial-gradient(ellipse 50% 80% at 50% 0%, rgba(6,182,212,.20) 0%, transparent 60%),
+    linear-gradient(180deg, #0a0d22 0%, #050614 100%) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 40px 100px rgba(0,0,0,.55) !important;
+}
+#s-land .ld-finalcta h2 { color: #f8fafc !important; }
+#s-land .ld-finalcta p { color: rgba(248,250,252,.70) !important; }
+
+/* FOOTER */
+#s-land .ld-footer {
+  background: #050614 !important;
+  border-top: 1px solid rgba(255,255,255,.08) !important;
+  color: rgba(248,250,252,.55) !important;
+}
+#s-land .ld-footer h4 { color: #f8fafc !important; }
+#s-land .ld-footer a { color: rgba(248,250,252,.65) !important; text-decoration: none; }
+#s-land .ld-footer a:hover { color: #67e8f9 !important; }
+#s-land .ld-footer-disclaimer {
+  background: rgba(255,255,255,.025) !important;
+  border: 1px solid rgba(255,255,255,.06) !important;
+  color: rgba(248,250,252,.55) !important;
+}
+#s-land .ld-footer-bot {
+  color: rgba(248,250,252,.40) !important;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+/* PHONE MOCK — elevate with cyan glow */
+#s-land .ld-mock {
+  filter: drop-shadow(0 40px 80px rgba(6,182,212,.20)) drop-shadow(0 20px 40px rgba(0,0,0,.50));
+}
+#s-land .ld-mock-screen {
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.08),
+    0 30px 60px rgba(0,0,0,.5);
+}
+
+/* DIVIDERS / RULES inside dark sections */
+#s-land hr,
+#s-land .ld-rule { border-color: rgba(255,255,255,.10) !important; }
+
+/* SECTION HEADINGS rhythm — more breathing room */
+@media (min-width: 768px) {
+  #s-land .ld-section { padding-top: 120px !important; padding-bottom: 120px !important; }
+}
