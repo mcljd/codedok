@@ -355,73 +355,82 @@
           </div>
         </div>
 
-        <!-- Phone mockup — mirrors the real s-home one-for-one -->
+        <!-- Phone mockup — mirrors the real s-home screen 1:1. The
+             compliance card, urgent badge, action cards and bottom
+             nav all match the live operator home. -->
         <div class="ld-mock" data-reveal aria-hidden="true">
           <div class="ld-mock-screen">
             <div class="ld-mock-notch"></div>
             <div class="ld-mock-status">
               <div class="ld-mock-status-row">
                 <div>
-                  <div class="ld-mock-greet">GOOD MORNING</div>
-                  <div class="ld-mock-h">Fleet Status</div>
+                  <div class="ld-mock-greet">Good afternoon, Joseph</div>
+                  <div class="ld-mock-h">Your boats</div>
                 </div>
-                <div class="ld-mock-avatar">JM</div>
+                <div class="ld-mock-iconrow">
+                  <span class="ld-mock-icon">🔍</span>
+                  <span class="ld-mock-icon">？</span>
+                  <span class="ld-mock-icon">🔔</span>
+                  <div class="ld-mock-avatar">JM</div>
+                </div>
               </div>
             </div>
             <div class="ld-mock-hero">
               <div class="ld-mock-hero-row">
-                <div class="ld-mock-ring">
+                <div class="ld-mock-ring ld-mock-ring--warn">
                   <div class="ld-mock-ring-text">82<span>%</span></div>
                 </div>
                 <div class="ld-mock-summary">
                   <div class="label">Fleet compliance</div>
-                  <div class="headline">On course</div>
-                  <div class="sub">2 vessels · 1 item due in 30 days</div>
+                  <div class="headline">4 items adrift</div>
+                  <div class="sub">Tackle the urgent items first, then we'll line up the rest for survey day.</div>
                 </div>
               </div>
+              <div class="ld-mock-urgent-badge">⚠ 4 urgent items</div>
               <div class="ld-mock-tiles">
-                <div class="ld-mock-tile"><div class="n rd">0</div><div class="l">Overdue</div></div>
+                <div class="ld-mock-tile"><div class="n rd">4</div><div class="l">Overdue</div></div>
                 <div class="ld-mock-tile"><div class="n am">1</div><div class="l">Due 30d</div></div>
-                <div class="ld-mock-tile"><div class="n gn">14</div><div class="l">Valid</div></div>
+                <div class="ld-mock-tile"><div class="n gn">17</div><div class="l">Valid</div></div>
+              </div>
+              <div class="ld-mock-pack">
+                <span class="ld-mock-pack-icon">📄</span>
+                <span class="ld-mock-pack-label">Inspection pack</span>
+                <span class="ld-mock-pack-arrow">→</span>
               </div>
             </div>
             <div class="ld-mock-section">
-              <div class="ld-mock-section-lbl">My vessels</div>
-              <div class="ld-mock-card" style="margin-bottom:6px">
-                <div class="ld-mock-photo">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 17h18l-1.5 3h-15L3 17z"/>
-                    <path d="M5 14V8l7-4 7 4v6"/>
-                    <path d="M12 4v10"/>
-                  </svg>
+              <div class="ld-mock-section-lbl">Top 3 actions today</div>
+              <div class="ld-mock-action">
+                <div class="ld-mock-action-ic ld-mock-action-ic--red">🛟</div>
+                <div class="ld-mock-action-body">
+                  <div class="ld-mock-action-name">Life raft service — Tsu…</div>
+                  <div class="ld-mock-action-sub">Expired 31 days ago</div>
                 </div>
-                <div class="ld-mock-card-body">
-                  <div class="ld-mock-card-name">Tsunami IV <span class="ld-mock-pill gn">READY</span></div>
-                  <div class="ld-mock-card-sub">Cat 2 · 8.5m · Ballycastle</div>
-                </div>
-                <div class="ld-mock-mini-ring gn">94</div>
+                <div class="ld-mock-action-cta">📞 Get a quote</div>
               </div>
-              <div class="ld-mock-card">
-                <div class="ld-mock-photo" style="background:linear-gradient(135deg,#16a34a 0%,#0a1628 100%)">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 17h18l-1.5 3h-15L3 17z"/>
-                    <path d="M5 14V9c0-1 1-2 2-2h10c1 0 2 1 2 2v5"/>
-                    <path d="M8 7V4h8v3"/>
-                  </svg>
+              <div class="ld-mock-action">
+                <div class="ld-mock-action-ic ld-mock-action-ic--red">🧨</div>
+                <div class="ld-mock-action-body">
+                  <div class="ld-mock-action-name">Cat C Pyrotechnics — …</div>
+                  <div class="ld-mock-action-sub">Expired 6 days ago</div>
                 </div>
-                <div class="ld-mock-card-body">
-                  <div class="ld-mock-card-name">Lagavulin <span class="ld-mock-pill rd">1 OV</span></div>
-                  <div class="ld-mock-card-sub">Cat 2 · 11m · Ballycastle</div>
+                <div class="ld-mock-action-cta">📞 Get a quote</div>
+              </div>
+              <div class="ld-mock-action">
+                <div class="ld-mock-action-ic ld-mock-action-ic--red">🧨</div>
+                <div class="ld-mock-action-body">
+                  <div class="ld-mock-action-name">SOLAS A Pyro pack ser…</div>
+                  <div class="ld-mock-action-sub">Service overdue 6 days</div>
                 </div>
-                <div class="ld-mock-mini-ring am">71</div>
+                <div class="ld-mock-action-cta">📞 Get a quote</div>
               </div>
             </div>
             <div class="ld-mock-bnav">
-              <span class="ld-mock-bnav-item on">🏠</span>
-              <span class="ld-mock-bnav-item">⛵</span>
-              <span class="ld-mock-bnav-item">📋</span>
-              <span class="ld-mock-bnav-item">🛠️</span>
-              <span class="ld-mock-bnav-item">⚙️</span>
+              <span class="ld-mock-bnav-item on">🏠<em>Home</em></span>
+              <span class="ld-mock-bnav-item">⛵<em>Vessels</em></span>
+              <span class="ld-mock-bnav-item">📋<em>Records</em></span>
+              <span class="ld-mock-bnav-item">🛠️<em>Tools</em></span>
+              <span class="ld-mock-bnav-item">⚙️<em>Account</em></span>
             </div>
           </div>
         </div>

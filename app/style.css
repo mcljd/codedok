@@ -3460,3 +3460,216 @@ body:has(#s-land.on) { background: #050614 !important; }
   background: rgba(255,255,255,.10) !important;
   border-color: rgba(255,255,255,.22) !important;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   PHONE MOCK — rebuild to mirror the actual s-home screen.
+   Replaces the old "On course" green-ring + white-vessel-card mock
+   with the live operator home: orange warn ring, "4 items adrift",
+   red urgent badge, Inspection pack CTA, three urgent action cards,
+   labelled bottom-nav. Whole device dark; no white slabs.
+   ════════════════════════════════════════════════════════════════ */
+
+/* Device shell — slightly larger to fit the new content */
+#s-land .ld-mock { max-width: 290px !important; }
+#s-land .ld-mock-screen {
+  background: #0a0d22 !important;
+}
+
+/* Header bar */
+#s-land .ld-mock-status {
+  background: #050614 !important;
+  padding: 30px 14px 12px !important;
+}
+#s-land .ld-mock-greet {
+  font-size: 10px !important;
+  color: rgba(255,255,255,.55) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+#s-land .ld-mock-h {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.4px !important;
+  color: #fff !important;
+  margin-top: 2px !important;
+}
+#s-land .ld-mock-iconrow {
+  display: flex; align-items: center; gap: 6px;
+}
+#s-land .ld-mock-icon {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  color: rgba(255,255,255,.85);
+}
+#s-land .ld-mock-avatar {
+  width: 26px !important; height: 26px !important;
+  font-size: 9px !important;
+  background: #67e8f9 !important;
+  color: #050614 !important;
+  margin-left: 2px;
+}
+
+/* Compliance hero card */
+#s-land .ld-mock-hero {
+  background: linear-gradient(180deg, #0F4C5C 0%, #0a3845 100%) !important;
+  padding: 14px 14px 14px !important;
+  margin: 10px 10px 0 !important;
+  border-radius: 14px !important;
+}
+#s-land .ld-mock-ring {
+  width: 70px !important; height: 70px !important;
+}
+#s-land .ld-mock-ring--warn {
+  background: conic-gradient(#f97316 0deg 295deg, rgba(255,255,255,.10) 295deg 360deg) !important;
+}
+#s-land .ld-mock-ring::after {
+  background: #0F4C5C !important;
+  inset: 5px !important;
+}
+#s-land .ld-mock-ring-text {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+}
+#s-land .ld-mock-ring-text span {
+  font-size: 9px !important;
+  color: rgba(255,255,255,.65) !important;
+}
+#s-land .ld-mock-summary .label {
+  font-size: 8px !important;
+  color: rgba(255,255,255,.55) !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase;
+}
+#s-land .ld-mock-summary .headline {
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+  letter-spacing: -.2px;
+}
+#s-land .ld-mock-summary .sub {
+  font-size: 9px !important;
+  color: rgba(255,255,255,.65) !important;
+  line-height: 1.4;
+  margin-top: 3px;
+}
+#s-land .ld-mock-urgent-badge {
+  display: inline-block;
+  margin: 8px 0 12px;
+  padding: 4px 9px;
+  font-size: 9px; font-weight: 700;
+  background: rgba(220,38,38,.18);
+  color: #fca5a5;
+  border: 1px solid rgba(220,38,38,.35);
+  border-radius: 6px;
+  letter-spacing: .02em;
+}
+#s-land .ld-mock-tiles { gap: 5px !important; margin-bottom: 10px; }
+#s-land .ld-mock-tile {
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 8px;
+  padding: 8px 4px;
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center;
+}
+#s-land .ld-mock-tile .l {
+  color: rgba(255,255,255,.55) !important;
+}
+#s-land .ld-mock-pack {
+  display: flex; align-items: center; gap: 8px;
+  background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 11px; font-weight: 700;
+}
+#s-land .ld-mock-pack-icon { font-size: 13px; }
+#s-land .ld-mock-pack-label { flex: 1; letter-spacing: -.01em; }
+#s-land .ld-mock-pack-arrow { font-size: 14px; opacity: .85; }
+
+/* Action cards section */
+#s-land .ld-mock-section {
+  padding: 14px 10px 0 !important;
+  background: transparent !important;
+}
+#s-land .ld-mock-section-lbl {
+  color: rgba(255,255,255,.50) !important;
+  letter-spacing: .12em !important;
+  font-size: 9px !important;
+  padding: 0 4px;
+}
+#s-land .ld-mock-action {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  padding: 8px 8px 8px 10px;
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+#s-land .ld-mock-action-ic {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+}
+#s-land .ld-mock-action-ic--red {
+  background: rgba(220,38,38,.16);
+  border: 1px solid rgba(220,38,38,.30);
+}
+#s-land .ld-mock-action-body {
+  flex: 1; min-width: 0;
+}
+#s-land .ld-mock-action-name {
+  font-size: 10px; font-weight: 700;
+  color: #fff;
+  letter-spacing: -.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#s-land .ld-mock-action-sub {
+  font-size: 8px;
+  color: rgba(255,255,255,.55);
+  margin-top: 1px;
+}
+#s-land .ld-mock-action-cta {
+  font-size: 8px; font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
+  padding: 5px 7px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Labelled bottom nav (matches the live operator home) */
+#s-land .ld-mock-bnav {
+  background: #050614 !important;
+  border-top: 1px solid rgba(255,255,255,.06) !important;
+  margin-top: 10px !important;
+  padding: 6px 4px 10px !important;
+}
+#s-land .ld-mock-bnav-item {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: 12px !important;
+  opacity: 1 !important;
+  color: rgba(255,255,255,.40) !important;
+  flex: 1;
+}
+#s-land .ld-mock-bnav-item em {
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: capitalize;
+  color: rgba(255,255,255,.40);
+}
+#s-land .ld-mock-bnav-item.on {
+  color: #67e8f9 !important;
+}
+#s-land .ld-mock-bnav-item.on em {
+  color: #67e8f9;
+}
