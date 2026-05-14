@@ -258,21 +258,20 @@
 </div>
 
 <!-- ════════════════════════════════════
-  S0 — LANDING. Scrolling marketing page for first-time visitors.
-  Every CTA routes to goSignUp() except the explicit "I already have
-  an account" link. Copy is intentionally factual — claims listed
-  here all map onto features in the current build.
+  S0 — LANDING. Marketing page at /welcome. Clean rebuild, navy +
+  cyan + Plus Jakarta brand. Every CTA routes to goSignUp() except
+  "Sign in" which goes to s-login. Copy is factual — every claim
+  maps to a built feature.
 ════════════════════════════════════ -->
 <div class="shell" id="s-land">
   <div class="sb sb-dk"></div>
 
-  <!-- Sticky nav that materialises after the hero scrolls past.
-       Visibility toggled by armLandingReveal() on scroll. -->
+  <!-- Sticky nav (appears after hero scrolls past) -->
   <div class="ld-stickynav" id="ld-stickynav">
     <a href="javascript:goHome()" class="brand">
       <svg width="26" height="26" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-        <rect x="6" y="6" width="52" height="52" rx="12" fill="#0F4C5C"/>
-        <path d="M18 33 L28 43 L46 22" stroke="#F3F5F4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="6" y="6" width="52" height="52" rx="12" fill="#0891b2"/>
+        <path d="M18 33 L28 43 L46 22" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       CodedOK
     </a>
@@ -282,116 +281,65 @@
     </div>
   </div>
 
-  <!-- Floating bottom Start-free bar. -->
+  <!-- Floating bottom Start-free bar -->
   <div class="ld-floatcta" id="ld-floatcta" role="complementary" aria-label="Quick sign-up">
     <div class="blurb">
-      <div class="l1">Free for solo skippers</div>
-      <div class="l2">No card · Sign up in 90 seconds</div>
+      <div class="l1">Free trial. No card.</div>
+      <div class="l2">Sign up in 90 seconds.</div>
     </div>
     <button class="btn-go" onclick="goSignUp()">Start free →</button>
   </div>
 
-  <div class="scroll" style="background:var(--ink);color:white;overflow-x:hidden">
+  <div class="scroll">
 
-    <!-- ── ALERT STRIP ─────────────────────────────────────── -->
-    <!-- New regulation landing in Dec 2025; surfaces it without crying
-         wolf. Amber base, single line, links to the FAQ entry on what
-         changes. -->
-    <aside style="background:rgba(197,138,42,.16);border-bottom:1px solid rgba(197,138,42,.32);color:#FCBF60;font-family:var(--fn);font-size:13px;font-weight:500;text-align:center;padding:10px 18px;letter-spacing:.01em">
-      <a href="#faq-mca-2025" style="color:inherit;text-decoration:none">
-        <strong style="color:#FFD58C">⚠ New MCA Sport &amp; Pleasure Vessel Code in force December 2025.</strong> See what changes →
+    <!-- ── 1. ALERT STRIP ─────────────────────────────── -->
+    <aside class="ld-alert" role="note">
+      <a href="#faq-mca-2025">
+        <span class="ld-alert-dot" aria-hidden="true"></span>
+        <strong>New MCA Sport &amp; Pleasure Vessel Code in force December 2025.</strong>
+        <span class="ld-alert-link">See what changes →</span>
       </a>
     </aside>
 
-    <!-- ── HERO ────────────────────────────────────────────── -->
-    <section style="position:relative;padding:24px 22px 56px;overflow:hidden">
-      <!-- Boat illustration behind a heavy dark overlay so the type
-           stays readable. Stack: gradient overlay → optional jpg
-           (silently no-ops if not uploaded) → svg illustration → solid
-           brand fallback. Drop hero-boat.jpg into app/img/landing/ to
-           replace the illustration with a real photo. -->
-      <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(rgba(28,37,43,.72), rgba(15,76,92,.92)), url('img/landing/hero-boat.jpg') center/cover no-repeat, url('img/landing/hero-boat.svg') center/cover no-repeat #1C252B;pointer-events:none"></div>
-      <!-- Atmospheric sheens layered over the photo for depth. -->
-      <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 80% -10%,rgba(30,122,134,.28) 0%,transparent 60%),radial-gradient(ellipse 70% 60% at -10% 110%,rgba(79,122,82,.16) 0%,transparent 55%);pointer-events:none"></div>
-      <!-- Subtle horizontal rule grid, gives the section structure under the type -->
-      <div aria-hidden="true" style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px);background-size:100% 88px;background-position:0 -44px;pointer-events:none;opacity:.5"></div>
+    <!-- ── 2. HERO ───────────────────────────────────── -->
+    <section class="ld-hero">
+      <div aria-hidden="true" class="ld-hero-glow"></div>
 
-      <!-- Top utility row — sign-in only. The big animated brand mark
-           below carries the logo identity; no need for a duplicate small
-           lockup here. -->
-      <nav style="position:relative;z-index:2;display:flex;align-items:center;justify-content:flex-end;margin-bottom:32px">
-        <button onclick="go('s-login')" style="background:transparent;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.85);font-size:13px;font-weight:600;padding:9px 16px;border-radius:10px;cursor:pointer;font-family:var(--fn)">Sign in</button>
+      <!-- Top utility row (sign-in only — the big brand mark below carries identity) -->
+      <nav class="ld-hero-nav">
+        <a href="javascript:go('s-land')" class="ld-hero-brand">
+          <svg width="32" height="32" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <rect x="6" y="6" width="52" height="52" rx="12" fill="#0891b2"/>
+            <path d="M18 33 L28 43 L46 22" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>CodedOK</span>
+        </a>
+        <button class="ld-hero-signin" onclick="go('s-login')">Sign in</button>
       </nav>
 
-      <!-- Hero grid: copy left, phone mock right on wide viewports -->
-      <div class="ld-hero-grid" style="position:relative;z-index:1">
-        <div data-reveal>
-          <!-- Big animated brand mark — drops + scales in on first paint.
-               Anchors the hero with the logo prominently before the
-               headline rather than burying it in the top nav. -->
-          <div class="ld-hero-mark">
-            <svg width="72" height="72" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-              <rect x="6" y="6" width="52" height="52" rx="12" fill="#0F4C5C"/>
-              <path d="M18 33 L28 43 L46 22" stroke="#F3F5F4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span class="name">CodedOK</span>
+      <div class="ld-hero-grid">
+        <div class="ld-hero-copy" data-reveal>
+          <span class="ld-hero-eyebrow">
+            <span class="ld-hero-eyebrow-dot" aria-hidden="true"></span>
+            Built for UK &amp; Irish coded skippers
+          </span>
+          <h1 class="ld-h1">One record.<br>Three codes.<br><span class="hl">UK and Ireland.</span></h1>
+          <p class="ld-hero-sub">Inspection-readiness for UK and Irish small commercial vessel operators. Track every certificate, piece of equipment and crew qualification — and bring your surveyor into the same record.</p>
+          <div class="ld-hero-ctas">
+            <button class="ld-cta ld-cta-primary" onclick="goSignUp()">Start free →</button>
+            <button class="ld-cta ld-cta-ghost"  onclick="go('s-login')">See live demo</button>
           </div>
-
-          <!-- Endlessly scrolling band of supported codes, mono type.
-               Reads as a tech credibility marquee instead of static chips. -->
-          <div class="ld-marquee" aria-hidden="true">
-            <div class="ld-marquee-track">
-              <span>
-                SPV Code 2025
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-                Workboat Code Edition 3
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-                Irish PBL
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-                MGN 280
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-                MARPOL Annex I
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-                YDSA Coding
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-              </span>
-              <span>
-                SPV Code 2025
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-                Workboat Code Edition 3
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-                Irish PBL
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-                MGN 280
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-                MARPOL Annex I
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-                YDSA Coding
-                <svg width="6" height="6" viewBox="0 0 6 6"><circle cx="3" cy="3" r="2" fill="currentColor"/></svg>
-              </span>
-            </div>
+          <div class="ld-hero-trust">
+            <span><span class="t-tick" aria-hidden="true">✓</span> Free trial</span>
+            <span><span class="t-tick" aria-hidden="true">✓</span> No card to start</span>
+            <span><span class="t-tick" aria-hidden="true">✓</span> Works offline at sea</span>
           </div>
-
-          <h1 class="ld-h1" data-reveal>One record.<br>Three codes.<br><span class="hl">UK and Ireland.</span></h1>
-
-          <p class="ld-sub" style="margin-bottom:32px">Inspection-readiness for UK and Irish small commercial vessel operators. Track every certificate, piece of equipment and crew qualification — and bring your surveyor into the same record.</p>
-
-          <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:14px">
-            <button onclick="goSignUp()" style="height:56px;padding:0 30px;font-weight:700;font-size:15px;letter-spacing:-.005em;border-radius:12px;background:#0891b2;color:#ffffff;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;box-shadow:0 14px 32px rgba(8,145,178,.28);transition:transform .2s cubic-bezier(.32,.72,0,1),box-shadow .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.transform='translateY(-1px)';this.style.background='#0b7a96';this.style.boxShadow='0 18px 38px rgba(8,145,178,.36)'" onmouseout="this.style.transform='';this.style.background='#0891b2';this.style.boxShadow='0 14px 32px rgba(8,145,178,.28)'">Start free →</button>
-            <button onclick="go('s-login')" style="background:transparent;border:1px solid rgba(255,255,255,.22);color:rgba(255,255,255,.9);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--fn);height:56px;padding:0 22px;border-radius:12px;transition:all .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.borderColor='rgba(255,255,255,.5)';this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.borderColor='rgba(255,255,255,.22)';this.style.background='transparent'">See live demo</button>
-          </div>
-          <div style="font-size:12px;color:rgba(255,255,255,.45);letter-spacing:.01em">Free trial · No card to start · Works on iPhone &amp; Android</div>
         </div>
 
-        <!-- Phone mockup — mirrors the real s-home layout one-for-one
-             so the marketing image and the in-app reality are the
-             same picture. Has parallax: scroll position is mapped to
-             a small translateY by the landing scroll listener. -->
-        <div class="ld-mock" data-reveal data-parallax="0.06" aria-hidden="true">
+        <!-- Phone mockup — mirrors the real s-home one-for-one -->
+        <div class="ld-mock" data-reveal aria-hidden="true">
           <div class="ld-mock-screen">
             <div class="ld-mock-notch"></div>
-
-            <!-- Dark top strip + greeting -->
             <div class="ld-mock-status">
               <div class="ld-mock-status-row">
                 <div>
@@ -401,8 +349,6 @@
                 <div class="ld-mock-avatar">JM</div>
               </div>
             </div>
-
-            <!-- Hero with score ring + summary + tile strip -->
             <div class="ld-mock-hero">
               <div class="ld-mock-hero-row">
                 <div class="ld-mock-ring">
@@ -420,13 +366,10 @@
                 <div class="ld-mock-tile"><div class="n gn">14</div><div class="l">Valid</div></div>
               </div>
             </div>
-
-            <!-- Vessels section -->
             <div class="ld-mock-section">
               <div class="ld-mock-section-lbl">My vessels</div>
               <div class="ld-mock-card" style="margin-bottom:6px">
                 <div class="ld-mock-photo">
-                  <!-- Boat silhouette -->
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M3 17h18l-1.5 3h-15L3 17z"/>
                     <path d="M5 14V8l7-4 7 4v6"/>
@@ -440,7 +383,7 @@
                 <div class="ld-mock-mini-ring gn">94</div>
               </div>
               <div class="ld-mock-card">
-                <div class="ld-mock-photo" style="background:linear-gradient(135deg,#4F7A52 0%,#0F4C5C 100%)">
+                <div class="ld-mock-photo" style="background:linear-gradient(135deg,#16a34a 0%,#0a1628 100%)">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M3 17h18l-1.5 3h-15L3 17z"/>
                     <path d="M5 14V9c0-1 1-2 2-2h10c1 0 2 1 2 2v5"/>
@@ -454,8 +397,6 @@
                 <div class="ld-mock-mini-ring am">71</div>
               </div>
             </div>
-
-            <!-- Bottom nav -->
             <div class="ld-mock-bnav">
               <span class="ld-mock-bnav-item on">🏠</span>
               <span class="ld-mock-bnav-item">⛵</span>
@@ -468,565 +409,442 @@
       </div>
     </section>
 
-    <!-- ── BUILT-FOR STRIP ──────────────────────────────────── -->
-    <!-- Six audience types in one tight row. Subordinate to the hero —
-         small inline icons, no cards, hairline divider top + bottom. -->
-    <section style="background:var(--page);color:var(--mid);padding:22px;border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);font-family:var(--fn)">
-      <div style="max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 28px;font-size:13px;font-weight:500;color:var(--mid)">
-        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--lt)">Built for</span>
-        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 14h19l-2 5h-15l-2-5z"/><path d="M5 14V8l7-4 7 4v6"/><path d="M12 4v10"/></svg> Skippers</span>
-        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg> Charter fleets</span>
-        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg> Angling operators</span>
-        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg> Surveyors</span>
-        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg> Sailing schools</span>
-        <span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V8M5 12l7-7 7 7"/></svg> Owner-operators</span>
+    <!-- ── 3. BUILT-FOR STRIP ─────────────────────────── -->
+    <section class="ld-builtfor">
+      <div class="ld-wrap">
+        <span class="ld-builtfor-label">Built for</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 14h19l-2 5h-15l-2-5z"/><path d="M5 14V8l7-4 7 4v6"/><path d="M12 4v10"/></svg> Skippers</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg> Charter fleets</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg> Angling operators</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg> Surveyors</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg> Sailing schools</span>
+        <span class="ld-builtfor-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V8M5 12l7-7 7 7"/></svg> Owner-operators</span>
       </div>
     </section>
 
-    <!-- ── IRISH PBL MOAT ──────────────────────────────────── -->
-    <!-- The widest defensible claim: nobody else tracks Irish PBL +
-         UK MCA in one record. Promoted above all other sections. -->
-    <section style="background:var(--page);color:var(--text);padding:80px 22px" data-reveal>
-      <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:36px;align-items:center">
-        <div>
-          <div class="ld-eyebrow">The moat · Ireland</div>
-          <h2 class="ld-h2">The only tool that tracks Irish PBL alongside UK MCA.</h2>
-          <p class="ld-sub on-light" style="margin:14px 0 20px">Cross-border operators carry two rulebooks — the MCA Sport &amp; Pleasure Vessel Code in the UK, the Marine Survey Office Passenger Boat Licence (Classes P1–P6) in Ireland. UK coding does not satisfy Irish PBL. CodedOK keeps both lines of evidence in one record per vessel.</p>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px">
-            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P1 — Open inland</span>
-            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P2 — Inland 1-2 mile</span>
-            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P3 — Smooth water</span>
-            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P4 — Sheltered water</span>
-            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P5 — Partial coast</span>
-            <span class="ld-code-tag" style="color:var(--text);background:var(--slate);border:1px solid var(--bdr)">P6 — Sea-going</span>
-          </div>
-          <button class="btn btn-sea" onclick="goSignUp()" style="height:46px;padding:0 22px;font-weight:700;border-radius:11px">See how Irish operators use CodedOK →</button>
+    <!-- ── 4. IRISH PBL — THE MOAT ────────────────────── -->
+    <section class="ld-section ld-section--light" data-reveal>
+      <div class="ld-wrap ld-wrap--narrow">
+        <div class="ld-eyebrow">The moat · Ireland</div>
+        <h2 class="ld-h2">The only tool that tracks Irish PBL alongside UK MCA.</h2>
+        <p class="ld-lead">Cross-border operators carry two rulebooks — the MCA Sport &amp; Pleasure Vessel Code in the UK, and the Marine Survey Office Passenger Boat Licence (Classes P1–P6) in Ireland. UK coding does not satisfy Irish PBL. CodedOK keeps both lines of evidence in one record per vessel.</p>
+        <div class="ld-pbl-chips">
+          <span class="ld-pbl-chip"><strong>P1</strong> Open inland</span>
+          <span class="ld-pbl-chip"><strong>P2</strong> Inland 1–2 mile</span>
+          <span class="ld-pbl-chip"><strong>P3</strong> Smooth water</span>
+          <span class="ld-pbl-chip"><strong>P4</strong> Sheltered water</span>
+          <span class="ld-pbl-chip"><strong>P5</strong> Partial coast</span>
+          <span class="ld-pbl-chip"><strong>P6</strong> Sea-going</span>
         </div>
+        <button class="ld-cta ld-cta-primary ld-cta-sm" onclick="goSignUp()">See how Irish operators use CodedOK →</button>
       </div>
     </section>
 
-    <!-- ── THREE-PILLAR ────────────────────────────────────── -->
-    <section style="background:var(--page);color:var(--text);padding:72px 22px 56px">
-      <div style="max-width:1100px;margin:0 auto">
-        <div data-reveal style="margin-bottom:36px">
-          <div class="ld-eyebrow">Why CodedOK</div>
-          <h2 class="ld-h2">Three roles.<br><span style="color:var(--sea)">One record.</span></h2>
-        </div>
-
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px">
-
-          <div class="ld-feature" data-reveal>
-            <div class="ld-feature-ic">
-              <!-- Vessel hull -->
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M2.5 14h19l-2 5h-15l-2-5z"/>
-                <path d="M12 14V4"/>
-                <path d="M12 4l7 6"/>
-              </svg>
-            </div>
-            <h3>Skippers &amp; operators</h3>
-            <p>Add your boat. Snap your certs. Watch the compliance ring fill. Nudges 30, 7, and 0 days before anything expires — on your phone, before the MCA does.</p>
-          </div>
-
-          <div class="ld-feature" data-reveal>
-            <div class="ld-feature-ic" style="background:rgba(30,122,134,.10);color:var(--seal)">
-              <!-- Magnifier -->
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"/>
-                <path d="M21 21l-4.5-4.5"/>
-              </svg>
-            </div>
-            <h3>Surveyors</h3>
-            <p>Operators invite you per vessel. See their full record, raise deficiencies, sign inspections, and quote new jobs from a single cross-client portfolio.</p>
-          </div>
-
-          <div class="ld-feature" data-reveal>
-            <div class="ld-feature-ic" style="background:rgba(79,122,82,.10);color:var(--green)">
-              <!-- Cap / mortarboard -->
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M2 9l10-5 10 5-10 5L2 9z"/>
-                <path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/>
-              </svg>
-            </div>
-            <h3>Crew</h3>
-            <p>Your own login. Your tickets, medicals and renewals — visible to you and to the operators who've added you. Solo skippers track their own quals here too.</p>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- ── PROBLEM (three real costs of getting it wrong) ──── -->
-    <section style="background:var(--page);color:var(--text);padding:72px 22px 24px">
-      <div style="max-width:1100px;margin:0 auto">
-        <div data-reveal style="margin-bottom:36px;max-width:580px">
+    <!-- ── 5. PROBLEM ─────────────────────────────────── -->
+    <section class="ld-section ld-section--offwhite" data-reveal>
+      <div class="ld-wrap">
+        <div class="ld-section-head">
           <div class="ld-eyebrow">Why this matters</div>
           <h2 class="ld-h2">A missing pyro card grounds the boat.<br>The clock catches you out either way.</h2>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px">
-          <div class="ld-feature" data-reveal>
-            <div class="ld-feature-ic" style="background:rgba(161,74,59,.10);color:var(--red)">
+        <div class="ld-grid-3">
+          <article class="ld-pcard ld-pcard--red">
+            <div class="ld-pcard-ic">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4"/><circle cx="12" cy="17" r="1" fill="currentColor"/><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
             </div>
             <h3>An expired flare grounds the boat</h3>
-            <p>A £40 oversight on a SOLAS pyro pack cancels a £1,500 charter trip. Every passenger refund + every hour off the water comes back to a checklist you didn't run.</p>
-          </div>
-          <div class="ld-feature" data-reveal>
-            <div class="ld-feature-ic" style="background:rgba(197,138,42,.10);color:var(--amber)">
+            <p>A £40 oversight on a SOLAS pyro pack cancels a £1,500 charter trip. Every passenger refund and every hour off the water comes back to a checklist you didn't run.</p>
+          </article>
+          <article class="ld-pcard ld-pcard--amber">
+            <div class="ld-pcard-ic">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
             </div>
             <h3>Renewals stack at the worst times</h3>
-            <p>Coding cert, PLI, liferaft service, EPIRB, radio licence, ENG1 medical, first aid, VHF SRC — fifteen separate clocks all running at different speeds. One spreadsheet doesn't catch them. CodedOK does.</p>
-          </div>
-          <div class="ld-feature" data-reveal>
-            <div class="ld-feature-ic" style="background:rgba(15,76,92,.10);color:var(--sea)">
+            <p>Coding cert, PLI, liferaft service, EPIRB, radio licence, ENG1, first aid, VHF SRC. Fifteen clocks all running at different speeds. A spreadsheet doesn't catch them. CodedOK does.</p>
+          </article>
+          <article class="ld-pcard ld-pcard--cyan">
+            <div class="ld-pcard-ic">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>
             </div>
             <h3>December 2025 raises the bar</h3>
-            <p>The new MCA Sport &amp; Pleasure Vessel Code 2025 lands in force this December. New stability evidence, new SMS requirements, new owner declarations. The transition is the riskiest year — most surveyors flag the most issues.</p>
-          </div>
+            <p>The new MCA Sport &amp; Pleasure Vessel Code 2025 lands in December. New stability evidence, new SMS requirements, new owner declarations. The transition year is when surveyors flag the most issues.</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- ── HOW IT WORKS ─────────────────────────────────────── -->
-    <section style="background:var(--page);color:var(--text);padding:24px 22px 72px">
-      <div style="max-width:1100px;margin:0 auto">
-        <div data-reveal style="margin-bottom:36px">
-          <div class="ld-eyebrow">How it works</div>
-          <h2 class="ld-h2">Three steps to survey-ready.</h2>
+    <!-- ── 6. HOW IT WORKS (dark) ─────────────────────── -->
+    <section class="ld-section ld-section--dark" data-reveal>
+      <div class="ld-wrap">
+        <div class="ld-section-head ld-section-head--center">
+          <div class="ld-eyebrow ld-eyebrow--on-dark">How it works</div>
+          <h2 class="ld-h2 ld-h2--on-dark">Three steps to survey-ready.</h2>
+          <p class="ld-lead ld-lead--on-dark">Add a vessel, photograph the certs, you're running a compliant fleet from your phone.</p>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:36px">
-          <div data-reveal>
+        <div class="ld-grid-3">
+          <div class="ld-step">
             <div class="ld-step-num">01</div>
-            <h3 style="font-family:var(--fn-display);font-size:22px;font-weight:700;color:var(--text);margin:14px 0 8px;letter-spacing:-.015em">Add your vessel</h3>
-            <p style="font-size:14px;color:var(--mid);line-height:1.6;margin:0">Name, length, category, where she operates. About 60 seconds. CodedOK pre-loads every certificate and bit of kit you're required to carry.</p>
+            <h3>Add your vessel</h3>
+            <p>Name, length, category, where she operates. CodedOK pre-loads every certificate and piece of equipment you're required to carry — so you start with the right tray, not a blank sheet.</p>
           </div>
-          <div data-reveal>
+          <div class="ld-step">
             <div class="ld-step-num">02</div>
-            <h3 style="font-family:var(--fn-display);font-size:22px;font-weight:700;color:var(--text);margin:14px 0 8px;letter-spacing:-.015em">Snap your paperwork</h3>
-            <p style="font-size:14px;color:var(--mid);line-height:1.6;margin:0">Photograph each certificate or drop the PDF. AI reads the issuer, certificate number and expiry — no retyping. PLI, coding cert, radio licence, the lot.</p>
+            <h3>Photograph your certs</h3>
+            <p>Snap each cert with your phone. AI reads the issuer, certificate number and expiry. PLI, coding cert, radio licence, the lot — no retyping. Drop in PDFs the same way.</p>
           </div>
-          <div data-reveal>
+          <div class="ld-step">
             <div class="ld-step-num">03</div>
-            <h3 style="font-family:var(--fn-display);font-size:22px;font-weight:700;color:var(--text);margin:14px 0 8px;letter-spacing:-.015em">Walk in survey-ready</h3>
-            <p style="font-size:14px;color:var(--mid);line-height:1.6;margin:0">Compliance score on your home screen. Nudges before anything expires. Inspection pack PDF in one tap. Your surveyor sees the same record you do.</p>
+            <h3>Walk in survey-ready</h3>
+            <p>Compliance score on your home screen. Nudges 30, 7, and 0 days before anything expires. Inspection-pack PDF in one tap. Your surveyor sees the same record you do.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ── EDITORIAL: IN THE FIELD ──────────────────────────── -->
-    <!-- Full-bleed photo break between How-it-works and Features.
-         Uses img/landing/in-the-field.jpg (RIB at speed). Gradient
-         overlay keeps the pull-quote readable; falls back to a
-         brand-tinted slab if the image isn't uploaded yet. -->
-    <section class="ld-vh" style="position:relative;color:white;overflow:hidden">
-      <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(90deg, rgba(28,37,43,.85) 0%, rgba(15,76,92,.55) 60%, rgba(15,76,92,.25) 100%), url('img/landing/in-the-field.jpg') center/cover no-repeat, url('img/landing/in-the-field.svg') center/cover no-repeat #0F4C5C"></div>
-      <div data-reveal style="position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:64px 22px;width:100%">
-        <div class="ld-eyebrow on-dark">Built for the deck, not the desk</div>
-        <p style="font-family:var(--fn-display);font-size:clamp(26px, 3.8vw, 44px);font-weight:700;line-height:1.1;letter-spacing:-.02em;color:white;max-width:680px;margin:0">Your record. Your surveyor's record. Same record.</p>
-        <p style="margin-top:18px;font-size:14px;color:rgba(255,255,255,.7);line-height:1.6;max-width:520px">One source of truth between operator and surveyor — no PDF emails, no version mismatches, no "I'll dig it out and send it on".</p>
-      </div>
-    </section>
-
-    <!-- ── FEATURE GRID ─────────────────────────────────────── -->
-    <section style="background:var(--slate);color:var(--text);padding:72px 22px">
-      <div style="max-width:1100px;margin:0 auto">
-        <div data-reveal style="margin-bottom:36px;max-width:560px">
-          <div class="ld-eyebrow">What you get</div>
-          <h2 class="ld-h2">Everything a coded-vessel records team actually needs. No more, no less.</h2>
+    <!-- ── 7. FEATURES ────────────────────────────────── -->
+    <section class="ld-section ld-section--offwhite" data-reveal>
+      <div class="ld-wrap">
+        <div class="ld-section-head">
+          <div class="ld-eyebrow">Features</div>
+          <h2 class="ld-h2">Everything a coded-vessel records team needs. No more, no less.</h2>
         </div>
-
-        <div class="ld-features">
-
-          <div class="ld-feature" data-reveal>
+        <div class="ld-grid-features">
+          <article class="ld-feature">
             <div class="ld-feature-ic">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="5" y="4" width="14" height="18" rx="2"/>
-                <rect x="9" y="2" width="6" height="4" rx="1"/>
-                <path d="M9 12l2 2 4-4"/>
-              </svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="18" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg>
             </div>
             <h3>Certificate tracker</h3>
-            <p>Every cert, every renewal date, colour-coded against the Code. Coding cert, radio licence, PLI, pyrotechnics — visible at a glance.</p>
-          </div>
-
-          <div class="ld-feature" data-reveal>
+            <p>Every cert, every renewal date, colour-coded against the active code. Coding cert, radio licence, PLI, pyrotechnics — visible at a glance.</p>
+          </article>
+          <article class="ld-feature">
             <div class="ld-feature-ic">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z"/>
-                <path d="M9 12l2 2 4-4"/>
-              </svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
             </div>
             <h3>Equipment log</h3>
             <p>Liferafts, EPIRBs, lifejackets, fire kit. Logged with make, serial, last service and next service date.</p>
-          </div>
-
-          <div class="ld-feature" data-reveal>
+          </article>
+          <article class="ld-feature">
             <div class="ld-feature-ic">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="3" y="6" width="18" height="14" rx="2"/>
-                <circle cx="12" cy="13" r="4"/>
-                <path d="M9 6l1-3h4l1 3"/>
-              </svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="4"/><path d="M9 6l1-3h4l1 3"/></svg>
             </div>
-            <h3>AI cert scan</h3>
-            <p>Snap a paper certificate or upload a PDF. The issuer, certificate number and dates are extracted automatically — no retyping.</p>
-          </div>
-
-          <div class="ld-feature" data-reveal>
+            <h3>AI document scan</h3>
+            <p>Photograph a paper cert or drop in a PDF. The issuer, certificate number and dates are extracted automatically — no retyping.</p>
+          </article>
+          <article class="ld-feature">
             <div class="ld-feature-ic">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M5 4h10l4 4v12H5V4z"/>
-                <path d="M15 4v4h4"/>
-                <path d="M9 13h6M9 16h6M9 19h3"/>
-              </svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h10l4 4v12H5V4z"/><path d="M15 4v4h4"/><path d="M9 13h6M9 16h6M9 19h3"/></svg>
             </div>
             <h3>SMS builder</h3>
             <p>AI-assisted Safety Management System drafted for your vessel and operation. Review, edit, export as a survey-ready PDF.</p>
-          </div>
-
-          <div class="ld-feature" data-reveal>
+          </article>
+          <article class="ld-feature">
             <div class="ld-feature-ic">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M6 17h12v-3c0-4-2-7-6-7s-6 3-6 7v3z"/>
-                <path d="M10 21h4"/>
-                <circle cx="12" cy="4" r="1"/>
-              </svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17h12v-3c0-4-2-7-6-7s-6 3-6 7v3z"/><path d="M10 21h4"/><circle cx="12" cy="4" r="1"/></svg>
             </div>
             <h3>Push &amp; email reminders</h3>
-            <p>30, 7 and 0 days before every expiry. Push to your installed app and email as a fallback. Crew get their own personal reminders too.</p>
-          </div>
-
-          <div class="ld-feature" data-reveal>
+            <p>30, 7 and 0 days before every expiry. Push to the installed app, email as a fallback. Crew get their own personal reminders.</p>
+          </article>
+          <article class="ld-feature">
             <div class="ld-feature-ic">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M7 3h7l4 4v14H7V3z"/>
-                <path d="M14 3v4h4"/>
-                <path d="M10 12h5M10 15h5M10 18h3"/>
-              </svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7V3z"/><path d="M14 3v4h4"/><path d="M10 12h5M10 15h5M10 18h3"/></svg>
             </div>
-            <h3>Inspection pack</h3>
+            <h3>Inspection-pack PDF</h3>
             <p>One tap, one PDF, every cert + equipment item + crew qualification. Walk into your survey with everything in one document.</p>
-          </div>
-
-          <div class="ld-feature" data-reveal>
+          </article>
+          <article class="ld-feature">
             <div class="ld-feature-ic">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="9" cy="9" r="3"/>
-                <path d="M3 19c0-3.5 2.5-6 6-6s6 2.5 6 6"/>
-                <circle cx="17" cy="8" r="2.5"/>
-                <path d="M15 19c0-2.5 2.5-4 5-4"/>
-              </svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3"/><path d="M3 19c0-3.5 2.5-6 6-6s6 2.5 6 6"/><circle cx="17" cy="8" r="2.5"/><path d="M15 19c0-2.5 2.5-4 5-4"/></svg>
             </div>
             <h3>Crew &amp; team</h3>
             <p>Invite crew by email. Each person gets their own login and their own quals. Granular permissions per role.</p>
-          </div>
-
-          <div class="ld-feature" data-reveal>
+          </article>
+          <article class="ld-feature">
             <div class="ld-feature-ic">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 15c0-3 2-5 5-5 1-3 4-4 7-3"/>
-                <path d="M21 15H10"/>
-                <path d="M3 3l18 18"/>
-              </svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15c0-3 2-5 5-5 1-3 4-4 7-3"/><path d="M21 15H10"/><path d="M3 3l18 18"/></svg>
             </div>
             <h3>Works offline</h3>
             <p>Installable as a PWA. Edits queue locally and sync the moment you're back in coverage. No data lost in a tunnel or 20 miles offshore.</p>
-          </div>
-
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- ── EDITORIAL: SURVEY DAY ──────────────────────────── -->
-    <!-- Boat-on-the-lift shot. Uses img/landing/in-the-yard.jpg with
-         a vertical fade so the headline + CTA sit on a darker base
-         while the boat above stays visible. -->
-    <section class="ld-vh bottom" style="position:relative;color:white;overflow:hidden">
-      <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(28,37,43,.15) 0%, rgba(28,37,43,.55) 55%, rgba(28,37,43,.95) 100%), url('img/landing/in-the-yard.jpg') center/cover no-repeat, url('img/landing/in-the-yard.svg') center/cover no-repeat #1C252B"></div>
-      <div data-reveal style="position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:120px 22px 56px;width:100%">
-        <div class="ld-eyebrow on-dark">Survey day</div>
-        <h2 class="ld-h2 on-dark" style="margin-bottom:14px;max-width:640px">Records ready before the surveyor steps aboard.</h2>
-        <p class="ld-sub" style="margin-bottom:24px">Every certificate, equipment item and crew qualification in one tap. The surveyor sees the same record you do, signs off in the app, and the inspection pack PDF lands in your inbox.</p>
-        <button class="btn btn-sea" onclick="goSignUp()" style="height:50px;padding:0 28px;font-weight:700;font-size:14px;border-radius:11px">Start free →</button>
-      </div>
-    </section>
-
-    <!-- ── CODES ALIGNMENT BAND ─────────────────────────────── -->
-    <!-- One-line citation strip. Every framework we cover with the
-         exact source. Reads as evidence, not marketing. -->
-    <section style="background:var(--ink);color:rgba(255,255,255,.85);padding:48px 22px;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)" data-reveal>
-      <div style="max-width:1100px;margin:0 auto">
-        <div class="ld-eyebrow on-dark" style="margin-bottom:18px">Codes aligned</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 28px;font-family:var(--fn);font-size:13px;line-height:1.55">
-          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">SPV Code 2025</strong> <span style="color:rgba(255,255,255,.55)">— Appendix 7 §2 mapped</span></div></div>
-          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">Workboat Code 3.0</strong> <span style="color:rgba(255,255,255,.55)">— full schedule</span></div></div>
-          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">Irish PBL</strong> <span style="color:rgba(255,255,255,.55)">— Classes P1–P6</span></div></div>
-          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">YDSA Coding</strong> <span style="color:rgba(255,255,255,.55)">— Categories 2–6</span></div></div>
-          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">MGN 280</strong> <span style="color:rgba(255,255,255,.55)">— small-passenger guidance</span></div></div>
-          <div style="display:flex;gap:10px"><span style="color:var(--seal);flex-shrink:0">▸</span><div><strong style="color:white">MARPOL Annex I</strong> <span style="color:rgba(255,255,255,.55)">— oil-record-aware</span></div></div>
+    <!-- ── 8. CODES ALIGNMENT BAND (dark) ─────────────── -->
+    <section class="ld-section ld-section--dark ld-codes" data-reveal>
+      <div class="ld-wrap">
+        <div class="ld-eyebrow ld-eyebrow--on-dark">Codes aligned</div>
+        <div class="ld-codes-grid">
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>SPV Code 2025</strong> Appendix 7 §2 mapped</div></div>
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>Workboat Code Edition 3.0</strong> Full schedule</div></div>
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>Irish PBL</strong> Classes P1–P6</div></div>
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>YDSA Coding</strong> Categories 2–6</div></div>
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>MGN 280</strong> Small-passenger guidance</div></div>
+          <div class="ld-code-row"><span class="ld-code-arrow">▸</span><div><strong>MARPOL Annex I</strong> Oil-record-aware</div></div>
         </div>
       </div>
     </section>
 
-    <!-- ── PRICING ─────────────────────────────────────────── -->
-    <section style="background:var(--page);color:var(--text);padding:72px 22px">
-      <div style="max-width:1100px;margin:0 auto">
-        <div data-reveal style="margin-bottom:36px;max-width:560px">
+    <!-- ── 9. EDITORIAL: IN THE FIELD ─────────────────── -->
+    <section class="ld-editorial ld-editorial--field">
+      <div aria-hidden="true" class="ld-editorial-bg ld-editorial-bg--field"></div>
+      <div class="ld-editorial-content" data-reveal>
+        <div class="ld-eyebrow ld-eyebrow--on-dark">Built for the deck, not the desk</div>
+        <p class="ld-editorial-quote">Your record. Your surveyor's record. Same record.</p>
+        <p class="ld-editorial-sub">One source of truth between operator and surveyor — no PDF emails, no version mismatches, no chasing the latest draft.</p>
+      </div>
+    </section>
+
+    <!-- ── 10. EDITORIAL: SURVEY DAY ──────────────────── -->
+    <section class="ld-editorial ld-editorial--yard">
+      <div aria-hidden="true" class="ld-editorial-bg ld-editorial-bg--yard"></div>
+      <div class="ld-editorial-content ld-editorial-content--bottom" data-reveal>
+        <div class="ld-eyebrow ld-eyebrow--on-dark">Survey day</div>
+        <h2 class="ld-h2 ld-h2--on-dark">Records ready before the surveyor steps aboard.</h2>
+        <p class="ld-editorial-sub">Every certificate, equipment item and crew qualification in one tap. The surveyor sees the same record you do, signs off in the app, and the inspection-pack PDF lands in your inbox.</p>
+        <button class="ld-cta ld-cta-primary ld-cta-sm" onclick="goSignUp()">Start free →</button>
+      </div>
+    </section>
+
+    <!-- ── 11. PARTNERS ──────────────────────────────── -->
+    <section class="ld-section ld-section--white" data-reveal>
+      <div class="ld-wrap">
+        <div class="ld-section-head ld-section-head--center">
+          <div class="ld-eyebrow">Built with</div>
+          <h2 class="ld-h2">The boatbuilders and surveyors<br>skippers already trust.</h2>
+          <p class="ld-lead">CodedOK works with the people who build the boats and sign the paperwork on this coast — so your vessel, your evidence and your compliance story all line up.</p>
+        </div>
+        <div class="ld-grid-2">
+          <article class="ld-partner">
+            <div class="ld-partner-logo"><img alt="Redbay Boats" src="../codedok-brand/partners/redbay.png" onerror="this.style.display='none'"></div>
+            <div class="ld-partner-name">Redbay Boats</div>
+            <div class="ld-partner-kind">Commercial RIB Builder · Cushendall</div>
+            <p>Redbay build high-performance RIBs trusted by commercial operators, pilots, dive schools and enforcement agencies. New Redbays delivered to CodedOK customers arrive with their compliance profile pre-loaded — saving the buyer an afternoon of setup and a year of guesswork.</p>
+            <ul class="ld-partner-list">
+              <li>New-build category &amp; cert requirements pre-configured</li>
+              <li>Stability data + equipment manifest imported at handover</li>
+              <li>Warranty and refit records synced into vessel history</li>
+            </ul>
+          </article>
+          <article class="ld-partner">
+            <div class="ld-partner-logo"><img alt="McCollam Marine" src="icons/mccollam.webp" onerror="this.style.display='none'"></div>
+            <div class="ld-partner-name">McCollam Marine</div>
+            <div class="ld-partner-kind">Naval Architects · Marine Surveyors</div>
+            <p>McCollam Marine provide the naval architecture and survey work that sits behind a coded vessel. When their reports land in CodedOK, they arrive as structured evidence — stability letters, survey findings and recommendations feed straight into your record.</p>
+            <ul class="ld-partner-list">
+              <li>MCA coding surveys + renewals under SPV / Workboat codes</li>
+              <li>Stability assessments, load line, tonnage, incline experiments</li>
+              <li>Survey reports delivered as structured evidence, not just PDF</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 12. PRICING ───────────────────────────────── -->
+    <section class="ld-section ld-section--offwhite" data-reveal>
+      <div class="ld-wrap">
+        <div class="ld-section-head">
           <div class="ld-eyebrow">Plans</div>
           <h2 class="ld-h2">Free for solo skippers. Honest pricing for fleets.</h2>
-          <p class="ld-sub on-light" style="margin-top:6px">Everything is free during early access. Pick the plan you'll eventually want — the price is locked in at this rate when payment starts.</p>
+          <p class="ld-lead">Everything is free during early access — pick the plan you'll eventually want and we'll lock the price in when payment goes live.</p>
         </div>
-
-        <div class="ld-plans">
-
-          <div class="ld-plan" data-reveal>
+        <div class="ld-grid-3">
+          <article class="ld-plan">
             <div class="ld-plan-name">Solo</div>
             <div class="ld-plan-blurb">For one operator with up to two vessels. Free, forever.</div>
             <div class="ld-plan-price">£0<small>/month</small></div>
-            <button class="btn btn-out" style="height:46px;font-weight:700;margin:14px 0 18px;border-color:var(--bdr)" onclick="goSignUp()">Start free</button>
-            <ul>
-              <li>Certs, equipment &amp; crew quals</li>
+            <button class="ld-cta ld-cta-ghost ld-cta-full" onclick="goSignUp()">Start free</button>
+            <ul class="ld-plan-list">
+              <li>Certs, equipment &amp; crew qualifications</li>
               <li>Push &amp; email reminders</li>
               <li>SMS builder + inspection-pack PDF</li>
               <li>Offline first, sync on reconnect</li>
             </ul>
-          </div>
-
-          <div class="ld-plan featured" data-reveal>
+          </article>
+          <article class="ld-plan ld-plan--featured">
             <span class="ld-plan-tag">RECOMMENDED</span>
             <div class="ld-plan-name">Pro</div>
             <div class="ld-plan-blurb">Unlimited vessels and full surveyor access.</div>
             <div class="ld-plan-price">£19<small>/month</small></div>
-            <button class="btn btn-sea" style="height:46px;font-weight:700;margin:14px 0 18px" onclick="goSignUp()">Start 14-day trial</button>
-            <ul>
+            <button class="ld-cta ld-cta-primary ld-cta-full" onclick="goSignUp()">Start 14-day trial</button>
+            <ul class="ld-plan-list">
               <li>Everything in Solo</li>
               <li>Unlimited vessels</li>
               <li>Surveyor invite + cross-org access</li>
               <li>AI cert OCR (snap-and-extract)</li>
               <li>Custom inspection-pack branding</li>
             </ul>
-          </div>
-
-          <div class="ld-plan" data-reveal>
+          </article>
+          <article class="ld-plan">
             <div class="ld-plan-name">Team</div>
             <div class="ld-plan-blurb">For charter fleets with multiple skippers.</div>
             <div class="ld-plan-price">£49<small>/month</small></div>
-            <button class="btn btn-out" style="height:46px;font-weight:700;margin:14px 0 18px;border-color:var(--bdr)" onclick="goSignUp()">Start 14-day trial</button>
-            <ul>
+            <button class="ld-cta ld-cta-ghost ld-cta-full" onclick="goSignUp()">Start 14-day trial</button>
+            <ul class="ld-plan-list">
               <li>Everything in Pro</li>
               <li>Unlimited team members</li>
               <li>Per-member permissions</li>
               <li>Audit log &amp; action history</li>
               <li>Priority support</li>
             </ul>
-          </div>
-
+          </article>
         </div>
 
-        <div data-reveal style="margin-top:32px">
-          <div class="ld-eyebrow" style="margin-bottom:10px">Also available</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
-            <div style="background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px">
+        <div class="ld-also">
+          <div class="ld-eyebrow ld-also-eyebrow">Also available</div>
+          <div class="ld-grid-2">
+            <div class="ld-also-card">
               <div>
-                <div style="font-family:var(--fn-display);font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em">AI gap analysis</div>
-                <div style="font-size:12px;color:var(--mid);margin-top:3px;line-height:1.5">One-off audit of a vessel against the active code.</div>
+                <div class="ld-also-name">AI gap analysis</div>
+                <div class="ld-also-sub">One-off audit of a vessel against the active code.</div>
               </div>
-              <div style="font-family:var(--fn-display);font-size:18px;font-weight:700;color:var(--sea);letter-spacing:-.02em;white-space:nowrap">£49<span style="font-size:11px;font-weight:500;color:var(--mid)">/vessel</span></div>
+              <div class="ld-also-price">£49<small>/vessel</small></div>
             </div>
-            <div style="background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px">
+            <div class="ld-also-card">
               <div>
-                <div style="font-family:var(--fn-display);font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em">SMS generation</div>
-                <div style="font-size:12px;color:var(--mid);margin-top:3px;line-height:1.5">AI-drafted Safety Management System with surveyor review.</div>
+                <div class="ld-also-name">SMS generation + surveyor review</div>
+                <div class="ld-also-sub">AI-drafted Safety Management System with surveyor sign-off.</div>
               </div>
-              <div style="font-family:var(--fn-display);font-size:18px;font-weight:700;color:var(--sea);letter-spacing:-.02em;white-space:nowrap;text-align:right">£60<span style="font-size:11px;font-weight:500;color:var(--mid)">+£150</span></div>
+              <div class="ld-also-price">£60<small>+£150</small></div>
             </div>
           </div>
         </div>
 
-        <div data-reveal style="background:rgba(15,76,92,.06);border:1px solid rgba(15,76,92,.15);border-radius:12px;padding:14px 18px;margin-top:24px;font-size:13px;color:var(--mid);line-height:1.55">
-          <strong style="color:var(--sea)">No card during early access.</strong> Payment goes live later — you'll get an email before anything is charged. Solo skipper stays free either way.
+        <div class="ld-disclosure">
+          <strong>No card during early access.</strong> Payment goes live later — you'll get an email before anything is charged. Solo stays free either way.
         </div>
       </div>
     </section>
 
-    <!-- ── SURVEYOR SECTION ─────────────────────────────────── -->
-    <!-- Separate block, visually distinct, its own CTA. Stops skippers
-         clicking the wrong button. -->
-    <section style="background:var(--ink);color:white;padding:72px 22px;position:relative;overflow:hidden" data-reveal>
-      <div aria-hidden="true" style="position:absolute;inset:0;background:radial-gradient(ellipse 50% 80% at 100% 50%,rgba(30,122,134,.18) 0%,transparent 60%);pointer-events:none"></div>
-      <div style="max-width:1100px;margin:0 auto;position:relative;z-index:1">
-        <div style="display:grid;grid-template-columns:1fr;gap:32px;align-items:center">
-          <div>
-            <div class="ld-eyebrow on-dark">For surveyors</div>
-            <h2 class="ld-h2 on-dark" style="max-width:680px">A cross-client portfolio in your pocket.</h2>
-            <p class="ld-sub" style="margin:14px 0 24px">Each operator invites you per vessel. You get one inbox across the lot — quote requests, inspections, deficiencies, signed jobs. Free seat, paid by your operator clients on their side.</p>
-            <ul style="list-style:none;padding:0;margin:0 0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 24px">
-              <li style="font-size:14px;color:rgba(255,255,255,.85);display:flex;gap:8px"><span style="color:var(--seal);font-weight:700">✓</span>Multi-client vessel portfolio</li>
-              <li style="font-size:14px;color:rgba(255,255,255,.85);display:flex;gap:8px"><span style="color:var(--seal);font-weight:700">✓</span>Port-clustered job scheduling</li>
-              <li style="font-size:14px;color:rgba(255,255,255,.85);display:flex;gap:8px"><span style="color:var(--seal);font-weight:700">✓</span>Quote + invoice through the app</li>
-              <li style="font-size:14px;color:rgba(255,255,255,.85);display:flex;gap:8px"><span style="color:var(--seal);font-weight:700">✓</span>Signed-inspection PDFs to the operator</li>
-            </ul>
-            <button onclick="goSignUp()" style="height:50px;padding:0 26px;font-weight:700;font-size:14px;border-radius:11px;background:transparent;border:1px solid rgba(255,255,255,.3);color:white;cursor:pointer;font-family:var(--fn);transition:all .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.background='rgba(255,255,255,.08)';this.style.borderColor='rgba(255,255,255,.6)'" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,.3)'">Request surveyor access →</button>
-          </div>
-        </div>
+    <!-- ── 13. PROVENANCE / Cushendall ────────────────── -->
+    <section class="ld-provenance" data-reveal>
+      <div class="ld-wrap ld-wrap--narrow ld-provenance-inner">
+        <div class="ld-eyebrow">Built in Northern Ireland</div>
+        <p class="ld-provenance-quote">Designed with working skippers and surveyors on the Antrim coast — including <strong>McCollam Marine</strong>, naval architects and marine surveyors covering Northern Ireland and the Irish Sea.</p>
+        <p class="ld-provenance-sub">Early access, founder-led. Email <a href="mailto:hello@codedok.app">hello@codedok.app</a> with feedback.</p>
       </div>
     </section>
 
-    <!-- ── PROVENANCE ──────────────────────────────────────── -->
-    <!-- Honest social proof when we don't yet have public customer
-         testimonials. Names what's real: Northern Ireland origin,
-         working operators on the Antrim coast, McCollam Marine
-         surveyor partner. -->
-    <section style="background:var(--page);color:var(--text);padding:48px 22px;border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr)" data-reveal>
-      <div style="max-width:860px;margin:0 auto;text-align:center">
-        <div class="ld-eyebrow" style="margin-bottom:14px">Built in Northern Ireland</div>
-        <p style="font-family:var(--fn-display);font-size:clamp(20px, 2.4vw, 26px);font-weight:600;line-height:1.4;letter-spacing:-.015em;color:var(--text);margin:0 0 14px">Designed with working skippers and surveyors on the Antrim coast — including <strong>McCollam Marine</strong>, naval architects and marine surveyors covering Northern Ireland and the Irish Sea.</p>
-        <p style="font-size:13px;color:var(--mid);line-height:1.6;margin:0">Early access, founder-led. Email <a href="mailto:hello@codedok.app" style="color:var(--sea)">hello@codedok.app</a> with feedback.</p>
-      </div>
-    </section>
-
-    <!-- ── FAQ ─────────────────────────────────────────────── -->
-    <section id="faq" style="background:var(--page);color:var(--text);padding:24px 22px 80px">
-      <div style="max-width:760px;margin:0 auto">
-        <div data-reveal style="margin-bottom:28px">
-          <div class="ld-eyebrow">Questions</div>
+    <!-- ── 14. FAQ ───────────────────────────────────── -->
+    <section class="ld-section ld-section--white" id="faq" data-reveal>
+      <div class="ld-wrap ld-wrap--narrow">
+        <div class="ld-section-head ld-section-head--center">
+          <div class="ld-eyebrow">Questions skippers actually ask</div>
           <h2 class="ld-h2">Before you sign up.</h2>
         </div>
 
-        <details class="ld-faq" data-reveal id="faq-pbl">
+        <details class="ld-faq" id="faq-pbl">
           <summary>Does CodedOK actually cover Irish PBL?</summary>
           <div class="ld-faq-body">Yes. The full Marine Survey Office Passenger Boat Licence — Classes P1 through P6 — is loaded as a jurisdiction option per vessel. When you pick "Ireland — PBL" on a vessel, the relevant equipment, manning, and survey requirements load alongside (or instead of) the UK MCA set, depending on where the vessel actually operates.</div>
         </details>
 
-        <details class="ld-faq" data-reveal id="faq-mca-2025">
+        <details class="ld-faq" id="faq-mca-2025">
           <summary>What changes when the MCA SPV Code 2025 comes in?</summary>
           <div class="ld-faq-body">The Sport &amp; Pleasure Vessel Code 2025 replaces the old MGN 280 framework on 1 December 2025. Headline shifts: a single-route stability declaration for under-15m vessels, a mandatory Safety Management System for charter operations, refreshed equipment carriage tables, and clearer owner-declaration requirements. CodedOK rolls the new schedule out automatically on the date — your existing vessels show what's already aligned and what needs new evidence.</div>
         </details>
 
-        <details class="ld-faq" data-reveal>
+        <details class="ld-faq">
           <summary>What counts as "evidence" in CodedOK?</summary>
           <div class="ld-faq-body">A dated photograph or PDF of a certificate, equipment serial / service receipt, crew qualification card, signed inspection report, or surveyor-issued document — attached to the relevant record. Evidence has a source, a date, and ideally an expiry. CodedOK timestamps when you uploaded each piece and keeps the original file alongside the extracted fields.</div>
         </details>
 
-        <details class="ld-faq" data-reveal>
+        <details class="ld-faq">
           <summary>Is CodedOK affiliated with the MCA or YDSA?</summary>
           <div class="ld-faq-body">No. CodedOK is an independent recordkeeping aid. The SPV Code 2025, Workboat Code Edition 3, MGN 280, and YDSA category schedules are published by their respective authorities; CodedOK is not endorsed by or affiliated with any of them.</div>
         </details>
 
-        <details class="ld-faq" data-reveal>
+        <details class="ld-faq">
           <summary>Does it replace my MCA or PBL survey?</summary>
           <div class="ld-faq-body">No. CodedOK helps you stay inspection-ready between surveys and hand a clean record to your surveyor on the day. The survey itself, and the certification or licence that comes out of it, still happen with your recognised surveyor or the Marine Survey Office.</div>
         </details>
 
-        <details class="ld-faq" data-reveal>
+        <details class="ld-faq">
           <summary>How does the surveyor handoff work?</summary>
           <div class="ld-faq-body">Your surveyor gets a free seat per vessel you invite them to. They see your full record — certs, equipment, crew quals, deficiencies, prior inspections — from their own login. On survey day they raise deficiencies, sign the inspection in the app, and the signed pack lands in your inbox. No PDF email chase, no version mismatches.</div>
         </details>
 
-        <details class="ld-faq" data-reveal>
+        <details class="ld-faq">
           <summary>Does it work offshore with no signal?</summary>
           <div class="ld-faq-body">Yes. Installed as a PWA on your phone, the app works fully offline. Edits queue locally and sync to the cloud when you're back in coverage. No data lost in a tunnel or 20 miles offshore.</div>
         </details>
 
-        <details class="ld-faq" data-reveal>
-          <summary>What happens to my data?</summary>
-          <div class="ld-faq-body">Evidence is stored in Supabase (EU region) and cached on your device. You can delete your account from Account → Sign out and email <a href="mailto:privacy@codedok.app" style="color:var(--sea)">privacy@codedok.app</a> — full erasure within 30 days. See the <a href="javascript:go('s-privacy')" style="color:var(--sea)">Privacy Policy</a> for the detail.</div>
+        <details class="ld-faq">
+          <summary>Can my deckhand or mate access the app?</summary>
+          <div class="ld-faq-body">Yes. Crew members get their own login, can view the vessels they're assigned to, and manage their own personal qualifications (ENG1, STCW, licences). Permissions are set per person by the owner.</div>
         </details>
 
-        <details class="ld-faq" data-reveal>
+        <details class="ld-faq">
+          <summary>What happens to my data?</summary>
+          <div class="ld-faq-body">Evidence is stored in Supabase (EU region) and cached on your device. You can delete your account from Account → Sign out and email <a href="mailto:privacy@codedok.app">privacy@codedok.app</a> — full erasure within 30 days. Active subscriptions can export as a PDF archive at any time.</div>
+        </details>
+
+        <details class="ld-faq">
           <summary>Can I cancel any time?</summary>
           <div class="ld-faq-body">Yes. Pro and Team are monthly with no contract — cancel from Account and you'll keep access until the end of the billing month. Your evidence stays exportable as PDF for 90 days after cancellation, then is purged on request.</div>
         </details>
 
-        <details class="ld-faq" data-reveal>
+        <details class="ld-faq">
           <summary>When does payment start?</summary>
-          <div class="ld-faq-body">Not yet. We're in early access — pick a plan today and you won't be charged until we email you to opt in. Solo skipper stays free either way.</div>
+          <div class="ld-faq-body">Not yet. We're in early access — pick a plan today and you won't be charged until we email you to opt in. Solo stays free either way.</div>
         </details>
       </div>
     </section>
 
-    <!-- ── PARTNERS ────────────────────────────────────────── -->
-    <!-- The real ones from the brand pack — Redbay Boats (Cushendall
-         RIB builder) + McCollam Marine (naval architects + surveyors).
-         Logos live in codedok-brand/partners/ and app/icons/. -->
-    <section style="background:#fff;color:var(--text);padding:80px 22px;border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr)" data-reveal>
-      <div style="max-width:1100px;margin:0 auto">
-        <div style="text-align:center;max-width:720px;margin:0 auto 48px">
-          <div class="ld-eyebrow">Built with</div>
-          <h2 class="ld-h2">The boatbuilders and surveyors<br>skippers already trust.</h2>
-          <p class="ld-sub on-light" style="margin:14px auto 0;color:var(--mid)">CodedOK works with the people who build the boats and sign the paperwork on this coast — so your vessel, your evidence and your compliance story all line up.</p>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr;gap:22px">
-          <!-- Redbay -->
-          <div style="background:#fff;border:1px solid var(--bdr);border-radius:18px;padding:30px;box-shadow:0 1px 3px rgba(0,0,0,.04),0 6px 24px rgba(0,0,0,.04)">
-            <div style="height:84px;display:flex;align-items:center;border-bottom:1px solid var(--bdr);margin-bottom:18px;padding-bottom:18px"><img alt="Redbay Boats" src="../codedok-brand/partners/redbay.png" onerror="this.style.display='none'" style="max-height:64px;max-width:300px"></div>
-            <div style="font-family:var(--fn-display);font-size:22px;font-weight:800;letter-spacing:-.015em;color:var(--text);margin-bottom:4px">Redbay Boats</div>
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--sea);margin-bottom:14px">Commercial RIB Builder · Cushendall</div>
-            <p style="font-size:14px;color:var(--mid);line-height:1.6;margin:0 0 16px">Redbay build high-performance RIBs trusted by commercial operators, pilots, dive schools and enforcement agencies. New Redbays delivered to CodedOK customers arrive with their compliance profile pre-loaded — saving the buyer an afternoon of setup and a year of guesswork.</p>
-            <ul style="list-style:none;padding:0;margin:0">
-              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> New-build category &amp; cert requirements pre-configured</li>
-              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> Stability data &amp; equipment manifest imported at handover</li>
-              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> Warranty &amp; refit records synced into vessel history</li>
-            </ul>
+    <!-- ── 15. FINAL CTA (rounded card) ───────────────── -->
+    <section class="ld-finalcta-wrap">
+      <div class="ld-finalcta" data-reveal>
+        <div aria-hidden="true" class="ld-finalcta-glow-a"></div>
+        <div aria-hidden="true" class="ld-finalcta-glow-b"></div>
+        <div class="ld-finalcta-inner">
+          <h2 class="ld-h2 ld-h2--on-dark">Stop dreading your annual check.</h2>
+          <p class="ld-finalcta-sub">Sign up in 90 seconds. Add your first vessel. Walk into your next inspection with every cert, equipment service and crew qualification in one record.</p>
+          <div class="ld-finalcta-ctas">
+            <button class="ld-cta ld-cta-primary" onclick="goSignUp()">Start free trial</button>
+            <button class="ld-cta ld-cta-ghost-dark" onclick="go('s-login')">Sign in</button>
           </div>
-          <!-- McCollam Marine -->
-          <div style="background:#fff;border:1px solid var(--bdr);border-radius:18px;padding:30px;box-shadow:0 1px 3px rgba(0,0,0,.04),0 6px 24px rgba(0,0,0,.04)">
-            <div style="height:84px;display:flex;align-items:center;border-bottom:1px solid var(--bdr);margin-bottom:18px;padding-bottom:18px"><img alt="McCollam Marine — Naval Architects and Marine Surveyors" src="icons/mccollam.webp" onerror="this.style.display='none'" style="max-height:64px;max-width:300px"></div>
-            <div style="font-family:var(--fn-display);font-size:22px;font-weight:800;letter-spacing:-.015em;color:var(--text);margin-bottom:4px">McCollam Marine</div>
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--sea);margin-bottom:14px">Naval Architects · Marine Surveyors</div>
-            <p style="font-size:14px;color:var(--mid);line-height:1.6;margin:0 0 16px">McCollam Marine provide the naval architecture and survey work that sits behind an MCA-coded vessel. When their reports land in CodedOK, they arrive as structured evidence — not a PDF you have to interpret. Stability letters, survey findings and recommendations feed straight into your record.</p>
-            <ul style="list-style:none;padding:0;margin:0">
-              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> MCA coding surveys + renewals under SPV / Workboat codes</li>
-              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> Stability assessments, load line, tonnage, incline experiments</li>
-              <li style="font-size:13.5px;color:var(--text);padding:8px 0 8px 22px;position:relative;line-height:1.5;border-top:1px solid var(--bdr)"><span style="position:absolute;left:0;top:8px;color:var(--sea);font-weight:800">✓</span> Survey reports delivered as structured evidence, not just PDF</li>
-            </ul>
-          </div>
+          <div class="ld-finalcta-trust">No card to start · Cancel any time</div>
         </div>
       </div>
     </section>
 
-    <!-- ── FINAL CTA — rounded-card banner ──────────────────── -->
-    <!-- Dark navy card with radial sheens, sat inside white margin
-         rather than full-bleed. Matches the original landing's pattern. -->
-    <section style="padding:0 16px 72px;background:#fff">
-      <div data-reveal style="max-width:1100px;margin:0 auto;background:linear-gradient(135deg,#0a1628 0%,#1a3560 100%);border-radius:24px;padding:64px 36px;text-align:center;position:relative;overflow:hidden;color:white">
-        <div aria-hidden="true" style="position:absolute;top:-150px;right:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(8,145,178,.32),transparent 70%);pointer-events:none"></div>
-        <div aria-hidden="true" style="position:absolute;bottom:-200px;left:-100px;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(6,182,212,.14),transparent 70%);pointer-events:none"></div>
-        <div style="position:relative;z-index:1;max-width:620px;margin:0 auto">
-          <h2 class="ld-h2 on-dark" style="margin-bottom:14px">Stop dreading your annual check.</h2>
-          <p style="font-size:17px;color:rgba(255,255,255,.78);line-height:1.6;margin:0 0 30px">Sign up in 90 seconds. Add your first vessel. Walk into your next inspection with every cert, equipment service and crew qualification in one record.</p>
-          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-            <button onclick="goSignUp()" style="height:54px;padding:0 30px;font-weight:700;font-size:15px;border-radius:12px;background:#0891b2;color:#ffffff;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;box-shadow:0 14px 32px rgba(8,145,178,.32);transition:all .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.background='#0b7a96';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#0891b2';this.style.transform=''">Start free trial</button>
-            <button onclick="go('s-login')" style="height:54px;padding:0 26px;font-weight:700;font-size:14px;border-radius:12px;background:transparent;border:1.5px solid rgba(255,255,255,.3);color:white;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s cubic-bezier(.32,.72,0,1)" onmouseover="this.style.borderColor='rgba(255,255,255,.7)';this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.borderColor='rgba(255,255,255,.3)';this.style.background='transparent'">Sign in</button>
+    <!-- ── 16. FOOTER ─────────────────────────────────── -->
+    <footer class="ld-footer">
+      <div class="ld-wrap">
+        <div class="ld-footer-top">
+          <div class="ld-footer-brand">
+            <a href="javascript:go('s-land')" class="ld-footer-logo">
+              <svg width="24" height="24" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                <rect x="6" y="6" width="52" height="52" rx="12" fill="#0891b2"/>
+                <path d="M18 33 L28 43 L46 22" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>CodedOK</span>
+            </a>
+            <p>Compliance evidence and deadlines for UK and Irish small commercial vessel operators. Built in Cushendall.</p>
           </div>
-          <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:18px">No card to start · Cancel any time</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── FOOTER ──────────────────────────────────────────── -->
-    <footer style="background:var(--ink);color:rgba(255,255,255,.5);padding:32px 22px calc(36px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.06);font-size:12px;line-height:1.7">
-      <div style="max-width:1100px;margin:0 auto">
-        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px">
-          <a href="javascript:go('s-land')" style="display:flex;align-items:center;gap:9px;text-decoration:none">
-            <svg width="22" height="22" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-              <rect x="6" y="6" width="52" height="52" rx="12" fill="#0F4C5C"/>
-              <path d="M18 33 L28 43 L46 22" stroke="#F3F5F4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span style="font-size:15px;font-weight:700;color:white;font-family:var(--fn-display);letter-spacing:-.02em">CodedOK</span>
-          </a>
-          <div style="display:flex;flex-wrap:wrap;gap:22px">
-            <a href="javascript:go('s-terms')"   style="color:rgba(255,255,255,.7);text-decoration:none">Terms</a>
-            <a href="javascript:go('s-privacy')" style="color:rgba(255,255,255,.7);text-decoration:none">Privacy</a>
-            <a href="mailto:hello@codedok.app"   style="color:rgba(255,255,255,.7);text-decoration:none">Contact</a>
-            <a href="javascript:go('s-login')"   style="color:rgba(255,255,255,.7);text-decoration:none">Sign in</a>
+          <div>
+            <h4>Product</h4>
+            <ul>
+              <li><a href="#faq">FAQ</a></li>
+              <li><a href="javascript:goSignUp()">Start free</a></li>
+              <li><a href="javascript:go('s-login')">Sign in</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Company</h4>
+            <ul>
+              <li><a href="mailto:hello@codedok.app">Contact</a></li>
+              <li><a href="javascript:go('s-privacy')">Privacy</a></li>
+              <li><a href="javascript:go('s-terms')">Terms</a></li>
+            </ul>
           </div>
         </div>
-        <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.65;max-width:780px;margin-bottom:10px"><strong style="color:rgba(255,255,255,.8)">CodedOK helps you manage compliance evidence and deadlines. It does not certify your vessel.</strong> SPV Code 2025, Workboat Code Edition 3, MGN 280, and YDSA category schedules are published by their respective authorities; CodedOK is independent and not affiliated with or endorsed by any of them. Irish Passenger Boat Licensing is administered by the Marine Survey Office.</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.35);line-height:1.6">© 2026 CodedOK · Built in Cushendall, Northern Ireland</div>
+        <div class="ld-footer-disclaimer">
+          <strong>CodedOK helps you manage compliance evidence and deadlines. It does not certify your vessel.</strong> SPV Code 2025, Workboat Code Edition 3, MGN 280, and YDSA category schedules are published by their respective authorities; CodedOK is independent and not affiliated with or endorsed by any of them. Irish Passenger Boat Licensing is administered by the Marine Survey Office.
+        </div>
+        <div class="ld-footer-bot">
+          <div>© 2026 CodedOK · Built in Cushendall, Northern Ireland</div>
+          <div>Made for skippers.</div>
+        </div>
       </div>
     </footer>
 
