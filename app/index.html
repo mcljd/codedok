@@ -398,77 +398,237 @@
 ════════════════════════════════════ -->
 <div class="shell" id="s-land">
   <div class="sb sb-dk" style="background:#050614 !important;color:rgba(255,255,255,.7)"></div>
-  <div class="scroll" style="background:#050614;color:#f1f5f9;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y">
-    <div style="max-width:680px;margin:0 auto;padding:32px 22px 80px;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif">
+  <div class="scroll cdk-page">
 
-      <!-- Brand -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:48px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="width:32px;height:32px;border-radius:8px;background:#06b6d4;display:inline-grid;place-items:center;color:#050614;font-weight:800">✓</span>
-          <span style="font-size:18px;font-weight:700;letter-spacing:-.2px">CodedOK</span>
-        </div>
-        <button onclick="go('s-login')" style="background:rgba(255,255,255,.06);color:#f1f5f9;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:8px 14px;font-size:14px;font-weight:600;font-family:inherit">Sign in</button>
+    <!-- TOP BAR -->
+    <div class="cdk-topbar">
+      <a href="javascript:go('s-land')" class="cdk-brand">
+        <span class="cdk-logo">✓</span>
+        <span>CodedOK</span>
+        <span class="cdk-launch-pill">Just launched</span>
+      </a>
+      <div class="cdk-topbar-actions">
+        <button onclick="go('s-login')" class="cdk-topbar-signin">Sign in</button>
+        <button onclick="goSignUp()" class="cdk-topbar-start">Start free</button>
       </div>
-
-      <!-- Hero -->
-      <div style="color:#67e8f9;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:14px">Compliance for UK &amp; Irish coded vessels</div>
-      <h1 style="font-size:44px;font-weight:800;letter-spacing:-1.5px;line-height:1.05;margin:0 0 20px">Compliance,<br><span style="background:linear-gradient(135deg,#67e8f9 0%,#06b6d4 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">made easy.</span></h1>
-      <p style="font-size:17px;line-height:1.55;color:rgba(248,250,252,.70);margin:0 0 28px"><strong style="color:#f8fafc">AI does the paperwork. You go boating.</strong> Track every certificate, equipment item, and crew qualification under the new MCA Sport &amp; Pleasure Vessel Code 2025, Workboat Code Edition 3, and Irish PBL Classes P1–P6 — in one record per vessel.</p>
-
-      <!-- CTAs -->
-      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:48px">
-        <button onclick="goSignUp()" style="background:linear-gradient(135deg,#06b6d4 0%,#0891b2 100%);color:#050614;border:0;border-radius:12px;padding:16px 22px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 12px 32px rgba(6,182,212,.30)">Start free →</button>
-        <a href="/demo" style="background:rgba(255,255,255,.04);color:#f1f5f9;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:15px 22px;font-size:15px;font-weight:600;text-align:center;text-decoration:none">See live demo</a>
-      </div>
-
-      <!-- What it does -->
-      <div style="margin-bottom:48px">
-        <h2 style="font-size:22px;font-weight:700;letter-spacing:-.4px;margin:0 0 16px">What CodedOK does</h2>
-        <ul style="list-style:none;padding:0;margin:0">
-          <li style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:15px;line-height:1.5"><strong style="color:#67e8f9">Snap a certificate.</strong> <span style="color:rgba(248,250,252,.70)">AI reads expiry, issuer, serial number.</span></li>
-          <li style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:15px;line-height:1.5"><strong style="color:#67e8f9">Drop your last survey.</strong> <span style="color:rgba(248,250,252,.70)">AI parses every cert and deficiency into your record.</span></li>
-          <li style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:15px;line-height:1.5"><strong style="color:#67e8f9">Generate your SMS.</strong> <span style="color:rgba(248,250,252,.70)">Tailored Safety Management System for the new SPV Code.</span></li>
-          <li style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:15px;line-height:1.5"><strong style="color:#67e8f9">Track every code.</strong> <span style="color:rgba(248,250,252,.70)">MCA SPV 2025, Workboat Ed.3, Irish PBL P1–P6 — one record per vessel.</span></li>
-          <li style="padding:14px 0;font-size:15px;line-height:1.5"><strong style="color:#67e8f9">Works offline.</strong> <span style="color:rgba(248,250,252,.70)">Edits sync when you're back in signal — 20 miles offshore is fine.</span></li>
-        </ul>
-      </div>
-
-      <!-- Pricing -->
-      <div style="margin-bottom:48px">
-        <h2 style="font-size:22px;font-weight:700;letter-spacing:-.4px;margin:0 0 16px">Pricing</h2>
-        <div style="background:#0f111c;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;margin-bottom:10px">
-          <div style="font-size:14px;font-weight:700;color:#f8fafc">Solo</div>
-          <div style="font-size:28px;font-weight:800;color:#f8fafc;margin:6px 0">£0<span style="font-size:14px;font-weight:500;color:rgba(248,250,252,.55)">/mo</span></div>
-          <div style="font-size:13px;color:rgba(248,250,252,.65);line-height:1.5">One operator, up to two vessels. Free, forever.</div>
-        </div>
-        <div style="background:#0f111c;border:1px solid #06b6d4;border-radius:14px;padding:18px;margin-bottom:10px">
-          <div style="font-size:14px;font-weight:700;color:#06b6d4">Pro · Recommended</div>
-          <div style="font-size:28px;font-weight:800;color:#f8fafc;margin:6px 0">£19<span style="font-size:14px;font-weight:500;color:rgba(248,250,252,.55)">/mo</span></div>
-          <div style="font-size:13px;color:rgba(248,250,252,.65);line-height:1.5">Unlimited vessels, surveyor access, AI cert OCR.</div>
-        </div>
-        <div style="background:#0f111c;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px">
-          <div style="font-size:14px;font-weight:700;color:#f8fafc">Team</div>
-          <div style="font-size:28px;font-weight:800;color:#f8fafc;margin:6px 0">£49<span style="font-size:14px;font-weight:500;color:rgba(248,250,252,.55)">/mo</span></div>
-          <div style="font-size:13px;color:rgba(248,250,252,.65);line-height:1.5">Charter fleets with multiple skippers + audit log.</div>
-        </div>
-      </div>
-
-      <!-- Final CTA -->
-      <div style="background:#0f111c;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:32px 24px;text-align:center;margin-bottom:48px">
-        <h2 style="font-size:22px;font-weight:700;letter-spacing:-.3px;margin:0 0 10px">Inspection-ready in five minutes.</h2>
-        <p style="font-size:14px;color:rgba(248,250,252,.65);line-height:1.5;margin:0 0 20px">Free to start. No card. Cancel any time.</p>
-        <button onclick="goSignUp()" style="width:100%;background:linear-gradient(135deg,#06b6d4 0%,#0891b2 100%);color:#050614;border:0;border-radius:12px;padding:16px 22px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer">Start free →</button>
-      </div>
-
-      <!-- Footer -->
-      <div style="font-size:12px;color:rgba(248,250,252,.45);text-align:center;line-height:1.6">
-        Built in Cushendall · For UK &amp; Irish coded vessel operators<br>
-        <a href="mailto:hello@codedok.com" style="color:rgba(248,250,252,.65)">hello@codedok.com</a> ·
-        <a href="javascript:go('s-terms')" style="color:rgba(248,250,252,.65)">Terms</a> ·
-        <a href="javascript:go('s-privacy')" style="color:rgba(248,250,252,.65)">Privacy</a>
-      </div>
-
     </div>
+
+    <!-- HERO -->
+    <section class="cdk-hero">
+      <div class="cdk-hero-copy">
+        <span class="cdk-eyebrow">For UK &amp; Irish coded vessels</span>
+        <h1 class="cdk-h1">Compliance,<br><span class="grad">made easy.</span></h1>
+        <p class="cdk-sub"><strong>AI does the paperwork. You go boating.</strong> Track every certificate, every renewal, every crew qualification — in one record per vessel.</p>
+        <div class="cdk-ctas">
+          <button onclick="goSignUp()" class="cdk-cta cdk-cta-primary">Start free →</button>
+          <a href="/demo" class="cdk-cta cdk-cta-ghost">Try the demo</a>
+        </div>
+        <div class="cdk-trust">
+          <span>● Free to start</span>
+          <span>● No card</span>
+          <span>● 2-minute setup</span>
+        </div>
+      </div>
+      <div class="cdk-phone" aria-hidden="true">
+        <div class="cdk-phone-frame">
+          <div class="cdk-phone-notch"></div>
+          <div class="cdk-phone-screen">
+            <div class="cdk-mock-greet">Good afternoon, Joseph</div>
+            <div class="cdk-mock-title">Your boats</div>
+            <div class="cdk-mock-card">
+              <div class="cdk-mock-ring">82<small>%</small></div>
+              <div class="cdk-mock-meta">
+                <div class="cdk-mock-label">Fleet compliance</div>
+                <div class="cdk-mock-status">On course</div>
+                <div class="cdk-mock-sub">2 vessels · 1 due in 30 days</div>
+              </div>
+            </div>
+            <div class="cdk-mock-tiles">
+              <div class="cdk-mock-tile"><div class="n ok">0</div><div class="l">Overdue</div></div>
+              <div class="cdk-mock-tile"><div class="n warn">1</div><div class="l">Due 30d</div></div>
+              <div class="cdk-mock-tile"><div class="n ok">14</div><div class="l">Valid</div></div>
+            </div>
+            <div class="cdk-mock-list-title">My vessels</div>
+            <div class="cdk-mock-vessel">
+              <div class="cdk-mock-v-ic">⛵</div>
+              <div class="cdk-mock-v-body">
+                <div class="cdk-mock-v-name">Tsunami IV</div>
+                <div class="cdk-mock-v-sub">Cat 2 · 8.5m · Ballycastle</div>
+              </div>
+              <div class="cdk-mock-v-pill ok">READY</div>
+            </div>
+            <div class="cdk-mock-vessel">
+              <div class="cdk-mock-v-ic">🚤</div>
+              <div class="cdk-mock-v-body">
+                <div class="cdk-mock-v-name">Lagavulin</div>
+                <div class="cdk-mock-v-sub">Cat 2 · 11m · Ballycastle</div>
+              </div>
+              <div class="cdk-mock-v-pill warn">1 DUE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURE 1 -->
+    <section class="cdk-feature">
+      <div class="cdk-feature-copy">
+        <span class="cdk-eyebrow">AI Cert Scanner</span>
+        <h2 class="cdk-feature-title">Photograph it.<br>Done.</h2>
+        <p class="cdk-feature-body">Point your phone at a paper certificate. CodedOK reads the expiry, the issuer, the serial number. No retyping. No spreadsheet. No more piles of paperwork.</p>
+        <a href="/demo" class="cdk-link">See it in the demo →</a>
+      </div>
+      <div class="cdk-feature-visual">
+        <div class="cdk-card-mini">
+          <div class="cdk-eyebrow" style="margin-bottom:8px">Coding cert · YDSA</div>
+          <div class="cdk-mini-row"><span class="k">Number</span><span class="v">YDSA/2024/TS/4892</span></div>
+          <div class="cdk-mini-row"><span class="k">Vessel</span><span class="v">Tsunami IV</span></div>
+          <div class="cdk-mini-row"><span class="k">Category</span><span class="v">Cat 2 · 8.5m</span></div>
+          <div class="cdk-mini-row"><span class="k">Expiry</span><span class="v ok">18 May 2026</span></div>
+          <div class="cdk-mini-tag">✓ Extracted by AI in 1.2s</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURE 2 (alt) -->
+    <section class="cdk-feature cdk-feature--alt">
+      <div class="cdk-feature-copy">
+        <span class="cdk-eyebrow">Survey importer</span>
+        <h2 class="cdk-feature-title">Drop a PDF.<br>Get a record.</h2>
+        <p class="cdk-feature-body">One survey PDF in, every certificate and deficiency out — categorised, dated, attached to the right vessel. The five-hour spreadsheet onboarding is gone.</p>
+        <a href="/demo" class="cdk-link">See it in the demo →</a>
+      </div>
+      <div class="cdk-feature-visual">
+        <div class="cdk-card-mini">
+          <div class="cdk-eyebrow" style="margin-bottom:8px">Survey · imported</div>
+          <div class="cdk-mini-stat">
+            <div class="cdk-mini-stat-row">
+              <span class="num ok">14</span><span class="l">certificates parsed</span>
+            </div>
+            <div class="cdk-mini-stat-row">
+              <span class="num warn">1</span><span class="l">deficiency flagged</span>
+            </div>
+            <div class="cdk-mini-stat-row">
+              <span class="num ok">0</span><span class="l">errors</span>
+            </div>
+          </div>
+          <div class="cdk-mini-tag">YDSA · 2024-06-18</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURE 3 -->
+    <section class="cdk-feature">
+      <div class="cdk-feature-copy">
+        <span class="cdk-eyebrow">Always ready</span>
+        <h2 class="cdk-feature-title">Inspection-ready,<br>all year.</h2>
+        <p class="cdk-feature-body">Push reminders before things lapse. Surveyor cross-org access. Signed inspection-pack PDF, one tap. You never miss a renewal again.</p>
+        <a href="/demo" class="cdk-link">See it in the demo →</a>
+      </div>
+      <div class="cdk-feature-visual">
+        <div class="cdk-card-mini cdk-card-ok">
+          <div class="cdk-eyebrow ok" style="margin-bottom:8px">● Ready for survey</div>
+          <div class="cdk-mini-big">82<small>%</small></div>
+          <div class="cdk-mini-sub">Tsunami IV · 17 valid · 1 due in 30 days</div>
+          <div class="cdk-mini-tag ok">📄 Inspection pack ready to export</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CODES STRIP -->
+    <section class="cdk-codes-section">
+      <span class="cdk-eyebrow">Built for</span>
+      <h2 class="cdk-section-title">Every code. Every vessel.</h2>
+      <div class="cdk-codes">
+        <div class="cdk-code-card">
+          <span class="cdk-code-tag">UK</span>
+          <h3>MCA Sport &amp; Pleasure Vessel Code</h3>
+          <p>Edition 1, December 2025. Cat 0–6 chartered yachts and motor cruisers.</p>
+        </div>
+        <div class="cdk-code-card">
+          <span class="cdk-code-tag">UK</span>
+          <h3>MCA Workboat Code Ed.3</h3>
+          <p>Commercial vessels under 24m — pilot boats, charter RIBs, dive boats, wind-farm.</p>
+        </div>
+        <div class="cdk-code-card">
+          <span class="cdk-code-tag">IE</span>
+          <h3>Irish PBL Classes P1–P6</h3>
+          <p>Passenger Boat Licence under the Irish Maritime Safety Directorate.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="cdk-pricing-section">
+      <span class="cdk-eyebrow">Pricing</span>
+      <h2 class="cdk-section-title">Start free. Upgrade when you're ready.</h2>
+      <div class="cdk-plans">
+        <article class="cdk-plan">
+          <div class="cdk-plan-name">Solo</div>
+          <div class="cdk-plan-price">£0<small>/mo</small></div>
+          <p class="cdk-plan-blurb">One operator, up to two vessels. Free, forever.</p>
+          <ul class="cdk-plan-list">
+            <li>Certs &amp; equipment tracking</li>
+            <li>Renewal reminders</li>
+            <li>Inspection pack PDF</li>
+          </ul>
+          <button onclick="goSignUp()" class="cdk-cta cdk-cta-ghost cdk-cta-full">Start free</button>
+        </article>
+        <article class="cdk-plan cdk-plan-featured">
+          <span class="cdk-plan-badge">RECOMMENDED</span>
+          <div class="cdk-plan-name">Pro</div>
+          <div class="cdk-plan-price">£19<small>/mo</small></div>
+          <p class="cdk-plan-blurb">Unlimited vessels, surveyor access, AI cert OCR.</p>
+          <ul class="cdk-plan-list">
+            <li>Everything in Solo</li>
+            <li>Unlimited vessels</li>
+            <li>AI cert OCR + survey import</li>
+            <li>Surveyor invite</li>
+          </ul>
+          <button onclick="goSignUp()" class="cdk-cta cdk-cta-primary cdk-cta-full">Start 14-day trial</button>
+        </article>
+        <article class="cdk-plan">
+          <div class="cdk-plan-name">Team</div>
+          <div class="cdk-plan-price">£49<small>/mo</small></div>
+          <p class="cdk-plan-blurb">Charter fleets with multiple skippers + audit log.</p>
+          <ul class="cdk-plan-list">
+            <li>Everything in Pro</li>
+            <li>Unlimited team members</li>
+            <li>Audit log + history</li>
+          </ul>
+          <button onclick="goSignUp()" class="cdk-cta cdk-cta-ghost cdk-cta-full">Start 14-day trial</button>
+        </article>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="cdk-final-wrap">
+      <div class="cdk-final">
+        <span class="cdk-eyebrow">Just launched</span>
+        <h2 class="cdk-final-title">Stop chasing certificates.</h2>
+        <p class="cdk-final-sub">Free to start. No card. Ready in five minutes.</p>
+        <div class="cdk-ctas cdk-ctas-center">
+          <button onclick="goSignUp()" class="cdk-cta cdk-cta-primary">Start free →</button>
+          <a href="/demo" class="cdk-cta cdk-cta-ghost">Try the demo</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="cdk-footer">
+      <div class="cdk-footer-brand">
+        <span class="cdk-logo">✓</span>
+        <span>CodedOK</span>
+      </div>
+      <div class="cdk-footer-meta">Built in Cushendall · For UK &amp; Irish coded vessel operators</div>
+      <div class="cdk-footer-links">
+        <a href="mailto:hello@codedok.com">hello@codedok.com</a>
+        <a href="javascript:go('s-terms')">Terms</a>
+        <a href="javascript:go('s-privacy')">Privacy</a>
+      </div>
+      <div class="cdk-footer-copy">© 2026 CodedOK · All rights reserved</div>
+    </footer>
+
   </div>
 </div>
 
