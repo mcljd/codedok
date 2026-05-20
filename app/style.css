@@ -4379,3 +4379,181 @@ body:has(#s-land.on) { background: #050614 !important; }
 /* Ensure hero phone mock ring number reads correctly */
 #s-land .cdk-mock-ring span { color: #fff; font-weight: 700; font-size: 18px; }
 #s-land .cdk-mock-ring span small { font-size: 10px; opacity: .7; }
+
+/* ════════════════════════════════════════════════════════════════
+   LANDING v8 — Mac / desktop polish
+   Macs (and big external monitors) ship the most demanding browsers
+   for this page: retina rendering exposes any font-smoothing miss,
+   Safari has its own prefix rules, and large viewports need both
+   wider max-widths and hover states because the cursor is present.
+   This block tunes for that without touching mobile.
+   ════════════════════════════════════════════════════════════════ */
+
+/* RETINA / MAC FONT SMOOTHING
+   The default on macOS is "subpixel-antialiased" which makes white
+   text on dark a touch heavy. -webkit-font-smoothing: antialiased
+   produces the cleaner, lighter rendering matching Apple's own
+   marketing pages. Pair with -moz-osx for Firefox on Mac. */
+#s-land .cdk-page,
+#s-land .cdk-page * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* GRADIENT TEXT — Safari needs the -webkit- prefix on both
+   background-clip and text-fill-color. Already covered, but
+   re-declaring explicitly here in case any inherited rule
+   re-clobbers them. */
+#s-land .grad {
+  background: -webkit-linear-gradient(135deg, #67e8f9 0%, #06b6d4 100%);
+  background: linear-gradient(135deg, #67e8f9 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* HOVER STATES — Macs have cursors; the page should react.
+   Wrapped in @media (hover: hover) so touch devices don't get
+   stuck-hover states. */
+@media (hover: hover) and (pointer: fine) {
+  #s-land .cdk-cta-primary,
+  #s-land .cdk-cta-ghost,
+  #s-land .cdk-topbar-signin,
+  #s-land .cdk-topbar-start {
+    transition: transform 200ms cubic-bezier(.22,1,.36,1),
+                box-shadow 200ms ease,
+                background 200ms ease,
+                border-color 200ms ease;
+  }
+  #s-land .cdk-cta-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 44px rgba(6,182,212,.42),
+                0 0 0 1px rgba(103,232,249,.4) inset;
+  }
+  #s-land .cdk-cta-ghost:hover {
+    background: rgba(255,255,255,.08);
+    border-color: rgba(255,255,255,.24);
+    transform: translateY(-1px);
+  }
+  #s-land .cdk-topbar-signin:hover {
+    background: rgba(255,255,255,.10);
+    border-color: rgba(255,255,255,.24);
+  }
+  #s-land .cdk-topbar-start:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 26px rgba(6,182,212,.45);
+  }
+  #s-land .cdk-plan,
+  #s-land .cdk-code-card,
+  #s-land .cdk-card-mini,
+  #s-land .cdk-illus {
+    transition: transform 280ms cubic-bezier(.22,1,.36,1),
+                border-color 280ms ease,
+                box-shadow 280ms ease;
+  }
+  #s-land .cdk-plan:hover,
+  #s-land .cdk-code-card:hover,
+  #s-land .cdk-card-mini:hover,
+  #s-land .cdk-illus:hover {
+    transform: translateY(-3px);
+    border-color: rgba(103,232,249,.30);
+    box-shadow: 0 24px 60px rgba(0,0,0,.40);
+  }
+  #s-land .cdk-link {
+    transition: color 160ms ease, transform 160ms ease;
+    display: inline-block;
+  }
+  #s-land .cdk-link:hover {
+    color: #06b6d4;
+    transform: translateX(2px);
+  }
+  #s-land .cdk-brand:hover .cdk-logo { transform: rotate(-4deg); }
+  #s-land .cdk-logo { transition: transform 240ms cubic-bezier(.22,1,.36,1); }
+}
+
+/* LARGE DESKTOP (≥ 1200px) — Macs and external monitors */
+@media (min-width: 1200px) {
+  #s-land .cdk-h1 {
+    font-size: 92px;
+    letter-spacing: -3px;
+  }
+  #s-land .cdk-feature-title {
+    font-size: 64px;
+    letter-spacing: -2px;
+  }
+  #s-land .cdk-section-title {
+    font-size: 56px;
+    letter-spacing: -1.5px;
+  }
+  #s-land .cdk-final-title {
+    font-size: 56px;
+  }
+  #s-land .cdk-sub {
+    font-size: 20px;
+    max-width: 620px;
+  }
+  #s-land .cdk-feature-body {
+    font-size: 18px;
+    max-width: 560px;
+  }
+  #s-land .cdk-banner img { height: 380px; }
+  #s-land .cdk-hero { padding: 96px 48px 120px; }
+  #s-land .cdk-feature { padding: 120px 48px; }
+  #s-land .cdk-codes-section,
+  #s-land .cdk-pricing-section { padding: 120px 48px; }
+  #s-land .cdk-final { padding: 96px 64px; }
+}
+
+/* EXTRA-WIDE (≥ 1600px) — cap content + breathe */
+@media (min-width: 1600px) {
+  #s-land .cdk-topbar,
+  #s-land .cdk-hero,
+  #s-land .cdk-feature,
+  #s-land .cdk-codes-section,
+  #s-land .cdk-pricing-section,
+  #s-land .cdk-footer {
+    max-width: 1320px;
+  }
+  #s-land .cdk-banner { max-width: 1520px; }
+}
+
+/* HIGH-DPI SVG CRISPNESS
+   SVGs are vector so they scale, but on a 2x display ensure no
+   accidental rasterisation by giving them a perspective context. */
+#s-land .cdk-illus img,
+#s-land .cdk-banner img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* CUSTOM SCROLLBAR FOR MAC CHROME (Safari hides scrollbars by default
+   when no mouse, so this is mostly Chrome on Mac). Avoids the bright
+   default scrollbar contrasting with the dark page. */
+#s-land .cdk-page::-webkit-scrollbar { width: 10px; }
+#s-land .cdk-page::-webkit-scrollbar-track { background: #050614; }
+#s-land .cdk-page::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.10);
+  border-radius: 5px;
+}
+#s-land .cdk-page::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,.18);
+}
+#s-land .cdk-page { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.10) #050614; }
+
+/* SELECTION COLOR — feel detail, but Macs see selection a lot */
+#s-land .cdk-page ::selection {
+  background: rgba(34,211,238,.35);
+  color: #fff;
+}
+
+/* FOCUS RINGS — Mac users keyboard-navigate too */
+@media (hover: hover) {
+  #s-land .cdk-cta:focus-visible,
+  #s-land .cdk-topbar-signin:focus-visible,
+  #s-land .cdk-topbar-start:focus-visible,
+  #s-land .cdk-link:focus-visible {
+    outline: 2px solid #67e8f9;
+    outline-offset: 3px;
+  }
+}
