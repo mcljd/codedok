@@ -594,6 +594,10 @@
       const sc = t.querySelector('.scroll');
       if (sc) sc.scrollTop = 0;
     }
+    // Toggle a body-scoped class so layout rules can break out of
+    // the default 393px phone-frame shell without depending on the
+    // CSS :has() selector (which fails in older browsers).
+    document.body.classList.toggle('shell-fullbleed', id === 's-land');
     if (id === 's-home')               renderHome();
     if (id === 's-vessels')            renderVesselsList();
     if (id === 's-vessel-detail')      renderVesselDetail();
