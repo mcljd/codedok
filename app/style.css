@@ -4253,3 +4253,129 @@ body:has(#s-land.on) { background: #050614 !important; }
             backdrop-filter: none !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   LANDING v8 — imagery + richer features
+   Adds: full-bleed atmospheric banner using hero-boat.svg, illustration
+   cards using in-the-field.svg + in-the-yard.svg, a beefier cert-
+   extract mock with a doc icon and head row. All asset paths are
+   relative to the served root (Cloudflare Worker serves /app/* at /).
+   ════════════════════════════════════════════════════════════════ */
+
+/* ATMOSPHERIC BANNER — full-bleed SVG with overlay copy */
+#s-land .cdk-banner {
+  position: relative;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px 16px 0;
+}
+#s-land .cdk-banner img {
+  display: block;
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.08);
+}
+#s-land .cdk-banner-overlay {
+  position: absolute;
+  left: 32px; right: 32px; bottom: 24px;
+  max-width: 720px;
+  color: #f1f5f9;
+}
+#s-land .cdk-banner-overlay p {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  text-shadow: 0 2px 8px rgba(0,0,0,.7);
+  color: rgba(248,250,252,.92);
+}
+@media (min-width: 768px) {
+  #s-land .cdk-banner { padding: 32px 32px 0; }
+  #s-land .cdk-banner img { height: 320px; }
+  #s-land .cdk-banner-overlay p { font-size: 18px; max-width: 580px; }
+}
+
+/* ILLUSTRATION CARDS — used by feature 2 + feature 3 */
+#s-land .cdk-illus {
+  margin: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.10);
+  background: #0f111c;
+}
+#s-land .cdk-illus img {
+  display: block;
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+}
+@media (min-width: 768px) {
+  #s-land .cdk-illus img { height: 320px; }
+}
+#s-land .cdk-illus figcaption {
+  padding: 14px 18px;
+  font-size: 13px;
+  color: rgba(248,250,252,.70);
+  border-top: 1px solid rgba(255,255,255,.06);
+  background: rgba(13,20,36,.85);
+}
+#s-land .cdk-illus figcaption .cdk-eyebrow { margin-right: 8px; }
+
+/* BEEFIER CERT-EXTRACT MOCK */
+#s-land .cdk-mini-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+#s-land .cdk-mini-doc {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #06b6d4 0%, #0F4C5C 100%);
+  display: grid; place-items: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+#s-land .cdk-mini-doc-label {
+  font-size: 14px; font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: -.01em;
+}
+#s-land .cdk-mini-doc-sub {
+  font-size: 11px;
+  color: rgba(248,250,252,.55);
+  margin-top: 2px;
+}
+
+/* MONO style for IDs */
+#s-land .v.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  letter-spacing: -.01em;
+  color: #67e8f9;
+}
+
+/* ATMOSPHERIC GRADIENT under select sections for variety */
+#s-land .cdk-feature:nth-of-type(even of .cdk-feature) {
+  background:
+    radial-gradient(ellipse 60% 50% at 80% 0%, rgba(6,182,212,.06) 0%, transparent 60%);
+}
+#s-land .cdk-codes-section {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(6,182,212,.08) 0%, transparent 70%);
+}
+
+/* Trust pills — ok dot color */
+#s-land .cdk-trust span.ok::first-letter,
+#s-land .cdk-trust span.ok { color: rgba(248,250,252,.55); }
+#s-land .cdk-trust span.ok::first-letter { color: #10b981; }
+@supports (-webkit-text-fill-color: initial) {
+  #s-land .cdk-trust span.ok { color: rgba(248,250,252,.55); }
+}
+
+/* Ensure hero phone mock ring number reads correctly */
+#s-land .cdk-mock-ring span { color: #fff; font-weight: 700; font-size: 18px; }
+#s-land .cdk-mock-ring span small { font-size: 10px; opacity: .7; }
