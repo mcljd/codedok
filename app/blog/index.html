@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Blog · CodedOK — Coded vessel compliance, made easy</title>
+<meta name="description" content="Plain-English explainers for UK and Irish coded vessel operators — the new MCA Sport &amp; Pleasure Vessel Code 2025, Workboat Code Edition 3, Irish PBL Classes P1–P6, surveyor handoff, and the day-to-day of staying inspection-ready.">
+<link rel="canonical" href="https://codedok.com/blog/">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://codedok.com/blog/">
+<meta property="og:title" content="Blog · CodedOK — Coded vessel compliance, made easy">
+<meta property="og:description" content="Plain-English explainers for UK and Irish coded vessel operators.">
+<meta property="og:image" content="https://codedok.com/icons/icon-512.png">
+<meta property="og:locale" content="en_GB">
+<meta property="og:site_name" content="CodedOK">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Blog · CodedOK">
+<meta name="twitter:description" content="Plain-English explainers for UK and Irish coded vessel operators.">
+<meta name="twitter:image" content="https://codedok.com/icons/icon-512.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+
+<link rel="icon" type="image/svg+xml" href="/icons/codedok-mark.svg">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<meta name="theme-color" content="#050614">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Blog",
+  "name": "CodedOK Blog",
+  "url": "https://codedok.com/blog/",
+  "description": "Plain-English explainers for UK and Irish coded vessel operators.",
+  "publisher": {
+    "@type": "Organization",
+    "name": "CodedOK",
+    "logo": "https://codedok.com/icons/icon-512.png"
+  }
+}
+</script>
+
+<style>
+  :root {
+    --abyss: #050614;
+    --hull: #0f111c;
+    --steel: rgba(255,255,255,.10);
+    --steel2: rgba(255,255,255,.18);
+    --sonar: #06b6d4;
+    --sonar2: #67e8f9;
+    --ink: #f1f5f9;
+    --mid: rgba(248,250,252,.70);
+    --lt: rgba(248,250,252,.45);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--abyss);color:var(--ink);}
+  body{
+    font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    text-rendering:optimizeLegibility;
+  }
+  a{color:var(--sonar2);text-decoration:none}
+  a:hover{color:var(--sonar)}
+  ::selection{background:rgba(34,211,238,.35);color:#fff}
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    max-width:1100px;margin:0 auto;padding:20px 22px;
+  }
+  .brand{
+    display:inline-flex;align-items:center;gap:10px;
+    font-weight:700;font-size:17px;color:var(--ink);
+  }
+  .logo{
+    width:30px;height:30px;border-radius:8px;
+    background:#06b6d4;color:var(--abyss);
+    display:inline-grid;place-items:center;font-weight:900;font-size:16px;
+  }
+  .topbar-cta{
+    background:linear-gradient(135deg,#06b6d4 0%,#0891b2 100%);
+    color:var(--abyss);
+    border:0;
+    padding:8px 14px;border-radius:10px;
+    font-family:inherit;font-size:13px;font-weight:700;
+    text-decoration:none;
+    cursor:pointer;
+  }
+
+  .hero{
+    max-width:880px;margin:0 auto;padding:40px 22px 56px;
+  }
+  .eyebrow{
+    color:var(--sonar2);
+    font-size:11px;font-weight:700;
+    letter-spacing:.18em;text-transform:uppercase;
+  }
+  h1{
+    font-size:clamp(36px,7vw,64px);
+    font-weight:800;letter-spacing:-1.5px;line-height:1.05;
+    margin:14px 0 18px;color:var(--ink);
+  }
+  .lead{
+    font-size:18px;line-height:1.55;color:var(--mid);
+    margin:0 0 28px;max-width:680px;
+  }
+
+  .posts{
+    max-width:880px;margin:0 auto;padding:0 22px 80px;
+    display:grid;grid-template-columns:1fr;gap:18px;
+  }
+  .post-card{
+    background:var(--hull);
+    border:1px solid var(--steel);
+    border-radius:16px;
+    padding:28px;
+    text-decoration:none;
+    color:inherit;
+    transition:border-color 240ms ease,transform 240ms ease;
+    display:block;
+  }
+  @media(hover:hover){
+    .post-card:hover{
+      border-color:rgba(103,232,249,.30);
+      transform:translateY(-3px);
+    }
+  }
+  .post-meta{
+    display:flex;gap:14px;align-items:center;
+    font-size:12px;color:var(--lt);
+    letter-spacing:.04em;text-transform:uppercase;font-weight:600;
+    margin-bottom:14px;
+  }
+  .post-title{
+    font-size:24px;font-weight:700;letter-spacing:-.5px;line-height:1.2;
+    margin:0 0 10px;color:var(--ink);
+  }
+  .post-excerpt{
+    font-size:15px;color:var(--mid);line-height:1.55;margin:0;
+  }
+
+  footer{
+    max-width:1100px;margin:0 auto;
+    padding:40px 22px 56px;
+    text-align:center;color:var(--lt);font-size:12px;line-height:1.6;
+    border-top:1px solid var(--steel);
+  }
+  footer a{color:var(--mid)}
+
+  @media(min-width:768px){
+    .hero{padding:80px 32px 64px}
+    .posts{padding:0 32px 96px;gap:24px}
+    .post-card{padding:36px}
+    footer{padding:48px 32px 64px}
+  }
+</style>
+</head>
+<body>
+
+  <nav class="topbar">
+    <a href="/" class="brand">
+      <span class="logo">✓</span>
+      <span>CodedOK</span>
+    </a>
+    <a href="/" class="topbar-cta">Start free →</a>
+  </nav>
+
+  <header class="hero">
+    <span class="eyebrow">CodedOK Blog</span>
+    <h1>Plain-English compliance for coded vessels.</h1>
+    <p class="lead">No jargon, no waffle — what's actually changing in the codes, what surveyors look for, and how to be ready on the day. Written by skippers, naval architects and surveyors on the UK and Irish coasts.</p>
+  </header>
+
+  <section class="posts">
+
+    <a href="/blog/spv-code-2025-explainer" class="post-card">
+      <div class="post-meta">
+        <span>Regulatory · UK</span>
+        <span>•</span>
+        <span>10 min read</span>
+      </div>
+      <h2 class="post-title">What changes in the MCA Sport &amp; Pleasure Vessel Code 2025 — operator's checklist</h2>
+      <p class="post-excerpt">From 1 December 2025 the new Code replaces the old MGN 280 framework. Five changes most likely to catch out skippers, plus the practical list of what to have on the boat before your next survey.</p>
+    </a>
+
+    <a href="/blog/workboat-vs-spv-code" class="post-card">
+      <div class="post-meta">
+        <span>Code selection</span>
+        <span>•</span>
+        <span>6 min read</span>
+      </div>
+      <h2 class="post-title">Workboat Code Edition 3 vs MCA SPV Code 2025 — which applies?</h2>
+      <p class="post-excerpt">Two UK Codes cover small commercial vessels under 24 m. They look similar but apply to different operations. Here's the plain-English test for which one is yours.</p>
+    </a>
+
+    <a href="/blog/irish-pbl-explained" class="post-card">
+      <div class="post-meta">
+        <span>Regulatory · Ireland</span>
+        <span>•</span>
+        <span>8 min read</span>
+      </div>
+      <h2 class="post-title">Irish PBL Classes P1–P6 explained: limits, stability, equipment</h2>
+      <p class="post-excerpt">The Irish Marine Survey Office's Passenger Boat Licence divides vessels into six Classes based on where they operate. Plain-English breakdown of which Class you fall under and what each requires.</p>
+    </a>
+
+    <a href="/blog/12-certificates-coded-vessel" class="post-card">
+      <div class="post-meta">
+        <span>Operator's guide</span>
+        <span>•</span>
+        <span>9 min read</span>
+      </div>
+      <h2 class="post-title">The 12 certificates every UK coded vessel needs (and when they renew)</h2>
+      <p class="post-excerpt">Complete checklist with renewal periods, issuing bodies, and what surveyors look for on the day. From coding cert to ENG1 to the new SMS requirement.</p>
+    </a>
+
+  </section>
+
+  <footer>
+    Built in Cushendall · For UK &amp; Irish coded vessel operators<br>
+    <a href="mailto:hello@codedok.com">hello@codedok.com</a> ·
+    <a href="/">Back to app</a> ·
+    <a href="/press/">Press kit</a>
+  </footer>
+
+</body>
+</html>
