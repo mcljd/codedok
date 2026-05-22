@@ -178,7 +178,7 @@
      Preconnect avoids a render-blocking Google round-trip. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="print.css" media="print">
 
@@ -397,391 +397,353 @@
   maps to a built feature.
 ════════════════════════════════════ -->
 <div class="shell" id="s-land">
-  <div class="sb sb-dk" style="background:#050614 !important;color:rgba(255,255,255,.7)"></div>
-  <div class="scroll cdk-page">
+  <div class="sb sb-dk" style="background:#f7f3e9 !important;color:#1e293b"></div>
+  <div class="scroll cdk-page-v10">
 
-    <!-- TOP BAR -->
-    <div class="cdk-topbar">
-      <a href="javascript:go('s-land')" class="cdk-brand">
-        <span class="cdk-logo">✓</span>
-        <span>CodedOK</span>
-        <span class="cdk-launch-pill">Just launched</span>
-      </a>
-      <div class="cdk-topbar-actions">
-        <button onclick="go('s-login')" class="cdk-topbar-signin">Sign in</button>
-        <button onclick="goSignUp()" class="cdk-topbar-start">Start free</button>
-      </div>
-    </div>
-
-    <!-- HERO -->
-    <section class="cdk-hero">
-      <div class="cdk-hero-copy">
-        <span class="cdk-eyebrow"><span class="cdk-dot" style="background:#10b981;box-shadow:0 0 12px #10b981"></span> December 2025 · MCA SPV Code ready</span>
-        <h1 class="cdk-h1">Compliance,<br><span class="grad">made easy.</span></h1>
-        <p class="cdk-sub"><strong>AI does the paperwork. You go boating.</strong> The compliance app for UK and Irish coded vessel skippers — built for the new MCA Sport &amp; Pleasure Vessel Code 2025, the Workboat Code Edition 3, and Irish PBL Classes P1–P6.</p>
-        <div class="cdk-ctas">
-          <button onclick="goSignUp()" class="cdk-cta cdk-cta-primary">Start free →</button>
-          <a href="/demo" class="cdk-cta cdk-cta-ghost">Try the demo</a>
+    <!-- TOP BAR (cream / light) -->
+    <nav class="v10-bar">
+      <div class="v10-bar-inner">
+        <a href="javascript:go('s-land')" class="v10-brand">
+          <span class="v10-logo"><span class="v10-logo-dot"></span></span>
+          <span>CodedOK</span>
+        </a>
+        <div class="v10-nav">
+          <a href="#features" class="v10-nav-link">Features</a>
+          <a href="#how" class="v10-nav-link">How it works</a>
+          <a href="#surveyors" class="v10-nav-link">For surveyors</a>
+          <a href="#pricing" class="v10-nav-link">Pricing</a>
+          <a href="/blog/" class="v10-nav-link">Blog</a>
+          <a href="#faq" class="v10-nav-link">FAQ</a>
         </div>
-        <div class="cdk-trust">
-          <span class="ok">● Free to start</span>
-          <span class="ok">● No card needed</span>
-          <span class="ok">● 2-minute setup</span>
+        <div class="v10-bar-actions">
+          <button onclick="go('s-login')" class="v10-signin">Sign in</button>
+          <button onclick="goSignUp()" class="v10-start">Start free <span class="arrow">→</span></button>
         </div>
       </div>
-      <div class="cdk-phone" aria-hidden="true">
-        <div class="cdk-phone-frame">
-          <div class="cdk-phone-notch"></div>
-          <div class="cdk-phone-screen">
-            <div class="cdk-mock-greet">Good afternoon, Joseph</div>
-            <div class="cdk-mock-title">Your boats</div>
-            <div class="cdk-mock-card">
-              <div class="cdk-mock-ring"><span>82<small>%</small></span></div>
-              <div class="cdk-mock-meta">
-                <div class="cdk-mock-label">Fleet compliance</div>
-                <div class="cdk-mock-status">On course</div>
-                <div class="cdk-mock-sub">2 vessels · 1 due in 30d</div>
-              </div>
-            </div>
-            <div class="cdk-mock-tiles">
-              <div class="cdk-mock-tile"><div class="n ok">0</div><div class="l">Overdue</div></div>
-              <div class="cdk-mock-tile"><div class="n warn">1</div><div class="l">Due 30d</div></div>
-              <div class="cdk-mock-tile"><div class="n ok">14</div><div class="l">Valid</div></div>
-            </div>
-            <div class="cdk-mock-list-title">My vessels</div>
-            <div class="cdk-mock-vessel">
-              <div class="cdk-mock-v-ic">⛵</div>
-              <div class="cdk-mock-v-body">
-                <div class="cdk-mock-v-name">Tsunami IV</div>
-                <div class="cdk-mock-v-sub">Cat 2 · 8.5m · Ballycastle</div>
-              </div>
-              <div class="cdk-mock-v-pill ok">READY</div>
-            </div>
-            <div class="cdk-mock-vessel">
-              <div class="cdk-mock-v-ic">🚤</div>
-              <div class="cdk-mock-v-body">
-                <div class="cdk-mock-v-name">Lagavulin</div>
-                <div class="cdk-mock-v-sub">Cat 2 · 11m · Ballycastle</div>
-              </div>
-              <div class="cdk-mock-v-pill warn">1 DUE</div>
-            </div>
+    </nav>
+
+    <!-- HERO (dark navy gradient) -->
+    <section class="v10-hero">
+      <div class="v10-hero-glow"></div>
+      <div class="v10-hero-inner">
+
+        <div class="v10-hero-copy">
+          <span class="v10-eyebrow"><span class="v10-eyebrow-dot"></span> UK MCA Sport &amp; Pleasure Vessel Code 2025 — ready</span>
+          <h1 class="v10-h1">AI does the paperwork. <span class="v10-italic">You go boating.</span></h1>
+          <p class="v10-sub">CodedOK is the compliance app for UK &amp; Irish coded vessels. Snap your certificates, see your gaps against the 2025 Code, and stay survey-ready all year.</p>
+          <div class="v10-ctas">
+            <button onclick="goSignUp()" class="v10-cta-primary">Start free — no card <span class="arrow">→</span></button>
+            <a href="#how" class="v10-cta-ghost">
+              <span class="v10-play">▶</span>
+              See how it works
+            </a>
+          </div>
+          <div class="v10-trust">
+            <span><span class="v10-tick">✓</span> 2-minute setup</span>
+            <span><span class="v10-tick">✓</span> Free forever for solo skippers</span>
+            <span><span class="v10-tick">✓</span> Built for UK &amp; Irish waters</span>
           </div>
         </div>
-      </div>
-    </section>
 
-    <!-- TRUST STRIP -->
-    <div class="cdk-trust-strip">
-      <span class="cdk-eyebrow">Built for</span>
-      <div class="cdk-trust-items">
-        <div class="cdk-trust-item"><span class="ldx-flag">🇬🇧</span> MCA SPV Code 2025</div>
-        <div class="cdk-trust-item"><span class="ldx-flag">🇬🇧</span> Workboat Code Ed.3</div>
-        <div class="cdk-trust-item"><span class="ldx-flag">🇮🇪</span> Irish PBL P1–P6</div>
-        <div class="cdk-trust-item">⚓ YDSA · MCA-recognised</div>
-        <div class="cdk-trust-item">🛡 GDPR · EU-hosted</div>
-      </div>
-    </div>
-
-    <!-- PAIN SECTION -->
-    <section class="cdk-pain">
-      <div class="cdk-pain-head">
-        <span class="cdk-eyebrow">Sound familiar?</span>
-        <h2 class="cdk-section-title">The clock catches you out either way.</h2>
-        <p class="cdk-section-lead">Compliance shouldn't take your weekends. But certs sit in glove boxes, renewals stack at the worst times, and survey week turns into a frantic paperwork hunt.</p>
-      </div>
-      <div class="cdk-pain-cards">
-        <div class="cdk-pain-card">
-          <div class="cdk-pain-icon" style="background:rgba(239,68,68,.12);color:#fca5a5">⚠</div>
-          <h3>An expired flare grounds the boat</h3>
-          <p>A £40 oversight on a SOLAS pyro pack cancels a £1,500 charter trip. Every passenger refund traces back to a checklist you didn't run.</p>
-        </div>
-        <div class="cdk-pain-card">
-          <div class="cdk-pain-icon" style="background:rgba(245,158,11,.12);color:#fcd34d">⏱</div>
-          <h3>Renewals stack at the worst times</h3>
-          <p>Coding cert, PLI, liferaft, EPIRB, radio, ENG1, first aid, VHF SRC. Fifteen clocks at different speeds. A spreadsheet can't catch them all.</p>
-        </div>
-        <div class="cdk-pain-card">
-          <div class="cdk-pain-icon" style="background:rgba(6,182,212,.12);color:#67e8f9">📋</div>
-          <h3>December 2025 raises the bar</h3>
-          <p>The new MCA SPV Code 2025 lands in December. New stability evidence, new SMS, new owner declarations. Surveyors flag the most issues in transition years.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ATMOSPHERIC BANNER -->
-    <div class="cdk-banner">
-      <img src="img/landing/hero-boat.svg" alt="Coded vessel at harbour at first light" loading="lazy">
-      <div class="cdk-banner-overlay">
-        <span class="cdk-eyebrow">Built for the people on the water</span>
-        <p>From single-skipper RIBs in Ballycastle to charter fleets across the Irish Sea — one compliance record per vessel, ready for survey day.</p>
-      </div>
-    </div>
-
-    <!-- FEATURE 1 — AI cert scanner -->
-    <section class="cdk-feature">
-      <div class="cdk-feature-copy">
-        <span class="cdk-eyebrow">AI cert scanner</span>
-        <h2 class="cdk-feature-title">Photograph it.<br>Done.</h2>
-        <p class="cdk-feature-body">Point your phone at any paper certificate. CodedOK reads the expiry, the issuer, the serial number — and files it against the right vessel. No retyping. No spreadsheets. No piles of paperwork in the wheelhouse.</p>
-        <ul class="cdk-feature-list">
-          <li>✓ Works on paper, PDF, or photograph</li>
-          <li>✓ Auto-detects coding certs, PLI, liferaft, radio, ENG1</li>
-          <li>✓ Confidence score so you know what to double-check</li>
-        </ul>
-        <a href="/demo" class="cdk-link">See it in the demo →</a>
-      </div>
-      <div class="cdk-feature-visual">
-        <div class="cdk-card-mini">
-          <div class="cdk-mini-head">
-            <span class="cdk-mini-doc">📄</span>
+        <!-- Phone mock (matches the v10 mockup) -->
+        <div class="v10-phone" aria-hidden="true">
+          <!-- Floating SMS pack card (top-left overlay) -->
+          <div class="v10-float v10-float-sms">
+            <span class="v10-float-ic">📄</span>
             <div>
-              <div class="cdk-mini-doc-label">Coding cert · YDSA</div>
-              <div class="cdk-mini-doc-sub">extracted in 1.2 seconds</div>
+              <div class="v10-float-title">SMS pack ready</div>
+              <div class="v10-float-sub">42-page PDF · 1 tap</div>
             </div>
           </div>
-          <div class="cdk-mini-row"><span class="k">Number</span><span class="v mono">YDSA/2024/TS/4892</span></div>
-          <div class="cdk-mini-row"><span class="k">Vessel</span><span class="v">Tsunami IV</span></div>
-          <div class="cdk-mini-row"><span class="k">Category</span><span class="v">Cat 2 · 8.5m</span></div>
-          <div class="cdk-mini-row"><span class="k">Expiry</span><span class="v ok">18 May 2026</span></div>
-          <div class="cdk-mini-tag">✓ Auto-filed against MV TSUNAMI IV</div>
+          <!-- Floating Liferaft scanned toast -->
+          <div class="v10-float v10-float-scan">
+            <span class="v10-float-check">✓</span>
+            <div>
+              <div class="v10-float-title">Liferaft scanned</div>
+              <div class="v10-float-sub">Expiry detected: Jun 2026</div>
+            </div>
+          </div>
+
+          <div class="v10-phone-frame">
+            <div class="v10-phone-notch"></div>
+            <div class="v10-phone-screen">
+              <!-- Status bar -->
+              <div class="v10-phone-status">
+                <span>9:41</span>
+                <span class="v10-status-icons">●●● ◯ ▮▮</span>
+              </div>
+              <!-- Vessel header -->
+              <div class="v10-vessel-head">
+                <div>
+                  <div class="v10-vessel-lbl">VESSEL</div>
+                  <div class="v10-vessel-name">MV Aurora · 9.8m RIB</div>
+                </div>
+                <span class="v10-bell">🔔</span>
+              </div>
+              <!-- Compliance ring card -->
+              <div class="v10-comp-card">
+                <div>
+                  <div class="v10-comp-lbl">COMPLIANCE</div>
+                  <div class="v10-comp-num">94% ready</div>
+                  <div class="v10-comp-tiles">
+                    <span class="v10-tile ok">● 28 OK</span>
+                    <span class="v10-tile warn">● 2 soon</span>
+                    <span class="v10-tile crit">● 1 lapsed</span>
+                  </div>
+                </div>
+                <div class="v10-ring">
+                  <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="8"/>
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" stroke-width="8" stroke-linecap="round" stroke-dasharray="236 251.3" transform="rotate(-90 50 50)" style="filter:drop-shadow(0 0 6px rgba(16,185,129,.6))"/>
+                  </svg>
+                </div>
+              </div>
+              <!-- Cert list -->
+              <div class="v10-cert ok">
+                <span class="v10-cert-ic ok">✓</span>
+                <div class="v10-cert-body">
+                  <div class="v10-cert-name">MCA Coding Cert</div>
+                  <div class="v10-cert-sub">Expires 14 Mar 2027</div>
+                </div>
+                <span class="v10-cert-pill ok">OK</span>
+              </div>
+              <div class="v10-cert warn">
+                <span class="v10-cert-ic warn">⏱</span>
+                <div class="v10-cert-body">
+                  <div class="v10-cert-name">Liferaft Service</div>
+                  <div class="v10-cert-sub">Due in 18 days</div>
+                </div>
+                <span class="v10-cert-pill warn">Soon</span>
+              </div>
+              <div class="v10-cert crit">
+                <span class="v10-cert-ic crit">⚠</span>
+                <div class="v10-cert-body">
+                  <div class="v10-cert-name">VHF DSC Licence</div>
+                  <div class="v10-cert-sub">Lapsed — renew now</div>
+                </div>
+              </div>
+              <!-- Scan a certificate action -->
+              <div class="v10-scan-card">
+                <span class="v10-scan-ic">📷</span>
+                <div>
+                  <div class="v10-scan-title">Scan a certificate</div>
+                  <div class="v10-scan-sub">AI will fill in the rest</div>
+                </div>
+                <span class="v10-scan-arrow">→</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- LOGOS / TRUST STRIP -->
+    <div class="v10-trust-strip">
+      <span class="v10-trust-label">Built for the new MCA SPV Code 2025 · Workboat Code Edition 3 · Irish PBL Classes P1–P6</span>
+    </div>
+
+    <!-- FEATURES (3-up) -->
+    <section class="v10-section" id="features">
+      <div class="v10-section-head">
+        <span class="v10-eyebrow v10-eyebrow-dark">Capabilities</span>
+        <h2 class="v10-h2">Built around the way skippers actually work.</h2>
+      </div>
+      <div class="v10-features">
+        <article class="v10-feature">
+          <div class="v10-feature-ic">📷</div>
+          <h3>Snap a certificate</h3>
+          <p>Photograph any coding cert, PLI, liferaft service or radio licence. AI extracts the expiry, issuer and serial number — no retyping.</p>
+        </article>
+        <article class="v10-feature">
+          <div class="v10-feature-ic">📄</div>
+          <h3>Drop your last survey</h3>
+          <p>One PDF in, every certificate and deficiency out. Categorised, dated, attached to the right vessel. The five-hour onboarding is gone.</p>
+        </article>
+        <article class="v10-feature">
+          <div class="v10-feature-ic">🛟</div>
+          <h3>Stay inspection-ready</h3>
+          <p>Push reminders 90 / 60 / 30 days before expiry. Surveyor cross-org access. Signed inspection-pack PDF on demand.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="v10-section v10-section-tinted" id="how">
+      <div class="v10-section-head">
+        <span class="v10-eyebrow v10-eyebrow-dark">How it works</span>
+        <h2 class="v10-h2">Three steps. One afternoon.</h2>
+      </div>
+      <div class="v10-steps">
+        <div class="v10-step">
+          <div class="v10-step-num">01</div>
+          <h3>Add your vessel</h3>
+          <p>Name, length, persons, MCA category. Sixty seconds. We auto-load every certificate and piece of gear required.</p>
+        </div>
+        <div class="v10-step">
+          <div class="v10-step-num">02</div>
+          <h3>Drop your last survey</h3>
+          <p>One PDF in. AI parses every certificate, expiry and deficiency into the record. No retyping.</p>
+        </div>
+        <div class="v10-step">
+          <div class="v10-step-num">03</div>
+          <h3>Stay ready, always</h3>
+          <p>Reminders fire before things lapse. Signed inspection pack lands in your inbox the day before survey day.</p>
         </div>
       </div>
     </section>
 
-    <!-- FEATURE 2 — Survey importer -->
-    <section class="cdk-feature cdk-feature--alt">
-      <div class="cdk-feature-copy">
-        <span class="cdk-eyebrow">Survey importer</span>
-        <h2 class="cdk-feature-title">Drop a PDF.<br>Get a record.</h2>
-        <p class="cdk-feature-body">One survey PDF in, every certificate and deficiency out — categorised, dated, attached to the right vessel. The five-hour onboarding spreadsheet is gone. You're back on the water by lunch.</p>
-        <ul class="cdk-feature-list">
-          <li>✓ Parses YDSA, MCA, and surveyor-house-style reports</li>
-          <li>✓ Every deficiency lands as a tracked open item</li>
-          <li>✓ Originals stay attached so you can show the surveyor</li>
-        </ul>
-        <a href="/demo" class="cdk-link">See it in the demo →</a>
-      </div>
-      <div class="cdk-feature-visual">
-        <figure class="cdk-illus">
-          <img src="img/landing/in-the-field.svg" alt="Coded RIB at speed offshore" loading="lazy">
-          <figcaption><span class="cdk-eyebrow">In the field</span> · 20 miles offshore, edits queued, sync on signal</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <!-- FEATURE 3 — Always ready -->
-    <section class="cdk-feature">
-      <div class="cdk-feature-copy">
-        <span class="cdk-eyebrow">Always ready</span>
-        <h2 class="cdk-feature-title">Inspection-ready,<br>all year.</h2>
-        <p class="cdk-feature-body">Push reminders fire before things lapse. Surveyors get free cross-org access to your record. The signed inspection pack PDF lands in your inbox the day before survey day — not after.</p>
-        <ul class="cdk-feature-list">
-          <li>✓ 90 / 60 / 30-day reminders by push and email</li>
-          <li>✓ Surveyor seat is free — they sign off inside the app</li>
-          <li>✓ One-tap export of every cert, equipment item, deficiency</li>
-        </ul>
-        <a href="/demo" class="cdk-link">See it in the demo →</a>
-      </div>
-      <div class="cdk-feature-visual">
-        <figure class="cdk-illus">
-          <img src="img/landing/in-the-yard.svg" alt="Vessel on hardstand for annual survey" loading="lazy">
-          <figcaption><span class="cdk-eyebrow ok">● Survey-ready</span> · 17 valid · 1 due in 30d · 0 overdue</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <!-- OUTCOMES — get back your weekends -->
-    <section class="cdk-outcomes">
-      <span class="cdk-eyebrow">What you get back</span>
-      <h2 class="cdk-section-title">More days on the water.<br>Fewer at the desk.</h2>
-      <div class="cdk-outcome-grid">
-        <div class="cdk-outcome">
-          <div class="cdk-outcome-num">5<small>hrs</small></div>
-          <div class="cdk-outcome-label">Saved per survey</div>
-          <p>One PDF import replaces the manual cert-by-cert sweep.</p>
-        </div>
-        <div class="cdk-outcome">
-          <div class="cdk-outcome-num">0<small>missed</small></div>
-          <div class="cdk-outcome-label">Lapses or renewals</div>
-          <p>Push reminders fire 90, 60, and 30 days before expiry.</p>
-        </div>
-        <div class="cdk-outcome">
-          <div class="cdk-outcome-num">100<small>%</small></div>
-          <div class="cdk-outcome-label">Audit trail</div>
-          <p>Every cert, photo, signature timestamped and surveyor-signed.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- COMPARISON -->
-    <section class="cdk-compare">
-      <span class="cdk-eyebrow">Old way vs CodedOK</span>
-      <h2 class="cdk-section-title">From paperwork to passes.</h2>
-      <div class="cdk-compare-grid">
-        <div class="cdk-compare-col cdk-compare-old">
-          <div class="cdk-compare-head">Without CodedOK</div>
-          <ul class="cdk-compare-list">
-            <li>❌ Folders, glove boxes, inboxes — different cert in each one</li>
-            <li>❌ Spreadsheet your nephew built that nobody else can read</li>
-            <li>❌ Surveyor emails the report; you retype it</li>
-            <li>❌ Renewals discovered the week before survey day</li>
-            <li>❌ Different rulebook for each jurisdiction you cross</li>
-            <li>❌ SMS template stitched together from old PDFs</li>
+    <!-- FOR SURVEYORS -->
+    <section class="v10-section v10-section-navy" id="surveyors">
+      <div class="v10-surv-grid">
+        <div>
+          <span class="v10-eyebrow v10-eyebrow-light">For surveyors</span>
+          <h2 class="v10-h2 v10-h2-light">Bring every client into one workspace.</h2>
+          <ul class="v10-surv-list">
+            <li>✓ Free seat per client vessel — no per-surveyor fee, ever</li>
+            <li>✓ See the full record before you set foot on the boat</li>
+            <li>✓ Sign off the inspection in the app; pack lands in their inbox</li>
+            <li>✓ Raise deficiencies as tracked open items, not PDF emails</li>
           </ul>
+          <a href="/blog/spv-code-2025-explainer" class="v10-link-light">See the surveyor workflow →</a>
         </div>
-        <div class="cdk-compare-col cdk-compare-new">
-          <div class="cdk-compare-head">With CodedOK</div>
-          <ul class="cdk-compare-list">
-            <li>✓ One record per vessel — phone, tablet, or laptop</li>
-            <li>✓ AI extracts every cert from photos and PDFs</li>
-            <li>✓ Surveyor signs in the app; pack PDF lands in your inbox</li>
-            <li>✓ 90/60/30-day reminders by push and email</li>
-            <li>✓ MCA SPV 2025, Workboat Ed.3, Irish PBL — same record</li>
-            <li>✓ AI drafts your SMS in your house style</li>
-          </ul>
+        <div class="v10-surv-mock">
+          <div class="v10-surv-tab">
+            <span class="v10-surv-tab-name">MV Aurora</span>
+            <span class="v10-surv-tab-pill">9.8m RIB · Cat 2</span>
+          </div>
+          <div class="v10-surv-row"><span class="ic">📋</span> <span class="lbl">Coding renewal</span> <span class="val ok">Approved</span></div>
+          <div class="v10-surv-row"><span class="ic">🛟</span> <span class="lbl">Liferaft service</span> <span class="val warn">Due in 18d</span></div>
+          <div class="v10-surv-row"><span class="ic">⚠</span> <span class="lbl">VHF DSC</span> <span class="val crit">Lapsed</span></div>
+          <div class="v10-surv-row"><span class="ic">📄</span> <span class="lbl">Stability decl.</span> <span class="val ok">On file</span></div>
+          <div class="v10-surv-row"><span class="ic">✓</span> <span class="lbl">SMS · SPV 2025</span> <span class="val ok">Signed</span></div>
         </div>
-      </div>
-    </section>
-
-    <!-- CODES STRIP -->
-    <section class="cdk-codes-section">
-      <span class="cdk-eyebrow">Built for</span>
-      <h2 class="cdk-section-title">Every code.<br>Every vessel.</h2>
-      <div class="cdk-codes">
-        <div class="cdk-code-card">
-          <span class="cdk-code-tag">UK</span>
-          <h3>MCA Sport &amp; Pleasure Vessel Code</h3>
-          <p>Edition 1, in force December 2025. Cat 0–6 chartered yachts and motor cruisers — including the new SMS, stability declaration and owner-declaration requirements.</p>
-        </div>
-        <div class="cdk-code-card">
-          <span class="cdk-code-tag">UK</span>
-          <h3>MCA Workboat Code Edition 3</h3>
-          <p>Commercial vessels under 24m — pilot boats, charter RIBs, dive boats, wind-farm support. Full equipment carriage and manning schedules.</p>
-        </div>
-        <div class="cdk-code-card">
-          <span class="cdk-code-tag">IE</span>
-          <h3>Irish PBL Classes P1–P6</h3>
-          <p>Passenger Boat Licence under the Marine Survey Office. Day-boats to ferries — including the Class P4 stability requirement and MSO annual inspection cycle.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- FAQ -->
-    <section class="cdk-faq">
-      <span class="cdk-eyebrow">FAQ</span>
-      <h2 class="cdk-section-title">Honest answers.</h2>
-      <div class="cdk-faq-list">
-        <details class="cdk-faq-item">
-          <summary>What changes in December 2025?</summary>
-          <p>The MCA replaces the old MGN 280 framework with the Sport &amp; Pleasure Vessel Code Edition 1 on 1 December 2025. Headline shifts: a single-route stability declaration for under-15m vessels, a mandatory Safety Management System for charter operations, refreshed equipment carriage tables, and clearer owner-declaration requirements. CodedOK rolls the new schedule out automatically — your existing vessels show what's aligned and what needs new evidence.</p>
-        </details>
-        <details class="cdk-faq-item">
-          <summary>Does CodedOK actually cover Irish PBL?</summary>
-          <p>Yes. The full Marine Survey Office Passenger Boat Licence — Classes P1 through P6 — is loaded as a jurisdiction per vessel. When you pick "Ireland — PBL" the relevant equipment, manning, and survey requirements load alongside (or instead of) the UK MCA set.</p>
-        </details>
-        <details class="cdk-faq-item">
-          <summary>Does it work offshore with no signal?</summary>
-          <p>Yes. Installed as a PWA on your phone the app works fully offline. Edits queue locally and sync to the cloud when you're back in coverage. No data lost in a tunnel or 20 miles offshore.</p>
-        </details>
-        <details class="cdk-faq-item">
-          <summary>How does the surveyor handoff work?</summary>
-          <p>Your surveyor gets a free seat per vessel you invite them to. They see your full record — certs, equipment, crew quals, deficiencies, prior inspections — from their own login. On survey day they raise deficiencies, sign the inspection in the app, and the signed pack lands in your inbox.</p>
-        </details>
-        <details class="cdk-faq-item">
-          <summary>Is CodedOK affiliated with the MCA or YDSA?</summary>
-          <p>No. CodedOK is an independent recordkeeping aid. The SPV Code 2025, Workboat Code Edition 3, MGN 280, and YDSA category schedules are published by their respective authorities; CodedOK is not endorsed by or affiliated with any of them.</p>
-        </details>
-        <details class="cdk-faq-item">
-          <summary>Does it replace my MCA or PBL survey?</summary>
-          <p>No. CodedOK helps you stay inspection-ready between surveys and hand a clean record to your surveyor on the day. The survey itself still happens with your recognised surveyor or the Marine Survey Office.</p>
-        </details>
-        <details class="cdk-faq-item">
-          <summary>What about my data?</summary>
-          <p>Evidence is stored in Supabase (EU region) and cached on your device. You can delete your account from Account → Sign out and email <a href="mailto:privacy@codedok.com">privacy@codedok.com</a> — full erasure within 30 days. Export as a PDF archive at any time.</p>
-        </details>
-        <details class="cdk-faq-item">
-          <summary>Can I cancel any time?</summary>
-          <p>Yes. No contract, no minimum term. Cancel from inside the app. The Solo tier is free forever; Pro and Team have a 14-day trial.</p>
-        </details>
       </div>
     </section>
 
     <!-- PRICING -->
-    <section class="cdk-pricing-section">
-      <span class="cdk-eyebrow">Pricing</span>
-      <h2 class="cdk-section-title">Start free.<br>Upgrade when you're ready.</h2>
-      <p class="cdk-section-lead">Solo is free forever. Pro and Team start with a 14-day trial — no card required to start either.</p>
-      <div class="cdk-plans">
-        <article class="cdk-plan">
-          <div class="cdk-plan-name">Solo</div>
-          <div class="cdk-plan-price">£0<small>/mo</small></div>
-          <p class="cdk-plan-blurb">One operator, up to two vessels. Free, forever.</p>
-          <ul class="cdk-plan-list">
-            <li>Certs &amp; equipment tracking</li>
-            <li>Renewal reminders</li>
-            <li>Inspection pack PDF</li>
-            <li>Offline-first, sync on signal</li>
+    <section class="v10-section" id="pricing">
+      <div class="v10-section-head">
+        <span class="v10-eyebrow v10-eyebrow-dark">Pricing</span>
+        <h2 class="v10-h2">Free for solo skippers.<br>Honest pricing for fleets.</h2>
+      </div>
+      <div class="v10-plans">
+        <article class="v10-plan">
+          <div class="v10-plan-name">Solo</div>
+          <div class="v10-plan-price">£0<small>/mo</small></div>
+          <p class="v10-plan-blurb">One operator, up to two vessels. Free, forever.</p>
+          <ul>
+            <li>✓ Certs &amp; equipment tracking</li>
+            <li>✓ Renewal reminders</li>
+            <li>✓ Inspection pack PDF</li>
+            <li>✓ Offline-first PWA</li>
           </ul>
-          <button onclick="goSignUp()" class="cdk-cta cdk-cta-ghost cdk-cta-full">Start free</button>
+          <button onclick="goSignUp()" class="v10-plan-btn ghost">Start free</button>
         </article>
-        <article class="cdk-plan cdk-plan-featured">
-          <span class="cdk-plan-badge">Most popular</span>
-          <div class="cdk-plan-name">Pro</div>
-          <div class="cdk-plan-price">£19<small>/mo</small></div>
-          <p class="cdk-plan-blurb">Unlimited vessels, surveyor access, AI cert OCR.</p>
-          <ul class="cdk-plan-list">
-            <li>Everything in Solo</li>
-            <li>Unlimited vessels</li>
-            <li>AI cert OCR + survey importer</li>
-            <li>Surveyor cross-org invite</li>
-            <li>Custom inspection-pack branding</li>
+        <article class="v10-plan v10-plan-featured">
+          <div class="v10-plan-badge">Most popular</div>
+          <div class="v10-plan-name">Pro</div>
+          <div class="v10-plan-price">£19<small>/mo</small></div>
+          <p class="v10-plan-blurb">Unlimited vessels, surveyor access, AI cert OCR.</p>
+          <ul>
+            <li>✓ Everything in Solo</li>
+            <li>✓ Unlimited vessels</li>
+            <li>✓ AI cert OCR + survey importer</li>
+            <li>✓ Surveyor cross-org invite</li>
+            <li>✓ Custom inspection-pack branding</li>
           </ul>
-          <button onclick="goSignUp()" class="cdk-cta cdk-cta-primary cdk-cta-full">Start 14-day trial</button>
+          <button onclick="goSignUp()" class="v10-plan-btn primary">Start 14-day trial</button>
         </article>
-        <article class="cdk-plan">
-          <div class="cdk-plan-name">Team</div>
-          <div class="cdk-plan-price">£49<small>/mo</small></div>
-          <p class="cdk-plan-blurb">Charter fleets with multiple skippers and an audit trail.</p>
-          <ul class="cdk-plan-list">
-            <li>Everything in Pro</li>
-            <li>Unlimited team members</li>
-            <li>Per-member permissions</li>
-            <li>Audit log &amp; action history</li>
+        <article class="v10-plan">
+          <div class="v10-plan-name">Team</div>
+          <div class="v10-plan-price">£49<small>/mo</small></div>
+          <p class="v10-plan-blurb">Charter fleets with multiple skippers and audit log.</p>
+          <ul>
+            <li>✓ Everything in Pro</li>
+            <li>✓ Unlimited team members</li>
+            <li>✓ Per-member permissions</li>
+            <li>✓ Audit log &amp; action history</li>
           </ul>
-          <button onclick="goSignUp()" class="cdk-cta cdk-cta-ghost cdk-cta-full">Start 14-day trial</button>
+          <button onclick="goSignUp()" class="v10-plan-btn ghost">Start 14-day trial</button>
         </article>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="v10-section v10-section-tinted" id="faq">
+      <div class="v10-section-head">
+        <span class="v10-eyebrow v10-eyebrow-dark">FAQ</span>
+        <h2 class="v10-h2">Honest answers.</h2>
+      </div>
+      <div class="v10-faq">
+        <details class="v10-faq-q">
+          <summary>What changes in the December 2025 SPV Code?</summary>
+          <p>The MCA replaces the old MGN 280 framework with the Sport &amp; Pleasure Vessel Code Edition 1 on 1 December 2025. New stability route for under-15m vessels, mandatory Safety Management System for charter, refreshed equipment carriage tables, formal owner declarations. <a href="/blog/spv-code-2025-explainer">Full explainer in our journal →</a></p>
+        </details>
+        <details class="v10-faq-q">
+          <summary>Will it work for my Irish-flagged vessel?</summary>
+          <p>Yes. Irish PBL Classes P1–P6 are first-class jurisdictions per vessel. Pick "Ireland — PBL" and the relevant MSO schedule loads alongside (or instead of) the UK MCA set. <a href="/blog/irish-pbl-explained">Full Class breakdown here →</a></p>
+        </details>
+        <details class="v10-faq-q">
+          <summary>What if my certs are on paper?</summary>
+          <p>Perfect — that's what CodedOK is built for. Photograph each one. AI reads issuer, expiry, serial, and files it against the right vessel. Works on creased, faded, or partially-obscured paperwork too.</p>
+        </details>
+        <details class="v10-faq-q">
+          <summary>Can my surveyor see this?</summary>
+          <p>Only when you invite them. Surveyor seat is free per vessel. They see your full record from their own login, sign off the inspection in the app, and the signed pack lands in your inbox.</p>
+        </details>
+        <details class="v10-faq-q">
+          <summary>Is my data secure?</summary>
+          <p>Evidence is stored in Supabase EU (Frankfurt), GDPR-aligned. Cached on your device for offline use. Export as PDF archive at any time. Delete your account from Account → Sign out; full erasure within 30 days.</p>
+        </details>
+        <details class="v10-faq-q">
+          <summary>Do I need to install anything?</summary>
+          <p>No — CodedOK runs in any modern browser. On iPhone / Android you can "Add to Home Screen" for a full-screen, offline-capable app experience. No App Store download required.</p>
+        </details>
+        <details class="v10-faq-q">
+          <summary>What happens after the free plan?</summary>
+          <p>Solo (one operator, two vessels) is free forever. If you need a third vessel or surveyor access, upgrade to Pro (£19/mo). No card required to start — we only ask when you upgrade.</p>
+        </details>
+        <details class="v10-faq-q">
+          <summary>Can I cancel any time?</summary>
+          <p>Yes. No contract, no minimum term. Cancel from inside the app. Pro and Team plans have a 14-day trial.</p>
+        </details>
       </div>
     </section>
 
     <!-- FINAL CTA -->
-    <section class="cdk-final-wrap">
-      <div class="cdk-final">
-        <span class="cdk-eyebrow">Just launched · December 2025 SPV Code ready</span>
-        <h2 class="cdk-final-title">Stop chasing certificates.<br>Start sailing past inspection.</h2>
-        <p class="cdk-final-sub">Free to start. No card. Ready in five minutes — on the dockside, on your phone, in your pocket.</p>
-        <div class="cdk-ctas cdk-ctas-center">
-          <button onclick="goSignUp()" class="cdk-cta cdk-cta-primary">Start free →</button>
-          <a href="/demo" class="cdk-cta cdk-cta-ghost">Try the demo</a>
+    <section class="v10-final-wrap">
+      <div class="v10-final">
+        <span class="v10-eyebrow v10-eyebrow-light">Just launched · December 2025 SPV Code ready</span>
+        <h2 class="v10-final-h">Inspection-ready in five minutes.</h2>
+        <p class="v10-final-sub">Free to start. No card. Ready in five minutes — on the dockside, on your phone, in your pocket.</p>
+        <div class="v10-ctas v10-ctas-center">
+          <button onclick="goSignUp()" class="v10-cta-primary">Start free — no card <span class="arrow">→</span></button>
+          <a href="/demo" class="v10-cta-ghost">
+            <span class="v10-play">▶</span>
+            Try the demo
+          </a>
         </div>
-        <div class="cdk-final-trust">No card · Cancel any time · GDPR · EU-hosted</div>
       </div>
     </section>
 
     <!-- FOOTER -->
-    <footer class="cdk-footer">
-      <div class="cdk-footer-brand">
-        <span class="cdk-logo">✓</span>
-        <span>CodedOK</span>
+    <footer class="v10-footer">
+      <div class="v10-footer-inner">
+        <div class="v10-footer-brand">
+          <span class="v10-logo"><span class="v10-logo-dot"></span></span>
+          <span>CodedOK</span>
+        </div>
+        <div class="v10-footer-meta">Built in Cushendall · For UK &amp; Irish coded vessel operators</div>
+        <div class="v10-footer-links">
+          <a href="/blog/">Blog</a>
+          <a href="/press/">Press</a>
+          <a href="mailto:hello@codedok.com">hello@codedok.com</a>
+          <a href="javascript:go('s-terms')">Terms</a>
+          <a href="javascript:go('s-privacy')">Privacy</a>
+        </div>
+        <div class="v10-footer-copy">© 2026 CodedOK · All rights reserved</div>
       </div>
-      <div class="cdk-footer-meta">Built in Cushendall · For UK &amp; Irish coded vessel operators</div>
-      <div class="cdk-footer-links">
-        <a href="/blog/">Blog</a>
-        <a href="/press/">Press kit</a>
-        <a href="mailto:hello@codedok.com">hello@codedok.com</a>
-        <a href="javascript:go('s-terms')">Terms</a>
-        <a href="javascript:go('s-privacy')">Privacy</a>
-      </div>
-      <div class="cdk-footer-copy">© 2026 CodedOK · All rights reserved</div>
     </footer>
 
   </div>
