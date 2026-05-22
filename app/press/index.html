@@ -16,163 +16,115 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="/blog/blog.css">
 
 <link rel="icon" type="image/svg+xml" href="/icons/codedok-mark.svg">
-<meta name="theme-color" content="#050614">
-
-<style>
-  :root{--abyss:#050614;--hull:#0f111c;--steel:rgba(255,255,255,.10);--sonar:#06b6d4;--sonar2:#67e8f9;--ink:#f1f5f9;--mid:rgba(248,250,252,.78);--lt:rgba(248,250,252,.55)}
-  *,*::before,*::after{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:var(--abyss);color:var(--ink)}
-  body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
-  a{color:var(--sonar2);text-decoration:none}a:hover{color:var(--sonar);text-decoration:underline}
-
-  .topbar{display:flex;align-items:center;justify-content:space-between;max-width:1100px;margin:0 auto;padding:20px 22px}
-  .brand{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--ink)}
-  .logo{width:30px;height:30px;border-radius:8px;background:var(--sonar);color:var(--abyss);display:inline-grid;place-items:center;font-weight:900;font-size:16px}
-  .topbar-cta{background:linear-gradient(135deg,#06b6d4,#0891b2);color:var(--abyss);padding:8px 14px;border-radius:10px;font-size:13px;font-weight:700}
-
-  .hero{max-width:1100px;margin:0 auto;padding:40px 22px 56px}
-  .eyebrow{color:var(--sonar2);font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
-  h1{font-size:clamp(36px,7vw,64px);font-weight:800;letter-spacing:-1.5px;line-height:1.05;margin:14px 0 18px}
-  .lead{font-size:19px;color:var(--mid);margin:0 0 28px;max-width:760px}
-
-  section{max-width:1100px;margin:0 auto;padding:32px 22px}
-  h2{font-size:24px;font-weight:700;letter-spacing:-.4px;margin:0 0 18px}
-  p{color:var(--mid);margin:0 0 14px}
-  .card{background:var(--hull);border:1px solid var(--steel);border-radius:14px;padding:24px;margin-bottom:14px}
-
-  .facts{display:grid;grid-template-columns:1fr;gap:0}
-  .fact{display:grid;grid-template-columns:160px 1fr;gap:14px;padding:12px 0;border-bottom:1px solid var(--steel);font-size:15px}
-  .fact:last-child{border-bottom:0}
-  .fact .k{color:var(--lt);font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
-  .fact .v{color:var(--ink)}
-
-  .grid{display:grid;grid-template-columns:1fr;gap:14px}
-  @media(min-width:768px){.grid{grid-template-columns:repeat(2,1fr)}}
-
-  .asset{background:var(--hull);border:1px solid var(--steel);border-radius:14px;padding:20px;display:flex;align-items:center;gap:14px}
-  .asset-preview{width:60px;height:60px;border-radius:10px;background:#fff;display:grid;place-items:center;flex-shrink:0}
-  .asset-preview.dark{background:var(--abyss);border:1px solid var(--steel)}
-  .asset-info{flex:1}
-  .asset-name{font-size:15px;font-weight:700;color:var(--ink)}
-  .asset-meta{font-size:12px;color:var(--lt);margin-top:2px}
-  .asset a{font-size:13px;font-weight:600}
-
-  .quote-block{background:var(--hull);border-left:3px solid var(--sonar);padding:20px 22px;border-radius:0 12px 12px 0;margin:16px 0}
-  .quote-block .text{color:var(--ink);font-size:16px;line-height:1.55;margin-bottom:8px}
-  .quote-block .attrib{font-size:13px;color:var(--lt)}
-
-  pre{background:var(--abyss);border:1px solid var(--steel);border-radius:10px;padding:16px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.55;color:var(--ink);overflow-x:auto}
-
-  footer{max-width:1100px;margin:0 auto;padding:40px 22px 56px;text-align:center;color:var(--lt);font-size:12px;border-top:1px solid var(--steel)}
-  footer a{color:var(--mid)}
-
-  @media(min-width:768px){
-    .hero{padding:80px 32px 64px}
-    section{padding:48px 32px}
-  }
-</style>
+<meta name="theme-color" content="#0a0f1a">
 </head>
 <body>
 
-  <nav class="topbar">
-    <a href="/" class="brand"><span class="logo">✓</span><span>CodedOK</span></a>
-    <a href="/" class="topbar-cta">Start free →</a>
+  <nav class="cdk-bar">
+    <a href="/" class="cdk-brand"><span class="cdk-brand-logo">✓</span><span>CodedOK</span></a>
+    <div class="cdk-bar-actions">
+      <a href="/blog/" class="cdk-bar-link">Blog</a>
+      <a href="/press/" class="cdk-bar-link">Press</a>
+      <a href="/" class="cdk-bar-cta">Start free →</a>
+    </div>
   </nav>
 
-  <header class="hero">
-    <span class="eyebrow">Press kit</span>
-    <h1>Coded vessel compliance, made easy.</h1>
+  <header class="cdk-press-hero">
+    <span class="cdk-eyebrow">Press kit</span>
+    <h1>Coded vessel compliance,<br><span class="cdk-grad">made easy.</span></h1>
     <p class="lead">CodedOK is an AI-powered compliance app for UK and Irish coded vessel operators — built for the new MCA Sport &amp; Pleasure Vessel Code 2025, the Workboat Code Edition 3, and Irish PBL Classes P1–P6.</p>
-    <p style="font-size:14px;color:var(--lt)">Press contact: <a href="mailto:hello@codedok.com">hello@codedok.com</a> · Cushendall, Northern Ireland</p>
+    <span class="cdk-press-contact">Press contact · <a href="mailto:hello@codedok.com">hello@codedok.com</a> · Cushendall, Northern Ireland</span>
   </header>
 
-  <section>
+  <section class="cdk-press-section">
     <h2>Key facts</h2>
-    <div class="facts card">
-      <div class="fact"><div class="k">Product</div><div class="v">CodedOK — compliance app for UK &amp; Irish coded vessels</div></div>
-      <div class="fact"><div class="k">Launched</div><div class="v">May 2026 · public release</div></div>
-      <div class="fact"><div class="k">Based in</div><div class="v">Cushendall, County Antrim, Northern Ireland</div></div>
-      <div class="fact"><div class="k">Founder</div><div class="v">Joseph McLaughlin</div></div>
-      <div class="fact"><div class="k">Codes covered</div><div class="v">MCA SPV Code 2025 · MCA Workboat Code Edition 3 · Irish PBL Classes P1–P6</div></div>
-      <div class="fact"><div class="k">Platform</div><div class="v">Progressive Web App · iOS / Android / Web · offline-first</div></div>
-      <div class="fact"><div class="k">Pricing</div><div class="v">Free tier (Solo, two vessels) · Pro £19/mo · Team £49/mo</div></div>
-      <div class="fact"><div class="k">Data residency</div><div class="v">Supabase EU (Frankfurt) · GDPR-aligned</div></div>
-      <div class="fact"><div class="k">Website</div><div class="v"><a href="https://codedok.com">codedok.com</a></div></div>
-      <div class="fact"><div class="k">Press contact</div><div class="v"><a href="mailto:hello@codedok.com">hello@codedok.com</a></div></div>
+    <div class="cdk-facts">
+      <div class="cdk-fact"><div class="k">Product</div><div class="v">CodedOK — compliance app for UK &amp; Irish coded vessels</div></div>
+      <div class="cdk-fact"><div class="k">Launched</div><div class="v">May 2026 · public release</div></div>
+      <div class="cdk-fact"><div class="k">Based in</div><div class="v">Cushendall, County Antrim, Northern Ireland</div></div>
+      <div class="cdk-fact"><div class="k">Founder</div><div class="v">Joseph McLaughlin</div></div>
+      <div class="cdk-fact"><div class="k">Codes covered</div><div class="v">MCA SPV Code 2025 · MCA Workboat Code Edition 3 · Irish PBL Classes P1–P6</div></div>
+      <div class="cdk-fact"><div class="k">Platform</div><div class="v">Progressive Web App · iOS / Android / Web · offline-first</div></div>
+      <div class="cdk-fact"><div class="k">Pricing</div><div class="v">Free tier (Solo, two vessels) · Pro £19/mo · Team £49/mo</div></div>
+      <div class="cdk-fact"><div class="k">Data residency</div><div class="v">Supabase EU (Frankfurt) · GDPR-aligned</div></div>
+      <div class="cdk-fact"><div class="k">Website</div><div class="v"><a href="https://codedok.com">codedok.com</a></div></div>
+      <div class="cdk-fact"><div class="k">Press contact</div><div class="v"><a href="mailto:hello@codedok.com">hello@codedok.com</a></div></div>
     </div>
   </section>
 
-  <section>
+  <section class="cdk-press-section">
+    <h2>Tagline</h2>
+    <div class="cdk-card">
+      <p style="font-size:24px;font-weight:700;color:var(--ink);margin:0;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-.3px">"AI does the paperwork. You go boating."</p>
+    </div>
+  </section>
+
+  <section class="cdk-press-section">
     <h2>Boilerplate (copy and paste)</h2>
 
-    <h3 style="font-size:15px;color:var(--lt);font-weight:600;margin:24px 0 8px">Short (50 words)</h3>
-    <div class="card">
-      <p style="margin:0;color:var(--ink)">CodedOK is the AI-powered compliance app for UK and Irish coded vessel operators. Photograph a certificate, drop in a survey PDF, and AI extracts the data. Built for the new MCA Sport &amp; Pleasure Vessel Code 2025, the Workboat Code Edition 3, and Irish PBL Classes P1–P6. Cushendall-based.</p>
+    <h3>Short — 50 words</h3>
+    <div class="cdk-card">
+      <p>CodedOK is the AI-powered compliance app for UK and Irish coded vessel operators. Photograph a certificate, drop in a survey PDF, and AI extracts the data. Built for the new MCA Sport &amp; Pleasure Vessel Code 2025, the Workboat Code Edition 3, and Irish PBL Classes P1–P6. Cushendall-based.</p>
     </div>
 
-    <h3 style="font-size:15px;color:var(--lt);font-weight:600;margin:24px 0 8px">Medium (120 words)</h3>
-    <div class="card">
-      <p style="margin:0 0 12px;color:var(--ink)">CodedOK is the first compliance app built around the new MCA Sport &amp; Pleasure Vessel Code 2025 — the regulation that replaces MGN 280 for UK coded vessels from December 2025. It also covers the Workboat Code Edition 3 and the Irish Marine Survey Office Passenger Boat Licence (PBL) Classes P1–P6.</p>
-      <p style="margin:0;color:var(--ink)">Operators photograph paper certificates and CodedOK's AI extracts the expiry, issuer and serial number — no retyping. Surveyors get free cross-org access to client vessels for sign-off inside the app. The app is offline-first, built as a Progressive Web App for the wheelhouse, with renewal reminders firing 90 / 60 / 30 days before expiry. Founded 2026, based in Cushendall, Northern Ireland.</p>
-    </div>
-  </section>
-
-  <section>
-    <h2>Tagline</h2>
-    <div class="card">
-      <p style="font-size:22px;font-weight:700;color:var(--ink);margin:0">"AI does the paperwork. You go boating."</p>
+    <h3>Medium — 120 words</h3>
+    <div class="cdk-card">
+      <p>CodedOK is the first compliance app built around the new MCA Sport &amp; Pleasure Vessel Code 2025 — the regulation that replaces MGN 280 for UK coded vessels from December 2025. It also covers the Workboat Code Edition 3 and the Irish Marine Survey Office Passenger Boat Licence (PBL) Classes P1–P6.</p>
+      <p>Operators photograph paper certificates and CodedOK's AI extracts the expiry, issuer and serial number — no retyping. Surveyors get free cross-org access to client vessels for sign-off inside the app. The app is offline-first, built as a Progressive Web App for the wheelhouse, with renewal reminders firing 90 / 60 / 30 days before expiry. Founded 2026, based in Cushendall, Northern Ireland.</p>
     </div>
   </section>
 
-  <section>
-    <h2>Logos</h2>
-    <p>All marks are available as SVG (preferred) and PNG. Maintain at least 30 px clearspace around the wordmark.</p>
-    <div class="grid">
-      <div class="asset">
-        <div class="asset-preview"><span style="width:40px;height:40px;border-radius:10px;background:#06b6d4;color:#050614;display:grid;place-items:center;font-weight:900">✓</span></div>
-        <div class="asset-info">
-          <div class="asset-name">Primary logo · light theme</div>
-          <div class="asset-meta">SVG · 1 KB</div>
+  <section class="cdk-press-section">
+    <h2>Logos &amp; brand assets</h2>
+    <p style="color:var(--mid)">All marks available as SVG (preferred) and PNG. Maintain at least 30 px clearspace around the wordmark.</p>
+    <div class="cdk-asset-grid">
+      <div class="cdk-asset">
+        <div class="cdk-asset-preview"><span>✓</span></div>
+        <div class="cdk-asset-info">
+          <div class="cdk-asset-name">Primary logo · SVG</div>
+          <div class="cdk-asset-meta">Scalable vector · 1 KB</div>
           <a href="/icons/codedok-mark.svg">Download SVG →</a>
         </div>
       </div>
-      <div class="asset">
-        <div class="asset-preview dark"><span style="width:40px;height:40px;border-radius:10px;background:#06b6d4;color:#050614;display:grid;place-items:center;font-weight:900">✓</span></div>
-        <div class="asset-info">
-          <div class="asset-name">App icon · 512×512</div>
-          <div class="asset-meta">PNG · 24 KB</div>
+      <div class="cdk-asset">
+        <div class="cdk-asset-preview"><span>✓</span></div>
+        <div class="cdk-asset-info">
+          <div class="cdk-asset-name">App icon · 512×512</div>
+          <div class="cdk-asset-meta">PNG · 24 KB</div>
           <a href="/icons/icon-512.png">Download PNG →</a>
         </div>
       </div>
-      <div class="asset">
-        <div class="asset-preview dark"><span style="width:40px;height:40px;border-radius:10px;background:#06b6d4;color:#050614;display:grid;place-items:center;font-weight:900">✓</span></div>
-        <div class="asset-info">
-          <div class="asset-name">App icon · 1024×1024</div>
-          <div class="asset-meta">PNG · 68 KB</div>
+      <div class="cdk-asset">
+        <div class="cdk-asset-preview"><span>✓</span></div>
+        <div class="cdk-asset-info">
+          <div class="cdk-asset-name">App icon · 1024×1024</div>
+          <div class="cdk-asset-meta">PNG · 68 KB</div>
           <a href="/icons/icon-1024.png">Download PNG →</a>
         </div>
       </div>
-      <div class="asset">
-        <div class="asset-preview"><span style="width:40px;height:40px;border-radius:10px;background:#06b6d4;color:#050614;display:grid;place-items:center;font-weight:900">✓</span></div>
-        <div class="asset-info">
-          <div class="asset-name">App icon · 180×180 (Apple)</div>
-          <div class="asset-meta">PNG · 12 KB</div>
+      <div class="cdk-asset">
+        <div class="cdk-asset-preview"><span>✓</span></div>
+        <div class="cdk-asset-info">
+          <div class="cdk-asset-name">Apple touch icon · 180×180</div>
+          <div class="cdk-asset-meta">PNG · 12 KB</div>
           <a href="/icons/icon-180.png">Download PNG →</a>
         </div>
       </div>
     </div>
   </section>
 
-  <section>
+  <section class="cdk-press-section">
     <h2>Brand colours</h2>
-    <div class="card">
-      <pre>Primary cyan       #06B6D4
+    <div class="cdk-card">
+      <pre>Primary cyan       #22D3EE
 Light cyan accent  #67E8F9
-Page (abyss)       #050614
-Card (hull)        #0F111C
+Naval blue         #3B82F6
+Page (abyss)       #0A0F1A
+Card (surface)     #131826
 Border (steel)     rgba(255,255,255,.10)
 OK / valid         #10B981
 Warn / due-soon    #F59E0B
@@ -180,19 +132,19 @@ Critical / overdue #EF4444</pre>
     </div>
   </section>
 
-  <section>
+  <section class="cdk-press-section">
     <h2>Founder quote (for use in articles)</h2>
-    <div class="quote-block">
+    <div class="cdk-press-quote">
       <div class="text">"Compliance shouldn't take your weekend. I built CodedOK because the people I know running coded vessels — skippers in Ballycastle and Cushendall, charter operators on the Antrim coast — they got into boating to be on the water, not to sit in a wheelhouse retyping certificates from a folder. The 2025 SPV Code change is the right time to fix that."</div>
       <div class="attrib">— Joseph McLaughlin, founder of CodedOK</div>
     </div>
   </section>
 
-  <section>
+  <section class="cdk-press-section">
     <h2>What we built</h2>
-    <p>Plain-English summary you can paraphrase or use directly.</p>
-    <div class="card">
-      <ul style="color:var(--ink);font-size:15px;line-height:1.7">
+    <p style="color:var(--mid)">Plain-English summary you can paraphrase or use directly.</p>
+    <div class="cdk-card">
+      <ul>
         <li><strong>AI certificate scanner</strong> — point a phone at any paper certificate; the app extracts expiry, issuer, serial number in about a second.</li>
         <li><strong>Survey importer</strong> — drop in a surveyor's PDF report; the app parses every certificate and deficiency into a structured record.</li>
         <li><strong>Multi-code coverage</strong> — one record per vessel, valid against MCA SPV 2025, Workboat Code Edition 3, and Irish PBL P1–P6 simultaneously.</li>
@@ -204,15 +156,15 @@ Critical / overdue #EF4444</pre>
     </div>
   </section>
 
-  <section>
+  <section class="cdk-press-section">
     <h2>Demo accounts (for press review)</h2>
-    <div class="card">
-      <p><strong>Operator demo</strong> — visit <a href="https://codedok.com/demo">codedok.com/demo</a>. Drops straight into the app with seeded sample vessels. No sign-up.</p>
-      <p style="margin:0"><strong>Surveyor demo</strong> — visit <a href="https://codedok.com/demo/surveyor">codedok.com/demo/surveyor</a>. Same fixtures, surveyor view.</p>
+    <div class="cdk-card">
+      <p><strong>Operator demo</strong> — <a href="https://codedok.com/demo">codedok.com/demo</a>. Drops straight into the app with seeded sample vessels. No sign-up.</p>
+      <p><strong>Surveyor demo</strong> — <a href="https://codedok.com/demo/surveyor">codedok.com/demo/surveyor</a>. Same fixtures, surveyor view.</p>
     </div>
   </section>
 
-  <footer>
+  <footer class="cdk-footer">
     Press contact · <a href="mailto:hello@codedok.com">hello@codedok.com</a><br>
     <a href="/">Back to app</a> · <a href="/blog/">Blog</a> · <a href="https://codedok.com">codedok.com</a>
   </footer>
