@@ -4588,3 +4588,290 @@ body:has(#s-land.on) { background: #050614 !important; }
     outline-offset: 3px;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   LANDING v9 — additional selling sections
+   Adds: trust strip (codes + cert badges), pain section, feature
+   bullet lists, outcomes (stats row), comparison (old vs new),
+   FAQ accordion. All mobile-safe (no backdrop-filter, no fixed
+   positioning, no animations on mobile).
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── TRUST STRIP ───────────────────────────────────────────── */
+#s-land .cdk-trust-strip {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 20px 24px;
+  text-align: center;
+}
+@media (min-width: 768px) {
+  #s-land .cdk-trust-strip { padding: 8px 32px 32px; }
+}
+#s-land .cdk-trust-items {
+  display: flex; flex-wrap: wrap;
+  justify-content: center; gap: 10px;
+  margin-top: 14px;
+}
+#s-land .cdk-trust-item {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(15,17,28,.7);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: rgba(248,250,252,.75);
+  font-weight: 500;
+}
+#s-land .cdk-trust-item .ldx-flag { font-size: 13px; }
+#s-land .cdk-eyebrow .cdk-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* ── PAIN SECTION ──────────────────────────────────────────── */
+#s-land .cdk-pain {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 20px;
+}
+@media (min-width: 768px) { #s-land .cdk-pain { padding: 96px 32px; } }
+#s-land .cdk-pain-head {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto 36px;
+}
+#s-land .cdk-pain-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 768px) {
+  #s-land .cdk-pain-cards { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  #s-land .cdk-pain-head { margin-bottom: 48px; }
+}
+#s-land .cdk-pain-card {
+  background: #0f111c;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  padding: 24px;
+}
+#s-land .cdk-pain-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: grid; place-items: center;
+  font-size: 22px;
+  margin-bottom: 14px;
+}
+#s-land .cdk-pain-card h3 {
+  font-size: 18px; font-weight: 700;
+  letter-spacing: -.3px;
+  margin: 0 0 8px;
+  color: #f1f5f9;
+}
+#s-land .cdk-pain-card p {
+  font-size: 14px; line-height: 1.55;
+  color: rgba(248,250,252,.65);
+  margin: 0;
+}
+
+/* ── SECTION LEAD ──────────────────────────────────────────── */
+#s-land .cdk-section-lead {
+  font-size: 17px; line-height: 1.55;
+  color: rgba(248,250,252,.70);
+  max-width: 620px;
+  margin: 14px auto 0;
+  text-align: center;
+}
+
+/* ── FEATURE BULLET LIST ───────────────────────────────────── */
+#s-land .cdk-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 18px;
+  font-size: 15px;
+  color: rgba(248,250,252,.80);
+  line-height: 1.55;
+}
+#s-land .cdk-feature-list li {
+  padding: 4px 0;
+}
+
+/* ── OUTCOMES ──────────────────────────────────────────────── */
+#s-land .cdk-outcomes {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 20px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(16,185,129,.08) 0%, transparent 70%);
+}
+@media (min-width: 768px) { #s-land .cdk-outcomes { padding: 96px 32px; } }
+#s-land .cdk-outcome-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-top: 36px;
+  text-align: left;
+}
+@media (min-width: 768px) {
+  #s-land .cdk-outcome-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+}
+#s-land .cdk-outcome {
+  background: #0f111c;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  padding: 28px 24px;
+}
+#s-land .cdk-outcome-num {
+  font-size: 56px; font-weight: 800;
+  letter-spacing: -2px;
+  line-height: 1;
+  color: #10b981;
+}
+#s-land .cdk-outcome-num small {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(248,250,252,.55);
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+#s-land .cdk-outcome-label {
+  font-size: 15px; font-weight: 700;
+  margin: 12px 0 8px;
+  color: #f1f5f9;
+}
+#s-land .cdk-outcome p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(248,250,252,.65);
+  margin: 0;
+}
+
+/* ── COMPARISON ────────────────────────────────────────────── */
+#s-land .cdk-compare {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 20px;
+  text-align: center;
+}
+@media (min-width: 768px) { #s-land .cdk-compare { padding: 96px 32px; } }
+#s-land .cdk-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-top: 36px;
+  text-align: left;
+}
+@media (min-width: 768px) {
+  #s-land .cdk-compare-grid { grid-template-columns: 1fr 1fr; gap: 18px; }
+}
+#s-land .cdk-compare-col {
+  border-radius: 16px;
+  padding: 28px;
+  border: 1px solid rgba(255,255,255,.10);
+}
+#s-land .cdk-compare-old {
+  background: #0f111c;
+}
+#s-land .cdk-compare-new {
+  background: linear-gradient(180deg, rgba(16,185,129,.06) 0%, #0f111c 100%);
+  border-color: rgba(16,185,129,.30);
+}
+#s-land .cdk-compare-head {
+  font-size: 13px; font-weight: 800;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: rgba(248,250,252,.55);
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+#s-land .cdk-compare-new .cdk-compare-head {
+  color: #6ee7b7;
+  border-bottom-color: rgba(16,185,129,.30);
+}
+#s-land .cdk-compare-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#s-land .cdk-compare-list li {
+  font-size: 14px;
+  line-height: 1.55;
+  padding: 8px 0;
+  color: rgba(248,250,252,.80);
+}
+#s-land .cdk-compare-old li { color: rgba(248,250,252,.55); }
+
+/* ── FAQ ───────────────────────────────────────────────────── */
+#s-land .cdk-faq {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px 20px;
+}
+@media (min-width: 768px) { #s-land .cdk-faq { padding: 96px 32px; } }
+#s-land .cdk-faq .cdk-eyebrow,
+#s-land .cdk-faq .cdk-section-title { text-align: center; display: block; }
+#s-land .cdk-faq-list {
+  margin-top: 32px;
+  display: flex; flex-direction: column;
+  gap: 10px;
+}
+#s-land .cdk-faq-item {
+  background: #0f111c;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 14px;
+  overflow: hidden;
+}
+#s-land .cdk-faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 18px 22px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #f1f5f9;
+  position: relative;
+  padding-right: 48px;
+}
+#s-land .cdk-faq-item summary::-webkit-details-marker { display: none; }
+#s-land .cdk-faq-item summary::after {
+  content: '+';
+  position: absolute;
+  right: 22px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px; font-weight: 400;
+  color: rgba(248,250,252,.55);
+  transition: transform 240ms ease;
+}
+#s-land .cdk-faq-item[open] summary::after {
+  content: '−';
+  color: #67e8f9;
+}
+#s-land .cdk-faq-item p {
+  padding: 0 22px 20px;
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: rgba(248,250,252,.70);
+}
+#s-land .cdk-faq-item a { color: #67e8f9; }
+
+/* ── FINAL CTA TRUST LINE ──────────────────────────────────── */
+#s-land .cdk-final-trust {
+  margin-top: 22px;
+  font-size: 12px;
+  color: rgba(248,250,252,.45);
+  letter-spacing: .02em;
+}
+
+/* ── DESKTOP UPGRADES FOR NEW SECTIONS (≥1200px) ──────────── */
+@media (min-width: 1200px) {
+  #s-land .cdk-outcome-num { font-size: 72px; letter-spacing: -3px; }
+  #s-land .cdk-pain-card { padding: 32px; }
+  #s-land .cdk-pain-card h3 { font-size: 20px; }
+  #s-land .cdk-compare-col { padding: 36px; }
+  #s-land .cdk-faq-item summary { font-size: 17px; padding: 22px 26px; padding-right: 56px; }
+  #s-land .cdk-faq-item p { padding: 0 26px 24px; font-size: 15px; }
+}
