@@ -1,34 +1,46 @@
 /* ════════════════════════════════════════════════════════════════
    CodedOK — Shared blog + press kit stylesheet
-   Editorial dark theme that matches the main app exactly. Used by
-   /blog/index.html, every /blog/<slug>.html, and /press/.
+   Editorial pattern: dark navy chrome (top bar, hero, CTA card,
+   footer) anchors the brand; light article body delivers long-form
+   readability. Cyan + naval-blue accents from the main app.
    ════════════════════════════════════════════════════════════════ */
 
 :root {
+  /* Light palette (body) */
+  --page: #fafbfc;
+  --page-tint: #f1f5f9;
+  --paper: #ffffff;
+  --ink: #0f172a;
+  --ink-2: #1e293b;
+  --mid: #475569;
+  --lt: #64748b;
+  --rule: #e2e8f0;
+  --rule-2: #cbd5e1;
+
+  /* Dark palette (chrome — top bar, hero, CTA, footer) */
   --abyss: #0a0f1a;
-  --surface: #131826;
-  --surface-2: #1a2236;
-  --surface-3: #232b42;
-  --steel: rgba(255,255,255,.10);
-  --steel-2: rgba(255,255,255,.18);
-  --sonar: #22d3ee;
-  --sonar-2: #67e8f9;
-  --naval: #3b82f6;
-  --ink: #f1f5f9;
-  --ink-2: #e2e8f0;
-  --mid: #cbd5e1;
-  --lt: #94a3b8;
-  --ok: #10b981;
-  --warn: #f59e0b;
-  --crit: #ef4444;
+  --hull: #131826;
+  --surface-dk: #1a2236;
+
+  /* Brand */
+  --sonar: #0891b2;
+  --sonar-2: #06b6d4;
+  --sonar-light: #67e8f9;
+  --naval: #1e40af;
+  --naval-2: #3b82f6;
+
+  /* Status */
+  --ok: #059669;
+  --warn: #d97706;
+  --crit: #dc2626;
 }
 
-*,*::before,*::after { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
 
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--abyss);
+  background: var(--page);
   color: var(--ink);
 }
 
@@ -39,29 +51,28 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-feature-settings: "ss01", "cv11";
-  /* Subtle two-stop background instead of flat black — premium feel */
-  background:
-    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(34,211,238,.04) 0%, transparent 60%),
-    var(--abyss);
-  background-attachment: fixed;
   min-height: 100vh;
 }
 
-::selection { background: rgba(34,211,238,.30); color: #fff; }
+::selection { background: rgba(34,211,238,.35); color: var(--ink); }
 
 a {
-  color: var(--sonar-2);
+  color: var(--sonar);
   text-decoration: none;
   transition: color 160ms ease;
 }
-a:hover { color: var(--sonar); text-decoration: underline; }
+a:hover { color: var(--naval); text-decoration: underline; }
 
-/* ─── TOP BAR ──────────────────────────────────────────────── */
+/* ─── TOP BAR (dark) ───────────────────────────────────────── */
 .cdk-bar {
+  background: var(--abyss);
+  color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.cdk-bar-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 22px 24px;
+  padding: 18px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -70,27 +81,27 @@ a:hover { color: var(--sonar); text-decoration: underline; }
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: var(--ink);
+  color: #f1f5f9;
   text-decoration: none;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 700;
   font-size: 17px;
   letter-spacing: -.01em;
 }
-.cdk-brand:hover { text-decoration: none; color: var(--ink); }
+.cdk-brand:hover { text-decoration: none; color: #fff; }
 .cdk-brand-logo {
   width: 32px; height: 32px;
   border-radius: 9px;
-  background: linear-gradient(135deg, var(--sonar) 0%, #0891b2 100%);
+  background: linear-gradient(135deg, var(--sonar-2) 0%, var(--sonar) 100%);
   color: var(--abyss);
   display: inline-grid; place-items: center;
   font-weight: 900;
   font-size: 16px;
   box-shadow: 0 6px 20px rgba(34,211,238,.25);
 }
-.cdk-bar-actions { display: flex; gap: 10px; }
+.cdk-bar-actions { display: flex; gap: 10px; align-items: center; }
 .cdk-bar-link {
-  color: var(--lt);
+  color: rgba(255,255,255,.70);
   font-size: 14px;
   font-weight: 500;
   padding: 8px 12px;
@@ -98,12 +109,12 @@ a:hover { color: var(--sonar); text-decoration: underline; }
   transition: color 160ms ease, background 160ms ease;
 }
 .cdk-bar-link:hover {
-  color: var(--ink);
-  background: rgba(255,255,255,.04);
+  color: #fff;
+  background: rgba(255,255,255,.06);
   text-decoration: none;
 }
 .cdk-bar-cta {
-  background: linear-gradient(135deg, var(--sonar) 0%, #0891b2 100%);
+  background: linear-gradient(135deg, var(--sonar-2) 0%, var(--sonar) 100%);
   color: var(--abyss);
   padding: 9px 16px;
   border-radius: 10px;
@@ -121,20 +132,28 @@ a:hover { color: var(--sonar); text-decoration: underline; }
   color: var(--abyss);
 }
 
-/* ─── HEADERS ──────────────────────────────────────────────── */
+/* ─── HEADERS / SHARED TYPE ───────────────────────────────── */
 .cdk-eyebrow {
   display: inline-block;
   font-family: 'Inter', sans-serif;
-  color: var(--sonar-2);
+  color: var(--sonar);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .16em;
   text-transform: uppercase;
 }
+.cdk-eyebrow.on-dark { color: var(--sonar-light); }
 .cdk-eyebrow.ok { color: var(--ok); }
 .cdk-grad {
-  background: -webkit-linear-gradient(135deg, var(--sonar-2) 0%, var(--sonar) 50%, var(--naval) 100%);
-  background: linear-gradient(135deg, var(--sonar-2) 0%, var(--sonar) 50%, var(--naval) 100%);
+  background: -webkit-linear-gradient(135deg, var(--sonar) 0%, var(--naval) 100%);
+  background: linear-gradient(135deg, var(--sonar) 0%, var(--naval) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.cdk-grad-light {
+  background: -webkit-linear-gradient(135deg, var(--sonar-light) 0%, var(--sonar-2) 100%);
+  background: linear-gradient(135deg, var(--sonar-light) 0%, var(--sonar-2) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -147,20 +166,23 @@ h1, h2, h3, h4 {
   margin: 0;
 }
 
-/* ─── ARTICLE HERO (top of each blog post) ─────────────────── */
+/* ─── ARTICLE HERO (dark with image) ──────────────────────── */
 .cdk-article-hero {
-  position: relative;
+  background: var(--abyss);
+  padding: 32px 24px 0;
+}
+.cdk-article-hero-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 32px 24px 0;
+  position: relative;
 }
 .cdk-article-hero-image {
   position: relative;
   width: 100%;
   border-radius: 20px;
   overflow: hidden;
-  background: var(--surface);
-  border: 1px solid var(--steel);
+  background: var(--hull);
+  border: 1px solid rgba(255,255,255,.10);
 }
 .cdk-article-hero-image img {
   display: block;
@@ -178,6 +200,7 @@ h1, h2, h3, h4 {
   position: absolute;
   left: 32px; right: 32px; bottom: 24px;
   z-index: 2;
+  color: #fff;
 }
 .cdk-article-hero h1 {
   margin: 14px 0 0;
@@ -197,22 +220,24 @@ h1, h2, h3, h4 {
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 600;
-  color: var(--mid);
+  color: rgba(255,255,255,.78);
   letter-spacing: .04em;
   text-transform: uppercase;
 }
 .cdk-article-meta-row .sep { color: rgba(255,255,255,.30); }
 
 @media (min-width: 768px) {
-  .cdk-article-hero { padding: 32px 32px 0; }
+  .cdk-article-hero { padding: 40px 32px 0; }
   .cdk-article-hero-image img { height: 380px; }
 }
 
-/* ─── ARTICLE BODY ─────────────────────────────────────────── */
+/* ─── ARTICLE BODY (light) ────────────────────────────────── */
 article.cdk-prose {
   max-width: 720px;
   margin: 0 auto;
   padding: 48px 24px 80px;
+  background: var(--page);
+  color: var(--ink);
 }
 
 /* Drop cap on the first paragraph */
@@ -230,7 +255,7 @@ article.cdk-prose .cdk-lead::first-letter {
   font-weight: 800;
   line-height: 0.95;
   margin: 4px 12px 0 0;
-  background: linear-gradient(135deg, var(--sonar-2) 0%, var(--sonar) 100%);
+  background: linear-gradient(135deg, var(--sonar) 0%, var(--naval) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -243,9 +268,8 @@ article.cdk-prose h2 {
   line-height: 1.15;
   margin: 56px 0 18px;
   color: var(--ink);
-  /* Subtle decorative line above h2 */
   padding-top: 24px;
-  border-top: 1px solid var(--steel);
+  border-top: 1px solid var(--rule);
 }
 
 article.cdk-prose h3 {
@@ -274,27 +298,27 @@ article.cdk-prose li {
   margin-bottom: 10px;
   line-height: 1.65;
 }
-article.cdk-prose li::marker { color: var(--sonar-2); }
+article.cdk-prose li::marker { color: var(--sonar); }
 
 article.cdk-prose a {
-  color: var(--sonar-2);
-  border-bottom: 1px solid rgba(103,232,249,.35);
+  color: var(--sonar);
+  border-bottom: 1px solid rgba(8,145,178,.35);
   padding-bottom: 1px;
 }
 article.cdk-prose a:hover {
-  color: var(--sonar);
-  border-bottom-color: var(--sonar);
+  color: var(--naval);
+  border-bottom-color: var(--naval);
   text-decoration: none;
 }
 
-article.cdk-prose em { color: var(--lt); font-style: italic; }
+article.cdk-prose em { color: var(--mid); font-style: italic; }
 
 /* Pull quote / blockquote */
 article.cdk-prose blockquote {
   margin: 36px 0;
   padding: 24px 28px;
   border-left: 3px solid var(--sonar);
-  background: linear-gradient(90deg, rgba(34,211,238,.06) 0%, transparent 100%);
+  background: linear-gradient(90deg, rgba(8,145,178,.06) 0%, transparent 100%);
   border-radius: 0 12px 12px 0;
   color: var(--ink);
   font-size: 19px;
@@ -305,8 +329,8 @@ article.cdk-prose blockquote {
 
 /* Callout block */
 .cdk-callout {
-  background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
-  border: 1px solid var(--steel-2);
+  background: var(--page-tint);
+  border: 1px solid var(--rule);
   border-radius: 16px;
   padding: 28px 30px;
   margin: 36px 0;
@@ -316,32 +340,35 @@ article.cdk-prose blockquote {
   margin: 0 0 14px;
   font-size: 22px;
   font-weight: 700;
+  color: var(--ink);
 }
 .cdk-callout ul,
-.cdk-callout p {
-  margin: 0;
-}
+.cdk-callout p { margin: 0; color: var(--ink-2); }
+.cdk-callout li::marker { color: var(--sonar); }
 
-/* Mid-article CTA */
+/* Mid-article CTA — dark card on light body */
 .cdk-cta-card {
   background:
-    radial-gradient(ellipse 80% 70% at 50% 0%, rgba(34,211,238,.10) 0%, transparent 70%),
-    linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
-  border: 1px solid rgba(34,211,238,.30);
+    radial-gradient(ellipse 80% 70% at 50% 0%, rgba(34,211,238,.15) 0%, transparent 70%),
+    linear-gradient(180deg, var(--surface-dk) 0%, var(--abyss) 100%);
+  border: 1px solid rgba(34,211,238,.25);
   border-radius: 18px;
   padding: 36px 32px;
   margin: 56px 0;
   text-align: center;
+  color: #fff;
+  box-shadow: 0 24px 60px rgba(15,23,42,.15);
 }
 .cdk-cta-card h3 {
   font-size: 24px;
   font-weight: 800;
   letter-spacing: -.4px;
   margin: 0 0 10px;
+  color: #fff;
 }
 .cdk-cta-card p {
   font-size: 16px;
-  color: var(--mid);
+  color: rgba(255,255,255,.75);
   margin: 0 0 22px;
   line-height: 1.55;
 }
@@ -349,7 +376,7 @@ article.cdk-prose blockquote {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, var(--sonar) 0%, #0891b2 100%);
+  background: linear-gradient(135deg, var(--sonar-2) 0%, var(--sonar) 100%);
   color: var(--abyss);
   padding: 14px 24px;
   border-radius: 12px;
@@ -360,17 +387,15 @@ article.cdk-prose blockquote {
   cursor: pointer;
   font-family: inherit;
   transition: transform 160ms ease, box-shadow 160ms ease;
-  box-shadow: 0 10px 28px rgba(34,211,238,.30);
+  box-shadow: 0 10px 28px rgba(34,211,238,.40);
 }
 .cdk-cta-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 40px rgba(34,211,238,.45);
+  box-shadow: 0 16px 40px rgba(34,211,238,.55);
   color: var(--abyss);
   text-decoration: none;
 }
 
-/* Author / footnote tone */
-.cdk-byline,
 article.cdk-prose .cdk-disclaimer {
   font-size: 13px;
   color: var(--lt);
@@ -378,24 +403,30 @@ article.cdk-prose .cdk-disclaimer {
   line-height: 1.55;
 }
 
-/* ─── BLOG INDEX ───────────────────────────────────────────── */
+/* ─── BLOG INDEX (light) ──────────────────────────────────── */
 .cdk-blog-hero {
+  background: var(--abyss);
+  color: #fff;
+  padding: 48px 24px 56px;
+}
+.cdk-blog-hero-inner {
   max-width: 880px;
   margin: 0 auto;
-  padding: 56px 24px 32px;
   text-align: center;
 }
+.cdk-blog-hero .cdk-eyebrow { color: var(--sonar-light); }
 .cdk-blog-hero h1 {
   font-size: clamp(36px, 6vw, 60px);
   font-weight: 800;
   letter-spacing: -1.5px;
   line-height: 1.05;
   margin: 16px 0 18px;
+  color: #fff;
 }
 .cdk-blog-hero p {
   font-size: 18px;
   line-height: 1.55;
-  color: var(--mid);
+  color: rgba(255,255,255,.75);
   max-width: 680px;
   margin: 0 auto;
 }
@@ -403,18 +434,18 @@ article.cdk-prose .cdk-disclaimer {
 .cdk-post-grid {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 32px 24px 80px;
+  padding: 48px 24px 80px;
   display: grid;
   grid-template-columns: 1fr;
   gap: 18px;
 }
 @media (min-width: 800px) {
-  .cdk-post-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; padding: 48px 32px 100px; }
+  .cdk-post-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; padding: 64px 32px 100px; }
   .cdk-post-grid > .cdk-post-card.featured { grid-column: span 2; }
 }
 .cdk-post-card {
-  background: var(--surface);
-  border: 1px solid var(--steel);
+  background: var(--paper);
+  border: 1px solid var(--rule);
   border-radius: 18px;
   overflow: hidden;
   text-decoration: none;
@@ -422,11 +453,12 @@ article.cdk-prose .cdk-disclaimer {
   display: flex;
   flex-direction: column;
   transition: transform 240ms cubic-bezier(.22,1,.36,1), border-color 240ms ease, box-shadow 240ms ease;
+  box-shadow: 0 1px 0 var(--rule);
 }
 .cdk-post-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(103,232,249,.30);
-  box-shadow: 0 24px 60px rgba(0,0,0,.4);
+  border-color: var(--rule-2);
+  box-shadow: 0 18px 40px rgba(15,23,42,.10);
   text-decoration: none;
   color: inherit;
 }
@@ -434,7 +466,7 @@ article.cdk-prose .cdk-disclaimer {
   width: 100%;
   height: 180px;
   object-fit: cover;
-  background: var(--surface-2);
+  background: var(--page-tint);
 }
 .cdk-post-card.featured .cdk-post-img { height: 280px; }
 .cdk-post-body {
@@ -473,19 +505,19 @@ article.cdk-prose .cdk-disclaimer {
   margin: 4px 0 0;
 }
 .cdk-post-read-on {
-  color: var(--sonar-2);
+  color: var(--sonar);
   font-size: 13px;
   font-weight: 600;
   margin-top: auto;
   padding-top: 6px;
 }
 
-/* ─── RELATED POSTS (bottom of each article) ──────────────── */
+/* ─── RELATED POSTS ───────────────────────────────────────── */
 .cdk-related {
   max-width: 1100px;
   margin: 24px auto 0;
   padding: 56px 24px 0;
-  border-top: 1px solid var(--steel);
+  border-top: 1px solid var(--rule);
 }
 .cdk-related h2 {
   font-size: 22px;
@@ -504,17 +536,18 @@ article.cdk-prose .cdk-disclaimer {
   .cdk-related-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
 }
 .cdk-related-card {
-  background: var(--surface);
-  border: 1px solid var(--steel);
+  background: var(--paper);
+  border: 1px solid var(--rule);
   border-radius: 14px;
   padding: 22px;
   text-decoration: none;
   color: inherit;
-  transition: transform 200ms ease, border-color 200ms ease;
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
 }
 .cdk-related-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(103,232,249,.30);
+  border-color: var(--rule-2);
+  box-shadow: 0 12px 28px rgba(15,23,42,.08);
   text-decoration: none;
   color: inherit;
 }
@@ -523,7 +556,7 @@ article.cdk-prose .cdk-disclaimer {
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
-  color: var(--sonar-2);
+  color: var(--sonar);
 }
 .cdk-related-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -535,35 +568,39 @@ article.cdk-prose .cdk-disclaimer {
   color: var(--ink);
 }
 
-/* ─── PRESS KIT ────────────────────────────────────────────── */
+/* ─── PRESS KIT ───────────────────────────────────────────── */
 .cdk-press-hero {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 48px 24px 24px;
+  background: var(--abyss);
+  color: #fff;
+  padding: 48px 24px 48px;
 }
+.cdk-press-hero-inner { max-width: 1100px; margin: 0 auto; }
+.cdk-press-hero .cdk-eyebrow { color: var(--sonar-light); }
 .cdk-press-hero h1 {
   font-size: clamp(36px, 6vw, 60px);
   font-weight: 800;
   letter-spacing: -1.5px;
   line-height: 1.05;
   margin: 16px 0 18px;
+  color: #fff;
 }
 .cdk-press-hero .lead {
   font-size: 18px;
-  color: var(--mid);
+  color: rgba(255,255,255,.78);
   line-height: 1.55;
   margin: 0 0 18px;
   max-width: 760px;
 }
 .cdk-press-contact {
   font-size: 14px;
-  color: var(--lt);
-  padding: 12px 16px;
-  background: var(--surface);
-  border: 1px solid var(--steel);
+  color: rgba(255,255,255,.78);
+  padding: 10px 16px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
   border-radius: 10px;
   display: inline-block;
 }
+.cdk-press-contact a { color: var(--sonar-light); }
 
 .cdk-press-section {
   max-width: 1100px;
@@ -575,6 +612,7 @@ article.cdk-prose .cdk-disclaimer {
   font-weight: 700;
   letter-spacing: -.4px;
   margin: 0 0 22px;
+  color: var(--ink);
 }
 .cdk-press-section h3 {
   font-size: 14px;
@@ -586,27 +624,31 @@ article.cdk-prose .cdk-disclaimer {
 }
 
 .cdk-card {
-  background: var(--surface);
-  border: 1px solid var(--steel);
+  background: var(--paper);
+  border: 1px solid var(--rule);
   border-radius: 16px;
   padding: 26px 28px;
   margin-bottom: 14px;
+  box-shadow: 0 1px 0 var(--rule);
 }
 .cdk-card p { margin: 0; color: var(--ink-2); line-height: 1.65; }
 .cdk-card p + p { margin-top: 14px; }
+.cdk-card ul { color: var(--ink-2); padding-left: 22px; line-height: 1.7; margin: 0; }
+.cdk-card li::marker { color: var(--sonar); }
 
 .cdk-facts {
-  background: var(--surface);
-  border: 1px solid var(--steel);
+  background: var(--paper);
+  border: 1px solid var(--rule);
   border-radius: 16px;
   padding: 8px 26px;
+  box-shadow: 0 1px 0 var(--rule);
 }
 .cdk-fact {
   display: grid;
   grid-template-columns: 1fr;
   gap: 4px;
   padding: 16px 0;
-  border-bottom: 1px solid var(--steel);
+  border-bottom: 1px solid var(--rule);
 }
 @media (min-width: 600px) {
   .cdk-fact { grid-template-columns: 180px 1fr; gap: 16px; align-items: baseline; }
@@ -620,7 +662,7 @@ article.cdk-prose .cdk-disclaimer {
   text-transform: uppercase;
 }
 .cdk-fact .v { color: var(--ink); font-size: 15px; }
-.cdk-fact .v a { color: var(--sonar-2); }
+.cdk-fact .v a { color: var(--sonar); }
 
 .cdk-asset-grid {
   display: grid;
@@ -629,25 +671,26 @@ article.cdk-prose .cdk-disclaimer {
 }
 @media (min-width: 768px) { .cdk-asset-grid { grid-template-columns: repeat(2, 1fr); } }
 .cdk-asset {
-  background: var(--surface);
-  border: 1px solid var(--steel);
+  background: var(--paper);
+  border: 1px solid var(--rule);
   border-radius: 14px;
   padding: 22px;
   display: flex;
   align-items: center;
   gap: 16px;
+  box-shadow: 0 1px 0 var(--rule);
 }
 .cdk-asset-preview {
   width: 64px; height: 64px;
   border-radius: 12px;
-  background: var(--surface-3);
+  background: var(--page-tint);
   display: grid; place-items: center;
   flex-shrink: 0;
 }
 .cdk-asset-preview > span {
   width: 44px; height: 44px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--sonar), #0891b2);
+  background: linear-gradient(135deg, var(--sonar-2), var(--sonar));
   color: var(--abyss);
   display: grid; place-items: center;
   font-weight: 900;
@@ -656,14 +699,17 @@ article.cdk-prose .cdk-disclaimer {
 .cdk-asset-info { flex: 1; min-width: 0; }
 .cdk-asset-name { font-size: 15px; font-weight: 700; color: var(--ink); }
 .cdk-asset-meta { font-size: 12px; color: var(--lt); margin-top: 3px; }
-.cdk-asset a { font-size: 13px; font-weight: 600; }
+.cdk-asset a { font-size: 13px; font-weight: 600; color: var(--sonar); }
 
 .cdk-press-quote {
-  background: var(--surface);
+  background: var(--paper);
   border-left: 3px solid var(--sonar);
   padding: 24px 28px;
   border-radius: 0 14px 14px 0;
   margin: 16px 0;
+  border-right: 1px solid var(--rule);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
 }
 .cdk-press-quote .text {
   color: var(--ink);
@@ -679,14 +725,14 @@ article.cdk-prose .cdk-disclaimer {
 }
 
 .cdk-press-section pre {
-  background: var(--surface-2);
-  border: 1px solid var(--steel);
+  background: var(--page-tint);
+  border: 1px solid var(--rule);
   border-radius: 12px;
   padding: 20px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 14px;
   line-height: 1.7;
-  color: var(--ink);
+  color: var(--ink-2);
   overflow-x: auto;
 }
 
@@ -695,46 +741,48 @@ article.cdk-prose .cdk-disclaimer {
   padding-left: 22px;
   line-height: 1.7;
 }
-.cdk-press-section ul li::marker { color: var(--sonar-2); }
+.cdk-press-section ul li::marker { color: var(--sonar); }
 
-/* ─── FOOTER ──────────────────────────────────────────────── */
+/* ─── FOOTER (dark) ──────────────────────────────────────── */
 footer.cdk-footer {
-  max-width: 1100px;
-  margin: 64px auto 0;
+  background: var(--abyss);
+  color: rgba(255,255,255,.65);
+  margin-top: 64px;
   padding: 40px 24px 56px;
   text-align: center;
-  border-top: 1px solid var(--steel);
-  color: var(--lt);
   font-size: 13px;
   line-height: 1.7;
+  border-top: 1px solid var(--rule);
 }
 footer.cdk-footer a {
-  color: var(--mid);
+  color: rgba(255,255,255,.85);
   margin: 0 6px;
 }
-footer.cdk-footer a:hover { color: var(--sonar-2); text-decoration: none; }
+footer.cdk-footer a:hover { color: var(--sonar-light); text-decoration: none; }
 
 /* ─── DESKTOP TYPE UPGRADES ───────────────────────────────── */
 @media (min-width: 1200px) {
   article.cdk-prose { padding: 64px 24px 100px; }
   article.cdk-prose p { font-size: 18px; }
   article.cdk-prose h2 { font-size: 36px; margin-top: 64px; padding-top: 28px; }
-  .cdk-blog-hero { padding: 80px 24px 40px; }
+  .cdk-blog-hero { padding: 72px 24px 80px; }
+  .cdk-press-hero { padding: 72px 24px 64px; }
 }
 
 /* ─── MOBILE TOUCH-UPS ────────────────────────────────────── */
 @media (max-width: 600px) {
-  .cdk-bar { padding: 18px 18px; }
+  .cdk-bar-inner { padding: 14px 18px; }
   .cdk-bar-link { display: none; }
   .cdk-article-hero { padding: 20px 18px 0; }
   .cdk-article-hero-image img { height: 200px; }
   .cdk-article-hero-meta { left: 22px; right: 22px; bottom: 18px; }
   article.cdk-prose { padding: 32px 18px 60px; }
   article.cdk-prose h2 { font-size: 22px; margin-top: 40px; padding-top: 22px; }
-  .cdk-blog-hero { padding: 32px 18px 22px; }
-  .cdk-post-grid { padding: 24px 18px 60px; }
-  .cdk-press-hero,
-  .cdk-press-section { padding: 32px 18px; }
+  .cdk-blog-hero { padding: 32px 18px 36px; }
+  .cdk-press-hero { padding: 32px 18px 32px; }
+  .cdk-post-grid { padding: 32px 18px 60px; }
+  .cdk-press-section { padding: 28px 18px; }
   .cdk-cta-card { padding: 28px 22px; }
   .cdk-related { padding: 48px 18px 0; }
+  footer.cdk-footer { padding: 32px 18px 40px; }
 }
