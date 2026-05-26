@@ -3678,6 +3678,280 @@
   window.maybeShowWelcomeToast = maybeShowWelcomeToast;
 
   // ─────────────────────────────────────────────────────────────
+  // REVIEW MODE — click-anywhere-to-comment for stakeholder feedback.
+  // Activated by ?review on any URL. Joe (or anyone) gets a floating
+  // "+ Add comment" toolbar; clicking it puts the page into a one-
+  // shot capture state where the next click on the page records the
+  // element they clicked + a typed comment. Comments persist in
+  // localStorage so they can leave and come back. Send button opens
+  // an email to hello@codedok.com with every comment compiled.
+  //
+  // Joseph shares: https://codedok.com/?review
+  // Joe doesn't need an account, doesn't install anything, doesn't
+  // need to learn the site.
+  // ─────────────────────────────────────────────────────────────
+  (function initReviewMode() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('review')) return;
+
+    const KEY = 'codedok-review-comments';
+    let comments = [];
+    try { comments = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (_) {}
+    let captureNext = false;
+
+    // Persistent UI elements
+    const banner = document.createElement('div');
+    banner.id = 'rev-banner';
+    banner.style.cssText = [
+      'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:99999',
+      'background:linear-gradient(90deg,#06b6d4 0%,#0891b2 100%)',
+      'color:#050614',
+      'padding:10px 18px',
+      'font-family:Inter,-apple-system,sans-serif',
+      'font-size:13px', 'font-weight:600',
+      'display:flex', 'align-items:center', 'justify-content:space-between',
+      'gap:14px',
+      'box-shadow:0 4px 16px rgba(0,0,0,.20)',
+    ].join(';');
+    banner.innerHTML = `
+      <div><strong>Review mode.</strong> Tap "+ Add comment" then click anywhere on the page to leave feedback.</div>
+      <button id="rev-exit" style="background:rgba(5,6,20,.15);color:#050614;border:0;padding:6px 12px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">Exit</button>
+    `;
+    document.body.appendChild(banner);
+    // Push body content down so banner doesn't cover content
+    document.body.style.paddingTop = banner.offsetHeight + 'px';
+
+    const fab = document.createElement('div');
+    fab.id = 'rev-fab';
+    fab.style.cssText = [
+      'position:fixed',
+      'right:18px',
+      'bottom:calc(18px + env(safe-area-inset-bottom, 0px))',
+      'z-index:99999',
+      'display:flex', 'flex-direction:column', 'gap:8px', 'align-items:flex-end',
+    ].join(';');
+    document.body.appendChild(fab);
+
+    function renderFab() {
+      fab.innerHTML = `
+        <button id="rev-add" style="background:#0f172a;color:#fff;border:0;padding:14px 18px;border-radius:999px;font-family:Inter,sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 14px 36px rgba(0,0,0,.30);display:inline-flex;align-items:center;gap:8px">
+          <span style="font-size:18px;line-height:1">+</span> Add comment
+        </button>
+        ${comments.length ? `
+          <button id="rev-summary" style="background:#fff;color:#0f172a;border:1px solid rgba(15,23,42,.10);padding:10px 14px;border-radius:999px;font-family:Inter,sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.15)">📋 ${comments.length} comment${comments.length === 1 ? '' : 's'} · Send →</button>
+        ` : ''}
+      `;
+      const addBtn = document.getElementById('rev-add');
+      if (addBtn) addBtn.onclick = enterCapture;
+      const sumBtn = document.getElementById('rev-summary');
+      if (sumBtn) sumBtn.onclick = openSummary;
+    }
+    renderFab();
+
+    document.getElementById('rev-exit').onclick = () => {
+      // Strip ?review and reload — back to normal browsing
+      const url = new URL(window.location.href);
+      url.searchParams.delete('review');
+      window.location.href = url.toString();
+    };
+
+    // ── Capture next click ──────────────────────────────────────
+    function enterCapture() {
+      captureNext = true;
+      banner.querySelector('div').innerHTML = '<strong>Click anywhere on the page</strong> to attach a comment to that spot.';
+      document.body.style.cursor = 'crosshair';
+    }
+    function exitCapture() {
+      captureNext = false;
+      banner.querySelector('div').innerHTML = '<strong>Review mode.</strong> Tap "+ Add comment" then click anywhere on the page to leave feedback.';
+      document.body.style.cursor = '';
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!captureNext) return;
+      if (e.target.closest('#rev-banner') || e.target.closest('#rev-fab') || e.target.closest('#rev-popover') || e.target.closest('#rev-summary-modal')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.target;
+      openPopover(target, e.clientX, e.clientY);
+      exitCapture();
+    }, true);
+
+    // ── Comment popover ─────────────────────────────────────────
+    function openPopover(targetEl, x, y) {
+      closePopover();
+      // Highlight target briefly
+      const rect = targetEl.getBoundingClientRect();
+      const ring = document.createElement('div');
+      ring.id = 'rev-ring';
+      ring.style.cssText = [
+        'position:fixed',
+        'left:' + (rect.left - 4) + 'px',
+        'top:' + (rect.top - 4) + 'px',
+        'width:' + (rect.width + 8) + 'px',
+        'height:' + (rect.height + 8) + 'px',
+        'border:2px solid #06b6d4',
+        'border-radius:6px',
+        'pointer-events:none',
+        'z-index:99998',
+        'box-shadow:0 0 0 4px rgba(6,182,212,.20)',
+      ].join(';');
+      document.body.appendChild(ring);
+
+      const snippet = (targetEl.innerText || targetEl.alt || targetEl.value || targetEl.tagName).toString().trim().slice(0, 120);
+      const pop = document.createElement('div');
+      pop.id = 'rev-popover';
+      pop.style.cssText = [
+        'position:fixed',
+        'left:' + Math.min(Math.max(20, x - 160), window.innerWidth - 340) + 'px',
+        'top:' + Math.min(y + 16, window.innerHeight - 240) + 'px',
+        'width:320px',
+        'background:#fff',
+        'color:#0f172a',
+        'border-radius:14px',
+        'padding:16px',
+        'box-shadow:0 24px 60px rgba(0,0,0,.30),0 0 0 1px rgba(0,0,0,.08)',
+        'z-index:99999',
+        'font-family:Inter,-apple-system,sans-serif',
+      ].join(';');
+      pop.innerHTML = `
+        <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;margin-bottom:6px">Commenting on</div>
+        <div style="font-size:13px;color:#0f172a;background:#f1f5f9;padding:8px 10px;border-radius:8px;margin-bottom:12px;max-height:60px;overflow:hidden">"${snippet.replace(/"/g, '&quot;') || '(element)'}"</div>
+        <textarea id="rev-text" placeholder="What needs to change here?" style="width:100%;min-height:90px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;box-sizing:border-box"></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+          <button id="rev-cancel" style="background:#f1f5f9;color:#0f172a;border:0;padding:9px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+          <button id="rev-save" style="background:#0f172a;color:#fff;border:0;padding:9px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Save comment</button>
+        </div>
+      `;
+      document.body.appendChild(pop);
+      setTimeout(() => { const t = document.getElementById('rev-text'); if (t) t.focus(); }, 50);
+
+      document.getElementById('rev-cancel').onclick = closePopover;
+      document.getElementById('rev-save').onclick = () => {
+        const txt = document.getElementById('rev-text').value.trim();
+        if (!txt) { closePopover(); return; }
+        comments.push({
+          ts: new Date().toISOString(),
+          url: window.location.href,
+          path: window.location.pathname + window.location.search + window.location.hash,
+          snippet: snippet,
+          tag: targetEl.tagName.toLowerCase(),
+          comment: txt,
+        });
+        try { localStorage.setItem(KEY, JSON.stringify(comments)); } catch (_) {}
+        closePopover();
+        renderFab();
+        flashSaved();
+      };
+    }
+    function closePopover() {
+      const p = document.getElementById('rev-popover');
+      if (p) p.remove();
+      const r = document.getElementById('rev-ring');
+      if (r) r.remove();
+    }
+    function flashSaved() {
+      const toast = document.createElement('div');
+      toast.style.cssText = [
+        'position:fixed', 'bottom:90px', 'left:50%', 'transform:translateX(-50%)',
+        'background:#10b981', 'color:#fff', 'padding:10px 18px',
+        'border-radius:999px', 'font-family:Inter,sans-serif',
+        'font-size:13px', 'font-weight:700', 'z-index:99999',
+        'box-shadow:0 12px 30px rgba(16,185,129,.40)',
+      ].join(';');
+      toast.textContent = '✓ Comment saved';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 1800);
+    }
+
+    // ── Summary modal + send ────────────────────────────────────
+    function openSummary() {
+      const modal = document.createElement('div');
+      modal.id = 'rev-summary-modal';
+      modal.style.cssText = [
+        'position:fixed', 'inset:0', 'background:rgba(10,15,26,.70)',
+        'z-index:100000', 'display:flex', 'align-items:center',
+        'justify-content:center', 'padding:20px',
+        'font-family:Inter,-apple-system,sans-serif',
+      ].join(';');
+      modal.innerHTML = `
+        <div style="background:#fff;color:#0f172a;border-radius:18px;max-width:560px;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.40)">
+          <div style="padding:22px 24px 14px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.3px">Your ${comments.length} comment${comments.length === 1 ? '' : 's'}</div>
+              <div style="font-size:13px;color:#64748b;margin-top:2px">Click "Send to Joseph" — opens your email app.</div>
+            </div>
+            <button id="rev-close-summary" style="background:#f1f5f9;border:0;color:#64748b;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;font-family:inherit">×</button>
+          </div>
+          <div style="overflow-y:auto;padding:14px 24px;flex:1">
+            ${comments.length === 0 ? '<div style="color:#64748b;padding:24px 0;text-align:center">No comments yet.</div>' : comments.map((c, i) => `
+              <div style="padding:14px 0;border-bottom:1px solid #f1f5f9">
+                <div style="font-size:11px;color:#64748b;letter-spacing:.04em;text-transform:uppercase;font-weight:600">#${i + 1} · ${c.path.length > 36 ? c.path.slice(0, 33) + '…' : c.path}</div>
+                <div style="font-size:13px;color:#475569;background:#f8fafc;padding:6px 10px;border-radius:6px;margin:6px 0">"${(c.snippet || '').replace(/"/g, '&quot;').slice(0, 100)}"</div>
+                <div style="font-size:14px;color:#0f172a;line-height:1.5">${(c.comment || '').replace(/</g, '&lt;')}</div>
+                <button data-rev-del="${i}" style="background:none;border:0;color:#94a3b8;font-size:12px;cursor:pointer;margin-top:4px;padding:0;font-family:inherit">Delete</button>
+              </div>
+            `).join('')}
+          </div>
+          <div style="padding:16px 24px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;background:#fafbfc">
+            <button id="rev-clear-all" style="background:none;border:0;color:#94a3b8;font-size:13px;cursor:pointer;font-family:inherit;padding:10px 14px">Clear all</button>
+            <button id="rev-copy" style="background:#f1f5f9;color:#0f172a;border:0;padding:11px 16px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">📋 Copy all</button>
+            <button id="rev-send" style="background:linear-gradient(135deg,#06b6d4,#0891b2);color:#050614;border:0;padding:11px 18px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Send to Joseph →</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      document.getElementById('rev-close-summary').onclick = () => modal.remove();
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+      modal.querySelectorAll('[data-rev-del]').forEach((btn) => {
+        btn.onclick = () => {
+          const i = Number(btn.getAttribute('data-rev-del'));
+          comments.splice(i, 1);
+          try { localStorage.setItem(KEY, JSON.stringify(comments)); } catch (_) {}
+          modal.remove(); renderFab();
+          if (comments.length > 0) openSummary();
+        };
+      });
+      document.getElementById('rev-clear-all').onclick = () => {
+        if (!confirm('Delete all comments?')) return;
+        comments = [];
+        try { localStorage.removeItem(KEY); } catch (_) {}
+        modal.remove(); renderFab();
+      };
+      document.getElementById('rev-copy').onclick = () => {
+        const txt = compileForEmail();
+        try {
+          navigator.clipboard.writeText(txt);
+          const btn = document.getElementById('rev-copy');
+          const o = btn.textContent;
+          btn.textContent = '✓ Copied';
+          setTimeout(() => { btn.textContent = o; }, 1400);
+        } catch (_) {
+          prompt('Copy the feedback below:', txt);
+        }
+      };
+      document.getElementById('rev-send').onclick = () => {
+        const subject = encodeURIComponent('CodedOK site feedback (' + comments.length + ' comment' + (comments.length === 1 ? '' : 's') + ')');
+        const body = encodeURIComponent(compileForEmail());
+        window.location.href = 'mailto:hello@codedok.com?subject=' + subject + '&body=' + body;
+      };
+    }
+
+    function compileForEmail() {
+      const lines = ['CodedOK site feedback', '======================', ''];
+      comments.forEach((c, i) => {
+        lines.push(`[${i + 1}] ${c.path}`);
+        if (c.snippet) lines.push(`    Element: "${c.snippet}"`);
+        lines.push(`    ${c.comment.replace(/\n/g, '\n    ')}`);
+        lines.push('');
+      });
+      lines.push('---');
+      lines.push('Sent from codedok.com/?review');
+      return lines.join('\n');
+    }
+  })();
+
+  // ─────────────────────────────────────────────────────────────
   // Web push reminders — opt-in flow.
   // VAPID public key is safe to ship in the client.
   // ─────────────────────────────────────────────────────────────
