@@ -1343,23 +1343,25 @@
         const scroll = document.querySelector('#s-home .scroll');
         if (scroll) scroll.insertBefore(onbEl, scroll.firstChild);
       }
+      // Simpler first-run: one obvious action. The old three-step
+      // card stack pushed users through a 90-second wizard before
+      // showing any value. New flow: photo of any certificate gets
+      // you a usable record — vessel info is inferred or added
+      // after. The "set up manually" link is kept as an escape
+      // hatch for the cautious / vessel-without-paperwork case.
       onbEl.innerHTML = `
-        <div style="padding:16px">
-          <div class="card" style="padding:18px;border-radius:16px;border-left:4px solid var(--sea)">
-            <div style="font-size:11px;font-weight:700;color:var(--sea);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Step 1 of 3</div>
-            <div style="font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.3px;margin-bottom:6px">Add your boat</div>
-            <div style="font-size:14px;color:var(--mid);line-height:1.55;margin-bottom:14px">Name, length, persons, MCA category. About 60 seconds. We'll auto-suggest every certificate and piece of gear you need.</div>
-            <button class="btn btn-sea btn-full" onclick="go('s-onboard')" style="height:50px;font-weight:700">+ Add your first vessel →</button>
-          </div>
-          <div class="card" style="padding:18px;border-radius:16px;margin-top:12px;opacity:.55">
-            <div style="font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Step 2 of 3</div>
-            <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">Upload your last survey report</div>
-            <div style="font-size:13px;color:var(--mid);line-height:1.55">Drop one PDF — CodedOK extracts every cert and piece of gear automatically. <strong>You'll do this after adding the vessel.</strong></div>
-          </div>
-          <div class="card" style="padding:18px;border-radius:16px;margin-top:12px;opacity:.55">
-            <div style="font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Step 3 of 3</div>
-            <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">One tap before survey day</div>
-            <div style="font-size:13px;color:var(--mid);line-height:1.55">Tap the Inspection pack button. Get a signed PDF your surveyor opens on their iPad. Done.</div>
+        <div style="padding:24px 16px 8px">
+          <div class="card" style="padding:28px 22px;border-radius:20px;background:linear-gradient(180deg,rgba(34,211,238,.10) 0%,var(--card) 100%);border:1px solid rgba(34,211,238,.30);text-align:center">
+            <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px">Welcome to CodedOK</div>
+            <div style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.4px;line-height:1.15;margin-bottom:10px">Get started in 30 seconds.</div>
+            <div style="font-size:14px;color:var(--mid);line-height:1.55;margin-bottom:22px;max-width:300px;margin-left:auto;margin-right:auto">Photograph any certificate — coding cert, PLI, liferaft, radio licence — and we'll fill in the rest.</div>
+            <button onclick="document.getElementById('cert-camera-input').click()" style="background:linear-gradient(135deg,#06b6d4 0%,#0891b2 100%);color:#050614;border:0;border-radius:14px;padding:18px 28px;font-family:var(--fn);font-size:16px;font-weight:800;cursor:pointer;width:100%;max-width:320px;box-shadow:0 14px 36px rgba(6,182,212,.30);display:inline-flex;align-items:center;justify-content:center;gap:10px">
+              <span style="font-size:22px">📷</span>
+              Snap your first certificate
+            </button>
+            <div style="margin-top:18px">
+              <button onclick="go('s-onboard')" style="background:none;border:0;color:var(--mid);font-family:var(--fn);font-size:13px;cursor:pointer;text-decoration:underline">Or add a vessel manually</button>
+            </div>
           </div>
         </div>`;
       sectionLabels.forEach((el) => { el.style.display = 'none'; });
@@ -1373,6 +1375,55 @@
       if (homeSmsHost) homeSmsHost.style.display = '';
       if (homeVesselsHost) homeVesselsHost.style.display = '';
     }
+
+    // Floating "+ Add" FAB — always one tap from home to add a cert.
+    // Hidden during first-run (the big welcome button is the action)
+    // and replaced cleanly when the user navigates elsewhere via the
+    // standard go() flow which doesn't re-render this. The button
+    // triggers the same camera input the in-app "Add certificate"
+    // button uses, so the downstream flow is unchanged.
+    (function () {
+      const existing = document.getElementById('home-quick-add-fab');
+      if (existing) existing.remove();
+      if (isFirstTime) return;
+      const fab = document.createElement('button');
+      fab.id = 'home-quick-add-fab';
+      fab.type = 'button';
+      fab.setAttribute('aria-label', 'Add certificate');
+      fab.onclick = () => {
+        try { document.getElementById('cert-camera-input').click(); } catch (_) {}
+      };
+      fab.style.cssText = [
+        'position:fixed',
+        'right:18px',
+        'bottom:calc(80px + env(safe-area-inset-bottom, 0px))',
+        'width:60px',
+        'height:60px',
+        'border-radius:50%',
+        'background:linear-gradient(135deg,#06b6d4 0%,#0891b2 100%)',
+        'color:#050614',
+        'border:0',
+        'cursor:pointer',
+        'box-shadow:0 14px 36px rgba(6,182,212,.45),0 0 0 1px rgba(255,255,255,.10)',
+        'z-index:48',
+        'display:flex',
+        'align-items:center',
+        'justify-content:center',
+        'font-size:32px',
+        'font-weight:700',
+        'line-height:1',
+        'transition:transform 200ms cubic-bezier(.22,1,.36,1),box-shadow 200ms ease',
+        'font-family:var(--fn)',
+      ].join(';');
+      fab.innerHTML = '<span style="margin-top:-4px">+</span>';
+      fab.onmouseenter = () => { fab.style.transform = 'translateY(-2px) scale(1.04)'; };
+      fab.onmouseleave = () => { fab.style.transform = ''; };
+      // Append to the s-home shell so it auto-disappears when the user
+      // navigates away (other shells become display:none, but a body-
+      // attached element wouldn't — keeping it home-scoped is safer).
+      const homeShell = document.getElementById('s-home');
+      if (homeShell) homeShell.appendChild(fab);
+    })();
 
     const actionsEl = document.getElementById('home-actions');
     if (actionsEl) {
