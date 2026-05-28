@@ -9028,16 +9028,11 @@ ${sectionsHtml}
         return;
       }
 
-      // app.codedok.com / mobile.codedok.com / any other host:
-      // existing behaviour — installed PWA goes to sign-in, knows-
-      // user goes to sign-in, fresh visitor sees landing as a
-      // courtesy until they navigate.
-      const standalone = window.navigator.standalone === true
-        || window.matchMedia('(display-mode: standalone)').matches;
-      let knowsUser = '0';
-      try { knowsUser = localStorage.getItem('codedok-knows-user') || '0'; } catch (_) {}
-      const skipLanding = standalone || knowsUser === '1';
-      go(skipLanding ? 's-login' : 's-land');
+      // app.codedok.com / mobile.codedok.com / and any non-marketing
+      // host: this is the APP surface, not marketing. Unauth visitors
+      // go straight to sign-in. We never show the landing here — the
+      // landing only exists on codedok.com now.
+      go('s-login');
       return;
     }
     // If a non-demo user is returning to the app and the Store still

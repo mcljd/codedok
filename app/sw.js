@@ -4,7 +4,7 @@
 //     get the latest when online, fall back to cache when offline)
 //   - Fonts / icons / images: cache-first (rarely change, big files)
 // Bump CACHE_VERSION whenever you ship — old caches are deleted on activate.
-const CACHE_VERSION = 'codedok-v119';
+const CACHE_VERSION = 'codedok-v120';
 const SHELL = [
   './',
   './index.html',
@@ -61,6 +61,12 @@ self.addEventListener('fetch', (e) => {
 
   if (isAppShell(url, req)) {
     // Network-first for code/markup — never serve stale UI when online.
+    // If a CSS/JS asset request fails, fall back to its cached copy
+    // ONLY. Never substitute index.html — that returns HTML where the
+    // browser expects CSS/JS, the page silently renders unstyled, and
+    // the symptom looks like a deploy bug (it's not). The index.html
+    // fallback is reserved for navigation requests (clicked links,
+    // typed URLs), which is what SPA fallback actually means.
     e.respondWith(
       fetch(req).then((res) => {
         if (res && res.status === 200 && res.type === 'basic') {
@@ -68,7 +74,13 @@ self.addEventListener('fetch', (e) => {
           caches.open(CACHE_VERSION).then((c) => c.put(req, copy));
         }
         return res;
-      }).catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html')))
+      }).catch(() => caches.match(req).then((hit) => {
+        if (hit) return hit;
+        if (req.mode === 'navigate') return caches.match('./index.html');
+        // Let the browser see the real failure for css/js/json so it
+        // can retry or report a useful error.
+        return new Response('', { status: 504, statusText: 'Offline' });
+      }))
     );
     return;
   }
