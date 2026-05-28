@@ -6164,6 +6164,131 @@ body:has(#s-land.on) { background: #050614 !important; }
   margin: 0 auto;
   text-align: center;
 }
+
+/* ──────────────────────────────────────────────────────────────
+   CINEMATIC HERO — harbour photo right, dark navy left, iPhone
+   mockup floats over the seam. Replaces the centred hero on the
+   landing.
+   ────────────────────────────────────────────────────────────── */
+#s-land .ios-hero-cinema {
+  background: #050912;
+  padding: 0;
+  min-height: clamp(560px, 88vh, 880px);
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  overflow: hidden;
+}
+#s-land .ios-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+#s-land .ios-hero-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right center;
+}
+#s-land .ios-hero-bg-fade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg,
+      #050912 0%,
+      rgba(5,9,18,.96) 24%,
+      rgba(5,9,18,.78) 42%,
+      rgba(5,9,18,.30) 62%,
+      rgba(5,9,18,.10) 100%
+    );
+}
+#s-land .ios-hero-cinema .ios-hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 96px 40px 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 48px;
+  align-items: center;
+  text-align: left;
+}
+#s-land .ios-hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  max-width: 560px;
+}
+#s-land .ios-hero-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#s-land .ios-hero-stage .iphone-hero {
+  margin: 0;
+  transform: perspective(1600px) rotateY(-12deg) rotateX(3deg) translateZ(0);
+  box-shadow:
+    0 60px 120px -30px rgba(0,0,0,.75),
+    0 30px 60px -20px rgba(8,145,178,.35);
+}
+
+/* Light-on-dark text variants for the cinematic hero */
+#s-land .ios-h1-light { color: #fff; text-shadow: 0 2px 24px rgba(0,0,0,.25); }
+#s-land .ios-italic-light {
+  color: #67e8f9;
+  background: linear-gradient(120deg, #67e8f9 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+#s-land .ios-sub-light { color: rgba(255,255,255,.80); margin-left: 0; margin-right: 0; }
+#s-land .ios-trust-row-light { color: rgba(255,255,255,.75); justify-content: flex-start; margin-bottom: 0; }
+#s-land .ios-trust-row-light .ios-check {
+  background: rgba(52,199,89,.20);
+  color: #6ee7a7;
+}
+#s-land .ios-pill-glow {
+  background: rgba(255,255,255,.08);
+  color: #67e8f9;
+  border: 1px solid rgba(103,232,249,.30);
+  -webkit-backdrop-filter: blur(8px);
+          backdrop-filter: blur(8px);
+}
+#s-land .ios-hero-cinema .ios-cta-row { justify-content: flex-start; }
+
+@media (max-width: 960px) {
+  #s-land .ios-hero-cinema .ios-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding: 72px 24px 48px;
+    text-align: center;
+  }
+  #s-land .ios-hero-copy { align-items: center; text-align: center; max-width: 100%; }
+  #s-land .ios-hero-cinema .ios-cta-row { justify-content: center; }
+  #s-land .ios-trust-row-light { justify-content: center; }
+  #s-land .ios-hero-stage .iphone-hero { transform: none; }
+  #s-land .ios-hero-bg-fade {
+    background:
+      linear-gradient(180deg,
+        rgba(5,9,18,.55) 0%,
+        rgba(5,9,18,.90) 70%,
+        #050912 100%
+      );
+  }
+}
+@media (max-width: 720px) {
+  /* No backdrop-filter on mobile (sw v87 freeze rule). */
+  #s-land .ios-pill-glow { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  #s-land .ios-hero-cinema { min-height: auto; }
+  #s-land .ios-hero-cinema .ios-hero-inner { padding: 56px 18px 40px; }
+}
 #s-land .ios-h1 {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: clamp(44px, 8vw, 96px);

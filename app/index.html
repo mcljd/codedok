@@ -427,48 +427,58 @@
       </div>
     </nav>
 
-    <!-- HERO — generous, centred, Apple-product-page rhythm -->
-    <section class="ios-hero">
+    <!-- HERO — cinematic. Harbour photo bleeds in from the right,
+         navy gradient on the left, iPhone mockup floats over the seam. -->
+    <section class="ios-hero ios-hero-cinema">
+      <div class="ios-hero-bg" aria-hidden="true">
+        <img src="/img/landing/Gemini_Generated_Image_44c4mr44c4mr44c4.png"
+             alt=""
+             class="ios-hero-bg-img"
+             fetchpriority="high">
+        <div class="ios-hero-bg-fade"></div>
+      </div>
       <div class="ios-hero-inner">
-        <div class="ios-pill">
-          <span class="ios-pill-dot"></span>
-          New · MCA Sport &amp; Pleasure Vessel Code 2025
-        </div>
-        <h1 class="ios-h1">
-          AI does the paperwork.
-          <span class="ios-italic">You go boating.</span>
-        </h1>
-        <p class="ios-sub">The compliance app for UK &amp; Irish coded vessel skippers. Snap a certificate, see your gaps against the 2025 Code, stay survey-ready all year.</p>
-        <div class="ios-cta-row">
-          <button onclick="goSignUp()" class="ios-cta-primary">Start free <span class="arrow">→</span></button>
-          <a href="https://demo.codedok.com" class="ios-demo-btn ios-demo-web">
-            <span class="ios-demo-ic" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            </span>
-            <span class="ios-demo-text">
-              <span class="ios-demo-lbl">Try the web demo</span>
-              <span class="ios-demo-sub">Full dashboard · best on desktop</span>
-            </span>
-          </a>
-          <a href="https://demo-mobile.codedok.com" class="ios-demo-btn ios-demo-mob">
-            <span class="ios-demo-ic" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
-            </span>
-            <span class="ios-demo-text">
-              <span class="ios-demo-lbl">Try the mobile demo</span>
-              <span class="ios-demo-sub">Phone-sized · installs as PWA</span>
-            </span>
-          </a>
-        </div>
-        <div class="ios-trust-row">
-          <span><span class="ios-check">✓</span> Free to start</span>
-          <span><span class="ios-check">✓</span> No card</span>
-          <span><span class="ios-check">✓</span> 2-minute setup</span>
+        <div class="ios-hero-copy">
+          <div class="ios-pill ios-pill-glow">
+            <span class="ios-pill-dot"></span>
+            New · MCA Sport &amp; Pleasure Vessel Code 2025
+          </div>
+          <h1 class="ios-h1 ios-h1-light">
+            AI does the paperwork.
+            <span class="ios-italic ios-italic-light">You go boating.</span>
+          </h1>
+          <p class="ios-sub ios-sub-light">The compliance app for UK &amp; Irish coded vessel skippers. Snap a certificate, see your gaps against the 2025 Code, stay survey-ready all year.</p>
+          <div class="ios-cta-row">
+            <button onclick="goSignUp()" class="ios-cta-primary">Start free <span class="arrow">→</span></button>
+            <a href="https://demo.codedok.com" class="ios-demo-btn ios-demo-web ios-demo-btn-light">
+              <span class="ios-demo-ic" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              </span>
+              <span class="ios-demo-text">
+                <span class="ios-demo-lbl">Web demo</span>
+                <span class="ios-demo-sub">Full dashboard</span>
+              </span>
+            </a>
+            <a href="https://demo-mobile.codedok.com" class="ios-demo-btn ios-demo-mob ios-demo-btn-light">
+              <span class="ios-demo-ic" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
+              </span>
+              <span class="ios-demo-text">
+                <span class="ios-demo-lbl">Mobile demo</span>
+                <span class="ios-demo-sub">Phone-sized</span>
+              </span>
+            </a>
+          </div>
+          <div class="ios-trust-row ios-trust-row-light">
+            <span><span class="ios-check">✓</span> Free to start</span>
+            <span><span class="ios-check">✓</span> No card</span>
+            <span><span class="ios-check">✓</span> 2-minute setup</span>
+          </div>
         </div>
 
-        <!-- Hero product card (no phone bezel; just the clean card) -->
-        <!-- iPhone mock — Home / Fleet dashboard -->
-        <div class="iphone iphone-hero">
+        <div class="ios-hero-stage">
+          <!-- iPhone mock — Home / Fleet dashboard -->
+          <div class="iphone iphone-hero">
           <div class="iphone-screen">
             <div class="iphone-island"></div>
             <div class="iphone-statusbar">
@@ -547,6 +557,7 @@
             <div class="iphone-home-indicator"></div>
           </div>
         </div>
+        </div><!-- /.ios-hero-stage -->
       </div>
     </section>
 
