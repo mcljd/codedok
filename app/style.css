@@ -6258,6 +6258,23 @@ body:has(#s-land.on) { background: #050614 !important; }
    bumped (chained class) so they win the cascade over the base
    .ios-h1 / .ios-italic / .ios-sub rules that come later in the file. */
 #s-land .ios-h1.ios-h1-light { color: #fff; text-shadow: 0 4px 32px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.45); }
+/* The H1 carries the SEO keyword line + brand display line together
+   so the page has a single semantic H1 that contains the keyword
+   Google ranks on, while the brand line stays the visual hero. */
+#s-land .ios-h1-seo {
+  display: block;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(11px, 1vw, 13px);
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(103,232,249,.85);
+  margin-bottom: 18px;
+  text-shadow: 0 1px 8px rgba(0,0,0,.45);
+}
+#s-land .ios-h1-display {
+  display: block;
+}
 #s-land .ios-italic.ios-italic-light {
   background: linear-gradient(120deg, #67e8f9 0%, #a78bfa 100%);
   -webkit-background-clip: text;
