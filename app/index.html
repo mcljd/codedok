@@ -2208,9 +2208,41 @@
     supabaseUrl: 'https://zftoqqrqsxctehltebad.supabase.co',
     supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdG9xcXJxc3hjdGVobHRlYmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzcxODIsImV4cCI6MjA5NDE1MzE4Mn0.T-gUL06oNQ7dfMJEA2zOVShcM9cwqsV6oH9CbQgi6j8',
     sentryDsn: '',          // paste Sentry DSN here to enable error monitoring
-    sentryEnv: 'production' // 'production' | 'preview' | 'dev'
+    sentryEnv: 'production', // 'production' | 'preview' | 'dev'
+    // ──── Google Analytics 4 ─────────────────────────────────────
+    // Create a GA4 property at analytics.google.com → Data Streams →
+    // Web → copy the Measurement ID (looks like G-XXXXXXXXXX) and
+    // paste it below. Leave empty to disable.
+    gaId: ''
   };
 </script>
+
+<!-- Google Analytics 4 — only loads if window.CodedOkConfig.gaId is set.
+     Tracks page views automatically; custom events (signup_start,
+     demo_open, install_click) are fired from app.js. -->
+<script>
+  (function () {
+    var gaId = (window.CodedOkConfig || {}).gaId;
+    if (!gaId) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(gaId);
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ window.dataLayer.push(arguments); }
+    window.gtag = gtag;
+    gtag('js', new Date());
+    gtag('config', gaId, {
+      // Honour browser DNT signal automatically
+      anonymize_ip: true
+    });
+  })();
+</script>
+<!-- Cloudflare Web Analytics — privacy-friendly, no cookies, free.
+     Activate by pasting your token below (Cloudflare dashboard →
+     Analytics → Web Analytics → "Add a site" → copy the token).
+     Leave the data-cf-beacon attribute empty to disable. -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": ""}'></script>
 <script src="init-sentry.js" defer></script>
 <script src="codes.js" defer></script>
 <script src="store.js" defer></script>

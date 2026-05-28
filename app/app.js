@@ -3466,6 +3466,7 @@
   window.closeIosInstallModal = closeIosInstallModal;
 
   async function installFromCta() {
+    if (typeof window.codedokTrack === 'function') window.codedokTrack('install_click');
     if (isStandaloneInstall()) {
       const b = document.getElementById('hero-install-btn');
       if (b) b.style.display = 'none';
@@ -8538,6 +8539,11 @@ ${sectionsHtml}
       // "check your inbox" interstitial so the user knows to verify.
       if (signUpData && signUpData.session) {
         try { sessionStorage.setItem('codedok-welcome-pending', '1'); } catch (_) {}
+        try {
+          if (typeof window.codedokTrack === 'function') {
+            window.codedokTrack('signup_complete', { role: signupRole });
+          }
+        } catch (_) {}
         // onAuthStateChange handles routing; nothing more to do here.
       } else {
         const lineEl = document.getElementById('login-sent-line');
@@ -8633,8 +8639,22 @@ ${sectionsHtml}
   function goSignUp() {
     go('s-login');
     setTimeout(() => { if (window.toggleAuthMode) toggleAuthMode('signup'); }, 30);
+    track('signup_start');
   }
   window.goSignUp = goSignUp;
+
+  // Lightweight analytics dispatcher. Fires to Google Analytics 4 if
+  // gtag is loaded; harmless no-op otherwise. Used for the three
+  // highest-value funnel events: signup_start (CTA click), demo_open
+  // (/demo URL hit), install_click (Add to Home Screen tapped).
+  function track(eventName, params) {
+    try {
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', eventName, params || {});
+      }
+    } catch (_) {}
+  }
+  window.codedokTrack = track;
 
   // Scroll-driven choreography for the landing page. Wires up:
   //   1. [data-reveal]   — fade-up on scroll into viewport
@@ -8896,6 +8916,14 @@ ${sectionsHtml}
       const isSurveyorDemo = surveyorPath || surveyorQuery;
       const isOperatorDemo = !isSurveyorDemo && (operatorPath || operatorQuery);
       if (isSurveyorDemo || isOperatorDemo) {
+        // Fire analytics event for the demo entry — most reliable
+        // conversion signal we have (people who tried the product
+        // without signing up). Distinguishes operator vs surveyor.
+        try {
+          if (typeof window.codedokTrack === 'function') {
+            window.codedokTrack('demo_open', { role: isSurveyorDemo ? 'surveyor' : 'operator' });
+          }
+        } catch (_) {}
         const name = isSurveyorDemo ? 'Demo surveyor' : 'Demo skipper';
         const email = isSurveyorDemo ? 'demo+surveyor@codedok.com' : 'demo@codedok.com';
         saveSession({ mode: 'demo', email, name });
