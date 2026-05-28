@@ -100,6 +100,16 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 .sb-lt{background:var(--page);color:var(--text);}
 .sb-cd{background:var(--card);color:var(--text);}
 
+/* iOS Safari (non-PWA) chrome compensation. Safari's URL bar overlaps
+   the top of the page and the bottom toolbar overlaps the bottom —
+   env(safe-area-inset-*) only reports the OS status bar, not the
+   browser chrome. body.safari-chrome is set by app.js when iOS Safari
+   is detected and the app is NOT running standalone. */
+body.safari-chrome .sb { min-height: 90px; height: max(90px, calc(env(safe-area-inset-top, 0px) + 50px)); }
+body.safari-chrome .bnav { padding-bottom: max(28px, calc(env(safe-area-inset-bottom, 0px) + 24px)); }
+body.safari-chrome .fab,
+body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
+
 /* SCROLL */
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .scroll::-webkit-scrollbar{display:none;}

@@ -8831,6 +8831,20 @@ ${sectionsHtml}
   window.signOut = signOut;
 
   document.addEventListener('DOMContentLoaded', () => {
+    // Detect whether we're running inside Safari's browser chrome
+    // (URL bar at top, toolbar at bottom) versus installed-PWA mode.
+    // The OS-only env(safe-area-inset-*) values don't account for
+    // Safari's chrome, so we need an extra class to pad past it.
+    try {
+      const isStandalone = window.navigator.standalone === true
+        || window.matchMedia('(display-mode: standalone)').matches;
+      const ua = (navigator.userAgent || '').toLowerCase();
+      const isIOS = /iphone|ipad|ipod/.test(ua) && !window.MSStream;
+      if (isIOS && !isStandalone) {
+        document.body.classList.add('safari-chrome');
+      }
+    } catch (_) {}
+
     wireFileInputs();
     // Inject the icon into the login mark
     const mark = document.getElementById('login-mark');
