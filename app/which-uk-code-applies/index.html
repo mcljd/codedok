@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Which UK Code applies to my vessel? — SPV 2025 vs Workboat Ed.3</title>
+<meta name="description" content="Two UK Codes cover small commercial vessels under 24 m. Answer four questions to find out which one applies to your boat. Free, no signup.">
+<link rel="canonical" href="https://codedok.com/which-uk-code-applies">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://codedok.com/which-uk-code-applies">
+<meta property="og:title" content="Which UK Code applies to my vessel?">
+<meta property="og:description" content="Four questions. One answer. SPV Code 2025, Workboat Code Ed.3, or Irish PBL — find out which one governs your boat.">
+<meta property="og:image" content="https://codedok.com/icons/icon-512.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Which UK Code applies to my vessel?">
+<meta name="twitter:description" content="Four questions. One answer.">
+<meta name="twitter:image" content="https://codedok.com/icons/icon-512.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="/blog/blog.css">
+
+<link rel="icon" type="image/svg+xml" href="/icons/codedok-mark.svg">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<meta name="theme-color" content="#0a0f1a">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "CodedOK", "item": "https://codedok.com/" },
+    { "@type": "ListItem", "position": 2, "name": "Which UK Code applies?", "item": "https://codedok.com/which-uk-code-applies" }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "I run a UK-flagged charter yacht out of Crosshaven — UK Code or Irish PBL?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The flag State sets the Code. A UK-flagged vessel under the SPV Code 2025 (or Workboat Ed.3 if she's not pleasure-use) keeps that certificate when operating in Irish waters, subject to a port-State control inspection by the Marine Survey Office. You only need an Irish PBL if you re-flag to Ireland or set up an Irish operating entity."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "RYA training charter — does the SPV Code apply or do we stay under Workboat Ed.3?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "RYA training delivered on a chartered vessel is treated as instructed-charter passenger carriage under the SPV Code 2025. Workboat Ed.3 only applies if the vessel itself is a working boat and the trainees are crew, not paying passengers. Most RYA Sea School operations fall under SPV."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "I change use mid-year — bareboat in summer, my own family use in winter.",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "If any commercial operation happens during the cert year, the vessel needs a Code certificate for that full year. You cannot dual-status seasonally. Most operators pick the broadest Code their use requires (SPV 2025 covers both charter and private use) and run it year-round."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Vessel is exactly 24 m at the waterline — over or under?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The threshold is 24 m load-line length, not waterline. Get the load-line figure from the builder's plate or stability book. If it's 23.99 m the small commercial Code applies; 24.00 m and above moves to large-yacht / LY3 territory and you need specialist advice."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Pilot boat used occasionally for crew transfer — Workboat or SPV?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Workboat Ed.3. Pilot boats are explicitly a workboat-class operation. Crew transfer doesn't change that; carrying paying passengers would (but that's a different vessel entirely)."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Wind-farm crew transfer vessel — Workboat or its own code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Workboat Code Ed.3 with the offshore wind-farm support annex. Crew on board are considered industrial personnel, not passengers. Annex L sets the additional fendering, transfer, and stability requirements."
+      }
+    }
+  ]
+}
+</script>
+
+<style>
+/* Wizard-specific styles. Keep self-contained — page never needs
+   the main app's style.css and shouldn't trigger SW caching of
+   anything outside this directory. */
+.wiz {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+.wiz-step {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 18px;
+  padding: 32px 28px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04);
+}
+.wiz-step.done { opacity: .58; }
+.wiz-step.done .wiz-opts { display: none; }
+.wiz-step.done .wiz-chosen { display: inline-block; }
+.wiz-chosen { display: none; font-size: 14px; font-weight: 600; color: var(--sonar); margin-top: 6px; }
+.wiz-step-num {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--lt);
+  margin-bottom: 8px;
+}
+.wiz-step h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -.4px;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.wiz-step p.wiz-hint {
+  font-size: 14px;
+  color: var(--lt);
+  margin: 0 0 18px;
+}
+.wiz-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+.wiz-opt {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1.5px solid var(--rule);
+  border-radius: 12px;
+  background: var(--page);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+  transition: border-color 150ms ease, background 150ms ease, transform 100ms ease;
+}
+.wiz-opt:hover { border-color: var(--sonar); background: #fff; }
+.wiz-opt:active { transform: scale(.99); }
+.wiz-opt .wiz-opt-sub {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--lt);
+  margin-top: 2px;
+}
+.wiz-progress {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+.wiz-progress span {
+  flex: 1;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--rule);
+  transition: background 200ms ease;
+}
+.wiz-progress span.on { background: var(--sonar); }
+
+/* Result card */
+.wiz-result {
+  background: linear-gradient(180deg, var(--abyss) 0%, var(--hull) 100%);
+  color: #fff;
+  border-radius: 22px;
+  padding: 40px 32px;
+  margin-top: 8px;
+  box-shadow: 0 28px 60px -20px rgba(8,145,178,.30);
+}
+.wiz-result-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--sonar-light);
+  margin-bottom: 8px;
+}
+.wiz-result h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  line-height: 1.1;
+  margin: 0 0 18px;
+  color: #fff;
+}
+.wiz-result-summary {
+  font-size: 17px;
+  line-height: 1.55;
+  color: rgba(255,255,255,.88);
+  margin: 0 0 26px;
+}
+.wiz-result-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.wiz-result-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(255,255,255,.92);
+}
+.wiz-result-list .check {
+  display: grid;
+  place-items: center;
+  width: 22px; height: 22px;
+  background: rgba(8,145,178,.25);
+  color: var(--sonar-light);
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.wiz-result-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.wiz-result-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border: 0;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.wiz-result-cta.primary {
+  background: linear-gradient(135deg, var(--sonar-2) 0%, var(--sonar) 100%);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(8,145,178,.40);
+}
+.wiz-result-cta.primary:hover { transform: translateY(-2px); }
+.wiz-result-cta.ghost {
+  background: rgba(255,255,255,.10);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.18);
+}
+.wiz-result-cta.ghost:hover { background: rgba(255,255,255,.16); }
+.wiz-result-related {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  font-size: 14px;
+  color: rgba(255,255,255,.72);
+}
+.wiz-result-related a { color: var(--sonar-light); }
+.wiz-reset {
+  background: none;
+  border: 0;
+  color: var(--lt);
+  font-family: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-top: 20px;
+  display: inline-block;
+}
+
+@media (max-width: 600px) {
+  .wiz { padding: 24px 14px 60px; }
+  .wiz-step { padding: 24px 20px; }
+  .wiz-result { padding: 28px 22px; }
+}
+
+/* Print stylesheet — when the user hits "Download as PDF" we invoke
+   window.print(); the system print dialog can save to PDF. Strip
+   navigation chrome, keep result card legible on white. */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .cdk-bar, .cdk-footer, .wiz-step, .wiz-result-ctas, .wiz-reset, .wiz-faq { display: none !important; }
+  .wiz-result {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    border: 2px solid #000;
+    padding: 24px;
+  }
+  .wiz-result h2, .wiz-result-summary, .wiz-result-list li { color: #000 !important; }
+  .wiz-result-eyebrow { color: #444 !important; }
+  .wiz-result-list .check { background: #eee !important; color: #000 !important; }
+}
+</style>
+</head>
+<body>
+
+  <nav class="cdk-bar">
+    <a href="/" class="cdk-brand"><span class="cdk-brand-logo">✓</span><span>CodedOK</span></a>
+    <div class="cdk-bar-actions">
+      <a href="/blog/" class="cdk-bar-link">Blog</a>
+      <a href="/press/" class="cdk-bar-link">Press</a>
+      <a href="/" class="cdk-bar-cta">Start free →</a>
+    </div>
+  </nav>
+
+  <header class="cdk-article-hero" style="min-height:auto">
+    <div class="cdk-article-hero-image" style="aspect-ratio:auto;padding:48px 24px">
+      <div class="cdk-article-hero-meta" style="position:static;padding:0;background:none">
+        <div class="cdk-article-meta-row">
+          <span>Tool · UK &amp; Ireland</span>
+          <span class="sep">·</span>
+          <span>4 questions · ~60 seconds</span>
+        </div>
+        <h1>Which UK Code applies to your vessel?</h1>
+        <p style="color:rgba(255,255,255,.78);font-size:17px;margin-top:14px;max-width:600px">Two UK Codes cover small commercial vessels under 24 m — the new SPV Code 2025 and Workboat Code Ed.3. Plus Irish PBL across the water. Four questions and we'll tell you which one is yours.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="wiz">
+    <div class="wiz-progress" id="wiz-progress">
+      <span class="on"></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- Q1 -->
+    <section class="wiz-step on" data-q="1">
+      <div class="wiz-step-num">Question 1 of 4</div>
+      <h2>Is the vessel under 24 metres load-line length?</h2>
+      <p class="wiz-hint">The threshold is load-line length, not waterline. Check the builder's plate or stability book.</p>
+      <div class="wiz-chosen"></div>
+      <div class="wiz-opts">
+        <button class="wiz-opt" data-a="under24m:yes">Yes — under 24 m</button>
+        <button class="wiz-opt" data-a="under24m:no">No — 24 m or over</button>
+      </div>
+    </section>
+
+    <!-- Q2 -->
+    <section class="wiz-step" data-q="2">
+      <div class="wiz-step-num">Question 2 of 4</div>
+      <h2>How is the vessel chartered?</h2>
+      <p class="wiz-hint">If it varies through the year, pick the broadest type that ever applies.</p>
+      <div class="wiz-chosen"></div>
+      <div class="wiz-opts">
+        <button class="wiz-opt" data-a="op:bareboat">Bareboat charter <span class="wiz-opt-sub">Hirer takes the helm. No skipper supplied.</span></button>
+        <button class="wiz-opt" data-a="op:instructed">Instructed charter <span class="wiz-opt-sub">Skipper or instructor on board with hirer.</span></button>
+        <button class="wiz-opt" data-a="op:paying">Carrying paying passengers <span class="wiz-opt-sub">Passenger trips, day excursions, harbour tours.</span></button>
+        <button class="wiz-opt" data-a="op:working">Working (no passengers) <span class="wiz-opt-sub">Crew only. No fare-paying passengers ever.</span></button>
+      </div>
+    </section>
+
+    <!-- Q3 -->
+    <section class="wiz-step" data-q="3">
+      <div class="wiz-step-num">Question 3 of 4</div>
+      <h2>What is the primary use?</h2>
+      <p class="wiz-hint">The use the vessel is built around — not the occasional one.</p>
+      <div class="wiz-chosen"></div>
+      <div class="wiz-opts">
+        <button class="wiz-opt" data-a="use:sport">Sport &amp; pleasure <span class="wiz-opt-sub">Chartered yacht, sport boat, motor cruiser, RIB.</span></button>
+        <button class="wiz-opt" data-a="use:workboat">Workboat <span class="wiz-opt-sub">General commercial work — fishing tender, support, utility.</span></button>
+        <button class="wiz-opt" data-a="use:pilot">Pilot <span class="wiz-opt-sub">Pilot transfer in harbour or coastal approaches.</span></button>
+        <button class="wiz-opt" data-a="use:dive">Dive support <span class="wiz-opt-sub">Commercial diving operations.</span></button>
+        <button class="wiz-opt" data-a="use:aquaculture">Aquaculture <span class="wiz-opt-sub">Fish farm tender, mussel boat, oyster work.</span></button>
+        <button class="wiz-opt" data-a="use:windfarm">Wind-farm support <span class="wiz-opt-sub">Crew transfer, maintenance, survey.</span></button>
+        <button class="wiz-opt" data-a="use:sailtraining">Sail training <span class="wiz-opt-sub">RYA Sea School, OSC, instructional charter.</span></button>
+      </div>
+    </section>
+
+    <!-- Q4 -->
+    <section class="wiz-step" data-q="4">
+      <div class="wiz-step-num">Question 4 of 4</div>
+      <h2>Where does it operate?</h2>
+      <p class="wiz-hint">Operating area drives the Category (UK) or Class (Irish PBL).</p>
+      <div class="wiz-chosen"></div>
+      <div class="wiz-opts">
+        <button class="wiz-opt" data-a="area:cat6">Within 3 nm of safe haven, UK <span class="wiz-opt-sub">Cat 6 — sheltered coastal.</span></button>
+        <button class="wiz-opt" data-a="area:cat3">Within 20 nm UK <span class="wiz-opt-sub">Cat 3 / 4 — coastal.</span></button>
+        <button class="wiz-opt" data-a="area:cat2">Within 60 nm UK <span class="wiz-opt-sub">Cat 2 — extended coastal.</span></button>
+        <button class="wiz-opt" data-a="area:cat1">Within 150 nm UK <span class="wiz-opt-sub">Cat 1 — offshore.</span></button>
+        <button class="wiz-opt" data-a="area:cat0">Unrestricted, UK <span class="wiz-opt-sub">Cat 0 — ocean.</span></button>
+        <button class="wiz-opt" data-a="area:ireland">Republic of Ireland coastal <span class="wiz-opt-sub">Marine Survey Office PBL waters.</span></button>
+      </div>
+    </section>
+
+    <!-- Result -->
+    <section id="wiz-result-host" hidden></section>
+
+    <button class="wiz-reset" onclick="wizReset()" style="display:none" id="wiz-reset-btn">← Start over</button>
+  </main>
+
+  <footer class="cdk-footer">
+    <div class="cdk-footer-inner">
+      <div>
+        <span class="cdk-brand-logo">✓</span>
+        <span>CodedOK</span>
+        <span style="opacity:.55;margin-left:8px">Cushendall, NI</span>
+      </div>
+      <div>
+        <a href="/blog/">Journal</a>
+        <a href="/press/">Press</a>
+        <a href="/">Start free</a>
+      </div>
+    </div>
+  </footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ─────────────────────────────────────────────────────────────
+  // Decision engine. Four answers → one code result.
+  // Outputs an object the renderer uses to build the result card.
+  // ─────────────────────────────────────────────────────────────
+  function decide(a) {
+    // Over 24 m: out of small-commercial Code scope entirely.
+    if (a.under24m === 'no') return RESULTS.large;
+
+    // Irish jurisdiction: PBL if carrying passengers, Workboat
+    // Ed.3 (reciprocity) if not.
+    if (a.area === 'ireland') {
+      if (a.op === 'paying' || a.op === 'instructed') return RESULTS.pbl;
+      return RESULTS.workboatIE;
+    }
+
+    // UK working uses always Workboat Ed.3.
+    if (a.use === 'workboat' || a.use === 'pilot' || a.use === 'dive'
+        || a.use === 'aquaculture' || a.use === 'windfarm') {
+      return RESULTS.workboat;
+    }
+
+    // Sail training is treated as instructed charter under SPV
+    // unless explicitly working with crew only.
+    if (a.use === 'sailtraining') {
+      if (a.op === 'working') return RESULTS.workboat;
+      return RESULTS.spv;
+    }
+
+    // Sport & pleasure: working crew-only = Workboat; everything
+    // else (bareboat, instructed, paying passengers) = SPV 2025.
+    if (a.use === 'sport') {
+      if (a.op === 'working') return RESULTS.workboat;
+      return RESULTS.spv;
+    }
+
+    // Catch-all — default to SPV with a soft note.
+    return RESULTS.spv;
+  }
+
+  const RESULTS = {
+    spv: {
+      eyebrow: 'Your Code',
+      title: 'MCA SPV Code 2025',
+      summary: 'The Sport & Pleasure Vessel Code Edition 1 applies. It takes effect from 1 December 2025, replacing the MGN 280 framework for pleasure-vessel commercial operations.',
+      bullets: [
+        'Single-route stability declaration for under-15 m vessels',
+        'Mandatory Safety Management System (11 sections) for charter',
+        'Four owner declarations — operating area, persons, stability, charter type',
+        'Refreshed equipment carriage tables (EPIRB on Cat 0-2)',
+        'Annual coding survey by an MCA-recognised surveyor',
+        '12-month transition window from existing MGN 280 cert'
+      ],
+      relatedLabel: 'Full operator\'s checklist — MCA SPV Code 2025 →',
+      relatedHref: '/blog/spv-code-2025-explainer',
+      gaTag: 'spv_2025'
+    },
+    workboat: {
+      eyebrow: 'Your Code',
+      title: 'Workboat Code Edition 3',
+      summary: 'The MCA Workboat Code Edition 3 applies. Workboats, pilot boats, dive support, aquaculture tenders, wind-farm crew transfer, and sail-training vessels operating crew-only all sit under this Code.',
+      bullets: [
+        'Construction and stability standards by vessel type',
+        'Industrial Personnel allowance — up to 12 crew, no passengers',
+        'Operating area Cat 0 through Cat 6 (same scheme as SPV)',
+        'Annex L for offshore wind-farm support if applicable',
+        'Annual survey by an MCA-recognised surveyor',
+        'No SPV-style mandatory SMS — but safe-system-of-work record expected'
+      ],
+      relatedLabel: 'Workboat Ed.3 vs SPV 2025 — full breakdown →',
+      relatedHref: '/blog/workboat-vs-spv-code',
+      gaTag: 'workboat_ed3'
+    },
+    workboatIE: {
+      eyebrow: 'Your Code',
+      title: 'Workboat Code Ed.3 (Irish reciprocity)',
+      summary: 'For non-passenger commercial work in Republic of Ireland waters, the UK Workboat Code Edition 3 is recognised under MSO reciprocity for UK-flagged vessels. For Irish-flagged workboats, the Marine Survey Office issues equivalent certification under MSO standards.',
+      bullets: [
+        'Confirm flag State — UK-flagged uses Workboat Ed.3 directly',
+        'Irish-flagged uses MSO Code of Practice for working vessels',
+        'Port-State control inspection by MSO surveyors when in Irish waters',
+        'Same operating-area categories (Cat 0-6) regardless of flag',
+        'Annual survey by MCA or MSO-recognised surveyor',
+        'No PBL required — that is for passenger operations only'
+      ],
+      relatedLabel: 'Coded vessel Categories Cat 0–Cat 6 explained →',
+      relatedHref: '/blog/coded-vessel-categories-explained',
+      gaTag: 'workboat_ie'
+    },
+    pbl: {
+      eyebrow: 'Your Code',
+      title: 'Irish PBL (Passenger Boat Licence)',
+      summary: 'The Marine Survey Office Passenger Boat Licence applies. Class (P1–P6) is set by your operating area — choose the broadest class that ever applies. Most coastal operations sit in P3–P5.',
+      bullets: [
+        'Six Classes: P1 (international) through P6 (enclosed waters)',
+        'Pick the broadest Class your operating envelope covers',
+        'Annual MSO survey by a surveyor on the MSO panel',
+        'Stability evidence, equipment list, manning scale per Class',
+        'Owner declaration on operating area and persons carried',
+        'Trip-area placard required on board with PBL details'
+      ],
+      relatedLabel: 'Irish PBL Classes P1–P6 explained →',
+      relatedHref: '/blog/irish-pbl-explained',
+      gaTag: 'irish_pbl'
+    },
+    large: {
+      eyebrow: 'Out of scope',
+      title: 'Above 24 m load-line — different rule book',
+      summary: 'Vessels at 24 m and above sit outside the small-commercial Codes entirely. UK-flagged commercial yachts of this size follow the Large Yacht Code (LY3), the Passenger Yacht Code (PYC), or full SOLAS depending on use and number of persons carried.',
+      bullets: [
+        'Large Yacht Code (LY3) for commercial yachts >24 m, ≤12 passengers',
+        'Passenger Yacht Code (PYC) for yachts carrying 13-36 passengers',
+        'SOLAS Chapter I onwards for >36 passengers or cargo',
+        'Specialist surveyor required — this is not coded-vessel territory',
+        'MCA Survey & Inspection Branch or recognised class society',
+        'Different cert, different fees, different scope of survey'
+      ],
+      relatedLabel: 'CodedOK is built for vessels under 24 m — read more →',
+      relatedHref: '/',
+      gaTag: 'large_vessel'
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // State + DOM wiring
+  // ─────────────────────────────────────────────────────────────
+  const answers = {};
+  let stepIdx = 1;
+
+  function track(name, params) {
+    try { if (window.gtag) window.gtag('event', name, params || {}); } catch (_) {}
+  }
+  track('wizard_started');
+
+  document.querySelectorAll('.wiz-opt').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const parts = btn.dataset.a.split(':');
+      answers[parts[0]] = parts[1];
+
+      const step = btn.closest('.wiz-step');
+      step.classList.add('done');
+      step.classList.remove('on');
+      const chosen = step.querySelector('.wiz-chosen');
+      if (chosen) chosen.textContent = '✓ ' + btn.textContent.trim().split('\n')[0];
+
+      // Advance the progress bar
+      const next = stepIdx + 1;
+      document.querySelectorAll('.wiz-progress span')[stepIdx]?.classList.add('on');
+      stepIdx = next;
+
+      const nextStep = document.querySelector('.wiz-step[data-q="' + next + '"]');
+      if (nextStep) {
+        nextStep.classList.add('on');
+        nextStep.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        renderResult();
+      }
+    });
+  });
+
+  function renderResult() {
+    const r = decide(answers);
+    const host = document.getElementById('wiz-result-host');
+    host.hidden = false;
+    host.innerHTML = ''
+      + '<div class="wiz-result">'
+      +   '<div class="wiz-result-eyebrow">' + r.eyebrow + '</div>'
+      +   '<h2>' + r.title + '</h2>'
+      +   '<p class="wiz-result-summary">' + r.summary + '</p>'
+      +   '<ul class="wiz-result-list">'
+      +     r.bullets.map(function (b) {
+            return '<li><span class="check">✓</span>' + b + '</li>';
+          }).join('')
+      +   '</ul>'
+      +   '<div class="wiz-result-ctas">'
+      +     '<a href="https://app.codedok.com/?signup=1" class="wiz-result-cta primary" onclick="wizTrack(\'signup_started\',{persona:\'operator\'})">Get inspection-ready in 5 min →</a>'
+      +     '<button class="wiz-result-cta ghost" onclick="wizPrint(\'' + r.gaTag + '\')">📄 Download as PDF</button>'
+      +   '</div>'
+      +   '<div class="wiz-result-related">'
+      +     'Related: <a href="' + r.relatedHref + '">' + r.relatedLabel + '</a>'
+      +   '</div>'
+      + '</div>';
+    document.getElementById('wiz-reset-btn').style.display = 'inline-block';
+    host.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    track('wizard_completed', { result: r.gaTag });
+  }
+
+  window.wizReset = function () {
+    Object.keys(answers).forEach(function (k) { delete answers[k]; });
+    stepIdx = 1;
+    document.querySelectorAll('.wiz-progress span').forEach(function (s, i) {
+      s.classList.toggle('on', i === 0);
+    });
+    document.querySelectorAll('.wiz-step').forEach(function (s, i) {
+      s.classList.remove('done', 'on');
+      if (i === 0) s.classList.add('on');
+      const chosen = s.querySelector('.wiz-chosen');
+      if (chosen) chosen.textContent = '';
+    });
+    document.getElementById('wiz-result-host').hidden = true;
+    document.getElementById('wiz-reset-btn').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  window.wizPrint = function (gaTag) {
+    track('pdf_downloaded', { asset: 'wizard_result_' + gaTag });
+    window.print();
+  };
+  window.wizTrack = track;
+})();
+</script>
+
+</body>
+</html>
