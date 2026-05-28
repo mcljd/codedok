@@ -443,35 +443,84 @@
         </div>
 
         <!-- Hero product card (no phone bezel; just the clean card) -->
-        <div class="ios-product-card">
-          <div class="ios-card-head">
-            <div>
-              <div class="ios-card-eyebrow">VESSEL</div>
-              <div class="ios-card-vessel">MV Aurora · 9.8m RIB</div>
+        <!-- iPhone mock — Home / Fleet dashboard -->
+        <div class="iphone iphone-hero">
+          <div class="iphone-screen">
+            <div class="iphone-island"></div>
+            <div class="iphone-statusbar">
+              <span class="iphone-time">9:41</span>
+              <div class="iphone-status-icons">
+                <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx=".5"/><rect x="4.5" y="5" width="3" height="6" rx=".5"/><rect x="9" y="2" width="3" height="9" rx=".5"/><rect x="13.5" y="0" width="3" height="11" rx=".5"/></svg>
+                <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M7.5 9.5a1 1 0 100 .5"/><path d="M3 6a6 6 0 019 0"/><path d="M.5 3a10 10 0 0114 0"/></svg>
+                <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x=".5" y=".5" width="22" height="11" rx="2.5" fill="none" stroke="currentColor" stroke-width=".8"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="1.5" height="4" rx=".5" fill="currentColor"/></svg>
+              </div>
             </div>
-            <div class="ios-card-pill ok">● 94% ready</div>
-          </div>
-          <div class="ios-card-status">
-            <div class="ios-card-ring">
-              <svg viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#e5e5ea" stroke-width="6"/>
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#34c759" stroke-width="6" stroke-linecap="round" stroke-dasharray="248 264" transform="rotate(-90 50 50)"/>
-              </svg>
-              <div class="ios-card-ring-num">94<span>%</span></div>
+            <div class="iphone-app">
+              <div class="iphone-app-head">
+                <div>
+                  <div class="iphone-app-greet">Good morning, Joseph</div>
+                  <div class="iphone-app-title">Your boats</div>
+                </div>
+                <div class="iphone-avatar">JM</div>
+              </div>
+
+              <div class="iphone-comp-card">
+                <div class="iphone-comp-ring">
+                  <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="6"/>
+                    <circle cx="50" cy="50" r="44" fill="none" stroke="#34c759" stroke-width="6" stroke-linecap="round" stroke-dasharray="259.6 276.5" transform="rotate(-90 50 50)"/>
+                  </svg>
+                  <div class="iphone-comp-num">94<span>%</span></div>
+                </div>
+                <div class="iphone-comp-meta">
+                  <div class="iphone-comp-lbl">FLEET COMPLIANCE</div>
+                  <div class="iphone-comp-headline">Ready for survey</div>
+                  <div class="iphone-comp-sub">MV Aurora · 9.8m RIB · Cat 2</div>
+                </div>
+              </div>
+
+              <div class="iphone-tiles">
+                <div class="iphone-tile"><div class="iphone-tile-num ok">28</div><div class="iphone-tile-lbl">OK</div></div>
+                <div class="iphone-tile"><div class="iphone-tile-num warn">2</div><div class="iphone-tile-lbl">Soon</div></div>
+                <div class="iphone-tile"><div class="iphone-tile-num crit">1</div><div class="iphone-tile-lbl">Lapsed</div></div>
+              </div>
+
+              <div class="iphone-section-lbl">Action needed</div>
+
+              <div class="iphone-row crit">
+                <div class="iphone-row-ic">⚠</div>
+                <div class="iphone-row-body">
+                  <div class="iphone-row-name">VHF DSC Licence</div>
+                  <div class="iphone-row-sub">Lapsed — renew now</div>
+                </div>
+                <div class="iphone-row-pill crit">Action</div>
+              </div>
+              <div class="iphone-row warn">
+                <div class="iphone-row-ic">⏱</div>
+                <div class="iphone-row-body">
+                  <div class="iphone-row-name">Liferaft service</div>
+                  <div class="iphone-row-sub">Due in 18 days</div>
+                </div>
+                <div class="iphone-row-pill warn">Soon</div>
+              </div>
+              <div class="iphone-row ok">
+                <div class="iphone-row-ic">✓</div>
+                <div class="iphone-row-body">
+                  <div class="iphone-row-name">MCA Coding Cert</div>
+                  <div class="iphone-row-sub">Valid until 14 Mar 2027</div>
+                </div>
+                <div class="iphone-row-pill ok">OK</div>
+              </div>
+
+              <div class="iphone-fab">📷</div>
             </div>
-            <div class="ios-card-meta">
-              <div class="ios-card-meta-line"><span class="dot ok"></span> 28 certificates valid</div>
-              <div class="ios-card-meta-line"><span class="dot warn"></span> 2 due in 30 days</div>
-              <div class="ios-card-meta-line"><span class="dot crit"></span> 1 lapsed — renew now</div>
+            <div class="iphone-tabbar">
+              <div class="iphone-tab on"><div class="iphone-tab-ic">⌂</div><div>Home</div></div>
+              <div class="iphone-tab"><div class="iphone-tab-ic">⛵</div><div>Vessels</div></div>
+              <div class="iphone-tab"><div class="iphone-tab-ic">📋</div><div>Records</div></div>
+              <div class="iphone-tab"><div class="iphone-tab-ic">⚙</div><div>Account</div></div>
             </div>
-          </div>
-          <div class="ios-card-action">
-            <span class="ios-card-action-ic">📷</span>
-            <div>
-              <div class="ios-card-action-title">Scan a certificate</div>
-              <div class="ios-card-action-sub">AI fills in the rest</div>
-            </div>
-            <span class="ios-card-action-arrow">›</span>
+            <div class="iphone-home-indicator"></div>
           </div>
         </div>
       </div>
@@ -587,19 +636,43 @@
           <p class="ios-feature-body">Photograph any certificate — coding cert, PLI, liferaft service, radio licence. AI extracts the expiry, issuer, and serial number in a second. No retyping. No spreadsheets.</p>
         </div>
         <div class="ios-feature-visual">
-          <div class="ios-snap-card">
-            <div class="ios-snap-head">
-              <div class="ios-snap-ic">📷</div>
-              <div>
-                <div class="ios-snap-title">Coding cert · YDSA</div>
-                <div class="ios-snap-sub">Extracted in 1.2 seconds</div>
+          <!-- iPhone mock — Camera scanner -->
+          <div class="iphone iphone-feature">
+            <div class="iphone-screen iphone-screen-dark">
+              <div class="iphone-island"></div>
+              <div class="iphone-statusbar iphone-statusbar-light">
+                <span class="iphone-time">9:41</span>
+                <div class="iphone-status-icons">
+                  <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx=".5"/><rect x="4.5" y="5" width="3" height="6" rx=".5"/><rect x="9" y="2" width="3" height="9" rx=".5"/><rect x="13.5" y="0" width="3" height="11" rx=".5"/></svg>
+                  <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M7.5 9.5a1 1 0 100 .5"/><path d="M3 6a6 6 0 019 0"/><path d="M.5 3a10 10 0 0114 0"/></svg>
+                  <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x=".5" y=".5" width="22" height="11" rx="2.5" fill="none" stroke="currentColor" stroke-width=".8"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="1.5" height="4" rx=".5" fill="currentColor"/></svg>
+                </div>
               </div>
+              <div class="iphone-scanner">
+                <div class="iphone-scanner-head">
+                  <span class="iphone-scanner-close">✕</span>
+                  <span class="iphone-scanner-title">Scan certificate</span>
+                  <span class="iphone-scanner-flash">⚡</span>
+                </div>
+                <div class="iphone-scanner-paper">
+                  <div class="iphone-scanner-paper-hdr">MCA Certificate of Compliance</div>
+                  <div class="iphone-scanner-paper-row"><span>Vessel</span><span>MV Aurora</span></div>
+                  <div class="iphone-scanner-paper-row"><span>Cert No.</span><span>YDSA/2024/TS/4892</span></div>
+                  <div class="iphone-scanner-paper-row"><span>Category</span><span>Cat 2 · 8.5m</span></div>
+                  <div class="iphone-scanner-paper-row"><span>Expiry</span><span>18 May 2026</span></div>
+                </div>
+                <div class="iphone-scanner-corner tl"></div>
+                <div class="iphone-scanner-corner tr"></div>
+                <div class="iphone-scanner-corner bl"></div>
+                <div class="iphone-scanner-corner br"></div>
+                <div class="iphone-scanner-line"></div>
+                <div class="iphone-scanner-detect">
+                  <div class="iphone-scanner-detect-dot"></div>
+                  <span>YDSA Coding · expiry detected</span>
+                </div>
+              </div>
+              <div class="iphone-home-indicator light"></div>
             </div>
-            <div class="ios-snap-row"><span class="k">Number</span><span class="v mono">YDSA/2024/TS/4892</span></div>
-            <div class="ios-snap-row"><span class="k">Vessel</span><span class="v">MV Aurora</span></div>
-            <div class="ios-snap-row"><span class="k">Category</span><span class="v">Cat 2 · 8.5m</span></div>
-            <div class="ios-snap-row"><span class="k">Expiry</span><span class="v ok">18 May 2026</span></div>
-            <div class="ios-snap-tag">✓ Auto-filed against MV Aurora</div>
           </div>
         </div>
       </div>
@@ -614,25 +687,39 @@
           <p class="ios-feature-body">One survey report in. Every certificate, expiry, and deficiency out — categorised, dated, and attached to the right vessel. The five-hour onboarding spreadsheet is gone.</p>
         </div>
         <div class="ios-feature-visual">
-          <div class="ios-snap-card">
-            <div class="ios-snap-head">
-              <div class="ios-snap-ic">📄</div>
-              <div>
-                <div class="ios-snap-title">Survey imported</div>
-                <div class="ios-snap-sub">YDSA · 2024-06-18</div>
+          <!-- iPhone mock — PDF import processing -->
+          <div class="iphone iphone-feature">
+            <div class="iphone-screen">
+              <div class="iphone-island"></div>
+              <div class="iphone-statusbar">
+                <span class="iphone-time">9:41</span>
+                <div class="iphone-status-icons">
+                  <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx=".5"/><rect x="4.5" y="5" width="3" height="6" rx=".5"/><rect x="9" y="2" width="3" height="9" rx=".5"/><rect x="13.5" y="0" width="3" height="11" rx=".5"/></svg>
+                  <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M7.5 9.5a1 1 0 100 .5"/><path d="M3 6a6 6 0 019 0"/><path d="M.5 3a10 10 0 0114 0"/></svg>
+                  <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x=".5" y=".5" width="22" height="11" rx="2.5" fill="none" stroke="currentColor" stroke-width=".8"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="1.5" height="4" rx=".5" fill="currentColor"/></svg>
+                </div>
               </div>
-            </div>
-            <div class="ios-snap-stat-row">
-              <div class="big ok">14</div>
-              <div class="lbl">certificates parsed</div>
-            </div>
-            <div class="ios-snap-stat-row">
-              <div class="big warn">1</div>
-              <div class="lbl">deficiency flagged</div>
-            </div>
-            <div class="ios-snap-stat-row">
-              <div class="big ok">0</div>
-              <div class="lbl">errors</div>
+              <div class="iphone-app">
+                <div class="iphone-app-head">
+                  <span class="iphone-back">‹ Back</span>
+                  <div class="iphone-app-title small">Import survey</div>
+                  <span style="opacity:0">‹ </span>
+                </div>
+                <div class="iphone-import-card">
+                  <div class="iphone-import-doc">📄</div>
+                  <div class="iphone-import-name">survey-mv-aurora-jun24.pdf</div>
+                  <div class="iphone-import-sub">YDSA · 14 pages · 2.4 MB</div>
+                  <div class="iphone-import-bar"><div class="iphone-import-fill"></div></div>
+                  <div class="iphone-import-status">AI extracting records…</div>
+                </div>
+                <div class="iphone-section-lbl">Records found</div>
+                <div class="iphone-import-row ok"><span class="ic">✓</span><div class="body"><div class="n">MCA Coding Cert</div><div class="s">Expires 14 Mar 2027</div></div></div>
+                <div class="iphone-import-row ok"><span class="ic">✓</span><div class="body"><div class="n">Stability declaration</div><div class="s">Signed YDSA · 2023</div></div></div>
+                <div class="iphone-import-row ok"><span class="ic">✓</span><div class="body"><div class="n">PLI</div><div class="s">Pantaenius · valid</div></div></div>
+                <div class="iphone-import-row warn"><span class="ic">!</span><div class="body"><div class="n">Liferaft service</div><div class="s">Due in 18 days · flagged</div></div></div>
+                <div class="iphone-import-row ok"><span class="ic">✓</span><div class="body"><div class="n">Radio Licence (VHF)</div><div class="s">Ofcom · 7 years left</div></div></div>
+              </div>
+              <div class="iphone-home-indicator"></div>
             </div>
           </div>
         </div>
@@ -648,12 +735,35 @@
           <p class="ios-feature-body">Push reminders 90, 60, and 30 days before anything expires. Surveyor cross-org access — they sign off inside the app. Signed inspection pack PDF lands in your inbox the day before survey day.</p>
         </div>
         <div class="ios-feature-visual">
-          <div class="ios-snap-card ios-snap-card-ok">
-            <div class="ios-snap-big">94<span>%</span></div>
-            <div class="ios-snap-big-lbl">READY FOR SURVEY</div>
-            <div class="ios-snap-divider"></div>
-            <div class="ios-snap-meta">28 valid · 2 due in 30 days · 1 to renew</div>
-            <div class="ios-snap-tag ok">📄 Inspection pack — ready to export</div>
+          <!-- iPhone mock — Inspection pack ready -->
+          <div class="iphone iphone-feature">
+            <div class="iphone-screen">
+              <div class="iphone-island"></div>
+              <div class="iphone-statusbar">
+                <span class="iphone-time">9:41</span>
+                <div class="iphone-status-icons">
+                  <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx=".5"/><rect x="4.5" y="5" width="3" height="6" rx=".5"/><rect x="9" y="2" width="3" height="9" rx=".5"/><rect x="13.5" y="0" width="3" height="11" rx=".5"/></svg>
+                  <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M7.5 9.5a1 1 0 100 .5"/><path d="M3 6a6 6 0 019 0"/><path d="M.5 3a10 10 0 0114 0"/></svg>
+                  <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x=".5" y=".5" width="22" height="11" rx="2.5" fill="none" stroke="currentColor" stroke-width=".8"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="1.5" height="4" rx=".5" fill="currentColor"/></svg>
+                </div>
+              </div>
+              <div class="iphone-pack">
+                <div class="iphone-pack-check">
+                  <svg viewBox="0 0 80 80" width="56" height="56"><circle cx="40" cy="40" r="36" fill="#34c759"/><path d="M22 41 L34 53 L58 28" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="iphone-pack-h">Inspection pack ready</div>
+                <div class="iphone-pack-sub">42 pages · MV Aurora · 14 Mar 2026</div>
+                <div class="iphone-pack-doc">
+                  <div class="iphone-pack-doc-page"><div class="iphone-pack-doc-line lg"></div><div class="iphone-pack-doc-line"></div><div class="iphone-pack-doc-line"></div><div class="iphone-pack-doc-line short"></div></div>
+                  <div class="iphone-pack-doc-stack"></div>
+                </div>
+                <div class="iphone-pack-row"><span>📋</span><div><div class="n">28 certificates</div><div class="s">All on file</div></div></div>
+                <div class="iphone-pack-row"><span>🛟</span><div><div class="n">Equipment list</div><div class="s">Audited · ready</div></div></div>
+                <div class="iphone-pack-row"><span>✍</span><div><div class="n">Signed by McCollam Marine</div><div class="s">YDSA · 12 May 2026</div></div></div>
+                <div class="iphone-pack-cta">Send to surveyor</div>
+              </div>
+              <div class="iphone-home-indicator"></div>
+            </div>
           </div>
         </div>
       </div>
