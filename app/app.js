@@ -9000,11 +9000,19 @@ ${sectionsHtml}
       if (isDemoHost) {
         // Demo subdomains drop straight into the operator demo —
         // same flow as the legacy /demo URL, just triggered by host.
+        // demo-mobile.codedok.com adds a body class so we can wrap
+        // the whole app in an iPhone frame on desktop (the mobile
+        // demo should LOOK like a phone even when viewed on a Mac).
         saveSession({ mode: 'demo', email: 'demo@codedok.com', name: 'Demo skipper' });
         if (window.Store) {
           if (Store.hasDemoFixtures()) Store.resetToEmpty();
           Store.applyDemoSeed();
           Store.setMode('operator');
+        }
+        if (host === 'demo-mobile.codedok.com') {
+          document.body.classList.add('demo-mobile-frame');
+        } else {
+          document.body.classList.add('demo-web');
         }
         try { renderDemoBadge(); } catch (_) {}
         try { if (typeof window.codedokTrack === 'function') window.codedokTrack('demo_open', { role: 'operator', host }); } catch (_) {}
