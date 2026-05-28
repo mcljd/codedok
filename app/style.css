@@ -6198,10 +6198,16 @@ body:has(#s-land.on) { background: #050614 !important; }
   background:
     linear-gradient(90deg,
       #050912 0%,
-      rgba(5,9,18,.96) 24%,
-      rgba(5,9,18,.78) 42%,
-      rgba(5,9,18,.30) 62%,
-      rgba(5,9,18,.10) 100%
+      rgba(5,9,18,.98) 36%,
+      rgba(5,9,18,.88) 52%,
+      rgba(5,9,18,.50) 70%,
+      rgba(5,9,18,.20) 100%
+    ),
+    linear-gradient(180deg,
+      rgba(5,9,18,.40) 0%,
+      transparent 30%,
+      transparent 70%,
+      rgba(5,9,18,.60) 100%
     );
 }
 #s-land .ios-hero-cinema .ios-hero-inner {
@@ -6238,19 +6244,20 @@ body:has(#s-land.on) { background: #050614 !important; }
     0 30px 60px -20px rgba(8,145,178,.35);
 }
 
-/* Light-on-dark text variants for the cinematic hero */
-#s-land .ios-h1-light { color: #fff; text-shadow: 0 2px 24px rgba(0,0,0,.25); }
-#s-land .ios-italic-light {
-  color: #67e8f9;
+/* Light-on-dark text variants for the cinematic hero. Specificity
+   bumped (chained class) so they win the cascade over the base
+   .ios-h1 / .ios-italic / .ios-sub rules that come later in the file. */
+#s-land .ios-h1.ios-h1-light { color: #fff; text-shadow: 0 4px 32px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.45); }
+#s-land .ios-italic.ios-italic-light {
   background: linear-gradient(120deg, #67e8f9 0%, #a78bfa 100%);
   -webkit-background-clip: text;
           background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
-#s-land .ios-sub-light { color: rgba(255,255,255,.80); margin-left: 0; margin-right: 0; }
-#s-land .ios-trust-row-light { color: rgba(255,255,255,.75); justify-content: flex-start; margin-bottom: 0; }
-#s-land .ios-trust-row-light .ios-check {
+#s-land .ios-sub.ios-sub-light { color: rgba(255,255,255,.88); max-width: 560px; margin-left: 0; margin-right: 0; text-shadow: 0 2px 12px rgba(0,0,0,.55); }
+#s-land .ios-trust-row.ios-trust-row-light { color: rgba(255,255,255,.85); justify-content: flex-start; margin-bottom: 0; }
+#s-land .ios-trust-row.ios-trust-row-light .ios-check {
   background: rgba(52,199,89,.20);
   color: #6ee7a7;
 }
