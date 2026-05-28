@@ -13,7 +13,16 @@
     "nodejs_compat"
   ],
   "routes": [
+    // Marketing — landing page only. Never serves the app shell.
     { "pattern": "codedok.com", "custom_domain": true },
-    { "pattern": "www.codedok.com", "custom_domain": true }
+    { "pattern": "www.codedok.com", "custom_domain": true },
+    // The web app — sign-in, sign-up, dashboard, all app screens.
+    { "pattern": "app.codedok.com", "custom_domain": true },
+    // The mobile-install PWA — what gets bookmarked when a user
+    // taps "Add to Home Screen" on a phone.
+    { "pattern": "mobile.codedok.com", "custom_domain": true },
+    // Demos — no signup required, auto-seeded sample data.
+    { "pattern": "demo.codedok.com", "custom_domain": true },
+    { "pattern": "demo-mobile.codedok.com", "custom_domain": true }
   ]
 }

@@ -587,6 +587,17 @@
   // ---------- Navigation ----------
 
   function go(id) {
+    // On the marketing host, redirect any attempt to enter an app
+    // shell (s-login, s-home, s-onboard, etc.) to app.codedok.com.
+    // The landing (s-land) is the only shell that should render on
+    // codedok.com — everything else gets bounced.
+    var host = (window.location.hostname || '').toLowerCase();
+    if ((host === 'codedok.com' || host === 'www.codedok.com') && id !== 's-land') {
+      var target = 'https://app.codedok.com/';
+      if (id === 's-login') target = 'https://app.codedok.com/';
+      window.location.href = target;
+      return;
+    }
     document.querySelectorAll('.shell').forEach(s => s.classList.remove('on'));
     const t = document.getElementById(id);
     if (t) {
@@ -8637,11 +8648,36 @@ ${sectionsHtml}
   // the right form without the user having to find the "Create one"
   // link first.
   function goSignUp() {
+    track('signup_start');
+    // On the marketing surface (codedok.com), the app itself isn't
+    // available — punt the user to app.codedok.com which is where
+    // sign-up actually happens. Anywhere else, open the sign-up
+    // form inline.
+    var host = (window.location.hostname || '').toLowerCase();
+    if (host === 'codedok.com' || host === 'www.codedok.com') {
+      window.location.href = 'https://app.codedok.com/?signup=1';
+      return;
+    }
     go('s-login');
     setTimeout(() => { if (window.toggleAuthMode) toggleAuthMode('signup'); }, 30);
-    track('signup_start');
   }
   window.goSignUp = goSignUp;
+
+  // On app.codedok.com, auto-flip to sign-up mode if ?signup=1 is
+  // in the URL (the marketing CTA appends that param when routing
+  // here). Runs after the s-login shell renders.
+  (function maybeAutoSignup() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      if (params.has('signup')) {
+        document.addEventListener('DOMContentLoaded', function () {
+          setTimeout(function () {
+            if (typeof window.toggleAuthMode === 'function') window.toggleAuthMode('signup');
+          }, 100);
+        });
+      }
+    } catch (_) {}
+  })();
 
   // Lightweight analytics dispatcher. Fires to Google Analytics 4 if
   // gtag is loaded; harmless no-op otherwise. Used for the three
@@ -8952,23 +8988,42 @@ ${sectionsHtml}
       session = null;
     }
     if (!session) {
-      // Soft gate — three signals decide where unauth visitors go:
-      //
-      //  1. Installed PWA (standalone display mode). Once they've
-      //     added CodedOK to their home screen, tapping the icon
-      //     should feel like opening any native app — never a
-      //     marketing page.
-      //
-      //  2. Returning user (codedok-knows-user flag, set the first
-      //     time handleSignedIn runs). They've been pitched and
-      //     converted before; even if they signed out, the landing
-      //     adds zero value to them. Send them straight to sign-in.
-      //
-      //  3. Fresh visitor (no PWA install, never signed in here)
-      //     → marketing landing. This is the discovery path that
-      //     justifies the landing existing in the first place.
-      //
-      // Authenticated users skip this block entirely (session truthy).
+      // ────────────────────────────────────────────────────────────
+      // Subdomain routing — see Surface map at end of file. Four
+      // hostnames each have their own role; codedok.com is now
+      // marketing-only, the actual app lives at app.codedok.com.
+      // ────────────────────────────────────────────────────────────
+      const host = (window.location.hostname || '').toLowerCase();
+      const isMarketing = host === 'codedok.com' || host === 'www.codedok.com';
+      const isDemoHost = host === 'demo.codedok.com' || host === 'demo-mobile.codedok.com';
+
+      if (isDemoHost) {
+        // Demo subdomains drop straight into the operator demo —
+        // same flow as the legacy /demo URL, just triggered by host.
+        saveSession({ mode: 'demo', email: 'demo@codedok.com', name: 'Demo skipper' });
+        if (window.Store) {
+          if (Store.hasDemoFixtures()) Store.resetToEmpty();
+          Store.applyDemoSeed();
+          Store.setMode('operator');
+        }
+        try { renderDemoBadge(); } catch (_) {}
+        try { if (typeof window.codedokTrack === 'function') window.codedokTrack('demo_open', { role: 'operator', host }); } catch (_) {}
+        go('s-home');
+        return;
+      }
+
+      if (isMarketing) {
+        // codedok.com is the marketing surface ONLY. Even returning
+        // users / installed PWAs see the landing — sign-in is on
+        // app.codedok.com now.
+        go('s-land');
+        return;
+      }
+
+      // app.codedok.com / mobile.codedok.com / any other host:
+      // existing behaviour — installed PWA goes to sign-in, knows-
+      // user goes to sign-in, fresh visitor sees landing as a
+      // courtesy until they navigate.
       const standalone = window.navigator.standalone === true
         || window.matchMedia('(display-mode: standalone)').matches;
       let knowsUser = '0';
