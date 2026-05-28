@@ -397,408 +397,343 @@
   maps to a built feature.
 ════════════════════════════════════ -->
 <div class="shell" id="s-land">
-  <div class="sb sb-dk" style="background:#f7f3e9 !important;color:#1e293b"></div>
-  <div class="scroll cdk-page-v10">
+  <div class="sb sb-dk" style="background:#ffffff !important;color:#1d1d1f"></div>
+  <div class="scroll ios-page">
 
-    <!-- TOP BAR (cream / light) -->
-    <nav class="v10-bar">
-      <div class="v10-bar-inner">
-        <a href="javascript:go('s-land')" class="v10-brand">
-          <span class="v10-logo">✓</span>
+    <!-- TOP BAR — minimal white -->
+    <nav class="ios-bar">
+      <div class="ios-bar-inner">
+        <a href="javascript:go('s-land')" class="ios-brand">
+          <span class="ios-logo">✓</span>
           <span>CodedOK</span>
         </a>
-        <div class="v10-nav">
-          <a href="#features" class="v10-nav-link">Features</a>
-          <a href="#how" class="v10-nav-link">How it works</a>
-          <a href="#surveyors" class="v10-nav-link">For surveyors</a>
-          <a href="#pricing" class="v10-nav-link">Pricing</a>
-          <a href="/blog/" class="v10-nav-link">Blog</a>
-          <a href="#faq" class="v10-nav-link">FAQ</a>
+        <div class="ios-nav">
+          <a href="#features" class="ios-nav-link">Features</a>
+          <a href="#code" class="ios-nav-link">The 2025 Code</a>
+          <a href="#pricing" class="ios-nav-link">Pricing</a>
+          <a href="/blog/" class="ios-nav-link">Blog</a>
         </div>
-        <div class="v10-bar-actions">
-          <button onclick="go('s-login')" class="v10-signin">Sign in</button>
-          <button onclick="goSignUp()" class="v10-start">Start free <span class="arrow">→</span></button>
+        <div class="ios-bar-actions">
+          <button onclick="go('s-login')" class="ios-signin">Sign in</button>
+          <button onclick="goSignUp()" class="ios-start">Start free</button>
         </div>
       </div>
     </nav>
 
-    <!-- HERO (dark navy gradient) -->
-    <section class="v10-hero">
-      <div class="v10-hero-glow"></div>
-      <div class="v10-hero-inner">
-
-        <div class="v10-hero-copy">
-          <span class="v10-eyebrow"><span class="v10-eyebrow-dot"></span> UK MCA Sport &amp; Pleasure Vessel Code 2025 — ready</span>
-          <h1 class="v10-h1">AI does the paperwork. <span class="v10-italic">You go boating.</span></h1>
-          <p class="v10-sub">CodedOK is the compliance app for UK &amp; Irish coded vessels. Snap your certificates, see your gaps against the 2025 Code, and stay survey-ready all year.</p>
-          <div class="v10-ctas">
-            <button onclick="goSignUp()" class="v10-cta-primary">Start free — no card <span class="arrow">→</span></button>
-            <a href="#how" class="v10-cta-ghost">
-              <span class="v10-play">▶</span>
-              See how it works
-            </a>
-          </div>
-          <div class="v10-trust">
-            <span><span class="v10-tick">✓</span> 2-minute setup</span>
-            <span><span class="v10-tick">✓</span> Free forever for solo skippers</span>
-            <span><span class="v10-tick">✓</span> Built for UK &amp; Irish waters</span>
-          </div>
+    <!-- HERO — generous, centred, Apple-product-page rhythm -->
+    <section class="ios-hero">
+      <div class="ios-hero-inner">
+        <div class="ios-pill">
+          <span class="ios-pill-dot"></span>
+          New · MCA Sport &amp; Pleasure Vessel Code 2025
+        </div>
+        <h1 class="ios-h1">
+          AI does the paperwork.
+          <span class="ios-italic">You go boating.</span>
+        </h1>
+        <p class="ios-sub">The compliance app for UK &amp; Irish coded vessel skippers. Snap a certificate, see your gaps against the 2025 Code, stay survey-ready all year.</p>
+        <div class="ios-cta-row">
+          <button onclick="goSignUp()" class="ios-cta-primary">Start free <span class="arrow">→</span></button>
+          <a href="/demo" class="ios-cta-secondary">Try the demo</a>
+        </div>
+        <div class="ios-trust-row">
+          <span><span class="ios-check">✓</span> Free to start</span>
+          <span><span class="ios-check">✓</span> No card</span>
+          <span><span class="ios-check">✓</span> 2-minute setup</span>
         </div>
 
-        <!-- Phone mock (matches the v10 mockup) -->
-        <div class="v10-phone" aria-hidden="true">
-          <!-- Floating SMS pack card (top-left overlay) -->
-          <div class="v10-float v10-float-sms">
-            <span class="v10-float-ic">📄</span>
+        <!-- Hero product card (no phone bezel; just the clean card) -->
+        <div class="ios-product-card">
+          <div class="ios-card-head">
             <div>
-              <div class="v10-float-title">SMS pack ready</div>
-              <div class="v10-float-sub">42-page PDF · 1 tap</div>
+              <div class="ios-card-eyebrow">VESSEL</div>
+              <div class="ios-card-vessel">MV Aurora · 9.8m RIB</div>
+            </div>
+            <div class="ios-card-pill ok">● 94% ready</div>
+          </div>
+          <div class="ios-card-status">
+            <div class="ios-card-ring">
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#e5e5ea" stroke-width="6"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#34c759" stroke-width="6" stroke-linecap="round" stroke-dasharray="248 264" transform="rotate(-90 50 50)"/>
+              </svg>
+              <div class="ios-card-ring-num">94<span>%</span></div>
+            </div>
+            <div class="ios-card-meta">
+              <div class="ios-card-meta-line"><span class="dot ok"></span> 28 certificates valid</div>
+              <div class="ios-card-meta-line"><span class="dot warn"></span> 2 due in 30 days</div>
+              <div class="ios-card-meta-line"><span class="dot crit"></span> 1 lapsed — renew now</div>
             </div>
           </div>
-          <!-- Floating Liferaft scanned toast -->
-          <div class="v10-float v10-float-scan">
-            <span class="v10-float-check">✓</span>
+          <div class="ios-card-action">
+            <span class="ios-card-action-ic">📷</span>
             <div>
-              <div class="v10-float-title">Liferaft scanned</div>
-              <div class="v10-float-sub">Expiry detected: Jun 2026</div>
+              <div class="ios-card-action-title">Scan a certificate</div>
+              <div class="ios-card-action-sub">AI fills in the rest</div>
+            </div>
+            <span class="ios-card-action-arrow">›</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPV CODE 2025 — restated cleanly, light gray section -->
+    <section class="ios-section ios-section-gray" id="code">
+      <div class="ios-section-inner">
+        <div class="ios-pill ios-pill-dark">
+          <span class="ios-pill-dot"></span>
+          1 December 2025
+        </div>
+        <h2 class="ios-h2">
+          The new code is here.<br>
+          <span class="ios-italic">Are you ready?</span>
+        </h2>
+        <p class="ios-section-lead">For twenty years, UK coded vessels were certified under MGN 280. From December 2025, the new MCA Sport &amp; Pleasure Vessel Code Edition 1 takes over — and every charter operation faces five new requirements.</p>
+
+        <div class="ios-code-grid">
+          <div class="ios-code-card">
+            <div class="ios-code-num">01</div>
+            <div class="ios-code-name">Mandatory SMS for charter</div>
+            <div class="ios-code-body">An 11-section Safety Management System, required for every operation regardless of length.</div>
+          </div>
+          <div class="ios-code-card">
+            <div class="ios-code-num">02</div>
+            <div class="ios-code-name">New stability route</div>
+            <div class="ios-code-body">Single declaration route for under-15m vessels — your old declaration may not pass.</div>
+          </div>
+          <div class="ios-code-card">
+            <div class="ios-code-num">03</div>
+            <div class="ios-code-name">Refreshed equipment tables</div>
+            <div class="ios-code-body">EPIRB now Cat 0–2 (was 0–1). Life raft certificates on file. Updated first aid spec.</div>
+          </div>
+          <div class="ios-code-card">
+            <div class="ios-code-num">04</div>
+            <div class="ios-code-name">Formal owner declarations</div>
+            <div class="ios-code-body">Four signed, dated, version-controlled declarations — operating area, persons, stability, charter type.</div>
+          </div>
+          <div class="ios-code-card">
+            <div class="ios-code-num">05</div>
+            <div class="ios-code-name">Transition window</div>
+            <div class="ios-code-body">12 months for existing certs — but new vessels, change-of-owner, or change-of-use must use the new Code from day one.</div>
+          </div>
+          <div class="ios-code-card ios-code-card-warn">
+            <div class="ios-code-num warn">⚠</div>
+            <div class="ios-code-name">The cost of falling behind</div>
+            <div class="ios-code-body">A missed renewal cancels a charter. A failed survey loses you months. The transition year is when surveyors flag the most issues.</div>
+          </div>
+        </div>
+
+        <div class="ios-code-cta">
+          <h3>The 2025 Code is loaded. Your record is mapped against it.</h3>
+          <p>Auto-loads the new schedule per vessel. Runs a gap analysis. Drafts your 11-section SMS. Renewal reminders 90 / 60 / 30 days before expiry. Surveyor sign-off in the app.</p>
+          <div class="ios-cta-row">
+            <button onclick="goSignUp()" class="ios-cta-primary ios-cta-light">Get SPV-ready in 5 min <span class="arrow">→</span></button>
+            <a href="/blog/spv-code-2025-explainer" class="ios-cta-link">Read the full explainer →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURE: SNAP — full-bleed style -->
+    <section class="ios-feature" id="features">
+      <div class="ios-feature-inner">
+        <div class="ios-feature-text">
+          <div class="ios-feature-eyebrow">AI Certificate Scanner</div>
+          <h2 class="ios-feature-h">Snap.<br>Done.</h2>
+          <p class="ios-feature-body">Photograph any certificate — coding cert, PLI, liferaft service, radio licence. AI extracts the expiry, issuer, and serial number in a second. No retyping. No spreadsheets.</p>
+        </div>
+        <div class="ios-feature-visual">
+          <div class="ios-snap-card">
+            <div class="ios-snap-head">
+              <div class="ios-snap-ic">📷</div>
+              <div>
+                <div class="ios-snap-title">Coding cert · YDSA</div>
+                <div class="ios-snap-sub">Extracted in 1.2 seconds</div>
+              </div>
+            </div>
+            <div class="ios-snap-row"><span class="k">Number</span><span class="v mono">YDSA/2024/TS/4892</span></div>
+            <div class="ios-snap-row"><span class="k">Vessel</span><span class="v">MV Aurora</span></div>
+            <div class="ios-snap-row"><span class="k">Category</span><span class="v">Cat 2 · 8.5m</span></div>
+            <div class="ios-snap-row"><span class="k">Expiry</span><span class="v ok">18 May 2026</span></div>
+            <div class="ios-snap-tag">✓ Auto-filed against MV Aurora</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURE: DROP — alternating direction -->
+    <section class="ios-feature ios-feature-gray ios-feature-alt">
+      <div class="ios-feature-inner">
+        <div class="ios-feature-text">
+          <div class="ios-feature-eyebrow">Survey Importer</div>
+          <h2 class="ios-feature-h">Drop a PDF.<br>Get a record.</h2>
+          <p class="ios-feature-body">One survey report in. Every certificate, expiry, and deficiency out — categorised, dated, and attached to the right vessel. The five-hour onboarding spreadsheet is gone.</p>
+        </div>
+        <div class="ios-feature-visual">
+          <div class="ios-snap-card">
+            <div class="ios-snap-head">
+              <div class="ios-snap-ic">📄</div>
+              <div>
+                <div class="ios-snap-title">Survey imported</div>
+                <div class="ios-snap-sub">YDSA · 2024-06-18</div>
+              </div>
+            </div>
+            <div class="ios-snap-stat-row">
+              <div class="big ok">14</div>
+              <div class="lbl">certificates parsed</div>
+            </div>
+            <div class="ios-snap-stat-row">
+              <div class="big warn">1</div>
+              <div class="lbl">deficiency flagged</div>
+            </div>
+            <div class="ios-snap-stat-row">
+              <div class="big ok">0</div>
+              <div class="lbl">errors</div>
             </div>
           </div>
-
-          <div class="v10-phone-frame">
-            <div class="v10-phone-notch"></div>
-            <div class="v10-phone-screen">
-              <!-- Status bar -->
-              <div class="v10-phone-status">
-                <span>9:41</span>
-                <span class="v10-status-icons">●●● ◯ ▮▮</span>
-              </div>
-              <!-- Vessel header -->
-              <div class="v10-vessel-head">
-                <div>
-                  <div class="v10-vessel-lbl">VESSEL</div>
-                  <div class="v10-vessel-name">MV Aurora · 9.8m RIB</div>
-                </div>
-                <span class="v10-bell">🔔</span>
-              </div>
-              <!-- Compliance ring card -->
-              <div class="v10-comp-card">
-                <div>
-                  <div class="v10-comp-lbl">COMPLIANCE</div>
-                  <div class="v10-comp-num">94% ready</div>
-                  <div class="v10-comp-tiles">
-                    <span class="v10-tile ok">● 28 OK</span>
-                    <span class="v10-tile warn">● 2 soon</span>
-                    <span class="v10-tile crit">● 1 lapsed</span>
-                  </div>
-                </div>
-                <div class="v10-ring">
-                  <svg viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="8"/>
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" stroke-width="8" stroke-linecap="round" stroke-dasharray="236 251.3" transform="rotate(-90 50 50)" style="filter:drop-shadow(0 0 6px rgba(16,185,129,.6))"/>
-                  </svg>
-                </div>
-              </div>
-              <!-- Cert list -->
-              <div class="v10-cert ok">
-                <span class="v10-cert-ic ok">✓</span>
-                <div class="v10-cert-body">
-                  <div class="v10-cert-name">MCA Coding Cert</div>
-                  <div class="v10-cert-sub">Expires 14 Mar 2027</div>
-                </div>
-                <span class="v10-cert-pill ok">OK</span>
-              </div>
-              <div class="v10-cert warn">
-                <span class="v10-cert-ic warn">⏱</span>
-                <div class="v10-cert-body">
-                  <div class="v10-cert-name">Liferaft Service</div>
-                  <div class="v10-cert-sub">Due in 18 days</div>
-                </div>
-                <span class="v10-cert-pill warn">Soon</span>
-              </div>
-              <div class="v10-cert crit">
-                <span class="v10-cert-ic crit">⚠</span>
-                <div class="v10-cert-body">
-                  <div class="v10-cert-name">VHF DSC Licence</div>
-                  <div class="v10-cert-sub">Lapsed — renew now</div>
-                </div>
-              </div>
-              <!-- Scan a certificate action -->
-              <div class="v10-scan-card">
-                <span class="v10-scan-ic">📷</span>
-                <div>
-                  <div class="v10-scan-title">Scan a certificate</div>
-                  <div class="v10-scan-sub">AI will fill in the rest</div>
-                </div>
-                <span class="v10-scan-arrow">→</span>
-              </div>
-            </div>
-          </div>
         </div>
-
       </div>
     </section>
 
-    <!-- LOGOS / TRUST STRIP -->
-    <div class="v10-trust-strip">
-      <span class="v10-trust-label">Built for the new MCA SPV Code 2025 · Workboat Code Edition 3 · Irish PBL Classes P1–P6</span>
-    </div>
-
-    <!-- SPV CODE 2025 — urgency + explainer -->
-    <section class="v10-spv">
-      <div class="v10-spv-hero">
-        <div class="v10-spv-deadline">
-          <span class="v10-spv-dot"></span> 1 December 2025 · the rules change
+    <!-- FEATURE: READY -->
+    <section class="ios-feature">
+      <div class="ios-feature-inner">
+        <div class="ios-feature-text">
+          <div class="ios-feature-eyebrow">Always Ready</div>
+          <h2 class="ios-feature-h">Inspection-ready,<br>all year.</h2>
+          <p class="ios-feature-body">Push reminders 90, 60, and 30 days before anything expires. Surveyor cross-org access — they sign off inside the app. Signed inspection pack PDF lands in your inbox the day before survey day.</p>
         </div>
-        <h2 class="v10-spv-h2">The new Sport &amp; Pleasure Vessel Code is here.<br><span class="v10-spv-em">Are you ready for survey day?</span></h2>
-        <p class="v10-spv-lead">For 20 years, UK coded vessels were certified under MGN 280. From <strong>1 December 2025</strong>, that framework is replaced by the new <strong>MCA Sport &amp; Pleasure Vessel Code Edition 1</strong> — and the bar rises for every charter operation in the UK. Operators who don't update their evidence lose charter days, fail surveys, and risk losing their certification.</p>
-      </div>
-
-      <div class="v10-spv-grid">
-        <article class="v10-spv-card">
-          <div class="v10-spv-num">01</div>
-          <h3>Mandatory SMS for charter</h3>
-          <p>A documented Safety Management System with 11 required sections — now mandatory for <strong>every</strong> charter operation, regardless of vessel length.</p>
-        </article>
-        <article class="v10-spv-card">
-          <div class="v10-spv-num">02</div>
-          <h3>New stability route</h3>
-          <p>A single-route stability declaration replaces the old patchwork. Under-15m vessels need the new template by their next renewal.</p>
-        </article>
-        <article class="v10-spv-card">
-          <div class="v10-spv-num">03</div>
-          <h3>Refreshed equipment tables</h3>
-          <p>EPIRB now required for Cat 0–2 (was Cat 0–1). Life raft service certificates must be on file, not just stickers. First aid spec updated.</p>
-        </article>
-        <article class="v10-spv-card">
-          <div class="v10-spv-num">04</div>
-          <h3>Formal owner declarations</h3>
-          <p>Four signed, dated, version-controlled declarations now required: operating area, persons carried, stability, charter type.</p>
-        </article>
-        <article class="v10-spv-card">
-          <div class="v10-spv-num">05</div>
-          <h3>12-month transition</h3>
-          <p>Existing coding certs valid through Dec 2026. But <strong>new vessels, change-of-owner, or change-of-use</strong> from 1 Dec 2025 must use the new Code from day one.</p>
-        </article>
-        <article class="v10-spv-card v10-spv-card--accent">
-          <div class="v10-spv-num">⚠</div>
-          <h3>The cost of not keeping up</h3>
-          <p>An expired flare cancels a charter. A missed renewal fails a survey. The transition year is when surveyors flag the most issues — across every coast.</p>
-        </article>
-      </div>
-
-      <div class="v10-spv-cta">
-        <div>
-          <span class="v10-eyebrow v10-eyebrow-light">CodedOK is ready</span>
-          <h3 class="v10-spv-cta-h">The new Code is loaded. Your record is mapped against it. Every renewal is tracked.</h3>
-          <p class="v10-spv-cta-p">Auto-loads the new schedule per vessel. Runs a gap analysis against the 2025 requirements. Drafts your 11-section SMS in plain English. Renewal reminders 90 / 60 / 30 days before expiry. Surveyor sign-off in the app. The transition year handled.</p>
-          <div class="v10-spv-cta-row">
-            <button onclick="goSignUp()" class="v10-cta-primary">Get SPV-ready in 5 min <span class="arrow">→</span></button>
-            <a href="/blog/spv-code-2025-explainer" class="v10-cta-ghost">Read the full explainer →</a>
+        <div class="ios-feature-visual">
+          <div class="ios-snap-card ios-snap-card-ok">
+            <div class="ios-snap-big">94<span>%</span></div>
+            <div class="ios-snap-big-lbl">READY FOR SURVEY</div>
+            <div class="ios-snap-divider"></div>
+            <div class="ios-snap-meta">28 valid · 2 due in 30 days · 1 to renew</div>
+            <div class="ios-snap-tag ok">📄 Inspection pack — ready to export</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- FEATURES (3-up) -->
-    <section class="v10-section" id="features">
-      <div class="v10-section-head">
-        <span class="v10-eyebrow v10-eyebrow-dark">Capabilities</span>
-        <h2 class="v10-h2">Built around the way skippers actually work.</h2>
-      </div>
-      <div class="v10-features">
-        <article class="v10-feature">
-          <div class="v10-feature-ic">📷</div>
-          <h3>Snap a certificate</h3>
-          <p>Photograph any coding cert, PLI, liferaft service or radio licence. AI extracts the expiry, issuer and serial number — no retyping.</p>
-        </article>
-        <article class="v10-feature">
-          <div class="v10-feature-ic">📄</div>
-          <h3>Drop your last survey</h3>
-          <p>One PDF in, every certificate and deficiency out. Categorised, dated, attached to the right vessel. The five-hour onboarding is gone.</p>
-        </article>
-        <article class="v10-feature">
-          <div class="v10-feature-ic">🛟</div>
-          <h3>Stay inspection-ready</h3>
-          <p>Push reminders 90 / 60 / 30 days before expiry. Surveyor cross-org access. Signed inspection-pack PDF on demand.</p>
-        </article>
-      </div>
-    </section>
+    <!-- PRICING — minimal cards -->
+    <section class="ios-section ios-section-gray" id="pricing">
+      <div class="ios-section-inner">
+        <div class="ios-pill ios-pill-dark"><span class="ios-pill-dot"></span> Pricing</div>
+        <h2 class="ios-h2">Free for solo skippers.<br><span class="ios-italic">Honest pricing for fleets.</span></h2>
+        <p class="ios-section-lead">Solo is free forever. Pro and Team start with a 14-day trial — no card required to start either.</p>
 
-    <!-- HOW IT WORKS -->
-    <section class="v10-section v10-section-tinted" id="how">
-      <div class="v10-section-head">
-        <span class="v10-eyebrow v10-eyebrow-dark">How it works</span>
-        <h2 class="v10-h2">Three steps. One afternoon.</h2>
-      </div>
-      <div class="v10-steps">
-        <div class="v10-step">
-          <div class="v10-step-num">01</div>
-          <h3>Add your vessel</h3>
-          <p>Name, length, persons, MCA category. Sixty seconds. We auto-load every certificate and piece of gear required.</p>
-        </div>
-        <div class="v10-step">
-          <div class="v10-step-num">02</div>
-          <h3>Drop your last survey</h3>
-          <p>One PDF in. AI parses every certificate, expiry and deficiency into the record. No retyping.</p>
-        </div>
-        <div class="v10-step">
-          <div class="v10-step-num">03</div>
-          <h3>Stay ready, always</h3>
-          <p>Reminders fire before things lapse. Signed inspection pack lands in your inbox the day before survey day.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- FOR SURVEYORS -->
-    <section class="v10-section v10-section-navy" id="surveyors">
-      <div class="v10-surv-grid">
-        <div>
-          <span class="v10-eyebrow v10-eyebrow-light">For surveyors</span>
-          <h2 class="v10-h2 v10-h2-light">Bring every client into one workspace.</h2>
-          <ul class="v10-surv-list">
-            <li>✓ Free seat per client vessel — no per-surveyor fee, ever</li>
-            <li>✓ See the full record before you set foot on the boat</li>
-            <li>✓ Sign off the inspection in the app; pack lands in their inbox</li>
-            <li>✓ Raise deficiencies as tracked open items, not PDF emails</li>
-          </ul>
-          <a href="/blog/spv-code-2025-explainer" class="v10-link-light">See the surveyor workflow →</a>
-        </div>
-        <div class="v10-surv-mock">
-          <div class="v10-surv-tab">
-            <span class="v10-surv-tab-name">MV Aurora</span>
-            <span class="v10-surv-tab-pill">9.8m RIB · Cat 2</span>
+        <div class="ios-plans">
+          <div class="ios-plan">
+            <div class="ios-plan-name">Solo</div>
+            <div class="ios-plan-price">£0<small>/month</small></div>
+            <div class="ios-plan-blurb">One operator, up to two vessels.</div>
+            <ul class="ios-plan-list">
+              <li>Certificates &amp; equipment tracking</li>
+              <li>Renewal reminders</li>
+              <li>Inspection pack PDF</li>
+              <li>Offline-first PWA</li>
+            </ul>
+            <button onclick="goSignUp()" class="ios-plan-btn ghost">Start free</button>
           </div>
-          <div class="v10-surv-row"><span class="ic">📋</span> <span class="lbl">Coding renewal</span> <span class="val ok">Approved</span></div>
-          <div class="v10-surv-row"><span class="ic">🛟</span> <span class="lbl">Liferaft service</span> <span class="val warn">Due in 18d</span></div>
-          <div class="v10-surv-row"><span class="ic">⚠</span> <span class="lbl">VHF DSC</span> <span class="val crit">Lapsed</span></div>
-          <div class="v10-surv-row"><span class="ic">📄</span> <span class="lbl">Stability decl.</span> <span class="val ok">On file</span></div>
-          <div class="v10-surv-row"><span class="ic">✓</span> <span class="lbl">SMS · SPV 2025</span> <span class="val ok">Signed</span></div>
+          <div class="ios-plan ios-plan-featured">
+            <div class="ios-plan-badge">Most popular</div>
+            <div class="ios-plan-name">Pro</div>
+            <div class="ios-plan-price">£19<small>/month</small></div>
+            <div class="ios-plan-blurb">Unlimited vessels, surveyor access, AI cert OCR.</div>
+            <ul class="ios-plan-list">
+              <li>Everything in Solo</li>
+              <li>Unlimited vessels</li>
+              <li>AI cert OCR + survey importer</li>
+              <li>Surveyor cross-org invite</li>
+              <li>Custom inspection-pack branding</li>
+            </ul>
+            <button onclick="goSignUp()" class="ios-plan-btn primary">Start 14-day trial</button>
+          </div>
+          <div class="ios-plan">
+            <div class="ios-plan-name">Team</div>
+            <div class="ios-plan-price">£49<small>/month</small></div>
+            <div class="ios-plan-blurb">Charter fleets with multiple skippers.</div>
+            <ul class="ios-plan-list">
+              <li>Everything in Pro</li>
+              <li>Unlimited team members</li>
+              <li>Per-member permissions</li>
+              <li>Audit log &amp; action history</li>
+            </ul>
+            <button onclick="goSignUp()" class="ios-plan-btn ghost">Start 14-day trial</button>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- PRICING -->
-    <section class="v10-section" id="pricing">
-      <div class="v10-section-head">
-        <span class="v10-eyebrow v10-eyebrow-dark">Pricing</span>
-        <h2 class="v10-h2">Free for solo skippers.<br>Honest pricing for fleets.</h2>
-      </div>
-      <div class="v10-plans">
-        <article class="v10-plan">
-          <div class="v10-plan-name">Solo</div>
-          <div class="v10-plan-price">£0<small>/mo</small></div>
-          <p class="v10-plan-blurb">One operator, up to two vessels. Free, forever.</p>
-          <ul>
-            <li>✓ Certs &amp; equipment tracking</li>
-            <li>✓ Renewal reminders</li>
-            <li>✓ Inspection pack PDF</li>
-            <li>✓ Offline-first PWA</li>
-          </ul>
-          <button onclick="goSignUp()" class="v10-plan-btn ghost">Start free</button>
-        </article>
-        <article class="v10-plan v10-plan-featured">
-          <div class="v10-plan-badge">Most popular</div>
-          <div class="v10-plan-name">Pro</div>
-          <div class="v10-plan-price">£19<small>/mo</small></div>
-          <p class="v10-plan-blurb">Unlimited vessels, surveyor access, AI cert OCR.</p>
-          <ul>
-            <li>✓ Everything in Solo</li>
-            <li>✓ Unlimited vessels</li>
-            <li>✓ AI cert OCR + survey importer</li>
-            <li>✓ Surveyor cross-org invite</li>
-            <li>✓ Custom inspection-pack branding</li>
-          </ul>
-          <button onclick="goSignUp()" class="v10-plan-btn primary">Start 14-day trial</button>
-        </article>
-        <article class="v10-plan">
-          <div class="v10-plan-name">Team</div>
-          <div class="v10-plan-price">£49<small>/mo</small></div>
-          <p class="v10-plan-blurb">Charter fleets with multiple skippers and audit log.</p>
-          <ul>
-            <li>✓ Everything in Pro</li>
-            <li>✓ Unlimited team members</li>
-            <li>✓ Per-member permissions</li>
-            <li>✓ Audit log &amp; action history</li>
-          </ul>
-          <button onclick="goSignUp()" class="v10-plan-btn ghost">Start 14-day trial</button>
-        </article>
-      </div>
-    </section>
-
-    <!-- FAQ -->
-    <section class="v10-section v10-section-tinted" id="faq">
-      <div class="v10-section-head">
-        <span class="v10-eyebrow v10-eyebrow-dark">FAQ</span>
-        <h2 class="v10-h2">Honest answers.</h2>
-      </div>
-      <div class="v10-faq">
-        <details class="v10-faq-q">
-          <summary>What changes in the December 2025 SPV Code?</summary>
-          <p>The MCA replaces the old MGN 280 framework with the Sport &amp; Pleasure Vessel Code Edition 1 on 1 December 2025. New stability route for under-15m vessels, mandatory Safety Management System for charter, refreshed equipment carriage tables, formal owner declarations. <a href="/blog/spv-code-2025-explainer">Full explainer in our journal →</a></p>
-        </details>
-        <details class="v10-faq-q">
-          <summary>Will it work for my Irish-flagged vessel?</summary>
-          <p>Yes. Irish PBL Classes P1–P6 are first-class jurisdictions per vessel. Pick "Ireland — PBL" and the relevant MSO schedule loads alongside (or instead of) the UK MCA set. <a href="/blog/irish-pbl-explained">Full Class breakdown here →</a></p>
-        </details>
-        <details class="v10-faq-q">
-          <summary>What if my certs are on paper?</summary>
-          <p>Perfect — that's what CodedOK is built for. Photograph each one. AI reads issuer, expiry, serial, and files it against the right vessel. Works on creased, faded, or partially-obscured paperwork too.</p>
-        </details>
-        <details class="v10-faq-q">
-          <summary>Can my surveyor see this?</summary>
-          <p>Only when you invite them. Surveyor seat is free per vessel. They see your full record from their own login, sign off the inspection in the app, and the signed pack lands in your inbox.</p>
-        </details>
-        <details class="v10-faq-q">
-          <summary>Is my data secure?</summary>
-          <p>Evidence is stored in Supabase EU (Frankfurt), GDPR-aligned. Cached on your device for offline use. Export as PDF archive at any time. Delete your account from Account → Sign out; full erasure within 30 days.</p>
-        </details>
-        <details class="v10-faq-q">
-          <summary>Do I need to install anything?</summary>
-          <p>No — CodedOK runs in any modern browser. On iPhone / Android you can "Add to Home Screen" for a full-screen, offline-capable app experience. No App Store download required.</p>
-        </details>
-        <details class="v10-faq-q">
-          <summary>What happens after the free plan?</summary>
-          <p>Solo (one operator, two vessels) is free forever. If you need a third vessel or surveyor access, upgrade to Pro (£19/mo). No card required to start — we only ask when you upgrade.</p>
-        </details>
-        <details class="v10-faq-q">
-          <summary>Can I cancel any time?</summary>
-          <p>Yes. No contract, no minimum term. Cancel from inside the app. Pro and Team plans have a 14-day trial.</p>
-        </details>
+    <!-- FAQ — compact list -->
+    <section class="ios-section">
+      <div class="ios-section-inner ios-section-narrow">
+        <div class="ios-pill ios-pill-dark"><span class="ios-pill-dot"></span> FAQ</div>
+        <h2 class="ios-h2">Honest answers.</h2>
+        <div class="ios-faq">
+          <details class="ios-faq-q">
+            <summary>What changes on 1 December 2025?</summary>
+            <p>The MCA Sport &amp; Pleasure Vessel Code Edition 1 replaces MGN 280. New mandatory Safety Management System for charter, new stability route for under-15m, refreshed equipment tables, formal owner declarations. <a href="/blog/spv-code-2025-explainer">Full explainer →</a></p>
+          </details>
+          <details class="ios-faq-q">
+            <summary>Does it cover Irish PBL?</summary>
+            <p>Yes. All six Classes (P1–P6) are first-class jurisdictions per vessel. Pick "Ireland — PBL" and the Marine Survey Office schedule loads alongside the UK MCA set. <a href="/blog/irish-pbl-explained">Class breakdown →</a></p>
+          </details>
+          <details class="ios-faq-q">
+            <summary>What if my certificates are on paper?</summary>
+            <p>Perfect — that's what CodedOK is for. Photograph each one. AI reads issuer, expiry, serial number, and files it against the right vessel. Works on creased, faded, or partially-obscured paperwork.</p>
+          </details>
+          <details class="ios-faq-q">
+            <summary>Can my surveyor see this?</summary>
+            <p>Only when you invite them. Surveyor seat is free per vessel. They see your record from their own login, sign off the inspection in the app, and the signed pack lands in your inbox.</p>
+          </details>
+          <details class="ios-faq-q">
+            <summary>Does it work offshore with no signal?</summary>
+            <p>Yes. Installed as a PWA, the app works fully offline. Edits queue locally and sync when you're back in coverage. No data lost in a tunnel or twenty miles offshore.</p>
+          </details>
+          <details class="ios-faq-q">
+            <summary>Is my data secure?</summary>
+            <p>Evidence is stored in Supabase EU (Frankfurt), GDPR-aligned. Cached on your device for offline use. Export as PDF archive any time. Full erasure within 30 days on request.</p>
+          </details>
+          <details class="ios-faq-q">
+            <summary>Can I cancel any time?</summary>
+            <p>Yes. No contract, no minimum term. Cancel from inside the app. Solo is free forever; Pro and Team have a 14-day trial.</p>
+          </details>
+        </div>
       </div>
     </section>
 
     <!-- FINAL CTA -->
-    <section class="v10-final-wrap">
-      <div class="v10-final">
-        <span class="v10-eyebrow v10-eyebrow-light">Just launched · December 2025 SPV Code ready</span>
-        <h2 class="v10-final-h">Inspection-ready in five minutes.</h2>
-        <p class="v10-final-sub">Free to start. No card. Ready in five minutes — on the dockside, on your phone, in your pocket.</p>
-        <div class="v10-ctas v10-ctas-center">
-          <button onclick="goSignUp()" class="v10-cta-primary">Start free — no card <span class="arrow">→</span></button>
-          <a href="/demo" class="v10-cta-ghost">
-            <span class="v10-play">▶</span>
-            Try the demo
-          </a>
+    <section class="ios-final">
+      <div class="ios-final-inner">
+        <h2 class="ios-final-h">
+          Inspection-ready<br>
+          <span class="ios-italic">in five minutes.</span>
+        </h2>
+        <p class="ios-final-sub">Free to start. No card. Ready on the dockside.</p>
+        <div class="ios-cta-row ios-cta-row-center">
+          <button onclick="goSignUp()" class="ios-cta-primary">Start free <span class="arrow">→</span></button>
+          <a href="/demo" class="ios-cta-secondary">Try the demo</a>
         </div>
       </div>
     </section>
 
     <!-- FOOTER -->
-    <footer class="v10-footer">
-      <div class="v10-footer-inner">
-        <div class="v10-footer-brand">
-          <span class="v10-logo">✓</span>
+    <footer class="ios-footer">
+      <div class="ios-footer-inner">
+        <div class="ios-footer-brand">
+          <span class="ios-logo">✓</span>
           <span>CodedOK</span>
         </div>
-        <div class="v10-footer-meta">Built in Cushendall · For UK &amp; Irish coded vessel operators</div>
-        <div class="v10-footer-links">
+        <div class="ios-footer-meta">Built in Cushendall · For UK &amp; Irish coded vessel operators</div>
+        <div class="ios-footer-links">
           <a href="/blog/">Blog</a>
           <a href="/press/">Press</a>
           <a href="mailto:hello@codedok.com">hello@codedok.com</a>
           <a href="javascript:go('s-terms')">Terms</a>
           <a href="javascript:go('s-privacy')">Privacy</a>
         </div>
-        <div class="v10-footer-copy">© 2026 CodedOK · All rights reserved</div>
+        <div class="ios-footer-copy">© 2026 CodedOK · All rights reserved</div>
       </div>
     </footer>
 
