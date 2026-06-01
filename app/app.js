@@ -249,7 +249,7 @@
   async function handleCertFilePicked(file, categoryHint) {
     if (!file) return;
     if (file.size > MAX_FILE_BYTES) {
-      alert(`That file is ${fmtBytes(file.size)}. Please choose one under ${fmtBytes(MAX_FILE_BYTES)} for the prototype.`);
+      alert(`That file is ${fmtBytes(file.size)}. Please choose one under ${fmtBytes(MAX_FILE_BYTES)} — try saving it at a smaller size first.`);
       return;
     }
     const data_url = await compressImage(file);
@@ -275,7 +275,7 @@
   async function handleEquipmentFilePicked(file) {
     if (!file) return;
     if (file.size > MAX_FILE_BYTES) {
-      alert(`That file is ${fmtBytes(file.size)}. Please choose one under ${fmtBytes(MAX_FILE_BYTES)} for the prototype.`);
+      alert(`That file is ${fmtBytes(file.size)}. Please choose one under ${fmtBytes(MAX_FILE_BYTES)} — try saving it at a smaller size first.`);
       return;
     }
     const data_url = await compressImage(file);
@@ -4309,6 +4309,20 @@
   }
   window.pickCertPhoto = pickCertPhoto;
 
+  // Public wrappers used by the s-scan "Add a record" buttons. Routes
+  // straight into the real Claude-vision extract-cert path, NOT the
+  // legacy regex-on-filename fallback that the s-scan buttons used
+  // to point at. Active vessel is passed through so the extracted
+  // cert is filed against the right boat.
+  function scanCertWithAI() {
+    pickCertPhoto(activeVesselId || null);
+  }
+  function uploadCertWithAI() {
+    pickCertDocument(activeVesselId || null);
+  }
+  window.scanCertWithAI = scanCertWithAI;
+  window.uploadCertWithAI = uploadCertWithAI;
+
   // Open a file picker for PDF / DOCX / image. Used by the surveyor's
   // "Upload certificate" flow — most surveyor docs come as PDFs.
   function pickCertDocument(vesselId) {
@@ -4387,7 +4401,7 @@
       <div class="sheet" style="padding:36px 24px;text-align:center">
         <div style="font-size:36px;margin-bottom:10px">📷</div>
         <div style="font-size:15px;font-weight:700">${escapeHtml(label)}</div>
-        <div style="font-size:12px;color:var(--mid);margin-top:6px">Claude vision extracting fields — usually 3-6 seconds.</div>
+        <div style="font-size:12px;color:var(--mid);margin-top:6px">Reading the certificate — usually 3-6 seconds.</div>
       </div>`;
     document.body.appendChild(el);
   }
@@ -7394,31 +7408,39 @@ ${sectionsHtml}
   // chosen plan persists to organizations.plan; UI gates can read
   // it later when paid features are switched on.
   // ─────────────────────────────────────────────────────────────
+  // Canonical pricing. Must stay in lockstep with the landing /#pricing
+  // tiles and the in-Account plan tiles. Solo is free forever; Pro and
+  // Team start with a 14-day free trial. Until Stripe is wired the
+  // upgrade CTAs are disabled / informational only.
   const PLAN_DEFS = [
     {
-      id: 'solo', label: 'Solo skipper', price: '£0',
-      sub: 'For one operator with up to two vessels.',
+      id: 'solo', label: 'Solo', price: 'Free',
+      priceSub: 'forever',
+      sub: 'For owner-operators running one vessel.',
       perks: [
-        'Track certs, equipment & crew quals',
-        'Inspection-readiness score',
-        'Push reminders 30 / 7 / 0 days out',
-        'SMS builder & PDF export'
+        'One vessel · all compliance tracking',
+        'AI cert scanner',
+        'Renewal reminders (30 + 7 days)',
+        'Inspection-pack PDF',
+        'Surveyor cross-org invite'
       ]
     },
     {
-      id: 'pro', label: 'Pro', price: '£0',
-      sub: 'Unlimited vessels and full surveyor access.',
+      id: 'pro', label: 'Pro', price: '£19',
+      priceSub: '/month · 14-day trial',
+      sub: 'For charter operations with multiple vessels.',
       perks: [
         'Everything in Solo',
         'Unlimited vessels',
-        'Surveyor invite + cross-org access',
-        'AI cert extraction',
+        'Survey-report PDF importer',
+        'Custom inspection-pack branding',
         'Email reminders to crew'
       ],
       recommended: true
     },
     {
-      id: 'team', label: 'Team', price: '£0',
+      id: 'team', label: 'Team', price: '£49',
+      priceSub: '/month · 14-day trial',
       sub: 'For charter fleets with multiple skippers.',
       perks: [
         'Everything in Pro',
@@ -7479,7 +7501,10 @@ ${sectionsHtml}
         <div class="card" style="padding:18px;border:2px solid ${edge};border-radius:16px;margin-bottom:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
             <div style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.2px">${escapeHtml(p.label)}${tag}</div>
-            <div style="font-size:20px;font-weight:700;color:var(--sea);font-family:var(--fn-display)">${escapeHtml(p.price)}<span style="font-size:11px;font-weight:500;color:var(--mid)">/mo</span></div>
+            <div style="text-align:right;font-family:var(--fn-display)">
+              <div style="font-size:20px;font-weight:700;color:var(--sea)">${escapeHtml(p.price)}</div>
+              <div style="font-size:11px;font-weight:500;color:var(--mid)">${escapeHtml(p.priceSub || '')}</div>
+            </div>
           </div>
           <div style="font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:12px">${escapeHtml(p.sub)}</div>
           <ul style="list-style:none;padding:0;margin:0 0 14px">${perks}</ul>
@@ -7489,7 +7514,7 @@ ${sectionsHtml}
 
     body.innerHTML = `
       <div style="background:rgba(15,76,92,.06);border:1px solid rgba(15,76,92,.15);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:var(--mid);line-height:1.55">
-        <strong style="color:var(--sea)">Payment goes live soon.</strong> Picking a plan now just records your choice — you won't be charged until we email you to opt in.
+        <strong style="color:var(--sea)">Solo is free forever.</strong> Pro and Team paid upgrades launch alongside Stripe checkout — pick the plan you'll want and we'll email you the day it's live.
       </div>
       ${cards}`;
   }
@@ -8274,13 +8299,16 @@ ${sectionsHtml}
     } catch (err) {
       setAuthLoading(false);
       console.error('handleSignedIn failed', err);
-      const msg = (err && err.message) || String(err);
-      const hint = /infinite recursion/.test(msg)
-        ? 'Run migration 0005_definer_helpers_idempotent.sql in the Supabase SQL editor — it patches the RLS helpers to SECURITY DEFINER without cascade-dropping policies.'
-        : /violates row-level security|permission denied|new row violates/i.test(msg)
-        ? 'Run migration 0003_insert_policies.sql in the Supabase SQL editor.'
-        : 'Check Supabase RLS policies (migrations 0002, 0003, 0005) in /supabase/migrations.';
-      alert("Couldn't finish signing you in:\n\n" + msg + "\n\n" + hint);
+      // Log full diagnostics for us, show a clean message to the user.
+      // The old behaviour leaked migration-file names into the alert
+      // ("Run migration 0005_definer_helpers_idempotent.sql…") which
+      // is fine in a dev console but reads as broken to a real skipper.
+      try {
+        if (window.Sentry && window.Sentry.captureException) {
+          window.Sentry.captureException(err, { tags: { phase: 'handleSignedIn' } });
+        }
+      } catch (_) {}
+      alert("We couldn't finish signing you in. Try again in a moment, or email hello@codedok.com if it keeps happening.");
     }
   }
 
@@ -8829,6 +8857,69 @@ ${sectionsHtml}
     go('s-login');
   }
   window.signOut = signOut;
+
+  // ─────────────────────────────────────────────────────────────
+  // Account deletion. UK GDPR / DPA 2018 requires a clear, in-app
+  // path to erasure. This is a two-step confirmation: a strong
+  // warning prompt, then a typed confirmation. We then call the
+  // Supabase RPC `delete_my_account` (added separately) which
+  // cascades the user's data and queues the auth row for deletion
+  // within 30 days. If that RPC isn't available we fall back to
+  // emailing privacy@codedok.com — the user is told exactly what
+  // happens next.
+  // ─────────────────────────────────────────────────────────────
+  async function deleteAccount() {
+    const warn = "Delete your CodedOK account?\n\n"
+      + "This permanently removes:\n"
+      + "  • All your vessel records and certificates\n"
+      + "  • Your Safety Management System drafts\n"
+      + "  • Your crew records and qualifications\n"
+      + "  • Any surveyor invitations you've sent\n\n"
+      + "Data is erased within 30 days. This cannot be undone.";
+    if (!confirm(warn)) return;
+
+    const typed = prompt('Type DELETE to confirm (uppercase).');
+    if (typed !== 'DELETE') {
+      if (typed !== null) alert('Cancelled — your account was NOT deleted.');
+      return;
+    }
+
+    // Try the Supabase RPC path first; fall back to mailto if the
+    // RPC isn't deployed yet or anything else goes wrong.
+    let rpcOk = false;
+    if (window.Supa && window.Supa.ready) {
+      try {
+        const client = await window.Supa.getClient();
+        const { error } = await client.rpc('delete_my_account');
+        if (!error) rpcOk = true;
+        else console.warn('delete_my_account RPC failed', error);
+      } catch (err) {
+        console.warn('delete_my_account RPC threw', err);
+      }
+    }
+
+    if (rpcOk) {
+      alert("Your account has been queued for deletion.\n\nWe'll erase all your data within 30 days. You'll receive a confirmation email when it's complete.");
+      clearSession();
+      if (window.Store && Store.resetSession) Store.resetSession();
+      if (window.Supa && window.Supa.signOut) window.Supa.signOut().catch(() => {});
+      go('s-login');
+      return;
+    }
+
+    // Fallback: open the user's mail client with a pre-filled
+    // deletion request to privacy@codedok.com. Honest fallback —
+    // we tell them exactly what we're doing.
+    const subject = encodeURIComponent('Account deletion request');
+    const body = encodeURIComponent(
+      "Hi,\n\nPlease delete my CodedOK account and all associated data.\n\n"
+      + "Account email: " + ((loadSession() || {}).email || '(not signed in)') + "\n\n"
+      + "Thanks."
+    );
+    alert("We've opened your email client with a pre-filled deletion request to privacy@codedok.com. Send it and we'll confirm erasure within 30 days.");
+    window.location.href = `mailto:privacy@codedok.com?subject=${subject}&body=${body}`;
+  }
+  window.deleteAccount = deleteAccount;
 
   document.addEventListener('DOMContentLoaded', () => {
     // Detect whether we're running inside Safari's browser chrome

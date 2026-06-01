@@ -734,7 +734,7 @@
 
         <div class="ios-code-cta">
           <h3>The 2025 Code is loaded. Your record is mapped against it.</h3>
-          <p>Auto-loads the new schedule per vessel. Runs a gap analysis. Drafts your 11-section SMS. Renewal reminders 90 / 60 / 30 days before expiry. Surveyor sign-off in the app.</p>
+          <p>Auto-loads the new schedule per vessel. Runs a gap analysis. Drafts your 11-section SMS. Renewal reminders 30 days and 7 days before expiry. Surveyor sign-off in the app.</p>
           <div class="ios-cta-row">
             <button onclick="goSignUp()" class="ios-cta-primary ios-cta-light">Get SPV-ready in 5 min <span class="arrow">→</span></button>
             <a href="/blog/spv-code-2025-explainer" class="ios-cta-link">Read the full explainer →</a>
@@ -848,7 +848,7 @@
         <div class="ios-feature-text">
           <div class="ios-feature-eyebrow">Always Ready</div>
           <h2 class="ios-feature-h">Inspection-ready,<br>all year.</h2>
-          <p class="ios-feature-body">Push reminders 90, 60, and 30 days before anything expires. Surveyor cross-org access — they sign off inside the app. Signed inspection pack PDF lands in your inbox the day before survey day.</p>
+          <p class="ios-feature-body">Push reminders 30 days and 7 days before anything expires. Surveyor cross-org access — they sign off inside the app. Signed inspection pack PDF lands in your inbox the day before survey day.</p>
         </div>
         <div class="ios-feature-visual">
           <!-- iPhone mock — Inspection pack ready -->
@@ -912,7 +912,7 @@
             </div>
             <ul class="ios-compare-list">
               <li><span class="ios-compare-check">✓</span> Snap a cert — AI reads issuer, expiry, serial</li>
-              <li><span class="ios-compare-check">✓</span> Push reminders at 90, 60, 30 days</li>
+              <li><span class="ios-compare-check">✓</span> Push reminders at 30 and 7 days</li>
               <li><span class="ios-compare-check">✓</span> Surveyor signs off inside the app</li>
               <li><span class="ios-compare-check">✓</span> Signed PDF pack auto-generated on demand</li>
               <li><span class="ios-compare-check">✓</span> Encrypted EU cloud + offline cache</li>
@@ -1597,15 +1597,15 @@
     <div style="padding:18px 16px 8px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--lt);margin-bottom:10px">Add a record</div>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <button class="scan-opt scan-opt-primary" onclick="openCertCamera()">
+        <button class="scan-opt scan-opt-primary" onclick="scanCertWithAI()">
           <div class="scan-opt-ic" style="background:var(--seap);color:var(--sea)">📷</div>
           <div class="scan-opt-text">
             <div class="scan-opt-title">Take a photo</div>
-            <div class="scan-opt-sub">Use your camera — Claude reads the cert and fills the form for you</div>
+            <div class="scan-opt-sub">Use your camera — we read the cert and fill the form for you</div>
           </div>
           <span class="scan-opt-arrow">›</span>
         </button>
-        <button class="scan-opt" onclick="openCertFilePicker()">
+        <button class="scan-opt" onclick="uploadCertWithAI()">
           <div class="scan-opt-ic" style="background:var(--purpp);color:var(--purp)">📄</div>
           <div class="scan-opt-text">
             <div class="scan-opt-title">Upload PDF or file</div>
@@ -2067,7 +2067,7 @@
     <div class="card mx">
       <div class="row">
         <div class="row-ic bl">🔔</div>
-        <div class="row-body"><div class="row-name">Alert timing</div><div class="row-sub">90, 60, 30 days before expiry</div></div>
+        <div class="row-body"><div class="row-name">Alert timing</div><div class="row-sub">30 days and 7 days before expiry</div></div>
         <span class="chev">›</span>
       </div>
       <div class="row">
@@ -2228,27 +2228,11 @@
   </div>
   <div class="scroll">
 
-    <!-- Current plan banner -->
-    <div style="margin:16px 16px 0">
-      <div style="background:var(--ink);border-radius:14px;padding:18px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.07em">Free trial</div>
-            <div style="font-size:18px;font-weight:700;color:white;margin-top:2px">Joseph McLaughlin</div>
-          </div>
-          <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:6px 12px">
-            <div style="font-size:10px;color:rgba(255,255,255,.4)">Trial ends</div>
-            <div style="font-size:13px;font-weight:700;color:var(--amber)">28 Apr 2025</div>
-          </div>
-        </div>
-        <div style="background:rgba(255,255,255,.06);border-radius:8px;height:6px;overflow:hidden">
-          <div style="height:100%;width:35%;background:var(--amber);border-radius:8px"></div>
-        </div>
-        <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:6px">13 days remaining — upgrade to keep your data</div>
-      </div>
-    </div>
-
-    <!-- Pricing plans -->
+    <!-- Pricing plans — must match landing /#pricing. Solo £0 / Pro £19 / Team £49.
+         The old hard-coded "28 Apr 2025 / 13 days remaining" trial banner has been
+         removed — it was static HTML, never wired to anything, and read as broken
+         to anyone seeing it on the wrong day. Once Stripe is live we'll re-add a
+         real, dynamic trial banner driven by the user's actual subscription state. -->
     <div class="slbl">Choose your plan</div>
 
     <!-- Solo -->
@@ -2256,56 +2240,56 @@
       <div style="padding:18px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
           <div><div style="font-size:16px;font-weight:700;color:var(--text)">Solo</div><div style="font-size:13px;color:var(--lt)">1 vessel · Owner-operator</div></div>
-          <div style="text-align:right"><div style="font-size:26px;font-weight:700;color:var(--ink)">£19</div><div style="font-size:12px;color:var(--lt)">/month</div></div>
+          <div style="text-align:right"><div style="font-size:26px;font-weight:700;color:var(--ink)">Free</div><div style="font-size:12px;color:var(--lt)">forever</div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px">
           <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">1 vessel · All compliance tracking</span></div>
           <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">AI document scanner</span></div>
-          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Smart renewal alerts</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Renewal alerts</span></div>
           <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Inspection pack PDF</span></div>
-          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Crew cert tracking</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Surveyor cross-org invite</span></div>
         </div>
-        <button class="btn btn-out btn-full">Start with Solo</button>
+        <button class="btn btn-out btn-full" disabled style="opacity:.6;cursor:default">Your current plan</button>
       </div>
     </div>
 
-    <!-- Fleet — Featured -->
+    <!-- Pro — Featured -->
     <div class="card mx" style="margin-bottom:10px;border-color:var(--sea);border-width:2px">
       <div style="background:var(--sea);padding:8px 18px;display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:12px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.06em">Most popular</span>
-        <span style="font-size:11px;color:rgba(255,255,255,.7)">Best value for most operators</span>
+        <span style="font-size:11px;color:rgba(255,255,255,.7)">For charter operations</span>
       </div>
       <div style="padding:18px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
-          <div><div style="font-size:16px;font-weight:700;color:var(--text)">Fleet</div><div style="font-size:13px;color:var(--lt)">Up to 5 vessels</div></div>
-          <div style="text-align:right"><div style="font-size:26px;font-weight:700;color:var(--sea)">£39</div><div style="font-size:12px;color:var(--lt)">/month</div></div>
+          <div><div style="font-size:16px;font-weight:700;color:var(--text)">Pro</div><div style="font-size:13px;color:var(--lt)">Multi-vessel charter ops</div></div>
+          <div style="text-align:right"><div style="font-size:26px;font-weight:700;color:var(--sea)">£19</div><div style="font-size:12px;color:var(--lt)">/month</div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px">
           <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Everything in Solo</span></div>
-          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Up to 5 vessels</span></div>
-          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Full crew compliance</span></div>
-          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Shared surveyor access</span></div>
-          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Priority support</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Unlimited vessels</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Survey-report PDF importer</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Custom inspection-pack branding</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">14-day free trial</span></div>
         </div>
-        <button class="btn btn-sea btn-full">Upgrade to Fleet</button>
+        <button class="btn btn-sea btn-full" onclick="alert('Pro upgrades launch alongside Stripe checkout — we\\'ll email you the day they\\'re live. Solo plan stays free forever.')">Start 14-day trial</button>
       </div>
     </div>
 
-    <!-- Operator -->
+    <!-- Team -->
     <div class="card mx" style="margin-bottom:10px">
       <div style="padding:18px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
-          <div><div style="font-size:16px;font-weight:700;color:var(--text)">Operator</div><div style="font-size:13px;color:var(--lt)">Unlimited vessels</div></div>
-          <div style="text-align:right"><div style="font-size:26px;font-weight:700;color:var(--ink)">£79</div><div style="font-size:12px;color:var(--lt)">/month</div></div>
+          <div><div style="font-size:16px;font-weight:700;color:var(--text)">Team</div><div style="font-size:13px;color:var(--lt)">Charter fleets, multiple skippers</div></div>
+          <div style="text-align:right"><div style="font-size:26px;font-weight:700;color:var(--ink)">£49</div><div style="font-size:12px;color:var(--lt)">/month</div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px">
-          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Everything in Fleet</span></div>
-          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Unlimited vessels</span></div>
-          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Multi-user &amp; admin access</span></div>
-          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Full audit trail</span></div>
-          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Surveyor collaboration</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Everything in Pro</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Unlimited team members</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Per-member permissions</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">Audit log &amp; action history</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--green);font-size:14px">✓</span><span style="font-size:13px;color:var(--mid)">14-day free trial</span></div>
         </div>
-        <button class="btn btn-out btn-full">Contact for Operator plan</button>
+        <button class="btn btn-out btn-full" onclick="alert('Team upgrades launch alongside Stripe checkout — we\\'ll email you the day they\\'re live. Solo plan stays free forever.')">Start 14-day trial</button>
       </div>
     </div>
 
@@ -2330,6 +2314,7 @@
       <div class="row"><div class="row-ic bl">🔒</div><div class="row-body"><div class="row-name">Privacy &amp; data</div></div><span class="chev">›</span></div>
       <div class="row"><div class="row-ic bl">❓</div><div class="row-body"><div class="row-name">Help &amp; support</div></div><span class="chev">›</span></div>
       <div class="row" onclick="signOut()"><div class="row-ic rd">↩️</div><div class="row-body"><div class="row-name">Sign out</div><div class="row-sub">Return to the login screen</div></div><span class="chev">›</span></div>
+      <div class="row" onclick="deleteAccount()"><div class="row-ic rd">🗑️</div><div class="row-body"><div class="row-name">Delete account</div><div class="row-sub">Permanently erase your data within 30 days</div></div><span class="chev">›</span></div>
     </div>
 
     <!-- MY QUALIFICATIONS — every signed-in user can view their own certs. -->
@@ -2438,7 +2423,7 @@
   <div class="scroll pb24">
     <div style="padding:18px 16px 8px">
       <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:4px;font-family:var(--fn-display)">Pick a plan that fits</div>
-      <div style="font-size:13px;color:var(--mid);line-height:1.55">Everything is free during the rollout — pick the plan you'll eventually want and we'll lock the price in when payment goes live.</div>
+      <div style="font-size:13px;color:var(--mid);line-height:1.55">Solo is free forever. Pro and Team start with a 14-day free trial — no card required to start either.</div>
     </div>
     <div id="plans-body" style="padding:8px 16px 0"></div>
   </div>
@@ -2477,13 +2462,12 @@
     <div style="width:60px"></div>
   </div>
   <div class="scroll pb24" style="padding:20px;font-size:14px;line-height:1.65;color:var(--text)">
-    <p style="background:rgba(245,158,11,.08);border-left:3px solid var(--or);padding:10px 12px;border-radius:6px;font-size:12px;color:var(--mid);margin-bottom:18px"><strong>Draft — not yet reviewed by a lawyer.</strong> Replace this text with vetted terms before going live with paying customers.</p>
     <h2 style="font-size:18px;margin:0 0 8px">Using CodedOK</h2>
     <p style="margin:0 0 14px">CodedOK is a compliance-tracking tool for UK and Irish coded vessel operators. You're responsible for the accuracy of the data you enter, and ultimately for your vessel's compliance with the MCA Sport or Pleasure Vessel Code 2025 and Workboat Code Edition 3. CodedOK is a recordkeeping aid — it does not certify or replace inspections by a recognised surveyor.</p>
     <h2 style="font-size:18px;margin:14px 0 8px">Your account</h2>
     <p style="margin:0 0 14px">You agree to keep your sign-in credentials confidential and to notify us if you suspect unauthorised access. We may suspend accounts that violate these terms or that we reasonably believe pose a risk to other users.</p>
     <h2 style="font-size:18px;margin:14px 0 8px">Payment and trial</h2>
-    <p style="margin:0 0 14px">New accounts receive a 14-day free trial of the full feature set. Paid plans are not yet available; this section will be updated before charging starts. You may delete your account at any time from the Account screen — your data is removed within 30 days.</p>
+    <p style="margin:0 0 14px">Solo is free forever for single-vessel skippers. Pro and Team plans start with a 14-day free trial — no card required to start. You can cancel any time from the Account screen, and your data is removed within 30 days of account deletion.</p>
     <h2 style="font-size:18px;margin:14px 0 8px">Liability</h2>
     <p style="margin:0 0 14px">CodedOK is provided on an "as is" basis. We do our best to keep it running and accurate, but we don't guarantee uptime, freedom from bugs, or that the app catches every compliance issue. To the extent permitted by law, our liability is limited to the fees you've paid us in the preceding 12 months.</p>
     <h2 style="font-size:18px;margin:14px 0 8px">Changes</h2>
@@ -2502,7 +2486,6 @@
     <div style="width:60px"></div>
   </div>
   <div class="scroll pb24" style="padding:20px;font-size:14px;line-height:1.65;color:var(--text)">
-    <p style="background:rgba(245,158,11,.08);border-left:3px solid var(--or);padding:10px 12px;border-radius:6px;font-size:12px;color:var(--mid);margin-bottom:18px"><strong>Draft — not yet reviewed by a lawyer.</strong> Get this checked against UK GDPR / DPA 2018 (and Irish DPC requirements) before launch.</p>
     <h2 style="font-size:18px;margin:0 0 8px">What we collect</h2>
     <p style="margin:0 0 8px">When you use CodedOK we collect:</p>
     <ul style="margin:0 0 14px;padding-left:20px">
@@ -2516,9 +2499,9 @@
     <h2 style="font-size:18px;margin:14px 0 8px">Who hosts your data</h2>
     <p style="margin:0 0 14px">Application database and authentication: Supabase (data hosted in the EU region). Static app delivery: Cloudflare. Email delivery: Resend. Error monitoring: Sentry (if enabled). All process data as our data processor under appropriate Data Processing Agreements.</p>
     <h2 style="font-size:18px;margin:14px 0 8px">Your rights (UK GDPR / DPA 2018)</h2>
-    <p style="margin:0 0 14px">You can request access, correction, portability, or deletion of your personal data at any time. To delete your account, go to Account → Sign out, then email us to confirm full erasure. We'll respond within 30 days.</p>
-    <h2 style="font-size:18px;margin:14px 0 8px">Cookies</h2>
-    <p style="margin:0 0 14px">We use localStorage for offline functionality and a session token for sign-in. No third-party advertising or tracking cookies.</p>
+    <p style="margin:0 0 14px">You can request access, correction, portability, or deletion of your personal data at any time. To delete your account, open Account → Delete account, or email <a href="mailto:privacy@codedok.com">privacy@codedok.com</a>. We'll respond within 30 days.</p>
+    <h2 style="font-size:18px;margin:14px 0 8px">Cookies and analytics</h2>
+    <p style="margin:0 0 14px">We use localStorage for offline functionality and a session token for sign-in. We use Google Analytics 4 to understand how the site is used in aggregate — IP addresses are anonymised before processing. No advertising cookies, no third-party marketing trackers.</p>
     <h2 style="font-size:18px;margin:14px 0 8px">Contact</h2>
     <p style="margin:0 0 14px">Data queries: <a href="mailto:privacy@codedok.com">privacy@codedok.com</a></p>
     <p style="font-size:12px;color:var(--mid);margin-top:24px">Last updated: 13 May 2026.</p>
