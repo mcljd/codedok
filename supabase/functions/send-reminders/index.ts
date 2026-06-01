@@ -36,7 +36,7 @@ const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:hello@codedok.com
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
-type Bucket = "overdue" | "due7" | "due30";
+type Bucket = "overdue" | "due7" | "due30" | "due60" | "due90";
 
 type ExpiringItem = {
   user_id: string;
@@ -60,18 +60,26 @@ type PushSub = {
 function bucketLabel(b: Bucket): string {
   if (b === "overdue") return "Overdue";
   if (b === "due7")    return "Due in 7 days";
-  return "Due in 30 days";
+  if (b === "due30")   return "Due in 30 days";
+  if (b === "due60")   return "Due in 60 days";
+  return "Due in 90 days";
 }
 
 function buildBody(items: ExpiringItem[]): { title: string; body: string } {
+  // Pick the most-urgent bucket to drive the headline. Order matters:
+  // overdue beats due7 beats due30 beats due60 beats due90.
   const overdue = items.filter((i) => i.bucket === "overdue");
   const due7    = items.filter((i) => i.bucket === "due7");
   const due30   = items.filter((i) => i.bucket === "due30");
+  const due60   = items.filter((i) => i.bucket === "due60");
+  const due90   = items.filter((i) => i.bucket === "due90");
 
   let title = "CodedOK — renewal due";
-  if (overdue.length) title = `${overdue.length} item${overdue.length === 1 ? "" : "s"} overdue`;
-  else if (due7.length) title = `${due7.length} item${due7.length === 1 ? "" : "s"} due this week`;
-  else if (due30.length) title = `${due30.length} item${due30.length === 1 ? "" : "s"} due in 30 days`;
+  if (overdue.length)      title = `${overdue.length} item${overdue.length === 1 ? "" : "s"} overdue`;
+  else if (due7.length)    title = `${due7.length} item${due7.length === 1 ? "" : "s"} due this week`;
+  else if (due30.length)   title = `${due30.length} item${due30.length === 1 ? "" : "s"} due in 30 days`;
+  else if (due60.length)   title = `${due60.length} item${due60.length === 1 ? "" : "s"} due in 60 days`;
+  else if (due90.length)   title = `${due90.length} item${due90.length === 1 ? "" : "s"} due in 90 days`;
 
   // Up to 3 items in the body; rest get "and N more".
   const preview = items.slice(0, 3).map((i) => {
@@ -89,11 +97,13 @@ async function handler(req: Request): Promise<Response> {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // 1. Pull everything currently in a notifiable bucket.
+  // 1. Pull everything currently in a notifiable bucket. The view
+  // (migration 0017) emits five buckets: overdue / due7 / due30 /
+  // due60 / due90. 'valid' is excluded — those don't need a nudge.
   const { data: expiring, error: expErr } = await sb
     .from("expiring_items")
     .select("user_id, item_kind, item_id, label, vessel_id, vessel_name, expires_at, bucket")
-    .in("bucket", ["overdue", "due7", "due30"]);
+    .in("bucket", ["overdue", "due7", "due30", "due60", "due90"]);
   if (expErr) return json({ error: "expiring_items query failed", detail: expErr.message }, 500);
   const items = (expiring || []) as ExpiringItem[];
   if (!items.length) return json({ ok: true, sent: 0, reason: "nothing expiring" });
