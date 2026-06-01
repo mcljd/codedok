@@ -1640,14 +1640,20 @@
     scroll.querySelectorAll('[data-dyn="vessel-card"]').forEach((n) => n.remove());
 
     const s = Store.snapshot();
-    const html = s.vessels.length === 0
+    // Apply per-vessel scoping. Owners get all vessels; scoped team
+    // members get only the boats they were granted in the invite.
+    // Authoritative enforcement lives in Supabase RLS — this is the
+    // client-side belt-and-braces so a scoped user doesn't see ghost
+    // entries cached in localStorage from a previous session.
+    const visible = filterByVesselScope(s.vessels);
+    const html = visible.length === 0
       ? `<div class="card mx empty" data-dyn="vessel-card" style="margin-bottom:12px">
            <div class="empty-art">⛵</div>
            <div class="empty-h">No vessels yet</div>
            <div class="empty-sub">Add your first vessel to start tracking compliance.</div>
            <button class="btn btn-sea btn-sm" onclick="go('s-onboard')">+ Add vessel</button>
          </div>`
-      : s.vessels.map((v) => `
+      : visible.map((v) => `
           <div data-dyn="vessel-card" style="padding:0 16px;margin-bottom:12px">
             ${vesselCoverHtml(v, { compact: false })}
           </div>`).join('');
@@ -4413,6 +4419,15 @@
   function openCertReviewModal(ex, vesselId) {
     const existing = document.getElementById('cert-review-sheet');
     if (existing) existing.remove();
+    // Stash the AI's raw extraction so saveExtractedCert can compute
+    // a diff against whatever the user types over the top. This is
+    // the override audit trail Patricia flagged as missing: when a
+    // saved cert turns out wrong later, we can answer "did the AI
+    // hallucinate or did the operator change it?".
+    window.__pendingCertExtraction = {
+      raw: Object.assign({}, ex || {}),
+      receivedAt: new Date().toISOString()
+    };
     const modal = document.createElement('div');
     modal.id = 'cert-review-sheet';
     modal.className = 'bdrop on';
@@ -4477,6 +4492,19 @@
     }
     if (!vesselId) { alert('No vessel to add this to. Add a vessel first.'); return; }
 
+    // Build the override audit trail. We compare each saved field
+    // against the AI's raw extraction; any field that differs is
+    // recorded as an override with both values + timestamp.
+    const pending = window.__pendingCertExtraction || null;
+    const audit = pending ? buildExtractionAudit(pending, {
+      name, issuer, number,
+      issued_at: (document.getElementById('cer-issued') || {}).value || null,
+      expires_at: (document.getElementById('cer-expires') || {}).value || null,
+      next_service_at: (document.getElementById('cer-next') || {}).value || null,
+      make: (document.getElementById('cer-make') || {}).value || '',
+      model: (document.getElementById('cer-model') || {}).value || ''
+    }) : null;
+
     if (kind === 'equipment') {
       const next_service_at = (document.getElementById('cer-next') || {}).value || null;
       const make = (document.getElementById('cer-make') || {}).value || '';
@@ -4484,7 +4512,8 @@
       Store.addEquipment({
         vessel_id: vesselId, name, kind: typeHint || 'other',
         make, model, serial: number, next_service_at,
-        icon: iconForType(typeHint)
+        icon: iconForType(typeHint),
+        extraction: audit
       });
     } else {
       const issued_at = (document.getElementById('cer-issued') || {}).value || null;
@@ -4493,14 +4522,48 @@
         vessel_id: vesselId, name, kind: typeHint || 'other',
         issuer, number, issued_at, expires_at,
         category: certCategoryForType(typeHint),
-        icon: iconForType(typeHint)
+        icon: iconForType(typeHint),
+        extraction: audit
       });
     }
 
+    window.__pendingCertExtraction = null;
     closeCertReview();
-    alert(`${kind === 'equipment' ? 'Equipment' : 'Certificate'} added.`);
+    const overrideMsg = audit && audit.overrides.length
+      ? `\n\n(You corrected ${audit.overrides.length} field${audit.overrides.length === 1 ? '' : 's'} the AI got wrong — both versions are saved in the audit log.)`
+      : '';
+    alert(`${kind === 'equipment' ? 'Equipment' : 'Certificate'} added.${overrideMsg}`);
     renderHome();
     if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
+  }
+
+  // Compare the AI's raw extraction to what the user actually saved.
+  // Returns { raw, saved, overrides, confidence, receivedAt }. The
+  // `overrides` array lists every field where the human disagreed
+  // with the AI — that's the answer to "did the AI hallucinate or
+  // did the operator override?". Empty overrides = clean AI read.
+  function buildExtractionAudit(pending, savedFields) {
+    const raw = pending.raw || {};
+    const overrides = [];
+    const compareKeys = ['name', 'issuer', 'number', 'issued_at', 'expires_at', 'next_service_at', 'make', 'model'];
+    compareKeys.forEach((key) => {
+      const rawVal = (raw[key] == null ? '' : String(raw[key])).trim();
+      const userVal = (savedFields[key] == null ? '' : String(savedFields[key])).trim();
+      // Empty-to-empty doesn't count as a change. Empty-to-something
+      // means the AI missed a field and the user filled it in;
+      // something-to-empty means the user blanked the AI's guess.
+      if (rawVal !== userVal) {
+        overrides.push({ field: key, ai: rawVal, human: userVal });
+      }
+    });
+    return {
+      raw,
+      saved: savedFields,
+      overrides,
+      confidence: raw.confidence || 'unknown',
+      receivedAt: pending.receivedAt,
+      savedAt: new Date().toISOString()
+    };
   }
   window.saveExtractedCert = saveExtractedCert;
 
@@ -7245,6 +7308,27 @@ ${sectionsHtml}
             </button>`).join('')}
         </div>
 
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Which vessels can they access?</label>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px" id="team-invite-vessels">
+          ${(function () {
+            const vessels = (Store.snapshot().vessels || []);
+            if (!vessels.length) return '<div style="font-size:12px;color:var(--mid);padding:8px 10px;border:1px dashed var(--bdr);border-radius:10px">Add a vessel first.</div>';
+            return `
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bdr);border-radius:10px;cursor:pointer;background:rgba(15,76,92,.04)">
+                <input type="checkbox" class="team-vessel-all" id="team-vessel-all" checked onchange="toggleAllVesselScopes(this.checked)" style="accent-color:var(--sea)">
+                <span style="font-size:13px;color:var(--text);font-weight:600">All vessels (current and future)</span>
+              </label>
+              <div style="display:flex;flex-direction:column;gap:4px;padding:4px 4px 4px 22px;border-left:2px solid var(--bdr);margin-left:6px">
+                ${vessels.map((v) => `
+                  <label style="display:flex;align-items:center;gap:10px;padding:6px 10px;cursor:pointer">
+                    <input type="checkbox" class="team-vessel" value="${escapeHtml(v.id)}" checked style="accent-color:var(--sea)">
+                    <span style="font-size:12px;color:var(--mid)">${escapeHtml(v.name)}</span>
+                  </label>`).join('')}
+              </div>`;
+          })()}
+        </div>
+        <div style="font-size:11px;color:var(--mid);line-height:1.5;margin-bottom:14px;padding:0 4px">Scope this member to specific boats. Crew assigned to one RIB can't see crew medicals on another.</div>
+
         <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Fine-tune permissions <span style="color:var(--mid);font-weight:500;text-transform:none;letter-spacing:0">(optional)</span></label>
         <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px" id="team-invite-perms">
           ${[
@@ -7268,6 +7352,18 @@ ${sectionsHtml}
     document.body.appendChild(modal);
     pickTeamRole('mate');
   }
+
+  // Toggle helper for the "All vessels" master checkbox in the team
+  // invite modal. When ticked, individual vessel rows become irrelevant
+  // (the membership grants org-wide access). When unticked, each
+  // vessel row controls one grant.
+  function toggleAllVesselScopes(allOn) {
+    document.querySelectorAll('.team-vessel').forEach((cb) => {
+      cb.disabled = allOn;
+      if (allOn) cb.checked = true;
+    });
+  }
+  window.toggleAllVesselScopes = toggleAllVesselScopes;
   window.openInviteTeamMember = openInviteTeamMember;
 
   function pickTeamRole(role) {
@@ -7290,8 +7386,25 @@ ${sectionsHtml}
     const email = ((document.getElementById('team-invite-email') || {}).value || '').trim();
     if (!email.includes('@')) { alert('Enter a valid email.'); return; }
     const perms = Array.from(document.querySelectorAll('.team-perm:checked')).map((el) => el.value);
-    // Everyone can at least view; add manage_* on top of that.
-    const permissions = ['view_all'].concat(perms);
+
+    // Per-vessel scoping. If "All vessels" is ticked we record an
+    // org-wide grant (vessel:all). Otherwise we record one
+    // `vessel:<id>` entry per ticked boat. Encoded inside the
+    // existing permissions[] array so it survives without a Supabase
+    // schema migration — the eventual proper column is a future
+    // refactor.
+    const allOn = (document.getElementById('team-vessel-all') || {}).checked;
+    const vesselScopes = allOn
+      ? ['vessel:all']
+      : Array.from(document.querySelectorAll('.team-vessel:checked')).map((el) => 'vessel:' + el.value);
+    if (!vesselScopes.length) {
+      alert('Pick at least one vessel — or tick "All vessels" to grant org-wide access.');
+      return;
+    }
+
+    // Everyone can at least view; add manage_* on top of that, plus
+    // the vessel-scope entries.
+    const permissions = ['view_all'].concat(perms).concat(vesselScopes);
 
     if (!window.Supa || !window.Supa.ready) { alert('Cloud sync not configured.'); return; }
     try {
@@ -7808,6 +7921,33 @@ ${sectionsHtml}
     const perms = memb.permissions || [];
     return perms.includes(perm) || perms.includes('view_all') && /^view/.test(perm);
   }
+
+  // Per-vessel scoping check. Returns true if the current user has
+  // access to a specific vessel — either via vessel:all (org-wide)
+  // or via vessel:<id> (per-vessel scope). Owners always pass.
+  // Used by every list / detail render that surfaces vessel data.
+  function canSeeVessel(vesselId) {
+    if (!window.Store) return true;
+    const me = Store.getCurrentUser();
+    if (!me) return false;
+    const memb = (Store.snapshot().memberships || []).find((m) => m.user_id === me.id);
+    if (!memb) return true;
+    if (memb.role === 'owner') return true;
+    const perms = memb.permissions || [];
+    if (perms.includes('vessel:all')) return true;
+    return perms.includes('vessel:' + vesselId);
+  }
+  window.canSeeVessel = canSeeVessel;
+
+  // Filter a list of vessels (or vessel-bearing records) down to what
+  // the current user is allowed to see. Used by renderHome,
+  // renderVessels, certificate listings, etc. Owners get everything;
+  // scoped team members get just their grants.
+  function filterByVesselScope(items, vesselIdGetter) {
+    const get = vesselIdGetter || ((x) => x && x.id);
+    return (items || []).filter((it) => canSeeVessel(get(it)));
+  }
+  window.filterByVesselScope = filterByVesselScope;
   window.canI = canI;
 
   function applyPermissionGates() {

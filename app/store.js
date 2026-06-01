@@ -647,10 +647,20 @@
       issuer: input.issuer || '',
       number: input.number || '',
       file: input.file || null,    // { name, type, size, data_url, added_at }
-      issued_at: input.issued_at || null
+      issued_at: input.issued_at || null,
+      // Audit field — only populated when added via the AI extraction
+      // flow. Carries the raw extraction + any human overrides so a
+      // surveyor can answer "did the AI hallucinate or did the
+      // operator override?" months later.
+      extraction: input.extraction || null
     };
     state.certs.push(c);
-    logAction('cert.added', 'cert', c.id, { name: c.name, hasFile: !!c.file });
+    const audit = { name: c.name, hasFile: !!c.file };
+    if (c.extraction) {
+      audit.aiConfidence = c.extraction.confidence;
+      audit.aiOverrides = (c.extraction.overrides || []).map((o) => o.field);
+    }
+    logAction('cert.added', 'cert', c.id, audit);
     save(state);
     return c;
   }
@@ -710,10 +720,19 @@
       last_service_at: input.last_service_at || null,
       next_service_at: input.next_service_at || null,
       notes: input.notes || '',
-      file: input.file || null
+      file: input.file || null,
+      // Same audit pattern as addCert — populated only when added
+      // via AI extraction. Lets us trace what the AI read vs what
+      // the human entered.
+      extraction: input.extraction || null
     };
     state.equipment.push(e);
-    logAction('equipment.added', 'equipment', e.id, { name: e.name, hasFile: !!e.file });
+    const audit = { name: e.name, hasFile: !!e.file };
+    if (e.extraction) {
+      audit.aiConfidence = e.extraction.confidence;
+      audit.aiOverrides = (e.extraction.overrides || []).map((o) => o.field);
+    }
+    logAction('equipment.added', 'equipment', e.id, audit);
     save(state);
     return e;
   }
