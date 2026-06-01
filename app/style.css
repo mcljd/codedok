@@ -38,8 +38,8 @@
   --lt:     #6B767E;
   --lt-2:   #92A0A8;
 
-  /* Type stack — Barlow Condensed for display authority, Inter for UI. */
-  --fn-display: 'Barlow Condensed', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Type stack — Plus Jakarta Sans for display, Inter for UI. */
+  --fn-display: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --fn:         'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --fn-mono:    ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
@@ -1996,8 +1996,8 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
   to   { opacity: 1; }
 }
 
-/* SECTION HEADING — Barlow Condensed gives compact, authoritative
-   stacks for page titles and big numbers (compliance scores, totals). */
+/* SECTION HEADING — display weight via --fn-display (Plus Jakarta
+   Sans), used for page titles and big numbers (compliance scores). */
 .h-display {
   font-family: var(--fn-display);
   font-size: 30px; font-weight: 700; letter-spacing: -.2px;
@@ -5083,7 +5083,7 @@ body:has(#s-land.on) { background: #050614 !important; }
   color: #fff;
 }
 #s-land .v10-italic {
-  font-family: 'Playfair Display', 'Georgia', serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-style: italic;
   font-weight: 500;
   letter-spacing: -1px;
@@ -5897,7 +5897,7 @@ body:has(#s-land.on) { background: #050614 !important; }
   margin: 0 0 20px;
 }
 #s-land .v10-spv-em {
-  font-family: 'Playfair Display', 'Georgia', serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-style: italic;
   font-weight: 500;
   letter-spacing: -1px;
@@ -6334,7 +6334,7 @@ body:has(#s-land.on) { background: #050614 !important; }
 }
 #s-land .ios-italic {
   display: block;
-  font-family: 'Playfair Display', 'Georgia', serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-style: italic;
   font-weight: 500;
   letter-spacing: -2px;

@@ -229,11 +229,13 @@
 })();
 </script>
 
-<!-- CodedOK brand fonts: Barlow Condensed for display, Inter for body.
-     Preconnect avoids a render-blocking Google round-trip. -->
+<!-- CodedOK brand fonts: Plus Jakarta Sans for display, Inter for body.
+     Reduced from four families to two — the previous Barlow Condensed
+     + Playfair Display additions read as design-by-committee and added
+     ~80 KB of render-blocking font weight to first paint. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&display=swap">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="print.css" media="print">
 
