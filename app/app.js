@@ -9,6 +9,25 @@
 (function () {
   'use strict';
 
+  // ---------- Demo / staff accounts ----------
+  // The single dev account used during build-out. When this email
+  // signs in, the demo seed loads (Tsunami IV etc) and the "switch
+  // view" controls (operator / surveyor / admin) become visible so
+  // we can dogfood every persona on one account.
+  //
+  // Lifted to a single constant from the four hard-coded literals
+  // it used to live as. Set via window.CodedOkConfig.demoOperatorEmail
+  // before app.js loads — Joseph's personal account is the default
+  // so the existing dev flow keeps working.
+  const DEMO_OPERATOR_EMAIL = (
+    (window.CodedOkConfig && window.CodedOkConfig.demoOperatorEmail)
+    || 'mcljd303@icloud.com'
+  ).toLowerCase();
+
+  function isDemoOperatorEmail(email) {
+    return (email || '').toLowerCase() === DEMO_OPERATOR_EMAIL;
+  }
+
   // ---------- Active vessel context ----------
   // Many screens (vessel detail, equipment, hand-off) operate on a single
   // active vessel. We keep that on window for prototype simplicity.
@@ -7185,7 +7204,7 @@ ${sectionsHtml}
     // the section entirely for real users to avoid dead-end taps.
     const session = loadSession();
     const isDemoAccount = session && session.email
-      && session.email.toLowerCase() === 'mcljd303@icloud.com';
+      && isDemoOperatorEmail(session.email);
     const switchLabel = document.getElementById('account-switch-view-label');
     const switchCard  = document.getElementById('account-switch-view-card');
     if (switchLabel) switchLabel.style.display = isDemoAccount ? '' : 'none';
@@ -8518,7 +8537,7 @@ ${sectionsHtml}
       //     same demo data shows up as theirs. Use mcljd303+mccollam@…
       //     so the verification email lands in the same inbox.
       const emailLc = (authUser.email || '').toLowerCase();
-      const isDemoOperator = emailLc === 'mcljd303@icloud.com';
+      const isDemoOperator = isDemoOperatorEmail(emailLc);
       const isDemoSurveyor = /(?:^|\+)mccollam@|@mccollammarine\.com$/i.test(emailLc);
       const isDemoAccount = isDemoOperator || isDemoSurveyor;
       if (window.Store) {
@@ -9427,7 +9446,7 @@ ${sectionsHtml}
     // either way.
     if (window.Store
         && session.mode === 'live'
-        && (session.email || '').toLowerCase() !== 'mcljd303@icloud.com'
+        && !isDemoOperatorEmail(session.email)
         && Store.hasDemoFixtures()) {
       Store.resetToEmpty();
     }
