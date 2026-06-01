@@ -6638,6 +6638,106 @@
   }
   window.inviteSurveyorByEmail = inviteSurveyorByEmail;
 
+  // ─────────────────────────────────────────────────────────────
+  // Standalone surveyor-invite modal. The old inviteSurveyorByEmail
+  // only existed inside the SMS draft picker, which meant the only
+  // way to invite a surveyor was to first draft a Safety Management
+  // System document and tap "Share with surveyor". The marketing
+  // promises surveyor cross-org invite as a top-line feature; this
+  // modal surfaces it from Home, Vessel detail, and Account.
+  // ─────────────────────────────────────────────────────────────
+  function openInviteSurveyorModal(vesselId) {
+    const old = document.getElementById('invite-surveyor-modal');
+    if (old) old.remove();
+
+    const vessels = (Store.snapshot().vessels || []);
+    const preselect = vesselId || activeVesselId || (vessels[0] && vessels[0].id);
+
+    if (!vessels.length) {
+      alert('Add a vessel first — invitations are scoped to a specific boat so the surveyor only sees what you choose to share.');
+      go('s-onboard');
+      return;
+    }
+
+    const vesselOpts = vessels.map((v) => {
+      const sel = v.id === preselect ? ' selected' : '';
+      return `<option value="${escapeHtml(v.id)}"${sel}>${escapeHtml(v.name)}</option>`;
+    }).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'invite-surveyor-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = `
+      <div class="card" style="max-width:440px;width:100%;padding:22px;border-radius:18px;background:var(--bg)">
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;font-family:var(--fn-display);letter-spacing:-.3px">Invite your surveyor</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">They'll get a private link to view this boat's record and sign off inspections in the app. Surveyor seats are free and scoped to the vessel you pick — they only see what you choose to share.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Vessel</label>
+        <select class="fi" id="invite-modal-vessel" style="width:100%;height:44px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+          ${vesselOpts}
+        </select>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Surveyor's email</label>
+        <input class="fi" id="invite-modal-email" type="email" placeholder="surveyor@example.com" style="width:100%;height:44px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:18px">
+
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-out" style="flex:1;height:46px" onclick="closeInviteSurveyorModal()">Cancel</button>
+          <button class="btn btn-sea" style="flex:2;height:46px;font-weight:700" onclick="submitInviteSurveyorModal()">Send invite →</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    setTimeout(() => {
+      const em = document.getElementById('invite-modal-email');
+      if (em) em.focus();
+    }, 50);
+  }
+  window.openInviteSurveyorModal = openInviteSurveyorModal;
+
+  function closeInviteSurveyorModal() {
+    const m = document.getElementById('invite-surveyor-modal');
+    if (m) m.remove();
+  }
+  window.closeInviteSurveyorModal = closeInviteSurveyorModal;
+
+  async function submitInviteSurveyorModal() {
+    const emailEl  = document.getElementById('invite-modal-email');
+    const vesselEl = document.getElementById('invite-modal-vessel');
+    const email    = (emailEl && emailEl.value || '').trim();
+    const vesselId = vesselEl && vesselEl.value;
+    if (!email.includes('@')) { alert('Please enter a valid email address.'); return; }
+    if (!vesselId)            { alert('Pick a vessel.'); return; }
+    if (!window.Supa || !window.Supa.ready) {
+      alert('Sign in first — surveyor invites need a real account.');
+      return;
+    }
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user }, error: authErr } = await client.auth.getUser();
+      if (authErr || !user) throw new Error('Sign in before sending invites.');
+      const me = await client.from('users').select('id').eq('auth_user_id', user.id).maybeSingle();
+      if (me.error || !me.data) throw new Error('User profile missing — sign out and back in.');
+
+      const id = 'inv_' + Math.random().toString(36).slice(2, 12);
+      const row = {
+        id,
+        vessel_id: vesselId,
+        invited_email: email,
+        invited_by_user_id: me.data.id
+      };
+      const ins = await client.from('invitations').insert(row).select('token').single();
+      if (ins.error) throw new Error(ins.error.message);
+
+      const base = window.location.origin + window.location.pathname;
+      const url  = base + '#invite=' + ins.data.token;
+      closeInviteSurveyorModal();
+      showInvitationShare(email, url);
+    } catch (err) {
+      console.error('submitInviteSurveyorModal failed', err);
+      alert('Could not create invite: ' + (err && err.message ? err.message : err));
+    }
+  }
+  window.submitInviteSurveyorModal = submitInviteSurveyorModal;
+
   function showInvitationShare(email, url) {
     const old = document.getElementById('invite-share-modal');
     if (old) old.remove();
@@ -7845,21 +7945,61 @@ ${sectionsHtml}
 
   // ---------- Inspection pack PDF ----------
 
-  function exportInspectionPack() {
+  async function exportInspectionPack() {
     const v = Store.getVessel(activeVesselId) || Store.snapshot().vessels[0];
     if (!v) return;
     renderPrintPack(v.id);
+    await stampPrintPack();
     setTimeout(() => window.print(), 80);
   }
   window.exportInspectionPack = exportInspectionPack;
 
-  function exportFleetInspectionPack() {
+  async function exportFleetInspectionPack() {
     const vessels = Store.snapshot().vessels;
     if (vessels.length === 0) return;
     renderPrintPack(null);
+    await stampPrintPack();
     setTimeout(() => window.print(), 80);
   }
   window.exportFleetInspectionPack = exportFleetInspectionPack;
+
+  // ─────────────────────────────────────────────────────────────
+  // Stamp the about-to-print inspection pack with a generation
+  // timestamp + SHA-256 hash of the document body. The hash is
+  // written into the CSS custom property `--pp-stamp`, which the
+  // @page bottom-left running footer in print.css reads via
+  // `content: var(--pp-stamp)`. Result: every page of the PDF
+  // carries the same stamp; swapping a single page out of a
+  // printed pack becomes detectable by anyone re-hashing the body
+  // and comparing.
+  //
+  // Patricia's note from the surveyor walkthrough: without this,
+  // the inspection PDF "wouldn't survive a contested MAIB enquiry"
+  // because there's no way to prove a page wasn't swapped.
+  // ─────────────────────────────────────────────────────────────
+  async function stampPrintPack() {
+    const target = document.getElementById('print-pack');
+    if (!target) return;
+    const now = new Date();
+    const ts = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+    let shortHash = 'pending';
+    try {
+      const body = target.innerText || target.textContent || '';
+      const enc = new TextEncoder().encode(body);
+      if (window.crypto && window.crypto.subtle) {
+        const buf = await window.crypto.subtle.digest('SHA-256', enc);
+        const hex = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+        shortHash = hex.slice(0, 16);
+      }
+    } catch (_) { /* hash failure shouldn't block the print */ }
+    const stamp = `Generated ${ts} · CodedOK · doc ${shortHash}`;
+    // CSS @page paint reads the property at print time. Quote-wrap
+    // because content: needs a string literal.
+    target.style.setProperty('--pp-stamp', `"${stamp}"`);
+    // Also persist the hash on the document for audit-log lookup.
+    target.setAttribute('data-pp-hash', shortHash);
+    target.setAttribute('data-pp-generated', ts);
+  }
 
   function renderPrintPack(vesselId) {
     const target = document.getElementById('print-pack');

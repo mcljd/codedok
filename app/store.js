@@ -538,7 +538,14 @@
     const me = getCurrentUser();
     const orgId = me && me.kind === 'operator' ? 'org_jm' : (state.vessels[0] && state.vessels[0].org_id) || 'org_jm';
     state.audit_log.unshift({ id: uid('a'), org_id: orgId, actor_user_id: me ? me.id : null, action, target_type: targetType, target_id: targetId, at: isoOffset(0), metadata: metadata || {} });
-    if (state.audit_log.length > 100) state.audit_log.length = 100;
+    // Audit trail used to be capped at 100 entries FIFO — meaning a
+    // busy operator silently lost their earliest history after ~100
+    // actions. That fails the basic surveyor test ("show me every
+    // change to this record"). Raised to 5,000 to keep multiple
+    // years of activity in-store without unbounded growth. The
+    // authoritative log lives in Supabase via the audit_log table —
+    // this is just the cached projection for offline rendering.
+    if (state.audit_log.length > 5000) state.audit_log.length = 5000;
   }
 
   function addVessel(input) {

@@ -1354,7 +1354,10 @@
         <div style="font-size:22px;font-weight:700;color:white;letter-spacing:-.3px">Tsunami IV</div>
         <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:3px">Cat 2 · Motor Charter · Cushendall</div>
       </div>
-      <div class="insp-badge notready">⚠ Not ready</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div class="insp-badge notready">⚠ Not ready</div>
+        <button onclick="openInviteSurveyorModal()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:white;border-radius:999px;padding:6px 12px;font-family:var(--fn);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">⚓ Invite surveyor</button>
+      </div>
     </div>
     <!-- Vessel info pills -->
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1656,85 +1659,12 @@
   </div>
 </div>
 
-<!-- ════════════════════════════════════
-  S7 — AI SCAN PROCESSING
-════════════════════════════════════ -->
-<div class="shell" id="s-scan-processing">
-  <div class="sb sb-cd"></div>
-  <div class="tbar">
-    <button class="back" onclick="go('s-scan')">‹ Cancel</button>
-    <div class="tbar-title">AI Reading</div>
-    <div style="width:60px"></div>
-  </div>
-  <div class="scroll pb24">
-    <div style="padding:24px 20px 0;text-align:center">
-      <!-- Simulated scanned image -->
-      <div style="background:var(--slate);border-radius:14px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden">
-        <div style="background:white;border-radius:8px;padding:16px;text-align:left;filter:blur(0.5px)">
-          <div style="font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">YDSA Certificate</div>
-          <div style="height:8px;background:var(--bdr);border-radius:4px;margin-bottom:6px;width:80%"></div>
-          <div style="height:8px;background:var(--bdr);border-radius:4px;margin-bottom:6px;width:60%"></div>
-          <div style="height:8px;background:var(--bdr);border-radius:4px;width:70%"></div>
-        </div>
-        <!-- Scan overlay -->
-        <div style="position:absolute;inset:0;background:rgba(15,76,92,.06);border-radius:14px;display:flex;align-items:center;justify-content:center">
-          <div style="width:200px;height:2px;background:var(--sea);opacity:.7;box-shadow:0 0 8px var(--sea)"></div>
-        </div>
-      </div>
-
-      <div class="ai-pulse" style="margin:0 auto 16px"></div>
-      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">Reading document…</div>
-      <div style="font-size:13px;color:var(--lt);margin-bottom:24px">Claude AI is extracting the certificate details</div>
-
-      <!-- Extraction progress -->
-      <div style="background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:16px;text-align:left">
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:20px;height:20px;border-radius:50%;background:var(--grnp);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--green);font-weight:700;flex-shrink:0">✓</div>
-            <div style="flex:1">
-              <div style="font-size:13px;font-weight:500;color:var(--text)">Document type identified</div>
-              <div style="font-size:12px;color:var(--lt)">YDSA Coding Certificate</div>
-            </div>
-            <span style="font-size:12px;font-weight:600;color:var(--green)">98%</span>
-          </div>
-          <div class="conf-bar"><div class="conf-fill" style="width:98%"></div></div>
-
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:20px;height:20px;border-radius:50%;background:var(--grnp);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--green);font-weight:700;flex-shrink:0">✓</div>
-            <div style="flex:1">
-              <div style="font-size:13px;font-weight:500;color:var(--text)">Vessel name extracted</div>
-              <div style="font-size:12px;color:var(--lt)">Tsunami IV</div>
-            </div>
-            <span style="font-size:12px;font-weight:600;color:var(--green)">100%</span>
-          </div>
-          <div class="conf-bar"><div class="conf-fill" style="width:100%"></div></div>
-
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="ai-pulse" style="width:20px;height:20px;border-width:2px;flex-shrink:0"></div>
-            <div style="flex:1">
-              <div style="font-size:13px;font-weight:500;color:var(--text)">Expiry date reading…</div>
-              <div style="font-size:12px;color:var(--lt)">Scanning certification dates</div>
-            </div>
-          </div>
-          <div class="conf-bar"><div class="conf-fill" style="width:60%;transition:width 2s ease;"></div></div>
-        </div>
-      </div>
-    </div>
-
-    <div style="padding:20px 20px 0">
-      <div style="background:var(--seap);border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:center">
-        <span style="font-size:16px">🔒</span>
-        <div style="font-size:12px;color:var(--mid);line-height:1.5">Your documents are processed securely and never stored by Claude AI — only the extracted data is saved to CodedOK.</div>
-      </div>
-    </div>
-
-    <!-- Simulated result (as if done) -->
-    <div style="padding:16px 20px 0">
-      <button class="btn btn-sea btn-full" onclick="go('s-scan-confirm')">Review extracted data →</button>
-    </div>
-    <div class="spacer"></div>
-  </div>
-</div>
+<!-- s-scan-processing shell removed in v129. It was an animated mockup
+     with hardcoded "Tsunami IV", a static 60% progress bar, and a
+     "Review extracted data →" button that just navigated without
+     doing anything. No code path navigated to it. The real
+     extraction spinner is created inline by showCertSpinner() in
+     app.js and overlaid on the scan screen — that's the only one. -->
 
 <!-- ════════════════════════════════════
   S8 — SCAN CONFIRM
@@ -2309,6 +2239,7 @@
     <!-- Account-level only -->
     <div class="slbl">Account</div>
     <div class="card mx">
+      <div class="row" onclick="openInviteSurveyorModal()"><div class="row-ic bl">⚓</div><div class="row-body"><div class="row-name">Invite your surveyor</div><div class="row-sub">Free seat per vessel · they sign off inspections in the app</div></div><span class="chev">›</span></div>
       <div class="row" onclick="go('s-notif')"><div class="row-ic bl">🔔</div><div class="row-body"><div class="row-name">Notification settings</div></div><span class="chev">›</span></div>
       <div class="row" onclick="openChangePassword()"><div class="row-ic bl">🔑</div><div class="row-body"><div class="row-name">Change password</div><div class="row-sub">Set a new password for your account</div></div><span class="chev">›</span></div>
       <div class="row"><div class="row-ic bl">🔒</div><div class="row-body"><div class="row-name">Privacy &amp; data</div></div><span class="chev">›</span></div>
@@ -2618,20 +2549,11 @@
       </div>
     </div>
 
-    <!-- Operating waters -->
+    <!-- Operating waters. Coding category was set in step 1 — don't
+         re-ask. Just confirm activity type + passenger declaration. -->
     <div style="padding:0 20px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Voyage area</div>
+      <div style="font-size:12px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Operating profile</div>
       <div class="card">
-        <div class="fg">
-          <label class="fl">Primary voyage category</label>
-          <select class="fs">
-            <option>Category 2 — Up to 60nm from safe haven</option>
-            <option>Category 3 — Up to 20nm from safe haven</option>
-            <option>Category 4 — Sheltered coastal waters</option>
-            <option>Category 5 — Inland / smooth waters</option>
-          </select>
-        </div>
-        <div class="divider"></div>
         <div class="fg">
           <label class="fl">Activity type</label>
           <select class="fs">

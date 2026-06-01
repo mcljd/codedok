@@ -1,9 +1,30 @@
 /* Print stylesheet — used when the user generates the inspection pack PDF.
    Hides every shell except the inspection-pack print view, prints A4-friendly. */
 
+/* A4 with running footer carrying page number, generation timestamp,
+   and document hash. The hash makes a swapped page detectable: any
+   page whose body differs from the rest's hash signature is evidence
+   of tampering. The CSS counter() handles the per-page numbering;
+   the hash + timestamp are injected by JS into a CSS custom property
+   (--pp-stamp) set on the .print-pack root element before printing. */
 @page {
   size: A4;
-  margin: 18mm 16mm;
+  margin: 18mm 16mm 24mm 16mm;
+  @bottom-left {
+    content: var(--pp-stamp, "CodedOK · codedok.com");
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 9px;
+    color: #94a3b8;
+    padding-bottom: 6mm;
+  }
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 9px;
+    color: #475569;
+    font-weight: 600;
+    padding-bottom: 6mm;
+  }
 }
 
 @media print {
