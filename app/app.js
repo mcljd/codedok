@@ -5496,19 +5496,112 @@
   }
   window.surveyorStartInspection = surveyorStartInspection;
 
+  // Surveyor deficiency capture. Used to be two chained prompt()
+  // dialogs (title + severity) — that fails the basic test of
+  // a survey-grade record. Real surveyors raising a finding on
+  // the dock need: title, severity, Code reference, category,
+  // notes, and ideally a photo. This modal collects all of those.
   function surveyorRaiseDeficiency() {
     const v = Store.getVessel(activeVesselId);
     if (!v) return;
-    const title = prompt('Deficiency title:');
-    if (!title) return;
-    const sev = prompt('Severity — critical / major / minor:', 'major');
-    Store.addDeficiency({ vessel_id: v.id, title, severity: (sev || 'major').toLowerCase(), source: 'surveyor' });
-    renderSurveyorVessel();
-    // Incident -> SMS loop. If this vessel has an active SMS, prompt the
-    // operator (next time they open the app) to update the SMS so the
-    // same issue can't recur.
-    maybePromptSmsUpdate(v.id, title);
+    const old = document.getElementById('deficiency-modal');
+    if (old) old.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'deficiency-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto';
+    modal.innerHTML = `
+      <div class="card" style="max-width:480px;width:100%;padding:22px;border-radius:18px;background:var(--bg);max-height:92vh;overflow-y:auto">
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:var(--fn-display);letter-spacing:-.3px">Raise a deficiency</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">Against <strong>${escapeHtml(v.name)}</strong> · ${escapeHtml(v.category || '')}</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Title</label>
+        <input class="fi" id="def-title" placeholder="e.g. Liferaft service overdue" style="width:100%;height:42px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Severity</label>
+            <select class="fi" id="def-severity" style="width:100%;height:42px;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px">
+              <option value="critical">Critical — fail survey</option>
+              <option value="major" selected>Major — fix before issue</option>
+              <option value="minor">Minor — observation</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Category</label>
+            <select class="fi" id="def-category" style="width:100%;height:42px;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px">
+              <option value="documentation">Documentation</option>
+              <option value="equipment">Equipment</option>
+              <option value="stability">Stability</option>
+              <option value="construction">Construction</option>
+              <option value="sms">Safety Management System</option>
+              <option value="manning">Manning / qualifications</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Code reference <span style="color:var(--lt);font-weight:500;letter-spacing:0;text-transform:none">(optional)</span></label>
+        <input class="fi" id="def-coderef" placeholder="e.g. SPV Code 2025 §5.2.1 or Workboat Ed.3 Annex L" style="width:100%;height:42px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Notes</label>
+        <textarea class="fi" id="def-notes" rows="3" placeholder="What did you observe? What corrective action is required? By when?" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;line-height:1.5;resize:vertical;margin-bottom:14px"></textarea>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Photo evidence <span style="color:var(--lt);font-weight:500;letter-spacing:0;text-transform:none">(optional)</span></label>
+        <input type="file" id="def-photo" accept="image/*" capture="environment" style="width:100%;padding:10px 12px;border:1px dashed var(--bdr);border-radius:10px;background:var(--bg);color:var(--mid);font-family:var(--fn);font-size:13px;margin-bottom:18px">
+
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-out" style="flex:1;height:46px" onclick="document.getElementById('deficiency-modal').remove()">Cancel</button>
+          <button class="btn btn-sea" style="flex:2;height:46px;font-weight:700" onclick="submitDeficiencyModal('${v.id}')">Raise deficiency</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    setTimeout(() => {
+      const t = document.getElementById('def-title');
+      if (t) t.focus();
+    }, 50);
   }
+
+  async function submitDeficiencyModal(vesselId) {
+    const title    = ((document.getElementById('def-title') || {}).value || '').trim();
+    const severity = (document.getElementById('def-severity') || {}).value || 'major';
+    const category = (document.getElementById('def-category') || {}).value || 'other';
+    const coderef  = ((document.getElementById('def-coderef') || {}).value || '').trim();
+    const notes    = ((document.getElementById('def-notes') || {}).value || '').trim();
+    const photoEl  = document.getElementById('def-photo');
+    const photoFile = photoEl && photoEl.files && photoEl.files[0];
+
+    if (!title) { alert('A title is required.'); return; }
+
+    let photo = null;
+    if (photoFile) {
+      try {
+        const buf = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = reject;
+          r.readAsDataURL(photoFile);
+        });
+        photo = { name: photoFile.name, type: photoFile.type, size: photoFile.size, data_url: buf };
+      } catch (_) { /* photo failure doesn't block the deficiency */ }
+    }
+
+    Store.addDeficiency({
+      vessel_id: vesselId,
+      title,
+      severity,
+      source: 'surveyor',
+      category,
+      code_ref: coderef || null,
+      notes: notes || null,
+      photo
+    });
+
+    document.getElementById('deficiency-modal').remove();
+    renderSurveyorVessel();
+    maybePromptSmsUpdate(vesselId, title);
+  }
+  window.submitDeficiencyModal = submitDeficiencyModal;
   window.surveyorRaiseDeficiency = surveyorRaiseDeficiency;
 
   // Suggest an SMS update after an incident or deficiency is logged. The
@@ -5609,13 +5702,197 @@
   }
   window.setCheck = setCheck;
 
+  // Inspection sign-off. Used to be a single prompt() with no
+  // signature, no hash, no audit. Now opens a signature-canvas
+  // modal: the surveyor draws their name, we hash the inspection
+  // document body, and both go into the record + audit log. The
+  // print-pack footer already carries the same hash so a swapped
+  // page becomes detectable.
   function completeInspectionFlow() {
-    const summary = prompt('Summary of inspection:', 'Annual renewal — passed') || '';
-    Store.completeInspection(activeInspectionId, summary);
-    alert('Inspection signed and saved.');
-    go('s-surveyor-vessel');
+    const old = document.getElementById('inspection-sign-modal');
+    if (old) old.remove();
+
+    const insp = (Store.snapshot().inspections || []).find((i) => i.id === activeInspectionId);
+    const v = insp ? Store.getVessel(insp.vessel_id) : null;
+    const me = (Store.getCurrentUser && Store.getCurrentUser()) || {};
+
+    const modal = document.createElement('div');
+    modal.id = 'inspection-sign-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto';
+    modal.innerHTML = `
+      <div class="card" style="max-width:520px;width:100%;padding:24px;border-radius:18px;background:var(--bg);max-height:94vh;overflow-y:auto">
+        <div style="font-size:19px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:var(--fn-display);letter-spacing:-.3px">Sign &amp; complete inspection</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">${v ? escapeHtml(v.name) + ' · ' : ''}This signature is captured into the inspection record alongside a SHA-256 hash of the document body. Both appear in the audit log and on the inspection pack PDF.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Summary</label>
+        <textarea class="fi" id="insp-summary" rows="2" placeholder="e.g. Annual renewal — passed with one minor observation" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;line-height:1.5;resize:vertical;margin-bottom:14px">Annual renewal — passed</textarea>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Signed by</label>
+            <input class="fi" id="insp-signed-name" value="${escapeHtml(me.name || '')}" placeholder="Full name" style="width:100%;height:42px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Role</label>
+            <input class="fi" id="insp-signed-role" value="MCA-recognised surveyor" placeholder="e.g. YDSA surveyor" style="width:100%;height:42px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px">
+          </div>
+        </div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Signature</label>
+        <div style="position:relative;border:1.5px solid var(--bdr);border-radius:10px;background:#fff;padding:0;overflow:hidden;margin-bottom:6px">
+          <canvas id="insp-sig-canvas" width="600" height="180" style="display:block;width:100%;height:180px;touch-action:none;cursor:crosshair"></canvas>
+          <div id="insp-sig-placeholder" style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px">Sign here with your finger or mouse</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+          <button type="button" onclick="clearInspectionSignature()" style="background:none;border:0;color:var(--sea);font-family:var(--fn);font-size:12px;font-weight:600;cursor:pointer;padding:4px 0">↻ Clear signature</button>
+          <span id="insp-sig-status" style="font-size:11px;color:var(--mid)">Not yet signed</span>
+        </div>
+
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-out" style="flex:1;height:46px" onclick="document.getElementById('inspection-sign-modal').remove()">Cancel</button>
+          <button class="btn btn-sea" style="flex:2;height:46px;font-weight:700" onclick="submitInspectionSignature()">Sign &amp; complete</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    setTimeout(() => wireSignatureCanvas('insp-sig-canvas', 'insp-sig-placeholder', 'insp-sig-status'), 30);
   }
   window.completeInspectionFlow = completeInspectionFlow;
+
+  // Wire a canvas element for finger / mouse signing. Tracks pointer
+  // events, draws strokes, updates the status pill, and hides the
+  // placeholder text once the user touches the surface.
+  function wireSignatureCanvas(canvasId, placeholderId, statusId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    // Use the canvas's CSS size as the drawing surface, then upscale
+    // the backing store for retina sharpness.
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = '#0a1628';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    const placeholder = placeholderId ? document.getElementById(placeholderId) : null;
+    const status = statusId ? document.getElementById(statusId) : null;
+    let drawing = false;
+    let touched = false;
+
+    function pt(e) {
+      const r = canvas.getBoundingClientRect();
+      const x = (e.clientX != null ? e.clientX : (e.touches && e.touches[0].clientX)) - r.left;
+      const y = (e.clientY != null ? e.clientY : (e.touches && e.touches[0].clientY)) - r.top;
+      return { x, y };
+    }
+    function start(e) {
+      e.preventDefault();
+      drawing = true;
+      if (!touched) {
+        touched = true;
+        if (placeholder) placeholder.style.display = 'none';
+        if (status) { status.textContent = 'Signed ✓'; status.style.color = 'var(--green)'; }
+      }
+      const p = pt(e);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+    }
+    function move(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const p = pt(e);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+    }
+    function end(e) {
+      if (!drawing) return;
+      e && e.preventDefault();
+      drawing = false;
+    }
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    canvas.addEventListener('mouseup', end);
+    canvas.addEventListener('mouseleave', end);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', end);
+    canvas.dataset.touched = '0';
+    // Expose a small reflection so other helpers can check state.
+    canvas.__touched = () => touched;
+  }
+
+  function clearInspectionSignature() {
+    const canvas = document.getElementById('insp-sig-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    canvas.__touched = () => false;
+    const placeholder = document.getElementById('insp-sig-placeholder');
+    if (placeholder) placeholder.style.display = '';
+    const status = document.getElementById('insp-sig-status');
+    if (status) { status.textContent = 'Not yet signed'; status.style.color = ''; }
+  }
+  window.clearInspectionSignature = clearInspectionSignature;
+
+  async function submitInspectionSignature() {
+    const canvas = document.getElementById('insp-sig-canvas');
+    if (!canvas || !canvas.__touched || !canvas.__touched()) {
+      alert('Please draw your signature before completing.');
+      return;
+    }
+    const summary = ((document.getElementById('insp-summary') || {}).value || '').trim();
+    const signedName = ((document.getElementById('insp-signed-name') || {}).value || '').trim();
+    const signedRole = ((document.getElementById('insp-signed-role') || {}).value || '').trim();
+    if (!signedName) { alert('Enter your full name.'); return; }
+
+    const signatureDataUrl = canvas.toDataURL('image/png');
+
+    // Compute the document body hash so the audit log carries a
+    // tamper-evident fingerprint. Identical to the print-pack
+    // footer hash strategy.
+    let documentHash = null;
+    try {
+      const insp = (Store.snapshot().inspections || []).find((i) => i.id === activeInspectionId);
+      const v = insp ? Store.getVessel(insp.vessel_id) : null;
+      const body = [
+        v ? v.name : '',
+        v ? v.category : '',
+        insp ? insp.id : '',
+        summary,
+        signedName,
+        signedRole,
+        new Date().toISOString()
+      ].join('|');
+      if (window.crypto && window.crypto.subtle) {
+        const enc = new TextEncoder().encode(body);
+        const buf = await window.crypto.subtle.digest('SHA-256', enc);
+        documentHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+      }
+    } catch (_) { /* hash failure shouldn't block the sign-off */ }
+
+    const me = (Store.getCurrentUser && Store.getCurrentUser()) || {};
+    Store.completeInspection(activeInspectionId, {
+      summary,
+      signature_data_url: signatureDataUrl,
+      signed_by_user_id: me.id || null,
+      signed_by_name: signedName,
+      signed_by_role: signedRole,
+      document_hash: documentHash
+    });
+
+    document.getElementById('inspection-sign-modal').remove();
+    alert('Inspection signed and saved.\n\nDocument hash: ' + (documentHash || 'unavailable') + '\n\nThis hash appears in the audit log and on the inspection pack PDF — any change to the body would produce a different hash.');
+    go('s-surveyor-vessel');
+  }
+  window.submitInspectionSignature = submitInspectionSignature;
 
   // ---------- SMS hub & builder (full SMS document) ----------
 

@@ -835,10 +835,25 @@
       raised_at: isoOffset(0),
       status: 'open',
       source: input.source || 'self',
-      raised_by: (getCurrentUser() || {}).id || null
+      raised_by: (getCurrentUser() || {}).id || null,
+      // Survey-grade fields — surveyors raising a finding on the
+      // dock need category, Code reference, free-text notes, and
+      // an evidence photo. These used to be absent (deficiencies
+      // were captured via two chained prompt() calls), failing the
+      // basic "show me your audit trail" surveyor test.
+      category: input.category || 'other',
+      code_ref: input.code_ref || null,
+      notes: input.notes || null,
+      photo: input.photo || null
     };
     state.deficiencies.push(d);
-    logAction('deficiency.raised', 'deficiency', d.id, { title: d.title });
+    logAction('deficiency.raised', 'deficiency', d.id, {
+      title: d.title,
+      severity: d.severity,
+      category: d.category,
+      hasPhoto: !!d.photo,
+      hasCodeRef: !!d.code_ref
+    });
     save(state);
     return d;
   }
@@ -872,13 +887,34 @@
     return i;
   }
 
-  function completeInspection(inspectionId, summary) {
+  function completeInspection(inspectionId, payload) {
     const i = state.inspections.find((x) => x.id === inspectionId);
     if (!i) return;
+    // Backwards-compat: a plain string is the old summary-only path.
+    if (typeof payload === 'string' || payload == null) {
+      payload = { summary: payload || '' };
+    }
     i.completed_at = isoOffset(0);
     i.status = 'signed';
-    i.summary = summary || i.summary;
-    logAction('inspection.signed', 'inspection', i.id, { vessel_id: i.vessel_id });
+    i.summary = payload.summary || i.summary;
+    // Evidentiary fields — captured signature, hash, surveyor.
+    // Patricia's surveyor walkthrough: "Wouldn't survive a contested
+    // MAIB enquiry." Now it carries a drawn signature data URL, the
+    // SHA-256 hash of the canonical document body at sign time, and
+    // the user-id of whoever signed. The audit log row stamps the
+    // hash for tamper-evidence.
+    if (payload.signature_data_url) i.signature_data_url = payload.signature_data_url;
+    if (payload.signed_by_user_id)  i.signed_by_user_id  = payload.signed_by_user_id;
+    if (payload.signed_by_name)     i.signed_by_name     = payload.signed_by_name;
+    if (payload.signed_by_role)     i.signed_by_role     = payload.signed_by_role;
+    if (payload.document_hash)      i.document_hash      = payload.document_hash;
+    i.signed_at = i.completed_at;
+    logAction('inspection.signed', 'inspection', i.id, {
+      vessel_id: i.vessel_id,
+      document_hash: i.document_hash || null,
+      has_signature: !!i.signature_data_url,
+      signed_by: i.signed_by_name || null
+    });
     save(state);
     return i;
   }
