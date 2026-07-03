@@ -2526,8 +2526,7 @@
               <option>EPIRB service / battery certificate</option>
               <option>PLB battery certificate</option>
               <option>SART battery certificate</option>
-              <option>Pyrotechnics — SOLAS A pack</option>
-              <option>Pyrotechnics — inshore pack</option>
+              <option>Pyrotechnics service certificate</option>
               <option>Fire extinguisher service</option>
               <option>Fixed fire system service</option>
               <option>Lifejacket service</option>
@@ -2776,7 +2775,7 @@
     // Sub-field selects — reset to their first option so the new form
     // opens in a known state.
     ['eq-sub-liferaft-type','eq-sub-liferaft-hru','eq-sub-lj-type','eq-sub-lj-lights',
-     'eq-sub-sart-type','eq-sub-pyro-type','eq-sub-fe-type']
+     'eq-sub-sart-type','eq-sub-pyro-pack','eq-sub-pyro-type','eq-sub-fe-type']
       .forEach((id) => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
     // Toggle the sub-fields so the initial kind (Liferaft) shows its own.
     updateEquipmentSubFields();
@@ -2810,11 +2809,12 @@
       liferaft:'🛟', lifejacket:'🦺', lifebuoy:'🛟',
       epirb:'📡', sart:'📡', plb:'📡',
       vhf_fixed:'📻', vhf_handheld:'📻', mf_radio:'📻', navtex:'📻',
-      pyro_solas_a:'🧨', pyro_inshore:'🧨',
+      pyrotechnics:'🧨',
       fire_ext_portable:'🧯', fire_ext_fixed:'🧯', fire_blanket:'🧯',
       first_aid_c:'🩹',
       // Legacy kinds retained so existing records still render with
       // an icon (users may have historic entries under these keys).
+      pyro_solas_a:'🧨', pyro_inshore:'🧨',
       fire_ext:'🧯', anchor:'⚓', bilge_pump:'💧', nav_lights:'💡',
       other:'🔧'
     };
@@ -2822,9 +2822,10 @@
       liferaft:'Liferaft', lifejacket:'Lifejackets', lifebuoy:'Life buoy',
       epirb:'EPIRB', sart:'SART', plb:'PLB',
       vhf_fixed:'VHF DSC fixed', vhf_handheld:'VHF handheld DSC', mf_radio:'MF radio', navtex:'Navtex',
-      pyro_solas_a:'SOLAS A pyro pack', pyro_inshore:'Inshore pyro pack',
+      pyrotechnics:'Pyrotechnics',
       fire_ext_portable:'Fire extinguisher (portable)', fire_ext_fixed:'Fixed fire extinguisher', fire_blanket:'Fire blanket',
       first_aid_c:'First aid kit Cat C',
+      pyro_solas_a:'SOLAS A pyro pack', pyro_inshore:'Inshore pyro pack',
       fire_ext:'Fire extinguisher', anchor:'Anchor & cable', bilge_pump:'Bilge pump', nav_lights:'Nav lights',
       other:'Equipment'
     };
@@ -2853,7 +2854,8 @@
     } else if (kind === 'sart') {
       stash('eq-sub-sart-type', 'sart_type');
       stash('eq-sub-sart-battery-exp', 'battery_expires_at');
-    } else if (kind === 'pyro_solas_a' || kind === 'pyro_inshore') {
+    } else if (kind === 'pyrotechnics') {
+      stash('eq-sub-pyro-pack', 'pack_level');
       stash('eq-sub-pyro-type', 'flare_type');
     } else if (kind === 'fire_ext_portable' || kind === 'fire_ext_fixed') {
       stash('eq-sub-fe-type', 'extinguisher_type');

@@ -3157,8 +3157,7 @@
           <option value="vhf_handheld">VHF handheld DSC radio</option>
           <option value="mf_radio">MF radio</option>
           <option value="navtex">Navtex</option>
-          <option value="pyro_solas_a">SOLAS A pyrotechnics</option>
-          <option value="pyro_inshore">Inshore pyrotechnics</option>
+          <option value="pyrotechnics">Pyrotechnics</option>
           <option value="fire_ext_portable">Fire extinguisher (portable)</option>
           <option value="fire_ext_fixed">Fixed fire extinguisher</option>
           <option value="fire_blanket">Fire blanket</option>
@@ -3169,7 +3168,7 @@
 
       <!-- Sub-fields per equipment kind. Shown/hidden by updateEquipmentSubFields().
            Each block is data-shows-for="<kind list, space-separated>". -->
-      <div class="divider" data-shows-for="liferaft lifejacket lifebuoy sart pyro_solas_a pyro_inshore fire_ext_portable fire_ext_fixed"></div>
+      <div class="divider" data-shows-for="liferaft lifejacket lifebuoy sart pyrotechnics fire_ext_portable fire_ext_fixed"></div>
 
       <!-- Liferaft — type + HRU -->
       <div class="fg" data-shows-for="liferaft">
@@ -3231,14 +3230,22 @@
         <input class="fi" id="eq-sub-sart-battery-exp" type="date">
       </div>
 
-      <!-- Pyrotechnics — flare type -->
-      <div class="fg" data-shows-for="pyro_solas_a pyro_inshore">
+      <!-- Pyrotechnics — pack level + flare type -->
+      <div class="fg" data-shows-for="pyrotechnics">
+        <label class="fl">Pack level</label>
+        <select class="fs" id="eq-sub-pyro-pack">
+          <option value="solas_a">SOLAS A pack (offshore — Cat 0-2)</option>
+          <option value="inshore">Inshore pack (coastal — Cat 3-6)</option>
+          <option value="individual">Individual flare (not part of a pack)</option>
+        </select>
+      </div>
+      <div class="fg" data-shows-for="pyrotechnics">
         <label class="fl">Flare type</label>
         <select class="fs" id="eq-sub-pyro-type">
+          <option value="pack_full">Full pack — all types included</option>
           <option value="parachute_red">Parachute — red (distress)</option>
           <option value="hand_red">Hand-held — red (distress)</option>
           <option value="smoke_orange">Smoke — orange (day distress)</option>
-          <option value="pack_full">Full pack — all types</option>
         </select>
       </div>
 
