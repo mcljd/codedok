@@ -22,7 +22,7 @@
   // `kind` matches Store cert kinds; `required` true = must hold; false = recommended.
   const VESSEL_CERTS = {
     cat2: [
-      { kind: 'coding',      name: 'MCA Coding Certificate',          required: true,  validity_months: 60, renew_annual: true,  authority: 'Certifying Authority (YDSA, MECAL, etc.)' },
+      { kind: 'coding',      name: 'MCA Coding Certificate',          required: true,  validity_months: 60, renew_annual: true,  authority: 'Certifying Authority' },
       { kind: 'stability',   name: 'Stability information book',      required: true,  validity_months: null, authority: 'Naval architect / certifying authority' },
       { kind: 'radio',       name: 'Ship Radio Licence (VHF)',        required: true,  validity_months: 120, authority: 'Ofcom (UK) / ComReg (IE)' },
       { kind: 'pli',         name: 'Public Liability Insurance',      required: true,  validity_months: 12,  authority: 'Marine insurer' },

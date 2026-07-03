@@ -773,7 +773,7 @@
                 <div class="iphone-scanner-paper">
                   <div class="iphone-scanner-paper-hdr">MCA Certificate of Compliance</div>
                   <div class="iphone-scanner-paper-row"><span>Vessel</span><span>MV Aurora</span></div>
-                  <div class="iphone-scanner-paper-row"><span>Cert No.</span><span>YDSA/2024/TS/4892</span></div>
+                  <div class="iphone-scanner-paper-row"><span>Cert No.</span><span>CA/2024/TS/4892</span></div>
                   <div class="iphone-scanner-paper-row"><span>Category</span><span>Cat 2 · 8.5m</span></div>
                   <div class="iphone-scanner-paper-row"><span>Expiry</span><span>18 May 2026</span></div>
                 </div>
@@ -784,7 +784,7 @@
                 <div class="iphone-scanner-line"></div>
                 <div class="iphone-scanner-detect">
                   <div class="iphone-scanner-detect-dot"></div>
-                  <span>YDSA Coding · expiry detected</span>
+                  <span>Coding Cert · expiry detected</span>
                 </div>
               </div>
               <div class="iphone-home-indicator light"></div>
@@ -824,13 +824,13 @@
                 <div class="iphone-import-card">
                   <div class="iphone-import-doc">📄</div>
                   <div class="iphone-import-name">survey-mv-aurora-jun24.pdf</div>
-                  <div class="iphone-import-sub">YDSA · 14 pages · 2.4 MB</div>
+                  <div class="iphone-import-sub">Certifying Authority · 14 pages · 2.4 MB</div>
                   <div class="iphone-import-bar"><div class="iphone-import-fill"></div></div>
                   <div class="iphone-import-status">AI extracting records…</div>
                 </div>
                 <div class="iphone-section-lbl">Records found</div>
                 <div class="iphone-import-row ok"><span class="ic">✓</span><div class="body"><div class="n">MCA Coding Cert</div><div class="s">Expires 14 Mar 2027</div></div></div>
-                <div class="iphone-import-row ok"><span class="ic">✓</span><div class="body"><div class="n">Stability declaration</div><div class="s">Signed YDSA · 2023</div></div></div>
+                <div class="iphone-import-row ok"><span class="ic">✓</span><div class="body"><div class="n">Stability declaration</div><div class="s">Signed by Certifying Authority · 2023</div></div></div>
                 <div class="iphone-import-row ok"><span class="ic">✓</span><div class="body"><div class="n">PLI</div><div class="s">Pantaenius · valid</div></div></div>
                 <div class="iphone-import-row warn"><span class="ic">!</span><div class="body"><div class="n">Liferaft service</div><div class="s">Due in 18 days · flagged</div></div></div>
                 <div class="iphone-import-row ok"><span class="ic">✓</span><div class="body"><div class="n">Radio Licence (VHF)</div><div class="s">Ofcom · 7 years left</div></div></div>
@@ -875,7 +875,7 @@
                 </div>
                 <div class="iphone-pack-row"><span>📋</span><div><div class="n">28 certificates</div><div class="s">All on file</div></div></div>
                 <div class="iphone-pack-row"><span>🛟</span><div><div class="n">Equipment list</div><div class="s">Audited · ready</div></div></div>
-                <div class="iphone-pack-row"><span>✍</span><div><div class="n">Signed by McCollam Marine</div><div class="s">YDSA · 12 May 2026</div></div></div>
+                <div class="iphone-pack-row"><span>✍</span><div><div class="n">Signed by McCollam Marine</div><div class="s">CA-recognised · 12 May 2026</div></div></div>
                 <div class="iphone-pack-cta">Send to surveyor</div>
               </div>
               <div class="iphone-home-indicator"></div>
@@ -1145,11 +1145,13 @@
           <option>RIB / powerboat</option>
           <option>Passenger vessel</option>
           <option>Water taxi</option>
+          <option>Workboat</option>
         </select>
       </div>
       <div class="divider"></div>
       <div class="fg"><label class="fl">Coding category</label>
         <select class="fs" id="onb-cat">
+          <option>Category 1 — Up to 150 miles from safe haven</option>
           <option>Category 2 — Up to 60 miles from safe haven</option>
           <option>Category 3 — Up to 20 miles from safe haven</option>
           <option>Category 4 — Sheltered waters</option>
@@ -1161,6 +1163,16 @@
       <div class="fg"><label class="fl">SSR / Official number</label><input class="fi" id="onb-ssr" placeholder="e.g. SSR 987654"></div>
       <div class="divider"></div>
       <div class="fg"><label class="fl">Port of registry</label><input class="fi" id="onb-port" placeholder="e.g. Cushendall"></div>
+      <div class="divider"></div>
+      <div class="fg"><label class="fl">Crew number</label>
+        <select class="fs" id="onb-crew">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
     </div>
 
     <div style="padding:20px 16px 0">
@@ -1363,7 +1375,7 @@
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <div style="background:rgba(255,255,255,.07);border-radius:7px;padding:7px 12px"><div style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600;text-transform:uppercase;letter-spacing:.06em">SSR</div><div style="font-size:13px;color:white;font-weight:600;margin-top:1px">987654</div></div>
       <div style="background:rgba(255,255,255,.07);border-radius:7px;padding:7px 12px"><div style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Length</div><div style="font-size:13px;color:white;font-weight:600;margin-top:1px">9.5m</div></div>
-      <div style="background:rgba(255,255,255,.07);border-radius:7px;padding:7px 12px"><div style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Certifier</div><div style="font-size:13px;color:white;font-weight:600;margin-top:1px">YDSA</div></div>
+      <div style="background:rgba(255,255,255,.07);border-radius:7px;padding:7px 12px"><div style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Certifier</div><div style="font-size:13px;color:white;font-weight:600;margin-top:1px">CA</div></div>
       <div style="background:rgba(255,255,255,.07);border-radius:7px;padding:7px 12px"><div style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Insurance</div><div style="font-size:13px;color:var(--seal);font-weight:600;margin-top:1px">Nov 2025</div></div>
     </div>
   </div>
@@ -1410,7 +1422,7 @@
           <div class="gap-sev am"></div>
           <div>
             <div class="gap-title">Annual survey due in 18 days</div>
-            <div class="gap-desc">Certifying authority: YDSA · Anchor Marine recommended</div>
+            <div class="gap-desc">Certifying authority · Anchor Marine recommended</div>
           </div>
         </div>
       </div>
@@ -1445,7 +1457,7 @@
       <div style="height:12px"></div>
       <div class="card mx">
         <div class="row"><div class="row-ic rd">🚨</div><div class="row-body"><div class="row-name">Cat C Pyrotechnics</div><div class="row-sub">Expired 10 Apr 2025</div></div><div><span class="chip chip-rd">Expired</span></div><span class="chev">›</span></div>
-        <div class="row"><div class="row-ic am">📋</div><div class="row-body"><div class="row-name">YDSA Coding Certificate</div><div class="row-sub">Due 3 May 2025 · 18 days</div></div><div><span class="chip chip-am">Due</span></div><span class="chev">›</span></div>
+        <div class="row"><div class="row-ic am">📋</div><div class="row-body"><div class="row-name">Coding Certificate</div><div class="row-sub">Due 3 May 2025 · 18 days</div></div><div><span class="chip chip-am">Due</span></div><span class="chev">›</span></div>
         <div class="row"><div class="row-ic ok">🛡️</div><div class="row-body"><div class="row-name">Public Liability Insurance</div><div class="row-sub">Valid to 1 Nov 2025</div></div><div><span class="chip chip-ok">Valid</span></div><span class="chev">›</span></div>
         <div class="row"><div class="row-ic ok">📡</div><div class="row-body"><div class="row-name">VHF Radio Licence</div><div class="row-sub">Valid to Jan 2027</div></div><div><span class="chip chip-ok">Valid</span></div><span class="chev">›</span></div>
         <div class="row"><div class="row-ic ok">🚒</div><div class="row-body"><div class="row-name">Fire extinguisher service</div><div class="row-sub">Serviced Mar 2025 · Valid to Mar 2026</div></div><div><span class="chip chip-ok">Valid</span></div><span class="chev">›</span></div>
@@ -1517,7 +1529,7 @@
       <!-- Due within 30 days -->
       <div class="slbl" style="color:var(--amber)">⏰ Due within 30 days</div>
       <div class="card mx">
-        <div class="row"><div class="row-ic am">📋</div><div class="row-body"><div class="row-name">YDSA Coding Certificate</div><div class="row-sub">Tsunami IV · 3 May 2025</div></div><span class="chip chip-am">18 days</span><span class="chev">›</span></div>
+        <div class="row"><div class="row-ic am">📋</div><div class="row-body"><div class="row-name">Coding Certificate</div><div class="row-sub">Tsunami IV · 3 May 2025</div></div><span class="chip chip-am">18 days</span><span class="chev">›</span></div>
         <div class="row"><div class="row-ic am">🏥</div><div class="row-body"><div class="row-name">ENG1 Medical — J. McLaughlin</div><div class="row-sub">Skipper · 12 May 2025</div></div><span class="chip chip-am">27 days</span><span class="chev">›</span></div>
         <div class="row"><div class="row-ic am">📡</div><div class="row-body"><div class="row-name">GMDSS Short Range Cert</div><div class="row-sub">Crew · 20 May 2025</div></div><span class="chip chip-am">35 days</span><span class="chev">›</span></div>
       </div>
@@ -1531,7 +1543,7 @@
     <div id="cr-vessel" class="tc">
       <div style="height:12px"></div>
       <div class="card mx">
-        <div class="row"><div class="row-ic rd">📋</div><div class="row-body"><div class="row-name">YDSA Coding Certificate</div><div class="row-sub">Due 3 May 2025</div></div><span class="chip chip-am">18d</span><span class="chev">›</span></div>
+        <div class="row"><div class="row-ic rd">📋</div><div class="row-body"><div class="row-name">Coding Certificate</div><div class="row-sub">Due 3 May 2025</div></div><span class="chip chip-am">18d</span><span class="chev">›</span></div>
         <div class="row"><div class="row-ic ok">📋</div><div class="row-body"><div class="row-name">Stability book</div><div class="row-sub">Approved Jun 2022 · No expiry</div></div><span class="chip chip-ok">Valid</span><span class="chev">›</span></div>
         <div class="row"><div class="row-ic ok">📡</div><div class="row-body"><div class="row-name">VHF Radio Licence</div><div class="row-sub">Valid to Jan 2027</div></div><span class="chip chip-ok">Valid</span><span class="chev">›</span></div>
         <div class="row"><div class="row-ic ok">🛡️</div><div class="row-body"><div class="row-name">PLI Certificate</div><div class="row-sub">Valid to Nov 2025</div></div><span class="chip chip-ok">Valid</span><span class="chev">›</span></div>
@@ -1802,7 +1814,7 @@
           </div>
           <span class="chip chip-am">Book now</span>
         </div>
-        <div style="font-size:12px;color:var(--mid);line-height:1.55;margin-bottom:12px">YDSA Category 2 annual renewal. Certifying authority must inspect vessel in water or ashore.</div>
+        <div style="font-size:12px;color:var(--mid);line-height:1.55;margin-bottom:12px">Category 2 annual renewal. Certifying authority must inspect vessel in water or ashore.</div>
         <!-- Surveyor recommendation -->
         <div style="background:rgba(255,255,255,.6);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:center">
           <div style="width:36px;height:36px;background:var(--ink2);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⚓</div>
@@ -1891,14 +1903,14 @@
         <div class="pack-row"><span class="pack-key">Vessel type</span><span class="pack-val">Motor charter</span></div>
         <div class="pack-row"><span class="pack-key">Coding category</span><span class="pack-val">Category 2</span></div>
         <div class="pack-row"><span class="pack-key">Port of registry</span><span class="pack-val">Cushendall</span></div>
-        <div class="pack-row"><span class="pack-key">Certifying authority</span><span class="pack-val">YDSA</span></div>
+        <div class="pack-row"><span class="pack-key">Certifying authority</span><span class="pack-val">CA</span></div>
         <div class="pack-row"><span class="pack-key">Coding cert expiry</span><span style="font-size:13px;font-weight:600;color:var(--amber)">3 May 2025</span></div>
       </div>
 
       <!-- Certificate summary -->
       <div class="pack-section">
         <div class="pack-sec-title">Certificate summary</div>
-        <div class="pack-row"><span class="pack-key">YDSA Coding Cert</span><span style="font-size:13px;font-weight:700;color:var(--amber)">Due 3 May</span></div>
+        <div class="pack-row"><span class="pack-key">Coding Certificate</span><span style="font-size:13px;font-weight:700;color:var(--amber)">Due 3 May</span></div>
         <div class="pack-row"><span class="pack-key">PLI Insurance</span><span style="font-size:13px;font-weight:700;color:var(--green)">Valid · Nov 2025</span></div>
         <div class="pack-row"><span class="pack-key">VHF Radio Licence</span><span style="font-size:13px;font-weight:700;color:var(--green)">Valid · Jan 2027</span></div>
         <div class="pack-row"><span class="pack-key">Stability book</span><span style="font-size:13px;font-weight:700;color:var(--green)">Approved</span></div>
@@ -2049,7 +2061,7 @@
     <!-- May preview -->
     <div class="slbl">May deadlines</div>
     <div class="card mx">
-      <div class="row"><div class="row-ic am">📋</div><div class="row-body"><div class="row-name">YDSA Coding Certificate</div><div class="row-sub">Tsunami IV · 3 May</div></div><span class="chip chip-am">18d</span></div>
+      <div class="row"><div class="row-ic am">📋</div><div class="row-body"><div class="row-name">Coding Certificate</div><div class="row-sub">Tsunami IV · 3 May</div></div><span class="chip chip-am">18d</span></div>
       <div class="row"><div class="row-ic am">🏥</div><div class="row-body"><div class="row-name">ENG1 Medical</div><div class="row-sub">J. McLaughlin · 12 May</div></div><span class="chip chip-am">27d</span></div>
       <div class="row"><div class="row-ic ok">🛡️</div><div class="row-body"><div class="row-name">PLI Insurance</div><div class="row-sub">Lagavulin · 15 May</div></div><span class="chip chip-ok">30d</span></div>
     </div>
@@ -2113,7 +2125,7 @@
         <div class="gap-sev am"></div>
         <div>
           <div class="gap-title">Annual survey due in 18 days</div>
-          <div class="gap-desc">YDSA coding certificate expires 3 May 2025. Vessel cannot operate commercially after this date without renewal. Book Anchor Marine now.</div>
+          <div class="gap-desc">Coding certificate expires 3 May 2025. Vessel cannot operate commercially after this date without renewal. Book Anchor Marine now.</div>
         </div>
       </div>
       <div class="gap-item">
@@ -2536,8 +2548,8 @@
     <!-- UK info -->
     <div id="jur-info-uk" style="padding:0 20px;margin-bottom:10px">
       <div style="background:rgba(0,56,168,.06);border:1px solid rgba(0,56,168,.15);border-radius:12px;padding:14px 16px">
-        <div style="font-size:12px;font-weight:700;color:#003580;margin-bottom:6px">🇬🇧 UK — MCA Sport &amp; Pleasure Vessel Code 2025</div>
-        <div style="font-size:12px;color:var(--mid);line-height:1.6">Applies to commercial vessels under 24m carrying up to 12 passengers. Compliance exam, annual checks, and survey-based certification. CodedOK tracks your compliance exam schedule, equipment, crew quals, and inspection readiness.</div>
+        <div style="font-size:12px;font-weight:700;color:#003580;margin-bottom:6px">🇬🇧 UK — MCA Sport &amp; Pleasure Vessel Code 2025 · Workboat Code Ed.3</div>
+        <div style="font-size:12px;color:var(--mid);line-height:1.6">Two frameworks cover UK commercial vessels under 24m. SPV Code 2025 for chartered pleasure and passenger operations up to 12 passengers; Workboat Code Ed.3 for pilot boats, dive support, aquaculture and wind-farm crew transfer. CodedOK tracks compliance exams, equipment, crew quals, and inspection readiness under whichever Code applies.</div>
       </div>
     </div>
 
@@ -2562,12 +2574,13 @@
             <option>Sailing training</option>
             <option>Water sports support</option>
             <option>Commercial charter</option>
+            <option>Workboat</option>
             <option>Other</option>
           </select>
         </div>
         <div class="divider"></div>
         <div class="fg">
-          <label class="fl">Carries passengers for reward?</label>
+          <label class="fl">Carries passengers?</label>
           <select class="fs"><option>Yes</option><option>No</option></select>
         </div>
         <div class="divider"></div>
@@ -2908,7 +2921,7 @@
           <div class="def-title">Annual check — due in 18 days</div>
           <div class="def-meta">
             Raised: Auto · Due: 3 May 2025<br>
-            Required action: Book Anchor Marine or YDSA-approved surveyor
+            Required action: Book Anchor Marine or CA-approved surveyor
           </div>
           <div style="display:flex;gap:6px;margin-top:6px">
             <span class="def-jur">🇬🇧 UK</span>
@@ -3133,30 +3146,120 @@
 
     <div class="card mx">
       <div class="fg"><label class="fl">Equipment type</label>
-        <select class="fs" id="eq-add-kind">
+        <select class="fs" id="eq-add-kind" onchange="updateEquipmentSubFields()">
           <option value="liferaft">Liferaft</option>
           <option value="lifejacket">Lifejacket</option>
+          <option value="lifebuoy">Life buoy</option>
           <option value="epirb">EPIRB</option>
+          <option value="sart">SART</option>
           <option value="plb">PLB</option>
           <option value="vhf_fixed">VHF DSC fixed radio</option>
-          <option value="vhf_handheld">VHF handheld</option>
+          <option value="vhf_handheld">VHF handheld DSC radio</option>
+          <option value="mf_radio">MF radio</option>
+          <option value="navtex">Navtex</option>
           <option value="pyro_solas_a">SOLAS A pyrotechnics</option>
           <option value="pyro_inshore">Inshore pyrotechnics</option>
-          <option value="fire_ext">Fire extinguisher</option>
+          <option value="fire_ext_portable">Fire extinguisher (portable)</option>
+          <option value="fire_ext_fixed">Fixed fire extinguisher</option>
           <option value="fire_blanket">Fire blanket</option>
           <option value="first_aid_c">First aid kit (Cat C)</option>
-          <option value="anchor">Anchor + cable</option>
-          <option value="bilge_pump">Bilge pump</option>
-          <option value="nav_lights">Navigation lights</option>
           <option value="other">Other</option>
         </select>
       </div>
+
+      <!-- Sub-fields per equipment kind. Shown/hidden by updateEquipmentSubFields().
+           Each block is data-shows-for="<kind list, space-separated>". -->
+      <div class="divider" data-shows-for="liferaft lifejacket lifebuoy sart pyro_solas_a pyro_inshore fire_ext_portable fire_ext_fixed"></div>
+
+      <!-- Liferaft — type + HRU -->
+      <div class="fg" data-shows-for="liferaft">
+        <label class="fl">Liferaft type</label>
+        <select class="fs" id="eq-sub-liferaft-type">
+          <option value="iso_9650_1_a">ISO 9650-1 Group A (offshore)</option>
+          <option value="iso_9650_1_b">ISO 9650-1 Group B (coastal)</option>
+          <option value="iso_9650_2">ISO 9650-2 (inshore)</option>
+          <option value="solas_a">SOLAS A</option>
+          <option value="solas_b">SOLAS B</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="fg" data-shows-for="liferaft">
+        <label class="fl">Hydrostatic release unit (HRU)</label>
+        <select class="fs" id="eq-sub-liferaft-hru">
+          <option value="fitted">Fitted</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+      <div class="fg" data-shows-for="liferaft">
+        <label class="fl">HRU expiry</label>
+        <input class="fi" id="eq-sub-liferaft-hru-exp" type="date">
+      </div>
+
+      <!-- Lifejacket — buoyancy + lights + hammar -->
+      <div class="fg" data-shows-for="lifejacket">
+        <label class="fl">Lifejacket type</label>
+        <select class="fs" id="eq-sub-lj-type">
+          <option value="275n">275N (offshore inflatable)</option>
+          <option value="150n">150N (coastal inflatable)</option>
+          <option value="100n">100N (buoyancy aid)</option>
+          <option value="foam">Foam-only, non-inflatable</option>
+          <option value="child">Child lifejacket</option>
+        </select>
+      </div>
+      <div class="fg" data-shows-for="lifejacket lifebuoy">
+        <label class="fl">Fitted with a light?</label>
+        <select class="fs" id="eq-sub-lj-lights">
+          <option value="yes">Yes — light fitted</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+      <div class="fg" data-shows-for="lifejacket lifebuoy">
+        <label class="fl">Light battery expiry</label>
+        <input class="fi" id="eq-sub-lj-light-exp" type="date">
+      </div>
+
+      <!-- SART — type -->
+      <div class="fg" data-shows-for="sart">
+        <label class="fl">SART type</label>
+        <select class="fs" id="eq-sub-sart-type">
+          <option value="radar_sart">Radar SART (9 GHz)</option>
+          <option value="ais_sart">AIS SART</option>
+        </select>
+      </div>
+      <div class="fg" data-shows-for="sart">
+        <label class="fl">Battery expiry</label>
+        <input class="fi" id="eq-sub-sart-battery-exp" type="date">
+      </div>
+
+      <!-- Pyrotechnics — flare type -->
+      <div class="fg" data-shows-for="pyro_solas_a pyro_inshore">
+        <label class="fl">Flare type</label>
+        <select class="fs" id="eq-sub-pyro-type">
+          <option value="parachute_red">Parachute — red (distress)</option>
+          <option value="hand_red">Hand-held — red (distress)</option>
+          <option value="smoke_orange">Smoke — orange (day distress)</option>
+          <option value="pack_full">Full pack — all types</option>
+        </select>
+      </div>
+
+      <!-- Fire extinguisher — type -->
+      <div class="fg" data-shows-for="fire_ext_portable fire_ext_fixed">
+        <label class="fl">Extinguisher type</label>
+        <select class="fs" id="eq-sub-fe-type">
+          <option value="dry_powder">Dry powder (multi-purpose)</option>
+          <option value="co2">CO₂ (electrical / engine bay)</option>
+          <option value="foam">Foam</option>
+          <option value="water">Water</option>
+          <option value="wet_chemical">Wet chemical (galley)</option>
+        </select>
+      </div>
+
       <div class="divider"></div>
       <div class="fg"><label class="fl">Friendly name</label><input class="fi" id="eq-add-name" placeholder="e.g. Liferaft (offshore)"></div>
       <div class="divider"></div>
-      <div class="fg"><label class="fl">Make</label><input class="fi" id="eq-add-make" placeholder="e.g. Survitec"></div>
+      <div class="fg"><label class="fl">Make</label><input class="fi" id="eq-add-make" placeholder="e.g. equipment manufacturer"></div>
       <div class="divider"></div>
-      <div class="fg"><label class="fl">Model</label><input class="fi" id="eq-add-model" placeholder="e.g. OceanMaster ISO 9650-1"></div>
+      <div class="fg"><label class="fl">Model</label><input class="fi" id="eq-add-model" placeholder="e.g. OceanMaster ISO 9650-1B"></div>
       <div class="divider"></div>
       <div class="fg"><label class="fl">Serial number</label><input class="fi" id="eq-add-serial" placeholder="Optional"></div>
       <div class="divider"></div>

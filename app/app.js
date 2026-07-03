@@ -2455,6 +2455,88 @@
       <!-- Form -->
       <div class="card mx" style="margin-top:12px">
         <div class="fg"><label class="fl">Document type</label>
+          <select class="fs" id="sc-name-picker" onchange="pickDocType(this.value)">
+            <option value="__custom__">— pick a type or use custom name below —</option>
+            <optgroup label="Vessel — MCA / SPV Code / Workboat Code">
+              <option>MCA Coding Certificate</option>
+              <option>Compliance Examination Certificate</option>
+              <option>Stability Information Book</option>
+              <option>Simplified Stability Declaration (under-15m)</option>
+              <option>Loadline Certificate (≥24m)</option>
+              <option>Tonnage Certificate</option>
+              <option>Ship Radio Licence (VHF)</option>
+              <option>MMSI Registration</option>
+              <option>Beacon Registry Confirmation (EPIRB)</option>
+              <option>Sea Trials Documentation</option>
+              <option>Structural Fire Protection Records (≥15m)</option>
+              <option>Class Certificate</option>
+            </optgroup>
+            <optgroup label="Owner Declarations (SPV Code 2025)">
+              <option>Declaration of Compliance</option>
+              <option>Manning Declaration</option>
+              <option>Stability &amp; Loading Declaration</option>
+              <option>Radio &amp; MMSI Declaration</option>
+            </optgroup>
+            <optgroup label="Insurance">
+              <option>Public Liability Insurance (PLI)</option>
+              <option>Hull &amp; Machinery Insurance</option>
+              <option>Employer's Liability Insurance</option>
+              <option>Passenger Liability Insurance</option>
+            </optgroup>
+            <optgroup label="Crew — Deck (Workboat Code Table A5.1)">
+              <option>STCW Master (Workboat &lt;500GT, unlimited)</option>
+              <option>STCW Master (Code Vessels &lt;200GT, unlimited)</option>
+              <option>STCW Master (Code Vessels &lt;200GT, ≤150nm)</option>
+              <option>RYA/MCA Yachtmaster Ocean CoC</option>
+              <option>RYA/MCA Yachtmaster Offshore CoC/Service</option>
+              <option>RYA/MCA Yachtmaster Coastal CoC/Service</option>
+              <option>MCA Boatmasters' Licence</option>
+              <option>RYA/MCA Powerboat Advanced CoC</option>
+              <option>RYA/MCA Powerboat Advanced Practical (pre-2005)</option>
+              <option>RYA/MCA Powerboat Level 2</option>
+              <option>RYA/MCA Day Skipper Theory &amp; Practical</option>
+              <option>Certificate of Competency (Competent Authority)</option>
+              <option>Local Authority Licence</option>
+            </optgroup>
+            <optgroup label="Crew — Engineering (Workboat Code Table A5.2)">
+              <option>Approved Engine Course (Part 1)</option>
+              <option>Marine Engine Operators Licence (MEOL)</option>
+              <option>Engine Ratings / AEC (Part 1 &amp; 2)</option>
+              <option>Senior Marine Engine Operators Licence (SMEOL)</option>
+              <option>STCW C/Eng (Y4)</option>
+              <option>Small Vessel Second Engineer CoC</option>
+              <option>STCW III/2 Small Vessel Chief Engineer</option>
+            </optgroup>
+            <optgroup label="Crew — Mandatory Training (Workboat Code Table A5.3)">
+              <option>RYA Basic Sea Survival / STCW PST</option>
+              <option>First Aid at Sea / SeaFish Basic First Aid</option>
+              <option>STCW Fire Fighting &amp; Fire Prevention</option>
+              <option>Radar &amp; Meteorology (MCA-approved)</option>
+              <option>Stability Training</option>
+              <option>Electronic Chart Systems (ECDIS)</option>
+              <option>Navigation Equipment Training</option>
+              <option>Catering Training (MIN 698)</option>
+            </optgroup>
+            <optgroup label="Crew — Medical">
+              <option>ENG1 Seafarer Medical</option>
+              <option>ML5 Medical Fitness Certificate</option>
+            </optgroup>
+            <optgroup label="Equipment service records">
+              <option>Liferaft service certificate</option>
+              <option>EPIRB service / battery certificate</option>
+              <option>PLB battery certificate</option>
+              <option>SART battery certificate</option>
+              <option>Pyrotechnics — SOLAS A pack</option>
+              <option>Pyrotechnics — inshore pack</option>
+              <option>Fire extinguisher service</option>
+              <option>Fixed fire system service</option>
+              <option>Lifejacket service</option>
+              <option>First aid kit inspection (Cat C)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="divider"></div>
+        <div class="fg"><label class="fl">Custom name <span style="color:var(--lt);font-weight:400;font-size:11px">(only used if picker is set to custom)</span></label>
           <input class="fi" id="sc-name" value="${escapeHtml(defaultName)}">
         </div>
         <div class="divider"></div>
@@ -2474,7 +2556,7 @@
         </div>
         <div class="divider"></div>
         <div class="fg"><label class="fl">Issuer / authority</label>
-          <input class="fi" id="sc-issuer" placeholder="e.g. YDSA / Pantaenius / Survitec">
+          <input class="fi" id="sc-issuer" placeholder="e.g. CA / insurer / equipment / MCA">
         </div>
         <div class="divider"></div>
         <div class="fg"><label class="fl">Certificate number</label>
@@ -2499,7 +2581,13 @@
 
   function saveScanCert(defaultIcon, defaultKind) {
     if (!pendingScan) return;
-    const name = (document.getElementById('sc-name') || {}).value || 'Certificate';
+    // Prefer the picker value when it isn't the "custom" sentinel;
+    // fall back to the free-text field so users can still type their
+    // own name for anything not in the standard list.
+    const pickerEl = document.getElementById('sc-name-picker');
+    const pickerVal = pickerEl && pickerEl.value;
+    const custom = (document.getElementById('sc-name') || {}).value || 'Certificate';
+    const name = (pickerVal && pickerVal !== '__custom__') ? pickerVal : custom;
     const vesselId = (document.getElementById('sc-vessel') || {}).value;
     if (!vesselId) {
       alert('Pick a vessel first.');
@@ -2544,6 +2632,16 @@
     go('s-vessel-detail');
   }
   window.saveScanCert = saveScanCert;
+
+  // When the user picks a doc type from the grouped dropdown, mirror
+  // it into the custom-name field so they can still edit the wording
+  // (e.g. add "— renewal" or a specific model) before saving.
+  function pickDocType(v) {
+    if (!v || v === '__custom__') return;
+    const el = document.getElementById('sc-name');
+    if (el) el.value = v;
+  }
+  window.pickDocType = pickDocType;
 
   function cancelScanConfirm() {
     pendingScan = null;
@@ -2670,9 +2768,18 @@
   // ---------- Equipment add ----------
 
   function resetEquipmentAddForm() {
-    ['eq-add-name','eq-add-make','eq-add-model','eq-add-serial','eq-add-qty','eq-add-last','eq-add-next','eq-add-notes']
+    ['eq-add-name','eq-add-make','eq-add-model','eq-add-serial','eq-add-qty','eq-add-last','eq-add-next','eq-add-notes',
+     // Sub-field date inputs — reset so we don't leak yesterday's expiry into today's entry.
+     'eq-sub-liferaft-hru-exp','eq-sub-lj-light-exp','eq-sub-sart-battery-exp']
       .forEach((id) => { const el = document.getElementById(id); if (el) el.value = id === 'eq-add-qty' ? '1' : ''; });
     const sel = document.getElementById('eq-add-kind'); if (sel) sel.selectedIndex = 0;
+    // Sub-field selects — reset to their first option so the new form
+    // opens in a known state.
+    ['eq-sub-liferaft-type','eq-sub-liferaft-hru','eq-sub-lj-type','eq-sub-lj-lights',
+     'eq-sub-sart-type','eq-sub-pyro-type','eq-sub-fe-type']
+      .forEach((id) => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
+    // Toggle the sub-fields so the initial kind (Liferaft) shows its own.
+    updateEquipmentSubFields();
     pendingEquipmentFile = null;
     const note = document.getElementById('eq-file-note');
     if (note) note.innerHTML = '';
@@ -2695,8 +2802,62 @@
     const next = (document.getElementById('eq-add-next') || {}).value || null;
     const notes = (document.getElementById('eq-add-notes') || {}).value || '';
 
-    const iconMap = { liferaft:'🛟', lifejacket:'🦺', epirb:'📡', plb:'📡', vhf_fixed:'📻', vhf_handheld:'📻', pyro_solas_a:'🧨', pyro_inshore:'🧨', fire_ext:'🧯', fire_blanket:'🧯', first_aid_c:'🩹', anchor:'⚓', bilge_pump:'💧', nav_lights:'💡', other:'🔧' };
-    const nameMap = { liferaft:'Liferaft', lifejacket:'Lifejackets', epirb:'EPIRB', plb:'PLB', vhf_fixed:'VHF DSC fixed', vhf_handheld:'VHF handheld', pyro_solas_a:'SOLAS A pyro pack', pyro_inshore:'Inshore pyro pack', fire_ext:'Fire extinguisher', fire_blanket:'Fire blanket', first_aid_c:'First aid kit Cat C', anchor:'Anchor & cable', bilge_pump:'Bilge pump', nav_lights:'Nav lights', other:'Equipment' };
+    // Icons and default names per kind. Kept in sync with the option
+    // list in index.html (#eq-add-kind) — new kinds added there must
+    // land here too, otherwise the record falls back to a wrench icon
+    // and 'Equipment' as the name.
+    const iconMap = {
+      liferaft:'🛟', lifejacket:'🦺', lifebuoy:'🛟',
+      epirb:'📡', sart:'📡', plb:'📡',
+      vhf_fixed:'📻', vhf_handheld:'📻', mf_radio:'📻', navtex:'📻',
+      pyro_solas_a:'🧨', pyro_inshore:'🧨',
+      fire_ext_portable:'🧯', fire_ext_fixed:'🧯', fire_blanket:'🧯',
+      first_aid_c:'🩹',
+      // Legacy kinds retained so existing records still render with
+      // an icon (users may have historic entries under these keys).
+      fire_ext:'🧯', anchor:'⚓', bilge_pump:'💧', nav_lights:'💡',
+      other:'🔧'
+    };
+    const nameMap = {
+      liferaft:'Liferaft', lifejacket:'Lifejackets', lifebuoy:'Life buoy',
+      epirb:'EPIRB', sart:'SART', plb:'PLB',
+      vhf_fixed:'VHF DSC fixed', vhf_handheld:'VHF handheld DSC', mf_radio:'MF radio', navtex:'Navtex',
+      pyro_solas_a:'SOLAS A pyro pack', pyro_inshore:'Inshore pyro pack',
+      fire_ext_portable:'Fire extinguisher (portable)', fire_ext_fixed:'Fixed fire extinguisher', fire_blanket:'Fire blanket',
+      first_aid_c:'First aid kit Cat C',
+      fire_ext:'Fire extinguisher', anchor:'Anchor & cable', bilge_pump:'Bilge pump', nav_lights:'Nav lights',
+      other:'Equipment'
+    };
+
+    // Collect sub-fields shown for this kind. Each block in the form
+    // has data-shows-for="<kind list>" — if it matched this kind, its
+    // value goes into a `subtype` object on the record so surveyors
+    // can see (e.g.) that a pyrotechnics entry is specifically the
+    // parachute type, or that a liferaft has an HRU fitted.
+    const subtype = {};
+    function stash(id, key) {
+      const el = document.getElementById(id);
+      if (el && el.value) subtype[key] = el.value;
+    }
+    if (kind === 'liferaft') {
+      stash('eq-sub-liferaft-type', 'raft_type');
+      stash('eq-sub-liferaft-hru', 'hru');
+      stash('eq-sub-liferaft-hru-exp', 'hru_expires_at');
+    } else if (kind === 'lifejacket') {
+      stash('eq-sub-lj-type', 'jacket_type');
+      stash('eq-sub-lj-lights', 'lights_fitted');
+      stash('eq-sub-lj-light-exp', 'light_battery_expires_at');
+    } else if (kind === 'lifebuoy') {
+      stash('eq-sub-lj-lights', 'lights_fitted');
+      stash('eq-sub-lj-light-exp', 'light_battery_expires_at');
+    } else if (kind === 'sart') {
+      stash('eq-sub-sart-type', 'sart_type');
+      stash('eq-sub-sart-battery-exp', 'battery_expires_at');
+    } else if (kind === 'pyro_solas_a' || kind === 'pyro_inshore') {
+      stash('eq-sub-pyro-type', 'flare_type');
+    } else if (kind === 'fire_ext_portable' || kind === 'fire_ext_fixed') {
+      stash('eq-sub-fe-type', 'extinguisher_type');
+    }
 
     Store.addEquipment({
       vessel_id: activeVesselId,
@@ -2708,12 +2869,29 @@
       last_service_at: last,
       next_service_at: next,
       notes,
-      file: pendingEquipmentFile
+      file: pendingEquipmentFile,
+      subtype: Object.keys(subtype).length ? subtype : null
     });
     pendingEquipmentFile = null;
     go('s-equipment-list');
   }
   window.saveNewEquipment = saveNewEquipment;
+
+  // Show/hide the per-kind sub-fields in the Add Equipment form
+  // (index.html, id="s-equipment-add"). Each sub-field row is tagged
+  // data-shows-for="<space-separated kind list>". This runs on kind
+  // change and once on entry so the initial default kind renders its
+  // own fields.
+  function updateEquipmentSubFields() {
+    const sel = document.getElementById('eq-add-kind');
+    if (!sel) return;
+    const kind = sel.value;
+    document.querySelectorAll('[data-shows-for]').forEach((el) => {
+      const kinds = (el.getAttribute('data-shows-for') || '').split(/\s+/);
+      el.style.display = kinds.includes(kind) ? '' : 'none';
+    });
+  }
+  window.updateEquipmentSubFields = updateEquipmentSubFields;
 
   // ---------- Hand-off QR ----------
 
@@ -5734,7 +5912,7 @@
           </div>
           <div>
             <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Role</label>
-            <input class="fi" id="insp-signed-role" value="MCA-recognised surveyor" placeholder="e.g. YDSA surveyor" style="width:100%;height:42px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px">
+            <input class="fi" id="insp-signed-role" value="MCA-recognised surveyor" placeholder="e.g. Certifying Authority surveyor" style="width:100%;height:42px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px">
           </div>
         </div>
 
