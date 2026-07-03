@@ -145,6 +145,108 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
    which was already thorough. Left as a comment marker so future
    readers of this section know where to look. */
 
+/* ═══════════════════════════════════════════════════════════════
+   DESKTOP LAYOUT — the operator/skipper home on tablet+
+   -----------------------------------------------------------------
+   Fixes the "stretched phone" screenshot: on iPad + desktop, every
+   inner block (fleet compliance card, action-needed list, urgency
+   tiles) used to fill the full shell width. That left acres of
+   empty space around single-digit numbers and made a 1100px card
+   with 15% content density.
+   -----------------------------------------------------------------
+   Now:
+   • On ≥768px, each block inside #s-home caps at a comfortable
+     reading width (720/860/900 depending on breakpoint) and centres
+   • The dark ink header centres its content the same way
+   • Phone-only affordances (Add-to-home-screen banner, "Open on
+     phone" QR fab) are hidden
+   • Metric tiles (OVERDUE / DUE 30D / VALID) become a proper grid
+     rather than three stretched horizontal bars
+   • Compliance hero card gets a max-width so the 82% ring and its
+     text stat sit together, not miles apart
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  /* Centre + cap the content inside the operator home. Applies to
+     every direct child of the scroll container so the same rule
+     covers hero, action-list, SMS card, vessels card. */
+  #s-home .scroll > * {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* Same centring for the dark ink header. */
+  #s-home > div[style*="var(--ink)"] > div {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* Hide phone-only affordances — the install banner tells you to
+     "Add to home screen" which is a phone gesture, and the QR fab
+     exists so you can beam the URL from a laptop to a phone (not
+     useful once you're already on a laptop looking at the page).
+     The QR fab has both a #qr-fab id and .qr-fab class; ditto for
+     the older desktop-qr-fab naming. */
+  #s-home #home-pwa-install,
+  .qr-fab,
+  #qr-fab,
+  .desktop-qr-fab,
+  #desktop-qr-fab { display: none !important; }
+  /* Also constrain the fleet-compliance hero's inner top row so
+     the ring and summary don't drift apart at wider widths. */
+  #home-status .hero-top-row {
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* Give the fleet-compliance hero real card shape: cap width,
+     comfortable padding, don't let it sprawl. */
+  #home-status-wrap { padding-top: 20px; padding-bottom: 8px; }
+  /* Metric tiles inside the compliance hero — the OVERDUE / DUE 30D
+     / VALID row. Force them to a 3-column grid at any width, so the
+     numbers sit in tight cards not stretched horizontal panels. */
+  #home-status .stat-tiles,
+  #home-status [data-tiles],
+  .stat-tiles-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  /* Floating action button (FAB) — move slightly further from the
+     edge on desktop so it's visible but not cramped against the
+     shell's rounded corner. */
+  .fab, .floating-fab {
+    right: 32px !important;
+    bottom: 32px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* iPad landscape / small desktop — allow a little more breathing
+     room since we have 1024+ pixels to play with. */
+  #s-home .scroll > *,
+  #s-home > div[style*="var(--ink)"] > div {
+    max-width: 860px;
+  }
+}
+
+@media (min-width: 1200px) {
+  /* Desktop wide — the shell itself is at 1100px and content should
+     use a two-column grid on the home screen: main column with the
+     compliance hero + action list, secondary column with the SMS
+     card + vessels. Falls back gracefully to single column if
+     JS-rendered content isn't there yet. */
+  #s-home .scroll > *,
+  #s-home > div[style*="var(--ink)"] > div {
+    max-width: 900px;
+  }
+  /* Section labels get proper hierarchy — smaller caps, more
+     confident space above. */
+  #s-home .slbl {
+    padding-top: 8px;
+    padding-bottom: 6px;
+  }
+}
+
 /* SHELL */
 .shell{display:none;flex-direction:column;background:var(--page);position:relative;}
 .shell.on{display:flex;animation: shellIn 200ms var(--ease);}
