@@ -3108,7 +3108,7 @@
   <div class="tbar">
     <button class="back" onclick="go('s-vessel-detail')">‹ Vessel</button>
     <div class="tbar-title">Equipment</div>
-    <button class="btn btn-sm btn-sea" onclick="go('s-equipment-add')">+ Add</button>
+    <button class="btn btn-sm btn-sea" onclick="openEquipmentAdd('s-equipment-list')">+ Add</button>
   </div>
   <div class="scroll" id="eq-list-scroll"></div>
 </div>
@@ -3132,7 +3132,7 @@
 <div class="shell" id="s-equipment-add">
   <div class="sb sb-cd"></div>
   <div class="tbar">
-    <button class="back" onclick="go('s-equipment-list')">‹ Cancel</button>
+    <button class="back" onclick="history.length > 1 ? history.back() : go('s-equipment-list')">‹ Cancel</button>
     <div class="tbar-title">Add equipment</div>
     <div style="width:60px"></div>
   </div>
@@ -3145,6 +3145,15 @@
     </div>
 
     <div class="card mx">
+      <!-- Vessel picker. Present because this shell can be reached from
+           both the Vessel detail screen (where activeVesselId is set)
+           AND from the Records screen (where it isn't) — the picker
+           makes both paths identical. resetEquipmentAddForm() pre-
+           selects activeVesselId when it's set. -->
+      <div class="fg"><label class="fl">Vessel</label>
+        <select class="fs" id="eq-add-vessel"></select>
+      </div>
+      <div class="divider"></div>
       <div class="fg"><label class="fl">Equipment type</label>
         <select class="fs" id="eq-add-kind" onchange="updateEquipmentSubFields()">
           <option value="liferaft">Liferaft</option>

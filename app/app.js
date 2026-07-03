@@ -1878,7 +1878,12 @@
       let html = '<div style="padding:14px 16px 4px">';
       if (list.length === 0) html += emptyState('🦺', 'No equipment logged', 'Liferaft, lifejackets, EPIRB, fire extinguishers — log each with its service date.');
       else list.forEach((e) => { html += ticketHtml(e, 'equipment'); });
-      html += `<div style="padding:6px 0 14px"><button class="btn btn-sea btn-full" onclick="openCertManual('equipment')">+ Add equipment</button></div></div><div class="spacer"></div>`;
+      // Route to the dedicated s-equipment-add shell — same form used
+      // from the Vessel detail screen — so adding equipment feels
+      // identical wherever you enter it from. openEquipmentAdd()
+      // remembers this entry point ('s-records') so save routes back
+      // here, not to the vessel-scoped equipment list.
+      html += `<div style="padding:6px 0 14px"><button class="btn btn-sea btn-full" onclick="openEquipmentAdd('s-records')">+ Add equipment</button></div></div><div class="spacer"></div>`;
       return html;
     }
 
@@ -2267,13 +2272,13 @@
           <div class="empty-art">🦺</div>
           <div class="empty-h">No equipment logged</div>
           <div class="empty-sub">Add equipment to track service intervals and surface what's missing for your category.</div>
-          <button class="btn btn-sea btn-sm" onclick="go('s-equipment-add')">+ Add equipment</button>
+          <button class="btn btn-sea btn-sm" onclick="openEquipmentAdd('s-equipment-list')">+ Add equipment</button>
         </div>`;
     } else {
       equipment.forEach((e) => { html += ticketHtml(e, 'equipment'); });
       html += `
         <div style="padding:6px 0 14px">
-          <button class="btn btn-sea btn-full" onclick="go('s-equipment-add')">+ Add equipment</button>
+          <button class="btn btn-sea btn-full" onclick="openEquipmentAdd('s-equipment-list')">+ Add equipment</button>
         </div>`;
     }
     html += '<div class="spacer"></div></div>';
@@ -2777,6 +2782,18 @@
     ['eq-sub-liferaft-type','eq-sub-liferaft-hru','eq-sub-lj-type','eq-sub-lj-lights',
      'eq-sub-sart-type','eq-sub-pyro-pack','eq-sub-pyro-type','eq-sub-fe-type']
       .forEach((id) => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
+    // Populate the Vessel picker with the operator's fleet. Preselects
+    // activeVesselId if one is set (form entered from the Vessel
+    // detail screen); otherwise defaults to the first vessel so
+    // Records-entry has a sensible starting point.
+    const vesselPicker = document.getElementById('eq-add-vessel');
+    if (vesselPicker) {
+      const vessels = (Store.snapshot().vessels || []);
+      const preselect = activeVesselId || (vessels[0] && vessels[0].id);
+      vesselPicker.innerHTML = vessels.length
+        ? vessels.map((v) => `<option value="${escapeHtml(v.id)}"${v.id === preselect ? ' selected' : ''}>${escapeHtml(v.name)}</option>`).join('')
+        : '<option value="">— no vessels yet —</option>';
+    }
     // Toggle the sub-fields so the initial kind (Liferaft) shows its own.
     updateEquipmentSubFields();
     pendingEquipmentFile = null;
@@ -2785,11 +2802,17 @@
   }
 
   function saveNewEquipment() {
-    if (!activeVesselId) {
+    // Prefer the on-form vessel picker (works from any entry point).
+    // Fall back to activeVesselId for the old flow, then to first
+    // vessel in the store. If nothing exists, prompt to add a vessel.
+    const pickerVal = (document.getElementById('eq-add-vessel') || {}).value || '';
+    let targetVesselId = pickerVal || activeVesselId;
+    if (!targetVesselId) {
       const v = Store.snapshot().vessels[0];
-      if (v) activeVesselId = v.id;
+      if (v) targetVesselId = v.id;
     }
-    if (!activeVesselId) { alert('Pick a vessel first'); return; }
+    if (!targetVesselId) { alert('Add a vessel first — equipment is scoped per boat.'); return; }
+    activeVesselId = targetVesselId;
 
     const kind = (document.getElementById('eq-add-kind') || {}).value || 'other';
     const name = (document.getElementById('eq-add-name') || {}).value || '';
@@ -2862,7 +2885,7 @@
     }
 
     Store.addEquipment({
-      vessel_id: activeVesselId,
+      vessel_id: targetVesselId,
       kind,
       name: name || nameMap[kind] || 'Equipment',
       icon: iconMap[kind] || '🔧',
@@ -2875,9 +2898,23 @@
       subtype: Object.keys(subtype).length ? subtype : null
     });
     pendingEquipmentFile = null;
-    go('s-equipment-list');
+    // Return to wherever the user came from — Vessel detail's
+    // equipment list, or the Records screen's equipment tab. Falls
+    // back to s-equipment-list for backwards compatibility.
+    const back = window.__equipmentAddReturnTo || 's-equipment-list';
+    window.__equipmentAddReturnTo = null;
+    go(back);
   }
   window.saveNewEquipment = saveNewEquipment;
+
+  // Entry helper for the Add Equipment form. Both the Vessel detail
+  // and Records screens call this so the flow is identical from both
+  // sides. The `returnTo` shell id is what we route to after save.
+  function openEquipmentAdd(returnTo) {
+    window.__equipmentAddReturnTo = returnTo || null;
+    go('s-equipment-add');
+  }
+  window.openEquipmentAdd = openEquipmentAdd;
 
   // Show/hide the per-kind sub-fields in the Add Equipment form
   // (index.html, id="s-equipment-add"). Each sub-field row is tagged
