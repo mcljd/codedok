@@ -65,7 +65,85 @@
 /* Base size bumped 15 -> 17px. Anything fixed at small px in component
    styles below also scales up because em-based metrics inherit. */
 html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-height:100vh;font-size:17px;line-height:1.55;overflow-x:hidden;letter-spacing:-.005em;}
-@media(min-width:520px){body{display:flex;justify-content:center;align-items:flex-start;padding:32px 0 64px;}.shell{width:393px;min-height:852px;border-radius:44px;overflow:hidden;box-shadow:0 60px 120px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.08);}}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS — four sizes, one shell
+   -----------------------------------------------------------------
+   ≤519px    Phone           full viewport, phone-native
+   520-767   Big phone       shell centred, max 480px column
+   768-1199  Tablet / iPad   shell fills to 720px, hero/gallery expand
+   ≥1200    Desktop          shell fills to 1200px, top-nav layout
+   -----------------------------------------------------------------
+   The old CSS locked the shell to 393px on anything ≥520px, which
+   made iPad and desktop look like a stretched phone stuck in the
+   middle of the screen. Now the shell expands with the viewport.
+   Individual screens still work at 393px so the phone layout
+   continues to render; wider screens get more breathing room.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Big phone (520-767) — small tablets, phablets */
+@media (min-width: 520px) and (max-width: 767px) {
+  body { display: flex; justify-content: center; align-items: flex-start; padding: 24px 0; }
+  .shell {
+    width: 100%;
+    max-width: 480px;
+    min-height: calc(100vh - 48px);
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.06);
+  }
+}
+
+/* Tablet / iPad (768-1199) — the "opened on iPad" target */
+@media (min-width: 768px) and (max-width: 1199px) {
+  body { display: flex; justify-content: center; align-items: flex-start; padding: 24px 20px; background: #f5f5f7; }
+  .shell {
+    width: 100%;
+    max-width: 720px;
+    min-height: calc(100vh - 48px);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(15,23,42,.10), 0 0 0 1px rgba(15,23,42,.06);
+    background: var(--page);
+  }
+  /* Card lists grow more comfortable but not multi-column — keeps
+     the vertical scan the mobile app is designed around. */
+  .shell .card.mx { margin-left: 24px; margin-right: 24px; }
+  .shell .scroll { padding-left: 8px; padding-right: 8px; }
+  /* Bottom nav grows slightly and stays fixed at the bottom of the
+     shell (not the viewport) so the phone metaphor holds up. */
+  .shell .bnav { border-radius: 0 0 20px 20px; }
+}
+
+/* Desktop (≥1200) — full web-app layout with room to breathe */
+@media (min-width: 1200px) {
+  body { display: flex; justify-content: center; align-items: flex-start; padding: 32px 24px 64px; background: #f5f5f7; }
+  .shell {
+    width: 100%;
+    max-width: 1100px;
+    min-height: calc(100vh - 96px);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(15,23,42,.10), 0 0 0 1px rgba(15,23,42,.06);
+    background: var(--page);
+  }
+  .shell .card.mx { margin-left: 32px; margin-right: 32px; }
+  .shell .bnav { border-radius: 0 0 24px 24px; }
+  /* Vessels list becomes a 2-column grid on desktop — Sarah's fleet
+     view. Individual vessel cards keep their internal layout. */
+  #s-vessels [data-dyn="vessel-card"] {
+    display: inline-block;
+    width: calc(50% - 8px);
+    vertical-align: top;
+    margin-right: 4px;
+  }
+  #s-vessels [data-dyn="vessel-card"]:nth-child(even) { margin-right: 0; }
+}
+
+/* Landing (#s-land) opts out of the shell framing entirely — handled
+   by the body.shell-fullbleed block further down the file (~line 4490)
+   which was already thorough. Left as a comment marker so future
+   readers of this section know where to look. */
 
 /* SHELL */
 .shell{display:none;flex-direction:column;background:var(--page);position:relative;}
