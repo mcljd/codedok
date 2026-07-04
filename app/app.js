@@ -1890,12 +1890,20 @@
     if (tabId === 'cr-crew') {
       let html = '<div style="padding:14px 16px 4px">';
       if (allCrewCerts.length === 0) {
-        html += emptyState('🎓', 'No crew certs yet', 'Add crew members and their qualifications from the Crew tab.');
+        html += emptyState('🎓', 'No crew qualifications yet', 'Add a crew member first, then attach their tickets, ENG1, and training records.');
       } else {
         const ordered = allCrewCerts.slice().sort((a, b) => Store.daysUntil(a.expires_at) - Store.daysUntil(b.expires_at));
         ordered.forEach((cc) => { html += crewCertHtml(cc, personById(cc.person_id)); });
       }
-      html += `<div style="padding:6px 0 14px"><button class="btn btn-sea btn-full" onclick="go('s-crew')">Manage crew →</button></div></div><div class="spacer"></div>`;
+      // Two-button footer — same primary action treatment as
+      // Equipment. Both call the unified modals so Records-entry
+      // feels identical to Vessel-entry.
+      html += `
+        <div style="padding:6px 0 14px;display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-sea btn-full" onclick="openAddCrewCertModal('s-records')">+ Add qualification</button>
+          <button class="btn btn-out btn-full" onclick="openAddCrewMemberModal('s-records')">+ Add crew member</button>
+        </div>
+      </div><div class="spacer"></div>`;
       return html;
     }
 
@@ -2206,16 +2214,210 @@
   }
   window.unassignCrew = unassignCrew;
 
+  // Legacy entry point — routes through the new modal so any lingering
+  // call sites still work. Prompts have been replaced with a proper
+  // modal (openAddCrewMemberModal) so the flow feels like every other
+  // add in the app.
   function addCrewMember() {
-    const name = prompt('Crew member name:');
-    if (!name) return;
-    const role = prompt('Role (e.g. Skipper, Deck crew, Mate):', 'Deck crew') || 'Crew';
-    const colors = ['sea', 'purp', 'amber', 'green'];
-    const c = Store.addCrew({ name, role, vessel_ids: [activeVesselId], avatar_color: colors[Math.floor(Math.random() * colors.length)] });
-    renderVesselDetail();
-    return c;
+    openAddCrewMemberModal();
   }
   window.addCrewMember = addCrewMember;
+
+  // ─────────────────────────────────────────────────────────────
+  // Crew member — proper modal. Reachable from:
+  //   · Vessel detail → Crew tab → "+ Add crew"
+  //   · Records → Crew certs tab → "+ Add crew"
+  // Same form regardless of entry point; save returns to wherever
+  // the caller passed in (openAddCrewMemberModal(returnTo)).
+  // ─────────────────────────────────────────────────────────────
+  function openAddCrewMemberModal(returnTo) {
+    const old = document.getElementById('crew-add-modal');
+    if (old) old.remove();
+    const vessels = (Store.snapshot().vessels || []);
+    if (!vessels.length) { alert('Add a vessel first — crew are scoped per boat.'); return; }
+    window.__crewAddReturnTo = returnTo || null;
+
+    const modal = document.createElement('div');
+    modal.id = 'crew-add-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto';
+    modal.innerHTML = `
+      <div class="card" style="max-width:460px;width:100%;padding:22px;border-radius:18px;background:var(--bg);max-height:92vh;overflow-y:auto">
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:var(--fn-display);letter-spacing:-.3px">Add crew member</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">A person on the crew list. Their qualifications (RYA tickets, ENG1, first aid) get added separately once they're on file.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Name</label>
+        <input class="fi" id="crew-add-name" placeholder="e.g. Sarah Doherty" style="width:100%;height:42px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Role</label>
+        <select class="fs" id="crew-add-role" style="width:100%;height:42px;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+          <option>Skipper</option>
+          <option selected>Deck crew</option>
+          <option>Mate</option>
+          <option>Engineer</option>
+          <option>Instructor</option>
+          <option>Other</option>
+        </select>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Vessels they work on</label>
+        <div style="display:flex;flex-direction:column;gap:4px;padding:8px 10px;border:1px solid var(--bdr);border-radius:10px;margin-bottom:18px;max-height:220px;overflow-y:auto">
+          ${vessels.map((v) => `
+            <label style="display:flex;align-items:center;gap:10px;padding:6px 4px;cursor:pointer">
+              <input type="checkbox" class="crew-add-vessel" value="${escapeHtml(v.id)}"${v.id === activeVesselId || vessels.length === 1 ? ' checked' : ''} style="accent-color:var(--sea)">
+              <span style="font-size:13px;color:var(--text)">${escapeHtml(v.name)}</span>
+            </label>`).join('')}
+        </div>
+
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-out" style="flex:1;height:46px" onclick="closeAddCrewMemberModal()">Cancel</button>
+          <button class="btn btn-sea" style="flex:2;height:46px;font-weight:700" onclick="submitAddCrewMemberModal()">Add crew member</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    setTimeout(() => {
+      const n = document.getElementById('crew-add-name');
+      if (n) n.focus();
+    }, 50);
+  }
+  window.openAddCrewMemberModal = openAddCrewMemberModal;
+
+  function closeAddCrewMemberModal() {
+    const m = document.getElementById('crew-add-modal');
+    if (m) m.remove();
+  }
+  window.closeAddCrewMemberModal = closeAddCrewMemberModal;
+
+  function submitAddCrewMemberModal() {
+    const name = ((document.getElementById('crew-add-name') || {}).value || '').trim();
+    const role = (document.getElementById('crew-add-role') || {}).value || 'Crew';
+    const vesselIds = Array.from(document.querySelectorAll('.crew-add-vessel:checked')).map((el) => el.value);
+    if (!name) { alert('Enter a name.'); return; }
+    if (!vesselIds.length) { alert('Pick at least one vessel.'); return; }
+    const colors = ['sea', 'purp', 'amber', 'green'];
+    Store.addCrew({
+      name, role,
+      vessel_ids: vesselIds,
+      avatar_color: colors[Math.floor(Math.random() * colors.length)]
+    });
+    closeAddCrewMemberModal();
+    const back = window.__crewAddReturnTo || null;
+    window.__crewAddReturnTo = null;
+    if (back) { go(back); return; }
+    // No explicit return path — refresh the current screen.
+    if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
+  }
+  window.submitAddCrewMemberModal = submitAddCrewMemberModal;
+
+  // ─────────────────────────────────────────────────────────────
+  // Crew qualification — proper modal. Same principle as above:
+  // one form, reachable from Records or Vessel, same fields.
+  // ─────────────────────────────────────────────────────────────
+  function openAddCrewCertModal(returnTo) {
+    const old = document.getElementById('crew-cert-modal');
+    if (old) old.remove();
+    const crew = (Store.snapshot().crew || []);
+    if (!crew.length) {
+      // No people on file — nudge to add a person first, then loop
+      // back here so the two-step flow feels intentional not broken.
+      if (confirm('You need a crew member before you can add their qualifications. Add one now?')) {
+        openAddCrewMemberModal(returnTo);
+      }
+      return;
+    }
+    window.__crewCertReturnTo = returnTo || null;
+
+    const modal = document.createElement('div');
+    modal.id = 'crew-cert-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto';
+    modal.innerHTML = `
+      <div class="card" style="max-width:480px;width:100%;padding:22px;border-radius:18px;background:var(--bg);max-height:92vh;overflow-y:auto">
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:var(--fn-display);letter-spacing:-.3px">Add crew qualification</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">Attach a ticket, medical, or training record to a crew member.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Crew member</label>
+        <select class="fs" id="cc-add-person" style="width:100%;height:42px;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+          ${crew.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} — ${escapeHtml(p.role || 'Crew')}</option>`).join('')}
+        </select>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Qualification</label>
+        <select class="fs" id="cc-add-name" style="width:100%;height:42px;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+          <optgroup label="Deck (Workboat Code Table A5.1)">
+            <option>STCW Master (Workboat &lt;500GT, unlimited)</option>
+            <option>STCW Master (Code Vessels &lt;200GT, unlimited)</option>
+            <option>STCW Master (Code Vessels &lt;200GT, ≤150nm)</option>
+            <option>RYA/MCA Yachtmaster Ocean CoC</option>
+            <option>RYA/MCA Yachtmaster Offshore CoC/Service</option>
+            <option>RYA/MCA Yachtmaster Coastal CoC/Service</option>
+            <option>MCA Boatmasters' Licence</option>
+            <option>RYA/MCA Powerboat Advanced CoC</option>
+            <option>RYA/MCA Powerboat Level 2</option>
+            <option>RYA/MCA Day Skipper Theory &amp; Practical</option>
+            <option>Certificate of Competency (Competent Authority)</option>
+            <option>Local Authority Licence</option>
+          </optgroup>
+          <optgroup label="Engineering (Table A5.2)">
+            <option>Approved Engine Course (Part 1)</option>
+            <option>Marine Engine Operators Licence (MEOL)</option>
+            <option>Senior Marine Engine Operators Licence (SMEOL)</option>
+            <option>STCW C/Eng (Y4)</option>
+            <option>Small Vessel Second Engineer CoC</option>
+            <option>STCW III/2 Small Vessel Chief Engineer</option>
+          </optgroup>
+          <optgroup label="Mandatory Training (Table A5.3)">
+            <option>RYA Basic Sea Survival / STCW PST</option>
+            <option>First Aid at Sea / SeaFish Basic First Aid</option>
+            <option>STCW Fire Fighting &amp; Fire Prevention</option>
+            <option>Radar &amp; Meteorology (MCA-approved)</option>
+            <option>Stability Training</option>
+            <option>Electronic Chart Systems (ECDIS)</option>
+            <option>Navigation Equipment Training</option>
+            <option>Catering Training (MIN 698)</option>
+          </optgroup>
+          <optgroup label="Medical">
+            <option>ENG1 Seafarer Medical</option>
+            <option>ML5 Medical Fitness Certificate</option>
+          </optgroup>
+        </select>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Issuer / awarding body</label>
+        <input class="fi" id="cc-add-issuer" placeholder="e.g. RYA, MCA, SeaFish" style="width:100%;height:42px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Certificate number <span style="color:var(--lt);font-weight:400">(optional)</span></label>
+        <input class="fi" id="cc-add-number" placeholder="e.g. RYA-YM-2024-11234" style="width:100%;height:42px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Expiry date <span style="color:var(--lt);font-weight:400">(leave blank if none)</span></label>
+        <input class="fi" id="cc-add-expires" type="date" style="width:100%;height:42px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:18px">
+
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-out" style="flex:1;height:46px" onclick="closeAddCrewCertModal()">Cancel</button>
+          <button class="btn btn-sea" style="flex:2;height:46px;font-weight:700" onclick="submitAddCrewCertModal()">Save qualification</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  window.openAddCrewCertModal = openAddCrewCertModal;
+
+  function closeAddCrewCertModal() {
+    const m = document.getElementById('crew-cert-modal');
+    if (m) m.remove();
+  }
+  window.closeAddCrewCertModal = closeAddCrewCertModal;
+
+  function submitAddCrewCertModal() {
+    const person_id = (document.getElementById('cc-add-person') || {}).value || '';
+    const name = (document.getElementById('cc-add-name') || {}).value || '';
+    const issuer = ((document.getElementById('cc-add-issuer') || {}).value || '').trim();
+    const number = ((document.getElementById('cc-add-number') || {}).value || '').trim();
+    const expires_at = (document.getElementById('cc-add-expires') || {}).value || null;
+    if (!person_id) { alert('Pick a crew member.'); return; }
+    if (!name) { alert('Pick a qualification.'); return; }
+    Store.addCrewCert({ person_id, name, issuer, number, expires_at });
+    closeAddCrewCertModal();
+    const back = window.__crewCertReturnTo || null;
+    window.__crewCertReturnTo = null;
+    if (back) { go(back); return; }
+    if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
+  }
+  window.submitAddCrewCertModal = submitAddCrewCertModal;
 
   function countByDays(arr) {
     const out = { overdue: 0, due30: 0, due60: 0, valid: 0 };
