@@ -2290,8 +2290,8 @@
     const name = ((document.getElementById('crew-add-name') || {}).value || '').trim();
     const role = (document.getElementById('crew-add-role') || {}).value || 'Crew';
     const vesselIds = Array.from(document.querySelectorAll('.crew-add-vessel:checked')).map((el) => el.value);
-    if (!name) { alert('Enter a name.'); return; }
-    if (!vesselIds.length) { alert('Pick at least one vessel.'); return; }
+    if (!name) { alert("What's their name? Type it in the box above."); return; }
+    if (!vesselIds.length) { alert('Tick at least one boat above so we know which vessel they crew on.'); return; }
     const colors = ['sea', 'purp', 'amber', 'green'];
     Store.addCrew({
       name, role,
@@ -2408,8 +2408,8 @@
     const issuer = ((document.getElementById('cc-add-issuer') || {}).value || '').trim();
     const number = ((document.getElementById('cc-add-number') || {}).value || '').trim();
     const expires_at = (document.getElementById('cc-add-expires') || {}).value || null;
-    if (!person_id) { alert('Pick a crew member.'); return; }
-    if (!name) { alert('Pick a qualification.'); return; }
+    if (!person_id) { alert('Choose whose qualification this is from the first dropdown.'); return; }
+    if (!name) { alert('Pick which qualification it is from the second dropdown.'); return; }
     Store.addCrewCert({ person_id, name, issuer, number, expires_at });
     closeAddCrewCertModal();
     const back = window.__crewCertReturnTo || null;
@@ -8099,7 +8099,7 @@ ${sectionsHtml}
 
   async function submitTeamInvite() {
     const email = ((document.getElementById('team-invite-email') || {}).value || '').trim();
-    if (!email.includes('@')) { alert('Enter a valid email.'); return; }
+    if (!email.includes('@')) { alert("That doesn't look like an email address — try again with something like joe@example.com."); return; }
     const perms = Array.from(document.querySelectorAll('.team-perm:checked')).map((el) => el.value);
 
     // Per-vessel scoping. If "All vessels" is ticked we record an

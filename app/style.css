@@ -436,7 +436,16 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
 /* FORM */
 .fg{display:flex;flex-direction:column;gap:5px;padding:13px 16px 0;}
 .fg:last-child{padding-bottom:13px;}
-.fl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--lt);}
+/* Form labels bumped 11px → 13px + darker mid grey. 11px on a light
+   grey barely passes WCAG in the wheelhouse in sunlight; 13px in
+   mid-grey is comfortably readable through reading glasses without
+   dominating the field it labels. */
+.fl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mid);}
+/* Plain-English helper line right under a form label. Used to
+   demystify jargon (SART, HRU, "pack level") for older users who
+   won't tap a "?" icon but will read a short sentence in place.
+   Kept intentionally short — under 12 words per line. */
+.fl-help{font-size:13px;font-weight:400;color:var(--mid);line-height:1.45;margin:4px 0 8px;}
 .fi,.fs{height:48px;padding:0 14px;border-radius:var(--rs);border:1.5px solid var(--bdr);font-family:var(--fn);font-size:15px;color:var(--text);background:var(--slate);outline:none;-webkit-appearance:none;width:100%;}
 .fi:focus,.fs:focus{border-color:var(--sea);background:white;box-shadow:0 0 0 3px var(--seap);}
 .fta{min-height:90px;padding:12px 14px;border-radius:var(--rs);border:1.5px solid var(--bdr);font-family:var(--fn);font-size:15px;color:var(--text);background:var(--slate);outline:none;width:100%;resize:none;line-height:1.5;}
@@ -451,7 +460,11 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
 .sh-pull{width:40px;height:4px;border-radius:2px;background:var(--bdr);margin:12px auto 0;}
 .sh-head{padding:12px 20px 16px;display:flex;align-items:center;justify-content:space-between;}
 .sh-title{font-size:18px;font-weight:700;color:var(--text);}
-.sh-x{background:var(--slate);border:none;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--mid);}
+/* Bumped 30×30 → 44×44 to meet the iOS HIG minimum tap target size.
+   Older users with thick fingers repeatedly missed the small circle
+   and tapped the sheet body underneath (which does nothing). */
+.sh-x{background:var(--slate);border:none;width:44px;height:44px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--mid);}
+.sh-x:active{background:var(--bdr);}
 
 /* STAT GRID */
 .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;}
@@ -944,7 +957,10 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
 }
 .ticket-text { flex: 1; min-width: 0; }
 .ticket-name { font-size: 14px; font-weight: 600; color: var(--text); }
-.ticket-sub { font-size: 11px; color: var(--lt); margin-top: 2px; line-height: 1.45; }
+/* 11 → 12px + darker grey. Ticket subs are usually issuer + cert
+   number + expiry — genuinely useful information a 62-year-old
+   fisherman shouldn't have to squint at. */
+.ticket-sub { font-size: 12px; color: var(--mid); margin-top: 3px; line-height: 1.5; }
 /* Vessel context chip on Records rows — Records aggregates across the
    whole fleet, so each row needs to declare which boat it belongs to. */
 .ticket-vessel {
