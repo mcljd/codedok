@@ -3131,6 +3131,27 @@
       const kinds = (el.getAttribute('data-shows-for') || '').split(/\s+/);
       el.style.display = kinds.includes(kind) ? '' : 'none';
     });
+    // Auto-fill the Friendly name from a sensible default for the
+    // chosen kind. Only writes when the name is empty OR still matches
+    // a previous default — so a user who typed their own custom name
+    // (e.g. "Liferaft — port aft locker") never loses it when they
+    // reopen the picker to double-check the kind.
+    const nameEl = document.getElementById('eq-add-name');
+    if (nameEl) {
+      const defaults = {
+        liferaft:'Liferaft', lifejacket:'Lifejacket', lifebuoy:'Life buoy',
+        epirb:'EPIRB', sart:'SART', plb:'PLB',
+        vhf_fixed:'VHF DSC fixed radio', vhf_handheld:'VHF handheld DSC radio',
+        mf_radio:'MF radio', navtex:'Navtex',
+        pyrotechnics:'Pyrotechnics',
+        fire_ext_portable:'Fire extinguisher', fire_ext_fixed:'Fixed fire extinguisher',
+        fire_blanket:'Fire blanket', first_aid_c:'First aid kit (Cat C)'
+      };
+      const allDefaults = new Set(Object.values(defaults));
+      if (!nameEl.value.trim() || allDefaults.has(nameEl.value.trim())) {
+        nameEl.value = defaults[kind] || '';
+      }
+    }
   }
   window.updateEquipmentSubFields = updateEquipmentSubFields;
 
