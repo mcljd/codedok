@@ -202,15 +202,10 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
      comfortable padding, don't let it sprawl. */
   #home-status-wrap { padding-top: 20px; padding-bottom: 8px; }
   /* Metric tiles inside the compliance hero — the OVERDUE / DUE 30D
-     / VALID row. Force them to a 3-column grid at any width, so the
-     numbers sit in tight cards not stretched horizontal panels. */
-  #home-status .stat-tiles,
-  #home-status [data-tiles],
-  .stat-tiles-row {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-  }
+     / VALID row. Correct selector is .home-tile-row (rendered by
+     renderHome() with an inline grid-template-columns:1fr 1fr 1fr).
+     This just tightens the gap on wider viewports. */
+  .home-tile-row { gap: 12px !important; }
   /* Floating action button (FAB) — move slightly further from the
      edge on desktop so it's visible but not cramped against the
      shell's rounded corner. */
@@ -312,7 +307,12 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
 .lt-sub{font-size:14px;color:var(--mid);margin-top:6px;line-height:1.45;max-width:280px;}
 .lt-avatar{flex-shrink:0;}
 .tbar-title{font-size:18px;font-weight:700;color:var(--text);}
-.back{display:flex;align-items:center;gap:3px;color:var(--sea);font-size:15px;font-weight:500;cursor:pointer;border:none;background:none;font-family:var(--fn);}
+/* Back button — was rendering ~22×60px with no padding, so older
+   users overshot the thumb-zone into the scroll body and the page
+   jumped instead of navigating. Now a proper 44px tap target with
+   negative margin so the visual position doesn't shift. */
+.back{display:inline-flex;align-items:center;gap:4px;color:var(--sea);font-size:15px;font-weight:600;cursor:pointer;border:none;background:none;font-family:var(--fn);height:44px;padding:0 10px;margin-left:-10px;border-radius:8px;}
+.back:active{background:var(--seap);}
 
 /* BOTTOM NAV — glove-friendly tap targets, subtle active state.
    Solid background (no backdrop-filter) so iOS Safari doesn't repaint
@@ -380,7 +380,11 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
 .row-ic.pu{background:var(--purpp);}
 .row-ic.dk{background:rgba(255,255,255,.08);}
 .row-body{flex:1;min-width:0;}
-.row-name{font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Row title — wraps to 2 lines instead of ellipsis-truncating. Long
+   Workboat Ed.3 crew qual strings (e.g. "STCW Master (Code Vessels
+   <200GT, unlimited)") used to chop mid-word with no way to see the
+   full name. Better to grow vertically. */
+.row-name{font-size:16px;font-weight:600;color:var(--text);white-space:normal;overflow:visible;line-height:1.35;}
 .row-sub{font-size:13px;color:var(--mid);margin-top:2px;}
 .chev{color:var(--lt);font-size:18px;flex-shrink:0;}
 
@@ -413,8 +417,15 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
 .prog-fill.bl{background:var(--sea);}
 
 /* TABS */
-.tabbar{display:flex;overflow-x:auto;padding:0 16px;gap:2px;border-bottom:1px solid var(--bdr);background:var(--card);flex-shrink:0;}
+/* Horizontally scrolling tab strip. On phones with 5 tabs (Records:
+   Urgent / Vessel / Equipment / Crew / Insurance; Vessel detail:
+   Overview / Certificates / Equipment / Crew / History) the last
+   tab used to sit off-screen with no visual clue. Right-edge mask
+   gradient tells the user there's more; switchTab() (app.js) also
+   scrolls the active tab into view. */
+.tabbar{display:flex;overflow-x:auto;padding:0 16px;gap:2px;border-bottom:1px solid var(--bdr);background:var(--card);flex-shrink:0;position:relative;}
 .tabbar::-webkit-scrollbar{display:none;}
+.tabbar::after{content:'';position:sticky;right:0;top:0;bottom:0;width:24px;flex-shrink:0;margin-left:-24px;background:linear-gradient(to right, transparent, var(--card));pointer-events:none;}
 .tab{padding:12px 14px;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;border:none;background:none;color:var(--lt);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:var(--fn);}
 .tab.on{color:var(--sea);border-bottom-color:var(--sea);}
 .tc{display:none;}
@@ -436,11 +447,11 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
 /* FORM */
 .fg{display:flex;flex-direction:column;gap:5px;padding:13px 16px 0;}
 .fg:last-child{padding-bottom:13px;}
-/* Form labels bumped 11px → 13px + darker mid grey. 11px on a light
-   grey barely passes WCAG in the wheelhouse in sunlight; 13px in
-   mid-grey is comfortably readable through reading glasses without
-   dominating the field it labels. */
-.fl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mid);}
+/* Form labels: 13px, sentence case, mid grey. Older users read
+   sentence case ~30% faster than all-caps at small sizes (the
+   ascender/descender pattern is what the eye scans). Weight 600
+   keeps them distinct from field text without shouting. */
+.fl{font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--mid);}
 /* Plain-English helper line right under a form label. Used to
    demystify jargon (SART, HRU, "pack level") for older users who
    won't tap a "?" icon but will read a short sentence in place.
@@ -1007,12 +1018,18 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
 .crewc-name { font-size: 15px; font-weight: 700; color: var(--text); }
 .crewc-role { font-size: 11px; color: var(--lt); margin-top: 1px; }
 
-/* CREW VESSEL CHIP */
+/* CREW VESSEL CHIP — bumped from 11px/28px tall to 13px/44px tall.
+   The "+ Sarah" add-chip was well below iOS HIG tap target size; a
+   fisherman aiming for Sarah kept hitting Ken sitting next to her.
+   Extra gap between chips means adjacent chips don't share a
+   pixel-boundary and can't be tapped by mistake. */
 .vchip {
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; gap: 6px;
   background: var(--seap); color: var(--sea);
-  border-radius: 7px; padding: 3px 8px;
-  font-size: 11px; font-weight: 700;
+  border-radius: 999px; padding: 8px 14px;
+  font-size: 13px; font-weight: 700;
+  min-height: 40px;
+  margin: 3px 4px 3px 0;
 }
 .vchip-x {
   margin-left: 2px; opacity: .6;
