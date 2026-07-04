@@ -1989,8 +1989,11 @@
       }
       header.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <button class="back" onclick="go('s-vessels')" style="color:rgba(255,255,255,.6)">‹ Vessels</button>
-          <button onclick="openEditVessel('${v.id}')" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--fn)">✎ Edit</button>
+          <button class="back" onclick="go('s-vessels')" style="color:rgba(255,255,255,.75)">‹ Vessels</button>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button onclick="openInviteSurveyorModal('${v.id}')" title="Invite your surveyor" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:white;font-size:12px;font-weight:600;padding:8px 12px;border-radius:999px;cursor:pointer;font-family:var(--fn);height:36px;display:inline-flex;align-items:center;gap:5px">⚓ Invite surveyor</button>
+            <button onclick="openEditVessel('${v.id}')" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:white;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;font-family:var(--fn);height:36px">✎ Edit</button>
+          </div>
         </div>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:relative;z-index:1">
           <div style="min-width:0;flex:1">
@@ -7482,7 +7485,7 @@
     modal.id = 'invite-surveyor-modal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
     modal.innerHTML = `
-      <div class="card" style="max-width:440px;width:100%;padding:22px;border-radius:18px;background:var(--card,#fff)">
+      <div class="card" style="max-width:440px;width:100%;padding:22px;border-radius:18px;background:var(--card,#fff);max-height:92vh;overflow-y:auto">
         <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;font-family:var(--fn-display);letter-spacing:-.3px">Invite your surveyor</div>
         <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">They'll get a private link to view this boat's record and sign off inspections in the app. Surveyor seats are free and scoped to the vessel you pick — they only see what you choose to share.</div>
 
