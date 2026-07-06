@@ -714,9 +714,147 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
 /* CREW ROLE BADGE */
 .role-badge{display:inline-flex;align-items:center;gap:5px;background:var(--seap);color:var(--sea);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;}
 
-/* First-run tutorial progress dots. Active dot elongates instead
-   of just changing colour — reads as forward motion better. */
-.tut-dot{display:inline-block;width:8px;height:8px;border-radius:999px;transition:width 200ms ease, background 200ms ease;}
+/* ═══════════════════════════════════════════════════════════════
+   FIRST-RUN TUTORIAL — coachmark walkthrough
+   -----------------------------------------------------------------
+   Overlay is a full-viewport dim. When a step spotlights a real UI
+   element, an animated cyan ring appears around it and the
+   tooltip card floats near it with a pointer-events-through
+   scrim behind. When a step is modal (welcome / finale), the
+   tooltip centres over the whole viewport instead.
+   ═══════════════════════════════════════════════════════════════ */
+#tutorial-overlay {
+  position: fixed; inset: 0; z-index: 12000;
+  pointer-events: none;
+}
+#tutorial-overlay > * { pointer-events: auto; }
+
+#tutorial-scrim {
+  position: absolute; inset: 0;
+  background: rgba(8,14,28,.72);
+  -webkit-backdrop-filter: blur(4px);
+          backdrop-filter: blur(4px);
+  animation: tut-fade 240ms ease both;
+}
+#tutorial-scrim.has-spotlight { background: rgba(8,14,28,.68); }
+
+#tutorial-spotlight {
+  position: absolute;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 4px rgba(6,182,212,.85),
+    0 0 0 9999px rgba(8,14,28,.55),
+    0 0 40px rgba(6,182,212,.55);
+  pointer-events: none;
+  transition:
+    top 340ms cubic-bezier(.22,1,.36,1),
+    left 340ms cubic-bezier(.22,1,.36,1),
+    width 340ms cubic-bezier(.22,1,.36,1),
+    height 340ms cubic-bezier(.22,1,.36,1);
+  animation: tut-pulse 1800ms ease-in-out infinite;
+}
+@keyframes tut-pulse {
+  0%,100% { box-shadow: 0 0 0 4px rgba(6,182,212,.85), 0 0 0 9999px rgba(8,14,28,.55), 0 0 40px rgba(6,182,212,.55); }
+  50%     { box-shadow: 0 0 0 6px rgba(6,182,212,1),   0 0 0 9999px rgba(8,14,28,.55), 0 0 60px rgba(6,182,212,.75); }
+}
+
+#tutorial-tooltip {
+  position: absolute; z-index: 12010;
+  max-width: 380px;
+  animation: tut-rise 300ms cubic-bezier(.22,1,.36,1) both;
+}
+.tutorial-tooltip.tutorial-modal-mode {
+  position: absolute;
+  inset: 0 !important;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  max-width: none;
+}
+.tutorial-tooltip.tutorial-modal-mode .tut-card { max-width: 460px; padding: 40px 30px 26px; }
+
+.tut-card {
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 26px 24px 20px;
+  box-shadow:
+    0 30px 60px -12px rgba(6,182,212,.35),
+    0 12px 24px -6px rgba(8,14,28,.35),
+    0 0 0 1px rgba(6,182,212,.10);
+  color: #1C252B;
+  text-align: left;
+}
+.tutorial-tooltip.tutorial-modal-mode .tut-card { text-align: center; }
+.tut-icon {
+  font-size: 56px; line-height: 1;
+  margin-bottom: 14px;
+  animation: tut-bob 2400ms ease-in-out infinite;
+}
+.tutorial-tooltip:not(.tutorial-modal-mode) .tut-icon { display: none; }
+.tut-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 20px; font-weight: 800; letter-spacing: -.3px;
+  color: #0F172A;
+  margin-bottom: 8px;
+}
+.tutorial-tooltip.tutorial-modal-mode .tut-title { font-size: 26px; }
+.tut-body {
+  font-size: 14px; line-height: 1.6; color: #475569;
+  margin-bottom: 20px;
+}
+.tutorial-tooltip.tutorial-modal-mode .tut-body { font-size: 15px; margin-bottom: 26px; }
+.tut-dots {
+  display: flex; justify-content: center; gap: 6px;
+  margin-bottom: 18px;
+}
+.tut-dot {
+  display: inline-block;
+  width: 6px; height: 6px; border-radius: 999px;
+  background: #E2E8F0;
+  transition: width 240ms ease, background 240ms ease;
+}
+.tut-dot.on { background: #0891B2; width: 26px; }
+.tut-actions {
+  display: flex; gap: 8px;
+}
+.tut-btn {
+  min-height: 44px; padding: 0 16px;
+  border-radius: 12px;
+  font-family: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer; border: none;
+  transition: transform 100ms ease, background 160ms ease;
+}
+.tut-btn:active { transform: scale(.96); }
+.tut-btn-primary {
+  flex: 2;
+  background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(6,182,212,.35);
+}
+.tut-btn-primary:hover { filter: brightness(1.05); }
+.tut-btn-ghost {
+  flex: 1;
+  background: transparent;
+  color: #64748B;
+  border: 1px solid #E2E8F0;
+}
+.tut-btn-ghost:hover { background: #F8FAFC; }
+
+@keyframes tut-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tut-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes tut-bob  { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  #tutorial-spotlight { animation: none; transition: none; }
+  #tutorial-tooltip, .tut-icon { animation: none; }
+}
+
+/* iPad — the tooltip can grow a bit. */
+@media (min-width: 768px) {
+  #tutorial-tooltip { max-width: 440px; }
+  .tut-card { padding: 30px 28px 24px; }
+  .tut-title { font-size: 24px; }
+  .tut-body { font-size: 15px; }
+}
 
 /* ACTION CARD */
 .action-card{background:var(--card);border-radius:var(--r);border:1px solid var(--bdr);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;box-shadow:var(--sh);}

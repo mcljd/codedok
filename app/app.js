@@ -10164,35 +10164,70 @@ ${sectionsHtml}
   // finishes, dismisses, or explicitly skips. Never re-shown on
   // that device unless replayed.
   // ─────────────────────────────────────────────────────────────
+  // Each step optionally names a shell to navigate to and a CSS
+  // selector to spotlight. If both are set, the tour brings the
+  // user to that screen, dims everything except the target, and
+  // floats a coachmark tooltip near it. If neither is set, the
+  // tooltip renders centred over the current screen as a plain
+  // modal (welcome + finale slides).
   const TUTORIAL_STEPS = [
     {
+      mode: 'modal',
       icon: '⛵',
-      title: 'Welcome to CodedOK',
-      body: "The compliance app for UK & Irish coded vessels. Here's a 60-second tour so you know where everything lives.",
-      cta: 'Show me around'
+      title: 'Welcome aboard',
+      body: "The compliance app for UK & Irish coded vessels. I'll show you where everything lives — takes about 60 seconds.",
+      cta: 'Start tour →'
     },
     {
-      icon: '📷',
+      mode: 'coachmark',
+      goto: 's-home',
+      target: '#home-status',
+      position: 'below',
+      title: 'Your fleet, at a glance',
+      body: 'One dial tells you if every boat is inspection-ready. Green means good, orange means something needs booking, red means overdue.',
+      cta: 'Next'
+    },
+    {
+      mode: 'coachmark',
+      goto: 's-certs',
+      target: '.tabbar',
+      position: 'below',
+      title: 'Records — every document in one place',
+      body: 'Slide through the tabs to see your certs, equipment service records, crew tickets and insurance. Anything expiring soon rises to the top.',
+      cta: 'Show me the calendar'
+    },
+    {
+      mode: 'coachmark',
+      goto: 's-calendar',
+      target: '.cal-grid',
+      position: 'below',
+      title: 'Every deadline, on a calendar',
+      body: 'The red dots are overdue, amber ones are within 30 days. Tap ‹ and › to page through the months. Never miss a survey window again.',
+      cta: 'Next'
+    },
+    {
+      mode: 'coachmark',
+      goto: 's-scan',
+      target: '.scan-opt-primary',
+      position: 'below',
       title: 'Snap a certificate',
-      body: 'Point your camera at any cert — coding cert, PLI, liferaft service. We read the issuer, expiry, and serial. No typing.',
+      body: 'Point your camera at any paper cert — we read the issuer, expiry and serial. No retyping. Same trick works with PDFs from your email.',
       cta: 'Next'
     },
     {
-      icon: '🛟',
-      title: 'Log your equipment',
-      body: 'Liferaft, EPIRB, flares, lifejackets, fire extinguishers — track every service date. We flag anything within 30 days.',
-      cta: 'Next'
-    },
-    {
-      icon: '📋',
-      title: 'See every gap in one place',
-      body: 'Records lists everything you have and everything the Code says you need. The Compliance calendar shows deadlines by month.',
-      cta: 'Next'
-    },
-    {
-      icon: '⚓',
+      mode: 'coachmark',
+      goto: 's-account',
+      target: '.row[onclick*="openInviteSurveyorModal"]',
+      position: 'below',
       title: 'Invite your surveyor',
-      body: "Free seat per boat. They see the record from their own login and sign off inside the app. Add them once, they're set for the year.",
+      body: 'Free seat per boat. They see the record from their own login and sign off inspections inside the app. Add them once, sorted for the year.',
+      cta: 'Next'
+    },
+    {
+      mode: 'modal',
+      icon: '⚓',
+      title: "You're set",
+      body: "That's the tour. You can replay it any time from Account → Take the tour. Ready to add your first boat?",
       cta: 'Add my first boat →'
     }
   ];
@@ -10202,77 +10237,189 @@ ${sectionsHtml}
     try {
       if (localStorage.getItem('codedok-tutorial-seen') === '1') return;
     } catch (_) { return; }
-    // Give the home screen a beat to paint so the tour doesn't
-    // flash over an empty background.
-    setTimeout(() => openTutorial(), 400);
+    setTimeout(() => openTutorial(), 500);
   }
   window.maybeShowFirstRunTutorial = maybeShowFirstRunTutorial;
 
   function openTutorial() {
-    const old = document.getElementById('tutorial-modal');
-    if (old) old.remove();
+    closeTutorial();
     tutorialStepIdx = 0;
-    const modal = document.createElement('div');
-    modal.id = 'tutorial-modal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.72);z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)';
-    modal.innerHTML = renderTutorialCard();
-    document.body.appendChild(modal);
+
+    // Overlay + coachmark scaffolding. Overlay is a full-viewport
+    // dim, but pointer-events on it only block the underlying UI;
+    // the tooltip renders inside a container that DOES receive
+    // clicks. A spotlight ring is positioned absolutely over the
+    // target element to draw the eye.
+    const ovl = document.createElement('div');
+    ovl.id = 'tutorial-overlay';
+    ovl.setAttribute('aria-modal', 'true');
+    ovl.setAttribute('role', 'dialog');
+    ovl.innerHTML = `
+      <div id="tutorial-scrim"></div>
+      <div id="tutorial-spotlight"></div>
+      <div id="tutorial-tooltip"></div>
+    `;
+    document.body.appendChild(ovl);
+    // Re-position on window resize / scroll so the ring tracks its
+    // element even if the user rotates the iPad or the page reflows.
+    window.addEventListener('resize', repositionTutorial);
+    document.addEventListener('scroll', repositionTutorial, true);
+    // Render the first step.
+    renderTutorialStep();
   }
   window.openTutorial = openTutorial;
 
-  function renderTutorialCard() {
-    const step = TUTORIAL_STEPS[tutorialStepIdx] || TUTORIAL_STEPS[0];
+  function closeTutorial() {
+    const el = document.getElementById('tutorial-overlay');
+    if (el) el.remove();
+    window.removeEventListener('resize', repositionTutorial);
+    document.removeEventListener('scroll', repositionTutorial, true);
+  }
+
+  function renderTutorialStep() {
+    const step = TUTORIAL_STEPS[tutorialStepIdx];
+    if (!step) return;
+    if (step.mode === 'coachmark' && step.goto) {
+      // Navigate first, wait for the shell + rendered content to
+      // settle, then measure the target and paint the coachmark.
+      const currentShell = document.querySelector('.shell.on');
+      const targetShellVisible = currentShell && currentShell.id === step.goto;
+      if (!targetShellVisible) {
+        go(step.goto);
+      }
+      // 220ms is enough for the shell-in fade + JS renders that fire
+      // on the go() router hook. Try immediately, then again if the
+      // target wasn't in the DOM yet.
+      setTimeout(() => paintCoachmark(step), 220);
+    } else {
+      // Modal (welcome / finale). Centre the tooltip; hide spotlight.
+      paintModal(step);
+    }
+    updateProgressDots();
+  }
+
+  function paintModal(step) {
+    const scrim = document.getElementById('tutorial-scrim');
+    const spot  = document.getElementById('tutorial-spotlight');
+    const tip   = document.getElementById('tutorial-tooltip');
+    if (!scrim || !spot || !tip) return;
+    scrim.classList.remove('has-spotlight');
+    spot.style.display = 'none';
+    tip.className = 'tutorial-tooltip tutorial-modal-mode';
+    tip.style.top = ''; tip.style.left = ''; tip.style.right = '';
+    tip.innerHTML = tooltipCardHtml(step);
+  }
+
+  function paintCoachmark(step) {
+    const scrim = document.getElementById('tutorial-scrim');
+    const spot  = document.getElementById('tutorial-spotlight');
+    const tip   = document.getElementById('tutorial-tooltip');
+    if (!scrim || !spot || !tip) return;
+    const target = step.target ? document.querySelector(step.target) : null;
+    if (!target) {
+      // Target isn't in the DOM yet or doesn't exist for this user
+      // (e.g. Records tabbar with no vessels). Fall back to modal.
+      paintModal(step);
+      return;
+    }
+    const r = target.getBoundingClientRect();
+    scrim.classList.add('has-spotlight');
+    // Spotlight ring — 12px padding around the element.
+    spot.style.display = 'block';
+    spot.style.top     = (r.top - 8) + 'px';
+    spot.style.left    = (r.left - 8) + 'px';
+    spot.style.width   = (r.width + 16) + 'px';
+    spot.style.height  = (r.height + 16) + 'px';
+    tip.className = 'tutorial-tooltip';
+    tip.innerHTML = tooltipCardHtml(step);
+    // Position the tooltip below (default) or above the target,
+    // centred horizontally and clamped to the viewport.
+    positionTooltipRelative(tip, r, step.position || 'below');
+  }
+
+  function positionTooltipRelative(tip, r, position) {
+    // Wait one frame so the tooltip has measurable size.
+    requestAnimationFrame(() => {
+      const tw = tip.offsetWidth  || 360;
+      const th = tip.offsetHeight || 220;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let top, left;
+      if (position === 'above') {
+        top = Math.max(16, r.top - th - 20);
+      } else {
+        top = Math.min(vh - th - 16, r.bottom + 20);
+      }
+      left = Math.max(16, Math.min(vw - tw - 16, r.left + r.width / 2 - tw / 2));
+      tip.style.top  = top + 'px';
+      tip.style.left = left + 'px';
+      tip.style.right = '';
+    });
+  }
+
+  function repositionTutorial() {
+    const step = TUTORIAL_STEPS[tutorialStepIdx];
+    if (!step || step.mode !== 'coachmark') return;
+    const target = step.target ? document.querySelector(step.target) : null;
+    const spot = document.getElementById('tutorial-spotlight');
+    const tip  = document.getElementById('tutorial-tooltip');
+    if (!target || !spot || !tip) return;
+    const r = target.getBoundingClientRect();
+    spot.style.top    = (r.top - 8) + 'px';
+    spot.style.left   = (r.left - 8) + 'px';
+    spot.style.width  = (r.width + 16) + 'px';
+    spot.style.height = (r.height + 16) + 'px';
+    positionTooltipRelative(tip, r, step.position || 'below');
+  }
+
+  function tooltipCardHtml(step) {
     const isLast = tutorialStepIdx === TUTORIAL_STEPS.length - 1;
-    const dots = TUTORIAL_STEPS.map((_, i) => {
-      const on = i === tutorialStepIdx ? 'style="background:var(--sea);width:26px"' : 'style="background:var(--bdr)"';
-      return `<span class="tut-dot" ${on}></span>`;
-    }).join('');
-    const back = tutorialStepIdx > 0
-      ? '<button class="btn btn-out" style="flex:1;height:52px;font-weight:600" onclick="tutorialPrev()">‹ Back</button>'
-      : '<button class="btn btn-out" style="flex:1;height:52px;font-weight:600;color:var(--mid)" onclick="skipTutorial()">Skip tour</button>';
+    const isFirst = tutorialStepIdx === 0;
+    const iconHtml = step.icon ? `<div class="tut-icon">${step.icon}</div>` : '';
+    const back = isFirst
+      ? `<button class="tut-btn tut-btn-ghost" onclick="skipTutorial()">Skip tour</button>`
+      : `<button class="tut-btn tut-btn-ghost" onclick="tutorialPrev()">‹ Back</button>`;
     return `
-      <div class="card" style="max-width:460px;width:100%;padding:36px 28px 24px;border-radius:22px;background:var(--card,#fff);text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.30);max-height:92vh;overflow-y:auto">
-        <div style="font-size:64px;line-height:1;margin-bottom:18px">${step.icon}</div>
-        <div style="font-family:var(--fn-display);font-size:24px;font-weight:800;letter-spacing:-.3px;color:var(--text);margin-bottom:10px">${escapeHtml(step.title)}</div>
-        <div style="font-size:15px;line-height:1.55;color:var(--mid);margin-bottom:26px">${escapeHtml(step.body)}</div>
-        <div style="display:flex;gap:6px;justify-content:center;margin-bottom:22px">${dots}</div>
-        <div style="display:flex;gap:10px">
+      <div class="tut-card">
+        ${iconHtml}
+        <div class="tut-title">${escapeHtml(step.title)}</div>
+        <div class="tut-body">${escapeHtml(step.body)}</div>
+        <div class="tut-dots">${TUTORIAL_STEPS.map((_, i) => `<span class="tut-dot${i === tutorialStepIdx ? ' on' : ''}"></span>`).join('')}</div>
+        <div class="tut-actions">
           ${back}
-          <button class="btn btn-sea" style="flex:2;height:52px;font-weight:700" onclick="tutorialNext()">${escapeHtml(step.cta)}</button>
+          <button class="tut-btn tut-btn-primary" onclick="tutorialNext()">${escapeHtml(step.cta)}</button>
         </div>
       </div>`;
   }
 
+  function updateProgressDots() {
+    // No-op — dots are baked into every render — kept for clarity.
+  }
+
   function tutorialNext() {
     if (tutorialStepIdx === TUTORIAL_STEPS.length - 1) {
-      // Last slide's CTA — mark seen, close, drop them into onboarding.
       finishTutorial();
       go('s-onboard');
       return;
     }
     tutorialStepIdx++;
-    const modal = document.getElementById('tutorial-modal');
-    if (modal) modal.innerHTML = renderTutorialCard();
+    renderTutorialStep();
   }
   window.tutorialNext = tutorialNext;
 
   function tutorialPrev() {
     if (tutorialStepIdx === 0) return;
     tutorialStepIdx--;
-    const modal = document.getElementById('tutorial-modal');
-    if (modal) modal.innerHTML = renderTutorialCard();
+    renderTutorialStep();
   }
   window.tutorialPrev = tutorialPrev;
 
-  function skipTutorial() {
-    finishTutorial();
-  }
+  function skipTutorial() { finishTutorial(); }
   window.skipTutorial = skipTutorial;
 
   function finishTutorial() {
     try { localStorage.setItem('codedok-tutorial-seen', '1'); } catch (_) {}
-    const modal = document.getElementById('tutorial-modal');
-    if (modal) modal.remove();
+    closeTutorial();
   }
   window.finishTutorial = finishTutorial;
 
