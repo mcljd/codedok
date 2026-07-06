@@ -303,6 +303,42 @@
 </div>
 
 <!-- ════════════════════════════════════
+  SUPPORT CONSOLE — CodedOK support-team front-end for the users
+  table. Signed-in kind:'support' users land here directly. Search
+  by email, view account state, reset password, delete account.
+  Every write action calls the `admin-user-actions` Supabase edge
+  function, which validates the caller's kind server-side using
+  the service role key. The browser never sees that key.
+════════════════════════════════════ -->
+<div class="shell" id="s-support">
+  <div class="sb sb-cd"></div>
+  <div class="tbar">
+    <div class="tbar-title">CodedOK Support</div>
+    <button class="btn btn-sm btn-out" onclick="signOut()">Sign out</button>
+  </div>
+  <div class="scroll" style="padding:16px">
+    <div id="sup-me" style="font-size:13px;color:var(--mid);margin-bottom:14px"></div>
+
+    <div class="card mx" style="padding:16px;margin-bottom:14px">
+      <label class="fl">Find a user by email</label>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <input class="fi" id="sup-search" type="email" placeholder="joe@example.com" style="flex:1" onkeydown="if(event.key==='Enter')supportSearch()">
+        <button class="btn btn-sea" onclick="supportSearch()" style="height:52px;padding:0 20px">Search</button>
+      </div>
+    </div>
+
+    <div id="sup-result" style="margin-bottom:14px"></div>
+
+    <div class="card mx" style="padding:16px">
+      <div class="fl">Recent sign-ins (last 20)</div>
+      <div id="sup-recent" style="margin-top:10px;font-size:13px;color:var(--mid)">Loading…</div>
+    </div>
+
+    <div class="spacer"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
   S-ADMIN-REVIEW — Section walkthrough editor for one SMS submission
 ════════════════════════════════════ -->
 <div class="shell" id="s-admin-review">

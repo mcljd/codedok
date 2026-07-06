@@ -634,6 +634,7 @@
     if (id === 's-certs')              renderRecords();
     if (id === 's-tools')              renderTools();
     if (id === 's-calendar')           renderCalendar();
+    if (id === 's-support')            renderSupportConsole();
     if (id === 's-equipment-list')     renderEquipmentList();
     if (id === 's-equipment-detail')   renderEquipmentDetail();
     if (id === 's-equipment-add')      resetEquipmentAddForm();
@@ -9545,6 +9546,12 @@ ${sectionsHtml}
       if (row.kind === 'admin') {
         applyDesktopAdmin();
         go('s-admin-home');
+      } else if (row.kind === 'support') {
+        // Support-team console — full user management, not the SMS
+        // review workspace. Same wide-screen layout as admin so it
+        // gets sidebar navigation on desktop.
+        applyDesktopAdmin();
+        go('s-support');
       } else if (row.kind === 'surveyor') {
         Store.setMode('surveyor');
         go('s-surveyor-home');
@@ -10198,6 +10205,179 @@ ${sectionsHtml}
     window.location.href = `mailto:privacy@codedok.com?subject=${subject}&body=${body}`;
   }
   window.deleteAccount = deleteAccount;
+
+  // ═══════════════════════════════════════════════════════════════
+  // SUPPORT CONSOLE — kind:'support' users see this instead of the
+  // operator home. Front-end for the `admin-user-actions` Supabase
+  // edge function; the browser never touches the service role key.
+  //
+  // Actions available:
+  //   - Search a user by email
+  //   - Reset their password (support types a new one, function sets it)
+  //   - Delete their auth row + cascade user data
+  //   - View recent sign-ins across all accounts (audit stream)
+  //
+  // Every action requires the caller to still be signed in as a
+  // kind:'support' user — the edge function double-checks via the
+  // caller's JWT before touching the database.
+  // ═══════════════════════════════════════════════════════════════
+  async function renderSupportConsole() {
+    const meEl = document.getElementById('sup-me');
+    if (meEl) meEl.textContent = 'Loading your session…';
+    if (!window.Supa || !window.Supa.ready) {
+      if (meEl) meEl.textContent = 'Cloud sync not configured. Sign in with a support account.';
+      return;
+    }
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) { if (meEl) meEl.textContent = 'Not signed in.'; return; }
+      const me = await client.from('users').select('id,name,email,kind').eq('auth_user_id', user.id).maybeSingle();
+      const meRow = me.data || {};
+      if (meEl) meEl.textContent = `Signed in as ${meRow.email || user.email} · role: ${meRow.kind || 'unknown'}`;
+      // If they somehow got here without support-kind, kick them.
+      if (meRow.kind !== 'support' && meRow.kind !== 'admin') {
+        if (meEl) meEl.innerHTML = '<span style="color:var(--red)">This console is for CodedOK support only. Signing you out.</span>';
+        setTimeout(() => signOut(), 1600);
+        return;
+      }
+      loadRecentSignIns();
+    } catch (err) {
+      console.error('renderSupportConsole failed', err);
+      if (meEl) meEl.textContent = 'Failed to load your session — refresh and try again.';
+    }
+  }
+  window.renderSupportConsole = renderSupportConsole;
+
+  async function loadRecentSignIns() {
+    const box = document.getElementById('sup-recent');
+    if (!box) return;
+    box.textContent = 'Loading…';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'recent_signins', limit: 20 }
+      });
+      if (error) throw error;
+      if (!data || !data.rows || !data.rows.length) {
+        box.innerHTML = '<div style="color:var(--mid);font-size:13px">No recent sign-ins.</div>';
+        return;
+      }
+      box.innerHTML = data.rows.map((r) => `
+        <div style="padding:10px 0;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;gap:10px">
+          <div style="min-width:0"><div style="font-weight:600;color:var(--text);font-size:13px">${escapeHtml(r.email || '—')}</div><div style="font-size:11px;color:var(--lt)">${escapeHtml(r.kind || '')}</div></div>
+          <div style="font-size:11px;color:var(--lt);white-space:nowrap">${fmtDate(r.last_sign_in_at)}</div>
+        </div>`).join('');
+    } catch (err) {
+      console.error('recent_signins failed', err);
+      box.innerHTML = `<div style="color:var(--red);font-size:13px">Couldn't load recent sign-ins: ${escapeHtml(err.message || String(err))}</div>`;
+    }
+  }
+
+  async function supportSearch() {
+    const emailEl = document.getElementById('sup-search');
+    const box = document.getElementById('sup-result');
+    if (!emailEl || !box) return;
+    const email = (emailEl.value || '').trim().toLowerCase();
+    if (!email.includes('@')) { alert('Enter the customer\'s email.'); return; }
+    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Looking up…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'find_user', email }
+      });
+      if (error) throw error;
+      if (!data || !data.user) {
+        box.innerHTML = '<div class="card mx" style="padding:16px;color:var(--mid);font-size:13px">No user with that email.</div>';
+        return;
+      }
+      renderSupportUserCard(data.user);
+    } catch (err) {
+      console.error('find_user failed', err);
+      box.innerHTML = `<div class="card mx" style="padding:16px;color:var(--red);font-size:13px">Lookup failed: ${escapeHtml(err.message || String(err))}</div>`;
+    }
+  }
+  window.supportSearch = supportSearch;
+
+  function renderSupportUserCard(u) {
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    const orgs = (u.orgs || []).map((o) => `<span class="chip" style="background:var(--seap);color:var(--sea);margin-right:4px">${escapeHtml(o.name || o.id)}</span>`).join('') || '<span style="color:var(--lt)">no organisations</span>';
+    box.innerHTML = `
+      <div class="card mx" style="padding:18px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px">
+          <div style="min-width:0;flex:1">
+            <div style="font-size:16px;font-weight:700;color:var(--text)">${escapeHtml(u.name || u.email)}</div>
+            <div style="font-size:13px;color:var(--mid);margin-top:2px">${escapeHtml(u.email)}</div>
+          </div>
+          <span class="chip" style="background:${u.kind === 'admin' || u.kind === 'support' ? 'rgba(217,119,6,.12)' : 'var(--seap)'};color:${u.kind === 'admin' || u.kind === 'support' ? 'var(--amber)' : 'var(--sea)'}">${escapeHtml(u.kind || 'user')}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:12px;margin-bottom:14px">
+          <div><div style="color:var(--lt)">Auth ID</div><div style="font-family:monospace;font-size:11px;color:var(--text);word-break:break-all">${escapeHtml(u.auth_user_id || u.id || '')}</div></div>
+          <div><div style="color:var(--lt)">Created</div><div style="color:var(--text)">${fmtDate(u.created_at) || '—'}</div></div>
+          <div><div style="color:var(--lt)">Last sign-in</div><div style="color:var(--text)">${fmtDate(u.last_sign_in_at) || 'never'}</div></div>
+          <div><div style="color:var(--lt)">Email verified</div><div style="color:var(--text)">${u.email_confirmed_at ? '✓ yes' : '✗ no'}</div></div>
+        </div>
+        <div style="font-size:12px;color:var(--lt);margin-bottom:4px">Organisations</div>
+        <div style="margin-bottom:14px">${orgs}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sea" style="flex:1;min-width:140px;min-height:44px" onclick="supportResetPassword('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}')">Reset password</button>
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportSendMagicLink('${escapeHtml(u.email)}')">Send magic link</button>
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="supportDeleteUser('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}')">Delete account</button>
+        </div>
+      </div>`;
+  }
+
+  async function supportResetPassword(email, authId) {
+    const pw = prompt(`Set new password for ${email}:\n\n(Minimum 12 characters. They'll be able to sign in immediately with this password. Deliver it to them through a secure channel — not email.)`);
+    if (!pw) return;
+    if (pw.length < 12) { alert('That\'s under 12 characters — pick something stronger.'); return; }
+    if (!confirm(`Confirm: reset ${email}'s password to the value you just typed?`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'set_password', auth_user_id: authId, password: pw }
+      });
+      if (error) throw error;
+      alert(`Password reset for ${email}.\n\nDeliver the new password by phone or in person — don't email it.`);
+    } catch (err) {
+      alert('Password reset failed: ' + (err.message || err));
+    }
+  }
+  window.supportResetPassword = supportResetPassword;
+
+  async function supportSendMagicLink(email) {
+    if (!confirm(`Send ${email} a magic sign-in link?`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'send_magic_link', email }
+      });
+      if (error) throw error;
+      alert(`Magic link sent to ${email}.`);
+    } catch (err) {
+      alert('Magic link failed: ' + (err.message || err));
+    }
+  }
+  window.supportSendMagicLink = supportSendMagicLink;
+
+  async function supportDeleteUser(email, authId) {
+    if (!confirm(`PERMANENTLY delete ${email}?\n\nThis erases the auth row and cascades every vessel, cert, crew record, and org owned by them. Cannot be undone.`)) return;
+    const typed = prompt(`Type DELETE to confirm you want to erase ${email}:`);
+    if (typed !== 'DELETE') { if (typed !== null) alert('Cancelled — user was NOT deleted.'); return; }
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'delete_user', auth_user_id: authId }
+      });
+      if (error) throw error;
+      alert(`${email} deleted.`);
+      document.getElementById('sup-result').innerHTML = '';
+    } catch (err) {
+      alert('Delete failed: ' + (err.message || err));
+    }
+  }
+  window.supportDeleteUser = supportDeleteUser;
 
   // ─────────────────────────────────────────────────────────────
   // First-run tutorial. Fires once per device after a real skipper
