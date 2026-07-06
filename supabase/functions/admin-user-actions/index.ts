@@ -149,18 +149,129 @@ async function handler(req: Request): Promise<Response> {
         const limit = Math.min(200, Math.max(1, Number(body.limit) || 20));
         const { data: authList, error } = await service.auth.admin.listUsers({ perPage: 500 });
         if (error) throw error;
-        // Sort by last_sign_in_at desc, cap.
         const rows = (authList?.users || [])
           .filter((u) => u.last_sign_in_at)
           .sort((a, b) => (b.last_sign_in_at || "").localeCompare(a.last_sign_in_at || ""))
           .slice(0, limit)
-          .map((u) => ({ email: u.email, last_sign_in_at: u.last_sign_in_at }));
-        // Enrich with kind.
-        const authIds = rows.map((_, i) => (authList.users[i]?.id));
+          .map((u) => ({ email: u.email, last_sign_in_at: u.last_sign_in_at, auth_user_id: u.id }));
+        const authIds = rows.map((r: any) => r.auth_user_id);
         const { data: pubs } = await service.from("users").select("auth_user_id,kind").in("auth_user_id", authIds);
         const kindById = new Map((pubs || []).map((p: any) => [p.auth_user_id, p.kind]));
-        rows.forEach((r: any, i: number) => { r.kind = kindById.get(authList.users[i]?.id) || "user"; });
+        rows.forEach((r: any) => { r.kind = kindById.get(r.auth_user_id) || "user"; });
         return json({ rows });
+      }
+
+      case "list_users": {
+        // Paginated browse of every user on the platform. `q` filter
+        // matches an email substring (case-insensitive).
+        const perPage = Math.min(200, Math.max(1, Number(body.per_page) || 25));
+        const page    = Math.max(1, Number(body.page) || 1);
+        const q       = String(body.q || "").toLowerCase().trim();
+        const { data: authList, error } = await service.auth.admin.listUsers({ perPage: 1000 });
+        if (error) throw error;
+        let users = authList?.users || [];
+        if (q) users = users.filter((u) => (u.email || "").toLowerCase().includes(q));
+        users.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+        const total = users.length;
+        const slice = users.slice((page - 1) * perPage, page * perPage);
+        const ids = slice.map((u) => u.id);
+        const { data: pubs } = await service.from("users").select("auth_user_id,kind,name").in("auth_user_id", ids);
+        const meta = new Map((pubs || []).map((p: any) => [p.auth_user_id, p]));
+        const rows = slice.map((u) => {
+          const m: any = meta.get(u.id) || {};
+          return {
+            auth_user_id: u.id,
+            email: u.email,
+            name: m.name || null,
+            kind: m.kind || "user",
+            created_at: u.created_at,
+            last_sign_in_at: u.last_sign_in_at,
+            email_confirmed: !!u.email_confirmed_at,
+            banned: !!u.banned_until && new Date(u.banned_until) > new Date(),
+          };
+        });
+        return json({ rows, page, per_page: perPage, total });
+      }
+
+      case "change_email": {
+        // Update a user's login email. Fires a re-verification email
+        // to the new address unless email_confirm is passed.
+        const id = String(body.auth_user_id || "");
+        const email = String(body.email || "").toLowerCase().trim();
+        if (!id || !email.includes("@")) return json({ error: "id_and_email_required" }, 400);
+        const { error: authErr } = await service.auth.admin.updateUserById(id, { email });
+        if (authErr) throw authErr;
+        await service.from("users").update({ email }).eq("auth_user_id", id);
+        return json({ ok: true });
+      }
+
+      case "verify_email": {
+        // Force an unverified email address to be marked confirmed
+        // (used when the verification mail failed to deliver but the
+        // person is legit).
+        const id = String(body.auth_user_id || "");
+        if (!id) return json({ error: "auth_user_id_required" }, 400);
+        const { error } = await service.auth.admin.updateUserById(id, { email_confirm: true });
+        if (error) throw error;
+        return json({ ok: true });
+      }
+
+      case "change_kind": {
+        // Promote / demote a user's role. Restricted to the four
+        // customer-facing kinds — support & admin can only be set
+        // via SQL on purpose.
+        const id      = String(body.auth_user_id || "");
+        const newKind = String(body.kind || "").toLowerCase();
+        const allowed = ["operator", "surveyor", "builder", "crew"];
+        if (!id || !allowed.includes(newKind)) return json({ error: "invalid_kind_or_id" }, 400);
+        const { error } = await service.from("users").update({ kind: newKind }).eq("auth_user_id", id);
+        if (error) throw error;
+        return json({ ok: true, kind: newKind });
+      }
+
+      case "ban_user": {
+        // Ban a user for a duration ("24h", "7d", "1000h") or lift
+        // an existing ban ("none").
+        const id  = String(body.auth_user_id || "");
+        const dur = String(body.duration || "24h");
+        if (!id) return json({ error: "auth_user_id_required" }, 400);
+        const { error } = await service.auth.admin.updateUserById(id, { ban_duration: dur });
+        if (error) throw error;
+        return json({ ok: true, ban_duration: dur });
+      }
+
+      case "user_activity": {
+        // Recent audit-log rows for the user.
+        const id = String(body.user_id || "");
+        if (!id) return json({ error: "user_id_required" }, 400);
+        const { data, error } = await service
+          .from("audit_log")
+          .select("action,target_type,target_id,at,metadata")
+          .eq("actor_user_id", id)
+          .order("at", { ascending: false })
+          .limit(50);
+        if (error) throw error;
+        return json({ rows: data || [] });
+      }
+
+      case "user_vessels": {
+        // Every vessel the user has access to via any org membership.
+        const id = String(body.user_id || "");
+        if (!id) return json({ error: "user_id_required" }, 400);
+        const { data: memb, error: mErr } = await service
+          .from("memberships")
+          .select("org_id,role")
+          .eq("user_id", id);
+        if (mErr) throw mErr;
+        const orgIds = (memb || []).map((m: any) => m.org_id);
+        if (!orgIds.length) return json({ rows: [] });
+        const { data: vessels, error: vErr } = await service
+          .from("vessels")
+          .select("id,name,type,category,ssr,org_id,port")
+          .in("org_id", orgIds)
+          .order("created_at", { ascending: false });
+        if (vErr) throw vErr;
+        return json({ rows: vessels || [] });
       }
 
       default:

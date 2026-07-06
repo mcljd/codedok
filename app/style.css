@@ -411,7 +411,12 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
 .scroll::-webkit-scrollbar{display:none;}
 
 /* TOP BAR */
-.tbar{background:var(--card);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);flex-shrink:0;}
+.tbar{background:var(--card);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);flex-shrink:0;gap:12px;}
+/* On iPad/desktop the shell fills 100vw so the tbar needs its own
+   left/right breathing room. Was 18px which read as "hard against
+   the edge" at wide viewports. */
+@media (min-width: 768px) { .tbar { padding-left: 32px; padding-right: 24px; } }
+@media (min-width: 1200px) { .tbar { padding-left: 48px; padding-right: 32px; } }
 
 /* Large iOS-style page header — used on Tools and other top-level screens. */
 .lt-head{

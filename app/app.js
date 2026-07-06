@@ -10278,7 +10278,7 @@ ${sectionsHtml}
         </div>`).join('');
     } catch (err) {
       console.error('recent_signins failed', err);
-      box.innerHTML = `<div style="color:var(--red);font-size:13px">Couldn't load recent sign-ins: ${escapeHtml(err.message || String(err))}</div>`;
+      box.innerHTML = supportErrorCard('Recent sign-ins', err);
     }
   }
 
@@ -10302,15 +10302,39 @@ ${sectionsHtml}
       renderSupportUserCard(data.user);
     } catch (err) {
       console.error('find_user failed', err);
-      box.innerHTML = `<div class="card mx" style="padding:16px;color:var(--red);font-size:13px">Lookup failed: ${escapeHtml(err.message || String(err))}</div>`;
+      box.innerHTML = supportErrorCard('Lookup', err);
     }
   }
   window.supportSearch = supportSearch;
+
+  // Common error card for every support-console action. Recognises
+  // the "Failed to send a request to the Edge Function" browser
+  // message (Supabase's default when the function isn't reachable)
+  // and shows a plain-English fix — usually "the function isn't
+  // deployed yet."
+  function supportErrorCard(op, err) {
+    const msg = (err && err.message) || String(err);
+    const isFnMissing = /send a request to the Edge Function|Failed to fetch|non-2xx status code|Function not found|404/i.test(msg);
+    if (isFnMissing) {
+      return `<div class="card mx" style="padding:18px;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.25)">
+        <div style="font-weight:700;color:var(--amber);font-size:14px;margin-bottom:8px">The support edge function isn't deployed yet.</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.55">Every action on this console runs through a Supabase edge function called <code style="background:var(--slate);padding:2px 6px;border-radius:4px">admin-user-actions</code>. It looks like it hasn't been created on this project yet.<br><br><b>To deploy it:</b><br>Supabase dashboard → Edge Functions → <b>Deploy a new function</b> → name it exactly <code style="background:var(--slate);padding:2px 6px;border-radius:4px">admin-user-actions</code> → paste the TypeScript from <code style="background:var(--slate);padding:2px 6px;border-radius:4px">supabase/functions/admin-user-actions/index.ts</code> → Deploy.<br><br>Once it's live, refresh this page and try again.</div>
+        <div style="font-size:11px;color:var(--lt);margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr);font-family:monospace">${escapeHtml(msg)}</div>
+      </div>`;
+    }
+    return `<div class="card mx" style="padding:16px;color:var(--red);font-size:13px">${escapeHtml(op)} failed: ${escapeHtml(msg)}</div>`;
+  }
+  window.supportErrorCard = supportErrorCard;
 
   function renderSupportUserCard(u) {
     const box = document.getElementById('sup-result');
     if (!box) return;
     const orgs = (u.orgs || []).map((o) => `<span class="chip" style="background:var(--seap);color:var(--sea);margin-right:4px">${escapeHtml(o.name || o.id)}</span>`).join('') || '<span style="color:var(--lt)">no organisations</span>';
+    const isPriv = u.kind === 'admin' || u.kind === 'support';
+    // Verification chip: green tick, amber warning, or a button.
+    const verifiedChip = u.email_confirmed_at
+      ? '<span style="color:var(--green);font-weight:600">✓ verified</span>'
+      : `<button class="btn btn-xs" style="min-height:32px;padding:0 10px;background:rgba(217,119,6,.12);color:var(--amber);border:1px solid rgba(217,119,6,.25);border-radius:8px;cursor:pointer" onclick="supportVerifyEmail('${escapeHtml(u.auth_user_id)}')">Verify now</button>`;
     box.innerHTML = `
       <div class="card mx" style="padding:18px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px">
@@ -10318,21 +10342,37 @@ ${sectionsHtml}
             <div style="font-size:16px;font-weight:700;color:var(--text)">${escapeHtml(u.name || u.email)}</div>
             <div style="font-size:13px;color:var(--mid);margin-top:2px">${escapeHtml(u.email)}</div>
           </div>
-          <span class="chip" style="background:${u.kind === 'admin' || u.kind === 'support' ? 'rgba(217,119,6,.12)' : 'var(--seap)'};color:${u.kind === 'admin' || u.kind === 'support' ? 'var(--amber)' : 'var(--sea)'}">${escapeHtml(u.kind || 'user')}</span>
+          <span class="chip" style="background:${isPriv ? 'rgba(217,119,6,.12)' : 'var(--seap)'};color:${isPriv ? 'var(--amber)' : 'var(--sea)'}">${escapeHtml(u.kind || 'user')}</span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:12px;margin-bottom:14px">
           <div><div style="color:var(--lt)">Auth ID</div><div style="font-family:monospace;font-size:11px;color:var(--text);word-break:break-all">${escapeHtml(u.auth_user_id || u.id || '')}</div></div>
           <div><div style="color:var(--lt)">Created</div><div style="color:var(--text)">${fmtDate(u.created_at) || '—'}</div></div>
           <div><div style="color:var(--lt)">Last sign-in</div><div style="color:var(--text)">${fmtDate(u.last_sign_in_at) || 'never'}</div></div>
-          <div><div style="color:var(--lt)">Email verified</div><div style="color:var(--text)">${u.email_confirmed_at ? '✓ yes' : '✗ no'}</div></div>
+          <div><div style="color:var(--lt)">Email verified</div><div style="color:var(--text)">${verifiedChip}</div></div>
         </div>
         <div style="font-size:12px;color:var(--lt);margin-bottom:4px">Organisations</div>
         <div style="margin-bottom:14px">${orgs}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+
+        <!-- Primary actions row -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
           <button class="btn btn-sea" style="flex:1;min-width:140px;min-height:44px" onclick="supportResetPassword('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}')">Reset password</button>
           <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportSendMagicLink('${escapeHtml(u.email)}')">Send magic link</button>
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportChangeEmail('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}')">Change email</button>
+        </div>
+
+        <!-- Role + status row -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          ${isPriv ? '' : `<button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportChangeKind('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}','${escapeHtml(u.kind || 'operator')}')">Change role</button>`}
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportBan('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}',${u.banned ? true : false})">${u.banned ? 'Unban account' : 'Ban account…'}</button>
           <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="supportDeleteUser('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}')">Delete account</button>
         </div>
+
+        <!-- Data views -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--bdr);margin-top:6px">
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportLoadVessels('${escapeHtml(u.id || u.auth_user_id)}')">🛥️ Show vessels</button>
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportLoadActivity('${escapeHtml(u.id || u.auth_user_id)}')">📋 Recent activity</button>
+        </div>
+        <div id="sup-detail-panel" style="margin-top:14px"></div>
       </div>`;
   }
 
@@ -10386,6 +10426,140 @@ ${sectionsHtml}
     }
   }
   window.supportDeleteUser = supportDeleteUser;
+
+  async function supportVerifyEmail(authId) {
+    if (!confirm('Force this email address to be marked verified? Only do this if you\'ve confirmed by phone that the person is legit.')) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'verify_email', auth_user_id: authId }
+      });
+      if (error) throw error;
+      alert('Email marked verified. Refresh the user lookup to see the change.');
+    } catch (err) { alert('Verify failed: ' + (err.message || err)); }
+  }
+  window.supportVerifyEmail = supportVerifyEmail;
+
+  async function supportChangeEmail(oldEmail, authId) {
+    const newEmail = prompt(`Change ${oldEmail} to what new email?`);
+    if (!newEmail || !newEmail.includes('@')) return;
+    if (!confirm(`Confirm: change ${oldEmail} → ${newEmail}?\n\nA verification email fires to the NEW address. If it never arrives, use "Verify now" from the user card afterwards.`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'change_email', auth_user_id: authId, email: newEmail.toLowerCase().trim() }
+      });
+      if (error) throw error;
+      alert(`Email changed to ${newEmail}.`);
+    } catch (err) { alert('Change failed: ' + (err.message || err)); }
+  }
+  window.supportChangeEmail = supportChangeEmail;
+
+  async function supportChangeKind(email, authId, currentKind) {
+    const roles = ['operator', 'surveyor', 'builder', 'crew'];
+    const listed = roles.map((r, i) => `  ${i + 1}. ${r}${r === currentKind ? ' (current)' : ''}`).join('\n');
+    const pick = prompt(`Change ${email}'s role to which?\n\n${listed}\n\nType the number 1-4:`);
+    if (!pick) return;
+    const newKind = roles[parseInt(pick, 10) - 1];
+    if (!newKind) { alert('Not a valid choice.'); return; }
+    if (!confirm(`Confirm: change ${email} from ${currentKind} → ${newKind}?`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'change_kind', auth_user_id: authId, kind: newKind }
+      });
+      if (error) throw error;
+      alert(`${email} is now ${newKind}. They may need to sign out and back in to see their new home screen.`);
+    } catch (err) { alert('Change failed: ' + (err.message || err)); }
+  }
+  window.supportChangeKind = supportChangeKind;
+
+  async function supportBan(email, authId, currentlyBanned) {
+    if (currentlyBanned) {
+      if (!confirm(`Lift the ban on ${email}?`)) return;
+      try {
+        const client = await window.Supa.getClient();
+        const { error } = await client.functions.invoke('admin-user-actions', {
+          body: { action: 'ban_user', auth_user_id: authId, duration: 'none' }
+        });
+        if (error) throw error;
+        alert(`Ban lifted on ${email}.`);
+      } catch (err) { alert('Unban failed: ' + (err.message || err)); }
+      return;
+    }
+    const dur = prompt(`Ban ${email} for how long?\n\nExamples:\n  24h   — one day\n  7d    — one week\n  720h  — one month\n\nType a duration:`);
+    if (!dur) return;
+    if (!confirm(`Confirm: ban ${email} for ${dur}?\n\nThey'll be signed out and blocked from signing in for that duration.`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'ban_user', auth_user_id: authId, duration: dur }
+      });
+      if (error) throw error;
+      alert(`${email} banned for ${dur}.`);
+    } catch (err) { alert('Ban failed: ' + (err.message || err)); }
+  }
+  window.supportBan = supportBan;
+
+  async function supportLoadVessels(userId) {
+    const panel = document.getElementById('sup-detail-panel');
+    if (!panel) return;
+    panel.innerHTML = '<div style="padding:12px;color:var(--mid);font-size:13px">Loading vessels…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'user_vessels', user_id: userId }
+      });
+      if (error) throw error;
+      const rows = (data && data.rows) || [];
+      if (!rows.length) {
+        panel.innerHTML = '<div style="padding:12px;color:var(--mid);font-size:13px;background:var(--slate);border-radius:10px">No vessels on this account.</div>';
+        return;
+      }
+      panel.innerHTML = `
+        <div style="font-size:12px;color:var(--lt);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Vessels (${rows.length})</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${rows.map((v) => `
+            <div style="padding:10px 12px;background:var(--slate);border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+              <div><div style="font-weight:600;color:var(--text);font-size:13px">${escapeHtml(v.name)}</div><div style="font-size:11px;color:var(--lt)">${escapeHtml(v.type || '')} · ${escapeHtml(v.category || '')} · ${escapeHtml(v.port || '—')}</div></div>
+              <div style="font-family:monospace;font-size:10px;color:var(--lt)">${escapeHtml(v.ssr || v.id)}</div>
+            </div>`).join('')}
+        </div>`;
+    } catch (err) {
+      panel.innerHTML = supportErrorCard('Vessels', err);
+    }
+  }
+  window.supportLoadVessels = supportLoadVessels;
+
+  async function supportLoadActivity(userId) {
+    const panel = document.getElementById('sup-detail-panel');
+    if (!panel) return;
+    panel.innerHTML = '<div style="padding:12px;color:var(--mid);font-size:13px">Loading activity…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'user_activity', user_id: userId }
+      });
+      if (error) throw error;
+      const rows = (data && data.rows) || [];
+      if (!rows.length) {
+        panel.innerHTML = '<div style="padding:12px;color:var(--mid);font-size:13px;background:var(--slate);border-radius:10px">No recent audit-log entries.</div>';
+        return;
+      }
+      panel.innerHTML = `
+        <div style="font-size:12px;color:var(--lt);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Recent activity (${rows.length})</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          ${rows.map((r) => `
+            <div style="padding:8px 12px;background:var(--slate);border-radius:8px;display:flex;justify-content:space-between;gap:10px;font-size:12px">
+              <div style="min-width:0;flex:1"><span style="font-weight:600;color:var(--text)">${escapeHtml(r.action)}</span>${r.target_type ? ` · <span style="color:var(--mid)">${escapeHtml(r.target_type)}</span>` : ''}</div>
+              <div style="color:var(--lt);white-space:nowrap;font-size:11px">${fmtDate(r.at) || ''}</div>
+            </div>`).join('')}
+        </div>`;
+    } catch (err) {
+      panel.innerHTML = supportErrorCard('Activity', err);
+    }
+  }
+  window.supportLoadActivity = supportLoadActivity;
 
   // ─────────────────────────────────────────────────────────────
   // First-run tutorial. Fires once per device after a real skipper
