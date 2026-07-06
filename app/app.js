@@ -9512,6 +9512,12 @@ ${sectionsHtml}
         Store.setMode('operator');
         const isCrew = await detectCrewOnly(client, row.id);
         go(isCrew ? 's-crew-home' : 's-home');
+        // First-time skippers get the 60-second tour after the home
+        // paints. Runs once per device — subsequent sign-ins skip it
+        // unless the user replays it from Account → Take the tour.
+        if (!isCrew) {
+          try { maybeShowFirstRunTutorial(); } catch (_) {}
+        }
       }
 
       // If they arrived via a surveyor invite link, claim the grant
@@ -10146,6 +10152,129 @@ ${sectionsHtml}
     window.location.href = `mailto:privacy@codedok.com?subject=${subject}&body=${body}`;
   }
   window.deleteAccount = deleteAccount;
+
+  // ─────────────────────────────────────────────────────────────
+  // First-run tutorial. Fires once per device after a real skipper
+  // signs in for the first time. Five slides, big skip button,
+  // starts them off with "Add your boat" so the tour ends by
+  // dropping them into the onboarding flow. Available at any time
+  // from Account → Take the tour.
+  //
+  // Storage key: codedok-tutorial-seen — set to '1' when the user
+  // finishes, dismisses, or explicitly skips. Never re-shown on
+  // that device unless replayed.
+  // ─────────────────────────────────────────────────────────────
+  const TUTORIAL_STEPS = [
+    {
+      icon: '⛵',
+      title: 'Welcome to CodedOK',
+      body: "The compliance app for UK & Irish coded vessels. Here's a 60-second tour so you know where everything lives.",
+      cta: 'Show me around'
+    },
+    {
+      icon: '📷',
+      title: 'Snap a certificate',
+      body: 'Point your camera at any cert — coding cert, PLI, liferaft service. We read the issuer, expiry, and serial. No typing.',
+      cta: 'Next'
+    },
+    {
+      icon: '🛟',
+      title: 'Log your equipment',
+      body: 'Liferaft, EPIRB, flares, lifejackets, fire extinguishers — track every service date. We flag anything within 30 days.',
+      cta: 'Next'
+    },
+    {
+      icon: '📋',
+      title: 'See every gap in one place',
+      body: 'Records lists everything you have and everything the Code says you need. The Compliance calendar shows deadlines by month.',
+      cta: 'Next'
+    },
+    {
+      icon: '⚓',
+      title: 'Invite your surveyor',
+      body: "Free seat per boat. They see the record from their own login and sign off inside the app. Add them once, they're set for the year.",
+      cta: 'Add my first boat →'
+    }
+  ];
+  let tutorialStepIdx = 0;
+
+  function maybeShowFirstRunTutorial() {
+    try {
+      if (localStorage.getItem('codedok-tutorial-seen') === '1') return;
+    } catch (_) { return; }
+    // Give the home screen a beat to paint so the tour doesn't
+    // flash over an empty background.
+    setTimeout(() => openTutorial(), 400);
+  }
+  window.maybeShowFirstRunTutorial = maybeShowFirstRunTutorial;
+
+  function openTutorial() {
+    const old = document.getElementById('tutorial-modal');
+    if (old) old.remove();
+    tutorialStepIdx = 0;
+    const modal = document.createElement('div');
+    modal.id = 'tutorial-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.72);z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)';
+    modal.innerHTML = renderTutorialCard();
+    document.body.appendChild(modal);
+  }
+  window.openTutorial = openTutorial;
+
+  function renderTutorialCard() {
+    const step = TUTORIAL_STEPS[tutorialStepIdx] || TUTORIAL_STEPS[0];
+    const isLast = tutorialStepIdx === TUTORIAL_STEPS.length - 1;
+    const dots = TUTORIAL_STEPS.map((_, i) => {
+      const on = i === tutorialStepIdx ? 'style="background:var(--sea);width:26px"' : 'style="background:var(--bdr)"';
+      return `<span class="tut-dot" ${on}></span>`;
+    }).join('');
+    const back = tutorialStepIdx > 0
+      ? '<button class="btn btn-out" style="flex:1;height:52px;font-weight:600" onclick="tutorialPrev()">‹ Back</button>'
+      : '<button class="btn btn-out" style="flex:1;height:52px;font-weight:600;color:var(--mid)" onclick="skipTutorial()">Skip tour</button>';
+    return `
+      <div class="card" style="max-width:460px;width:100%;padding:36px 28px 24px;border-radius:22px;background:var(--card,#fff);text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.30);max-height:92vh;overflow-y:auto">
+        <div style="font-size:64px;line-height:1;margin-bottom:18px">${step.icon}</div>
+        <div style="font-family:var(--fn-display);font-size:24px;font-weight:800;letter-spacing:-.3px;color:var(--text);margin-bottom:10px">${escapeHtml(step.title)}</div>
+        <div style="font-size:15px;line-height:1.55;color:var(--mid);margin-bottom:26px">${escapeHtml(step.body)}</div>
+        <div style="display:flex;gap:6px;justify-content:center;margin-bottom:22px">${dots}</div>
+        <div style="display:flex;gap:10px">
+          ${back}
+          <button class="btn btn-sea" style="flex:2;height:52px;font-weight:700" onclick="tutorialNext()">${escapeHtml(step.cta)}</button>
+        </div>
+      </div>`;
+  }
+
+  function tutorialNext() {
+    if (tutorialStepIdx === TUTORIAL_STEPS.length - 1) {
+      // Last slide's CTA — mark seen, close, drop them into onboarding.
+      finishTutorial();
+      go('s-onboard');
+      return;
+    }
+    tutorialStepIdx++;
+    const modal = document.getElementById('tutorial-modal');
+    if (modal) modal.innerHTML = renderTutorialCard();
+  }
+  window.tutorialNext = tutorialNext;
+
+  function tutorialPrev() {
+    if (tutorialStepIdx === 0) return;
+    tutorialStepIdx--;
+    const modal = document.getElementById('tutorial-modal');
+    if (modal) modal.innerHTML = renderTutorialCard();
+  }
+  window.tutorialPrev = tutorialPrev;
+
+  function skipTutorial() {
+    finishTutorial();
+  }
+  window.skipTutorial = skipTutorial;
+
+  function finishTutorial() {
+    try { localStorage.setItem('codedok-tutorial-seen', '1'); } catch (_) {}
+    const modal = document.getElementById('tutorial-modal');
+    if (modal) modal.remove();
+  }
+  window.finishTutorial = finishTutorial;
 
   document.addEventListener('DOMContentLoaded', () => {
     // Detect whether we're running inside Safari's browser chrome
