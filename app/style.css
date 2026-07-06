@@ -96,19 +96,35 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
 /* Tablet / iPad (768-1199) — the "opened on iPad" target */
 @media (min-width: 768px) and (max-width: 1199px) {
-  body { display: flex; justify-content: center; align-items: flex-start; padding: 32px 24px; background: linear-gradient(180deg,#eef1f5 0%, #e2e7ee 100%); min-height: 100vh; }
+  html, body { height: 100vh; height: 100dvh; overflow: hidden; }
+  body { display: flex; justify-content: center; align-items: center; padding: 32px 24px; background: linear-gradient(180deg,#eef1f5 0%, #dfe5ed 100%); }
+  /* Shell frame — targets .shell (not .shell.on) for the visual
+     properties so the container styling is stable, but the display
+     / flex-direction that reveals content only fires on .shell.on
+     — otherwise every inactive shell would render on top of the
+     active one. */
   .shell {
     width: 100%;
     max-width: 960px;
-    min-height: calc(100vh - 64px);
+    height: calc(100vh - 64px);
+    max-height: calc(100vh - 64px);
     border-radius: 24px;
-    overflow: hidden;
     box-shadow:
       0 32px 64px -12px rgba(15,23,42,.18),
       0 12px 24px -6px rgba(15,23,42,.10),
       0 0 0 1px rgba(15,23,42,.05);
     background: var(--page);
   }
+  /* Only the active shell renders — display:flex overrides the base
+     .shell{display:none} without touching the toggle logic. */
+  .shell.on {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* The scroll region takes the space between top and bnav and is
+     the ONLY thing that scrolls on iPad. */
+  .shell.on .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   /* Content within any shell caps at 640px column so text stays
      readable — cards flanking it get the extra iPad breathing room
      without stretching to fit. Fleet-style dashboards can override
@@ -119,11 +135,33 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   .shell .scroll > [id^="vd-"],
   .shell .scroll > .slbl { max-width: 640px; }
   .shell .card.mx { margin-left: 24px; margin-right: 24px; padding-left: 4px; padding-right: 4px; }
-  /* Bottom nav gets softer corners + a bit more air on iPad. */
-  .shell .bnav { border-radius: 0 0 24px 24px; padding: 10px 0 max(10px, var(--safe)); }
-  .shell .bni { padding: 10px 0 8px; }
-  .shell .bni-ic { font-size: 26px; }
-  .shell .bni-lb { font-size: 12px; }
+  /* Bottom nav — proper "always visible" navigation on iPad.
+     Glassy blur backdrop, hairline separator, bigger tap zones,
+     stronger active-state indicator so users always know where
+     they are. Sits at the natural bottom of the shell flex column
+     — no sticky trickery needed because the shell is now
+     height-locked. */
+  .shell .bnav {
+    border-radius: 0 0 24px 24px;
+    padding: 12px 12px max(12px, var(--safe));
+    background: rgba(255,255,255,.85);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+            backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid rgba(15,23,42,.08);
+    flex-shrink: 0;
+    gap: 4px;
+  }
+  .shell .bni {
+    padding: 10px 6px 8px;
+    border-radius: 12px;
+    min-height: 60px;
+    transition: background 160ms ease, color 160ms ease;
+  }
+  .shell .bni:hover { background: rgba(15,76,92,.06); }
+  .shell .bni.on { background: var(--seap); }
+  .shell .bni.on::before { display: none; }
+  .shell .bni-ic { font-size: 26px; margin-bottom: 2px; }
+  .shell .bni-lb { font-size: 12px; font-weight: 600; }
   /* Top status-bar spacer shrinks — iPad has no notch to duck under
      inside our web view. */
   .shell .sb { height: 12px; min-height: 12px; }
@@ -153,27 +191,51 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
 /* Desktop (≥1200) — full web-app layout with room to breathe */
 @media (min-width: 1200px) {
-  body { display: flex; justify-content: center; align-items: flex-start; padding: 40px 24px 64px; background: linear-gradient(180deg,#eef1f5 0%, #e2e7ee 100%); min-height: 100vh; }
+  html, body { height: 100vh; height: 100dvh; overflow: hidden; }
+  body { display: flex; justify-content: center; align-items: center; padding: 40px 24px; background: linear-gradient(180deg,#eef1f5 0%, #dfe5ed 100%); }
   .shell {
     width: 100%;
     max-width: 1120px;
-    min-height: calc(100vh - 104px);
+    height: calc(100vh - 80px);
+    max-height: calc(100vh - 80px);
     border-radius: 28px;
-    overflow: hidden;
     box-shadow:
       0 48px 96px -16px rgba(15,23,42,.20),
       0 20px 40px -8px rgba(15,23,42,.10),
       0 0 0 1px rgba(15,23,42,.05);
     background: var(--page);
   }
+  .shell.on {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .shell.on .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   /* Same content-column pattern — 720px reading width in a 1120px
      shell, cards get the surrounding air. */
   .shell .scroll > * { max-width: 720px; margin-left: auto; margin-right: auto; }
   .shell .card.mx { margin-left: 40px; margin-right: 40px; }
-  .shell .bnav { border-radius: 0 0 28px 28px; padding: 12px 0 max(12px, var(--safe)); }
-  .shell .bni { padding: 12px 0 10px; }
-  .shell .bni-ic { font-size: 28px; }
-  .shell .bni-lb { font-size: 13px; }
+  .shell .bnav {
+    border-radius: 0 0 28px 28px;
+    padding: 14px 16px max(14px, var(--safe));
+    background: rgba(255,255,255,.85);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+            backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid rgba(15,23,42,.08);
+    flex-shrink: 0;
+    gap: 6px;
+  }
+  .shell .bni {
+    padding: 12px 8px 10px;
+    border-radius: 14px;
+    min-height: 64px;
+    transition: background 160ms ease;
+  }
+  .shell .bni:hover { background: rgba(15,76,92,.06); }
+  .shell .bni.on { background: var(--seap); }
+  .shell .bni.on::before { display: none; }
+  .shell .bni-ic { font-size: 28px; margin-bottom: 2px; }
+  .shell .bni-lb { font-size: 13px; font-weight: 600; }
   .shell .sb { height: 12px; min-height: 12px; }
   .shell .fi, .shell .fs { height: 52px; font-size: 16px; }
   .shell .fl { font-size: 14px; }
