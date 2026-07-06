@@ -96,48 +96,100 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
 /* Tablet / iPad (768-1199) — the "opened on iPad" target */
 @media (min-width: 768px) and (max-width: 1199px) {
-  body { display: flex; justify-content: center; align-items: flex-start; padding: 24px 20px; background: #f5f5f7; }
+  body { display: flex; justify-content: center; align-items: flex-start; padding: 32px 24px; background: linear-gradient(180deg,#eef1f5 0%, #e2e7ee 100%); min-height: 100vh; }
   .shell {
     width: 100%;
-    max-width: 720px;
-    min-height: calc(100vh - 48px);
-    border-radius: 20px;
+    max-width: 960px;
+    min-height: calc(100vh - 64px);
+    border-radius: 24px;
     overflow: hidden;
-    box-shadow: 0 24px 60px rgba(15,23,42,.10), 0 0 0 1px rgba(15,23,42,.06);
+    box-shadow:
+      0 32px 64px -12px rgba(15,23,42,.18),
+      0 12px 24px -6px rgba(15,23,42,.10),
+      0 0 0 1px rgba(15,23,42,.05);
     background: var(--page);
   }
-  /* Card lists grow more comfortable but not multi-column — keeps
-     the vertical scan the mobile app is designed around. */
-  .shell .card.mx { margin-left: 24px; margin-right: 24px; }
-  .shell .scroll { padding-left: 8px; padding-right: 8px; }
-  /* Bottom nav grows slightly and stays fixed at the bottom of the
-     shell (not the viewport) so the phone metaphor holds up. */
-  .shell .bnav { border-radius: 0 0 20px 20px; }
+  /* Content within any shell caps at 640px column so text stays
+     readable — cards flanking it get the extra iPad breathing room
+     without stretching to fit. Fleet-style dashboards can override
+     per-screen. */
+  .shell .scroll > * { max-width: 640px; margin-left: auto; margin-right: auto; }
+  .shell .scroll > .card.mx,
+  .shell .scroll > [id^="home-"],
+  .shell .scroll > [id^="vd-"],
+  .shell .scroll > .slbl { max-width: 640px; }
+  .shell .card.mx { margin-left: 24px; margin-right: 24px; padding-left: 4px; padding-right: 4px; }
+  /* Bottom nav gets softer corners + a bit more air on iPad. */
+  .shell .bnav { border-radius: 0 0 24px 24px; padding: 10px 0 max(10px, var(--safe)); }
+  .shell .bni { padding: 10px 0 8px; }
+  .shell .bni-ic { font-size: 26px; }
+  .shell .bni-lb { font-size: 12px; }
+  /* Top status-bar spacer shrinks — iPad has no notch to duck under
+     inside our web view. */
+  .shell .sb { height: 12px; min-height: 12px; }
+  /* Forms and pickers grow to breathe. */
+  .shell .fi, .shell .fs { height: 52px; font-size: 16px; }
+  .shell .fl { font-size: 14px; }
+  /* Buttons on iPad — larger tap zone, more weight. */
+  .shell .btn { min-height: 52px; font-size: 16px; }
+  .shell .btn.btn-sm { min-height: 44px; }
+
+  /* Vessels list becomes a proper 2-column grid on iPad. Same
+     pattern applied to Records and Equipment cards below. */
+  #s-vessels [data-dyn="vessel-card"] {
+    display: inline-block;
+    width: calc(50% - 6px);
+    vertical-align: top;
+    box-sizing: border-box;
+  }
+  /* Records ticket rows benefit from more breathing room. */
+  #s-records .ticket { border-radius: 14px; margin-bottom: 10px; }
+  /* Vessel detail — kill the shell-scroll cap so the wide hero can
+     fill the width, then re-apply on inner text elements. */
+  #s-vessel-detail .scroll > * { max-width: 720px; }
+  #s-vessel-detail #vd-hero { max-width: none; padding-left: 32px; padding-right: 32px; }
+  #s-vessel-detail .tabbar { max-width: none; padding-left: 24px; padding-right: 24px; }
 }
 
 /* Desktop (≥1200) — full web-app layout with room to breathe */
 @media (min-width: 1200px) {
-  body { display: flex; justify-content: center; align-items: flex-start; padding: 32px 24px 64px; background: #f5f5f7; }
+  body { display: flex; justify-content: center; align-items: flex-start; padding: 40px 24px 64px; background: linear-gradient(180deg,#eef1f5 0%, #e2e7ee 100%); min-height: 100vh; }
   .shell {
     width: 100%;
-    max-width: 1100px;
-    min-height: calc(100vh - 96px);
-    border-radius: 24px;
+    max-width: 1120px;
+    min-height: calc(100vh - 104px);
+    border-radius: 28px;
     overflow: hidden;
-    box-shadow: 0 40px 80px rgba(15,23,42,.10), 0 0 0 1px rgba(15,23,42,.06);
+    box-shadow:
+      0 48px 96px -16px rgba(15,23,42,.20),
+      0 20px 40px -8px rgba(15,23,42,.10),
+      0 0 0 1px rgba(15,23,42,.05);
     background: var(--page);
   }
-  .shell .card.mx { margin-left: 32px; margin-right: 32px; }
-  .shell .bnav { border-radius: 0 0 24px 24px; }
-  /* Vessels list becomes a 2-column grid on desktop — Sarah's fleet
-     view. Individual vessel cards keep their internal layout. */
+  /* Same content-column pattern — 720px reading width in a 1120px
+     shell, cards get the surrounding air. */
+  .shell .scroll > * { max-width: 720px; margin-left: auto; margin-right: auto; }
+  .shell .card.mx { margin-left: 40px; margin-right: 40px; }
+  .shell .bnav { border-radius: 0 0 28px 28px; padding: 12px 0 max(12px, var(--safe)); }
+  .shell .bni { padding: 12px 0 10px; }
+  .shell .bni-ic { font-size: 28px; }
+  .shell .bni-lb { font-size: 13px; }
+  .shell .sb { height: 12px; min-height: 12px; }
+  .shell .fi, .shell .fs { height: 52px; font-size: 16px; }
+  .shell .fl { font-size: 14px; }
+  .shell .btn { min-height: 54px; font-size: 16px; }
+  /* Multi-column layouts on wide screens. */
   #s-vessels [data-dyn="vessel-card"] {
     display: inline-block;
-    width: calc(50% - 8px);
+    width: calc(50% - 6px);
     vertical-align: top;
-    margin-right: 4px;
+    box-sizing: border-box;
   }
-  #s-vessels [data-dyn="vessel-card"]:nth-child(even) { margin-right: 0; }
+  #s-vessel-detail .scroll > * { max-width: 880px; }
+  #s-vessel-detail #vd-hero { max-width: none; padding-left: 40px; padding-right: 40px; }
+  #s-vessel-detail .tabbar { max-width: none; padding-left: 32px; padding-right: 32px; }
+  /* Records ticket rows also benefit. */
+  #s-records .ticket { border-radius: 14px; margin-bottom: 12px; }
 }
 
 /* Landing (#s-land) opts out of the shell framing entirely — handled
