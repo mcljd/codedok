@@ -2026,6 +2026,11 @@
 <!-- ════════════════════════════════════
   S13 — CALENDAR
 ════════════════════════════════════ -->
+<!-- Compliance calendar — JS-rendered. The static April-2025 markup
+     that used to live here has been replaced by renderCalendar()
+     which pulls real expiries from the Store, always opens on the
+     current month, and lets the user page through months with the
+     header arrows. -->
 <div class="shell" id="s-calendar">
   <div class="sb sb-cd"></div>
   <div class="tbar">
@@ -2033,40 +2038,8 @@
     <div class="tbar-title">Compliance calendar</div>
     <div style="width:60px"></div>
   </div>
-  <div class="scroll">
-    <!-- Full calendar -->
-    <div style="padding:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div style="font-size:18px;font-weight:700;color:var(--text)">April 2025</div>
-        <div style="display:flex;gap:10px"><button class="btn btn-xs btn-out">‹</button><button class="btn btn-xs btn-out">›</button></div>
-      </div>
-      <div class="cal-grid" style="gap:4px">
-        <div class="cal-day hd">Mon</div><div class="cal-day hd">Tue</div><div class="cal-day hd">Wed</div><div class="cal-day hd">Thu</div><div class="cal-day hd">Fri</div><div class="cal-day hd">Sat</div><div class="cal-day hd">Sun</div>
-        <div class="cal-day other-mo">31</div><div class="cal-day cur-mo">1</div><div class="cal-day cur-mo">2</div><div class="cal-day cur-mo">3</div><div class="cal-day cur-mo">4</div><div class="cal-day cur-mo">5</div><div class="cal-day cur-mo">6</div>
-        <div class="cal-day cur-mo">7</div><div class="cal-day cur-mo">8</div><div class="cal-day cur-mo">9</div><div class="cal-day cur-mo has-rd">10</div><div class="cal-day cur-mo">11</div><div class="cal-day cur-mo">12</div><div class="cal-day cur-mo">13</div>
-        <div class="cal-day cur-mo">14</div><div class="cal-day today">15</div><div class="cal-day cur-mo">16</div><div class="cal-day cur-mo has-ev">17</div><div class="cal-day cur-mo">18</div><div class="cal-day cur-mo has-ev">19</div><div class="cal-day cur-mo">20</div>
-        <div class="cal-day cur-mo">21</div><div class="cal-day cur-mo has-ok">22</div><div class="cal-day cur-mo">23</div><div class="cal-day cur-mo">24</div><div class="cal-day cur-mo has-ev">25</div><div class="cal-day cur-mo">26</div><div class="cal-day cur-mo">27</div>
-        <div class="cal-day cur-mo">28</div><div class="cal-day cur-mo">29</div><div class="cal-day cur-mo has-rd">30</div>
-      </div>
-    </div>
-
-    <!-- Events for April -->
-    <div class="slbl">April deadlines</div>
-    <div class="card mx">
-      <div class="row"><div class="row-ic rd">🧨</div><div class="row-body"><div class="row-name">Cat C Pyrotechnics expired</div><div class="row-sub">Tsunami IV · 10 Apr — OVERDUE</div></div><span class="chip chip-rd">Overdue</span></div>
-      <div class="row"><div class="row-ic am">📋</div><div class="row-body"><div class="row-name">Annual survey due</div><div class="row-sub">Tsunami IV · 3 May — 18 days</div></div><span class="chip chip-am">Book</span></div>
-      <div class="row"><div class="row-ic am">🏥</div><div class="row-body"><div class="row-name">ENG1 medical renewal</div><div class="row-sub">J. McLaughlin · 12 May — 27 days</div></div><span class="chip chip-am">27d</span></div>
-    </div>
-
-    <!-- May preview -->
-    <div class="slbl">May deadlines</div>
-    <div class="card mx">
-      <div class="row"><div class="row-ic am">📋</div><div class="row-body"><div class="row-name">Coding Certificate</div><div class="row-sub">Tsunami IV · 3 May</div></div><span class="chip chip-am">18d</span></div>
-      <div class="row"><div class="row-ic am">🏥</div><div class="row-body"><div class="row-name">ENG1 Medical</div><div class="row-sub">J. McLaughlin · 12 May</div></div><span class="chip chip-am">27d</span></div>
-      <div class="row"><div class="row-ic ok">🛡️</div><div class="row-body"><div class="row-name">PLI Insurance</div><div class="row-sub">Lagavulin · 15 May</div></div><span class="chip chip-ok">30d</span></div>
-    </div>
-
-    <div class="spacer"></div>
+  <div class="scroll" id="calendar-scroll">
+    <div id="calendar-body"></div>
   </div>
 </div>
 

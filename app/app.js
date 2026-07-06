@@ -633,6 +633,7 @@
     if (id === 's-vessel-detail')      renderVesselDetail();
     if (id === 's-certs')              renderRecords();
     if (id === 's-tools')              renderTools();
+    if (id === 's-calendar')           renderCalendar();
     if (id === 's-equipment-list')     renderEquipmentList();
     if (id === 's-equipment-detail')   renderEquipmentDetail();
     if (id === 's-equipment-add')      resetEquipmentAddForm();
@@ -1691,6 +1692,197 @@
   }
 
   // ---------- Tools hub ----------
+
+  // ─────────────────────────────────────────────────────────────
+  // Compliance calendar. Opens on the current month (system clock),
+  // pages through months with the header arrows, and marks every
+  // day that has an expiring cert / equipment service / crew ticket
+  // with a coloured dot. Below the grid: the list of deadlines for
+  // the viewed month, grouped and sorted by date.
+  //
+  // Data sources — everything the app tracks with a date:
+  //   Store.snapshot().certs          → cert.expires_at
+  //   Store.snapshot().equipment      → equipment.next_service_at
+  //   Store.snapshot().crewCerts      → crewCert.expires_at
+  //   Store.snapshot().inspections    → inspection.due_at (annual survey)
+  // ─────────────────────────────────────────────────────────────
+  let calendarViewYear  = null;
+  let calendarViewMonth = null;  // 0-indexed to match Date
+
+  function calendarEvents() {
+    const s = Store.snapshot();
+    const vessels = s.vessels || [];
+    const people  = s.crew    || [];
+    const vName = (id) => (vessels.find((v) => v.id === id) || {}).name || '';
+    const pName = (id) => (people.find((p) => p.id === id) || {}).name || '';
+    const events = [];
+    (s.certs || []).forEach((c) => {
+      if (!c.expires_at) return;
+      events.push({
+        id: c.id, name: c.name || 'Certificate', icon: c.icon || '📋',
+        date: c.expires_at, subtitle: vName(c.vessel_id), kind: 'cert'
+      });
+    });
+    (s.equipment || []).forEach((e) => {
+      if (!e.next_service_at) return;
+      events.push({
+        id: e.id, name: (e.name || 'Equipment') + ' service', icon: e.icon || '🔧',
+        date: e.next_service_at, subtitle: vName(e.vessel_id), kind: 'equipment'
+      });
+    });
+    (s.crewCerts || []).forEach((cc) => {
+      if (!cc.expires_at) return;
+      events.push({
+        id: cc.id, name: cc.name || 'Crew qualification', icon: '🎓',
+        date: cc.expires_at, subtitle: pName(cc.person_id), kind: 'crew'
+      });
+    });
+    return events;
+  }
+
+  function calendarStatusForDate(dateStr) {
+    // Returns 'rd' (overdue), 'am' (due soon ≤30 days), 'ok' (valid future),
+    // or null (no event on this date).
+    const d = Store.daysUntil(dateStr);
+    if (d === Infinity) return null;
+    if (d < 0)   return 'rd';
+    if (d <= 30) return 'am';
+    return 'ok';
+  }
+
+  function renderCalendar() {
+    const body = document.getElementById('calendar-body');
+    if (!body) return;
+    const now = new Date();
+    if (calendarViewYear === null || calendarViewMonth === null) {
+      calendarViewYear  = now.getFullYear();
+      calendarViewMonth = now.getMonth();
+    }
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const monthLabel = monthNames[calendarViewMonth] + ' ' + calendarViewYear;
+
+    // Grid — Monday-first week. getDay(): 0=Sun..6=Sat; convert.
+    const firstOfMonth = new Date(calendarViewYear, calendarViewMonth, 1);
+    const jsDow = firstOfMonth.getDay();       // 0=Sun … 6=Sat
+    const leadingBlanks = (jsDow + 6) % 7;     // Mon=0, Tue=1, … Sun=6
+    const daysInMonth = new Date(calendarViewYear, calendarViewMonth + 1, 0).getDate();
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const isSameMonthAsToday = (calendarViewYear === now.getFullYear() && calendarViewMonth === now.getMonth());
+
+    // Events indexed by day-of-month for this view.
+    const evs = calendarEvents();
+    const byDay = new Map();  // day (1..31) → [event…]
+    evs.forEach((ev) => {
+      const d = new Date(ev.date);
+      if (d.getFullYear() !== calendarViewYear || d.getMonth() !== calendarViewMonth) return;
+      const day = d.getDate();
+      if (!byDay.has(day)) byDay.set(day, []);
+      byDay.get(day).push(ev);
+    });
+
+    // Build the day cells. Prev-month trailing days fill leading blanks
+    // so the grid always starts on a Monday.
+    const prevMonthDays = new Date(calendarViewYear, calendarViewMonth, 0).getDate();
+    const cells = [];
+    for (let i = leadingBlanks - 1; i >= 0; i--) {
+      cells.push(`<div class="cal-day other-mo">${prevMonthDays - i}</div>`);
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isToday = isSameMonthAsToday && d === now.getDate();
+      const dayEvs = byDay.get(d) || [];
+      // Highest-severity status colours the dot (rd > am > ok).
+      let status = null;
+      dayEvs.forEach((ev) => {
+        const s = calendarStatusForDate(ev.date);
+        if (s === 'rd') status = 'rd';
+        else if (s === 'am' && status !== 'rd') status = 'am';
+        else if (s === 'ok' && !status) status = 'ok';
+      });
+      const cls = ['cal-day', 'cur-mo'];
+      if (isToday) cls.push('today');
+      if (status === 'rd') cls.push('has-rd');
+      else if (status === 'am') cls.push('has-ev');
+      else if (status === 'ok') cls.push('has-ok');
+      cells.push(`<div class="${cls.join(' ')}">${d}</div>`);
+    }
+    // Trailing days from the next month to complete the last week.
+    const total = leadingBlanks + daysInMonth;
+    const trailing = (7 - (total % 7)) % 7;
+    for (let d = 1; d <= trailing; d++) {
+      cells.push(`<div class="cal-day other-mo">${d}</div>`);
+    }
+
+    // Deadlines list for the viewed month, sorted by date, with a
+    // friendly "X days" chip. Overdue / soon / ok colour matches the
+    // dot colour on the grid.
+    const monthEvents = evs
+      .filter((ev) => {
+        const dt = new Date(ev.date);
+        return dt.getFullYear() === calendarViewYear && dt.getMonth() === calendarViewMonth;
+      })
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const eventRows = monthEvents.length === 0
+      ? `<div style="padding:18px 20px;color:var(--mid);font-size:14px;text-align:center;background:var(--card);border-radius:12px">Nothing due this month. Great — plan a fishing trip.</div>`
+      : monthEvents.map((ev) => {
+          const status = calendarStatusForDate(ev.date);
+          const chipCls = status === 'rd' ? 'chip chip-rd' : status === 'am' ? 'chip chip-am' : 'chip chip-ok';
+          const daysN = Store.daysUntil(ev.date);
+          const chipText = daysN < 0 ? Math.abs(daysN) + 'd late'
+                        : daysN === 0 ? 'Today'
+                        : daysN + 'd';
+          const dateN = new Date(ev.date).getDate();
+          const iconCls = status === 'rd' ? 'rd' : status === 'am' ? 'am' : 'ok';
+          return `<div class="row"><div class="row-ic ${iconCls}">${ev.icon}</div><div class="row-body"><div class="row-name">${escapeHtml(ev.name)}</div><div class="row-sub">${escapeHtml(ev.subtitle)} · ${monthNames[calendarViewMonth].slice(0,3)} ${dateN}</div></div><span class="${chipCls}">${chipText}</span></div>`;
+        }).join('');
+
+    body.innerHTML = `
+      <div style="padding:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <button class="cal-nav" onclick="calendarShift(-1)" aria-label="Previous month" title="Previous month">‹</button>
+          <div style="font-size:18px;font-weight:700;color:var(--text);text-align:center;flex:1">${monthLabel}</div>
+          <button class="cal-nav" onclick="calendarShift(1)" aria-label="Next month" title="Next month">›</button>
+        </div>
+        <div style="display:flex;justify-content:center;margin-bottom:14px">
+          <button class="btn btn-out btn-sm" onclick="calendarToToday()">Today</button>
+        </div>
+        <div class="cal-grid" style="gap:4px">
+          <div class="cal-day hd">Mon</div><div class="cal-day hd">Tue</div><div class="cal-day hd">Wed</div><div class="cal-day hd">Thu</div><div class="cal-day hd">Fri</div><div class="cal-day hd">Sat</div><div class="cal-day hd">Sun</div>
+          ${cells.join('')}
+        </div>
+      </div>
+      <div class="slbl">${monthLabel} deadlines</div>
+      <div class="card mx">${eventRows}</div>
+      <div class="spacer"></div>`;
+  }
+  window.renderCalendar = renderCalendar;
+
+  function calendarShift(delta) {
+    if (calendarViewYear === null) {
+      const now = new Date();
+      calendarViewYear = now.getFullYear();
+      calendarViewMonth = now.getMonth();
+    }
+    calendarViewMonth += delta;
+    if (calendarViewMonth < 0)   { calendarViewMonth = 11; calendarViewYear--; }
+    if (calendarViewMonth > 11)  { calendarViewMonth = 0;  calendarViewYear++; }
+    renderCalendar();
+    // Scroll the calendar body to the top so month labels/events are
+    // in the same place on every page change.
+    const s = document.getElementById('calendar-scroll');
+    if (s) s.scrollTop = 0;
+  }
+  window.calendarShift = calendarShift;
+
+  function calendarToToday() {
+    const now = new Date();
+    calendarViewYear  = now.getFullYear();
+    calendarViewMonth = now.getMonth();
+    renderCalendar();
+    const s = document.getElementById('calendar-scroll');
+    if (s) s.scrollTop = 0;
+  }
+  window.calendarToToday = calendarToToday;
 
   function renderTools() {
     const wrap = document.getElementById('tools-scroll');
