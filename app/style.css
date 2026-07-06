@@ -126,8 +126,10 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   /* Content within any shell caps at 640px column so text stays
      readable — cards flanking it get the extra iPad breathing room
      without stretching to fit. Fleet-style dashboards can override
-     per-screen. */
-  .shell .scroll > * { max-width: 640px; margin-left: auto; margin-right: auto; }
+     per-screen. Landing (#s-land) is exempted — it's a marketing
+     page with its own internal 1280px max-widths and must fill the
+     browser edge-to-edge. */
+  .shell:not(#s-land) .scroll > * { max-width: 640px; margin-left: auto; margin-right: auto; }
   .shell .scroll > .card.mx,
   .shell .scroll > [id^="home-"],
   .shell .scroll > [id^="vd-"],
@@ -211,8 +213,9 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   }
   .shell.on .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   /* Same content-column pattern — 720px reading width in a 1120px
-     shell, cards get the surrounding air. */
-  .shell .scroll > * { max-width: 720px; margin-left: auto; margin-right: auto; }
+     shell, cards get the surrounding air. Landing exempted — it
+     has its own internal max-widths and must fill the viewport. */
+  .shell:not(#s-land) .scroll > * { max-width: 720px; margin-left: auto; margin-right: auto; }
   .shell .card.mx { margin-left: 40px; margin-right: 40px; }
   .shell .bnav {
     border-radius: 0;
