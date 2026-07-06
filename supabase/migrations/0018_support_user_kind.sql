@@ -1,23 +1,17 @@
--- Adds 'support' as a valid users.kind value so the CodedOK support
--- team can sign in through the normal auth flow and be routed to the
--- support console (s-support) automatically.
+-- Adds 'support' to the user_kind enum so CodedOK support-team
+-- accounts can be routed to the support console (s-support).
 --
--- The gate itself lives in the `admin-user-actions` Supabase Edge
--- Function (deploy separately). This migration just widens the
--- allowed values.
+-- Prior version of this migration tried to drop/re-add a CHECK
+-- constraint, which failed with "22P02: invalid input value for
+-- enum user_kind" because users.kind is actually an enum type,
+-- not a text column with a CHECK.
+--
+-- Postgres 12+ allows ALTER TYPE ... ADD VALUE to run inside a
+-- transaction as long as the new value isn't used in that same
+-- transaction. Supabase's SQL editor is fine with this. The
+-- IF NOT EXISTS makes the migration idempotent — safe to re-run.
 
--- Drop the CHECK constraint if it exists and re-add with 'support'.
-do $$
-begin
-  if exists (select 1 from information_schema.check_constraints
-             where constraint_name = 'users_kind_check') then
-    alter table public.users drop constraint users_kind_check;
-  end if;
-end$$;
+alter type user_kind add value if not exists 'support';
 
-alter table public.users
-  add constraint users_kind_check
-  check (kind in ('operator','surveyor','builder','admin','support','crew'));
-
-comment on constraint users_kind_check on public.users is
-  'Roles: operator (skipper), surveyor (marine surveyor), builder (boat builder), admin (Joseph/staff SMS review), support (CodedOK support-team user-management), crew (crew member).';
+comment on type user_kind is
+  'Account roles: operator (skipper), surveyor (marine surveyor), builder (boat builder), admin (Joseph/staff SMS review), support (CodedOK support-team user-management), crew (crew member).';
