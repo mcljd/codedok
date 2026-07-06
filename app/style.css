@@ -97,26 +97,24 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 /* Tablet / iPad (768-1199) — the "opened on iPad" target */
 @media (min-width: 768px) and (max-width: 1199px) {
   html, body { height: 100vh; height: 100dvh; overflow: hidden; }
-  body { display: flex; justify-content: center; align-items: center; padding: 32px 24px; background: linear-gradient(180deg,#eef1f5 0%, #dfe5ed 100%); }
-  /* Shell frame — targets .shell (not .shell.on) for the visual
-     properties so the container styling is stable, but the display
-     / flex-direction that reveals content only fires on .shell.on
-     — otherwise every inactive shell would render on top of the
-     active one. */
+  /* Full-viewport treatment: no padding, no window-in-a-frame. The
+     shell IS the app. Rounded corners and shadow gone; body uses
+     the same background as the shell so there's no colour mismatch
+     at the edges. */
+  body { display: block; padding: 0; background: var(--page); }
   .shell {
-    width: 100%;
-    max-width: 960px;
-    height: calc(100vh - 64px);
-    max-height: calc(100vh - 64px);
-    border-radius: 24px;
-    box-shadow:
-      0 32px 64px -12px rgba(15,23,42,.18),
-      0 12px 24px -6px rgba(15,23,42,.10),
-      0 0 0 1px rgba(15,23,42,.05);
+    width: 100vw;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
     background: var(--page);
+    position: fixed;
+    inset: 0;
   }
-  /* Only the active shell renders — display:flex overrides the base
-     .shell{display:none} without touching the toggle logic. */
   .shell.on {
     display: flex;
     flex-direction: column;
@@ -142,8 +140,8 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
      — no sticky trickery needed because the shell is now
      height-locked. */
   .shell .bnav {
-    border-radius: 0 0 24px 24px;
-    padding: 12px 12px max(12px, var(--safe));
+    border-radius: 0;
+    padding: 12px max(20px, env(safe-area-inset-right, 0px)) max(12px, var(--safe)) max(20px, env(safe-area-inset-left, 0px));
     background: rgba(255,255,255,.85);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
             backdrop-filter: saturate(180%) blur(20px);
@@ -192,18 +190,19 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 /* Desktop (≥1200) — full web-app layout with room to breathe */
 @media (min-width: 1200px) {
   html, body { height: 100vh; height: 100dvh; overflow: hidden; }
-  body { display: flex; justify-content: center; align-items: center; padding: 40px 24px; background: linear-gradient(180deg,#eef1f5 0%, #dfe5ed 100%); }
+  body { display: block; padding: 0; background: var(--page); }
   .shell {
-    width: 100%;
-    max-width: 1120px;
-    height: calc(100vh - 80px);
-    max-height: calc(100vh - 80px);
-    border-radius: 28px;
-    box-shadow:
-      0 48px 96px -16px rgba(15,23,42,.20),
-      0 20px 40px -8px rgba(15,23,42,.10),
-      0 0 0 1px rgba(15,23,42,.05);
+    width: 100vw;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
     background: var(--page);
+    position: fixed;
+    inset: 0;
   }
   .shell.on {
     display: flex;
@@ -216,8 +215,8 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   .shell .scroll > * { max-width: 720px; margin-left: auto; margin-right: auto; }
   .shell .card.mx { margin-left: 40px; margin-right: 40px; }
   .shell .bnav {
-    border-radius: 0 0 28px 28px;
-    padding: 14px 16px max(14px, var(--safe));
+    border-radius: 0;
+    padding: 14px max(32px, env(safe-area-inset-right, 0px)) max(14px, var(--safe)) max(32px, env(safe-area-inset-left, 0px));
     background: rgba(255,255,255,.85);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
             backdrop-filter: saturate(180%) blur(20px);
