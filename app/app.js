@@ -9454,13 +9454,21 @@ ${sectionsHtml}
       if (lookup.error) throw new Error('users select: ' + lookup.error.message);
       let row = lookup.data;
 
-      // Role precedence: explicit chosen role from sign-up metadata >
-      // admin/builder email pattern > existing row's kind > default operator.
+      // Role precedence:
+      //   1. If the existing row is already 'admin' or 'support', KEEP IT.
+      //      These roles are set out-of-band (by DBA / SQL) and must never
+      //      be silently downgraded to whatever the sign-up form said —
+      //      that used to happen and it kept flipping support accounts
+      //      back to operator on every sign-in.
+      //   2. Otherwise use sign-up metadata > existing row > email inference.
       const chosenKind = authUser.user_metadata && authUser.user_metadata.kind;
       const inferred = kindFromEmail(authUser.email);
-      const desiredKind = ['operator','surveyor','admin','builder'].includes(chosenKind)
-        ? chosenKind
-        : (row && row.kind) || inferred;
+      const privilegedExisting = row && (row.kind === 'admin' || row.kind === 'support');
+      const desiredKind = privilegedExisting
+        ? row.kind
+        : ['operator','surveyor','admin','support','builder'].includes(chosenKind)
+          ? chosenKind
+          : (row && row.kind) || inferred;
 
       const meta = authUser.user_metadata || {};
       if (!row) {
