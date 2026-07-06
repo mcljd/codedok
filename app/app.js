@@ -1671,18 +1671,55 @@
     // Authoritative enforcement lives in Supabase RLS — this is the
     // client-side belt-and-braces so a scoped user doesn't see ghost
     // entries cached in localStorage from a previous session.
-    const visible = filterByVesselScope(s.vessels);
-    const html = visible.length === 0
+    const scoped = filterByVesselScope(s.vessels);
+
+    // Bucket every scoped vessel by its worst-status urgency so the
+    // filter chips and their count badges reflect the same data set.
+    const buckets = { all: [], overdue: [], duesoon: [], compliant: [] };
+    scoped.forEach((v) => {
+      buckets.all.push(v);
+      const c = Store.urgencyCounts(v.id);
+      if      (c.overdue > 0) buckets.overdue.push(v);
+      else if (c.due30   > 0) buckets.duesoon.push(v);
+      else                    buckets.compliant.push(v);
+    });
+
+    // Sync the count badges on the filter chips.
+    const setCount = (id, n) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = n > 0 ? String(n) : '';
+    };
+    setCount('vf-count-all',       buckets.all.length);
+    setCount('vf-count-overdue',   buckets.overdue.length);
+    setCount('vf-count-duesoon',   buckets.duesoon.length);
+    setCount('vf-count-compliant', buckets.compliant.length);
+
+    // Read the current filter (default 'all'), pick the bucket, mark
+    // the corresponding chip active.
+    const filter = window.__vesselsFilter || 'all';
+    document.querySelectorAll('.vf-chip').forEach((btn) => {
+      btn.classList.toggle('on', btn.dataset.vf === filter);
+    });
+    const visible = buckets[filter] || buckets.all;
+
+    const html = scoped.length === 0
       ? `<div class="card mx empty" data-dyn="vessel-card" style="margin-bottom:12px">
            <div class="empty-art">⛵</div>
            <div class="empty-h">No vessels yet</div>
            <div class="empty-sub">Add your first vessel to start tracking compliance.</div>
            <button class="btn btn-sea btn-sm" onclick="go('s-onboard')">+ Add vessel</button>
          </div>`
-      : visible.map((v) => `
-          <div data-dyn="vessel-card" style="padding:0 16px;margin-bottom:12px">
-            ${vesselCoverHtml(v, { compact: false })}
-          </div>`).join('');
+      : visible.length === 0
+        ? `<div class="card mx empty" data-dyn="vessel-card" style="margin-bottom:12px">
+             <div class="empty-art">${filter === 'overdue' ? '✓' : filter === 'duesoon' ? '🌊' : filter === 'compliant' ? '🎯' : '⛵'}</div>
+             <div class="empty-h">${filter === 'overdue' ? 'No overdue vessels' : filter === 'duesoon' ? 'Nothing due in the next 30 days' : filter === 'compliant' ? 'No fully-compliant vessels yet' : 'No vessels'}</div>
+             <div class="empty-sub">${filter === 'overdue' ? 'Everything you\'ve added is on top of things — good work.' : filter === 'duesoon' ? 'The calm before the survey window opens up.' : filter === 'compliant' ? 'A vessel needs zero overdue AND zero due-in-30 items to land here.' : ''}</div>
+             <button class="btn btn-out btn-sm" onclick="setVesselsFilter('all')">Show all vessels</button>
+           </div>`
+        : visible.map((v) => `
+            <div data-dyn="vessel-card" style="padding:0 16px;margin-bottom:12px">
+              ${vesselCoverHtml(v, { compact: false })}
+            </div>`).join('');
 
     const tmp = document.createElement('div');
     tmp.innerHTML = html;
@@ -1690,6 +1727,15 @@
     while (tmp.firstChild) frag.appendChild(tmp.firstChild);
     scroll.insertBefore(frag, scroll.firstChild);
   }
+
+  // Filter setter — flips the module-scoped filter and re-renders.
+  // Persisted on window so it survives the shell-switching flow
+  // (each go('s-vessels') runs renderVesselsList fresh and reads it).
+  function setVesselsFilter(f) {
+    window.__vesselsFilter = f;
+    renderVesselsList();
+  }
+  window.setVesselsFilter = setVesselsFilter;
 
   // ---------- Tools hub ----------
 

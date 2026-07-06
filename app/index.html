@@ -1264,12 +1264,15 @@
     <div class="tbar-title">Vessels</div>
     <button class="btn btn-sm btn-sea" onclick="go('s-onboard')">+ Add</button>
   </div>
-  <!-- Filters -->
-  <div style="display:flex;gap:8px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--bdr);overflow-x:auto;flex-shrink:0;">
-    <button class="btn-xs btn-ink" style="background:var(--ink);color:white;border:none;font-family:var(--fn);font-size:12px;font-weight:600;padding:0 12px;height:30px;border-radius:7px;white-space:nowrap">All vessels</button>
-    <button class="btn-xs btn-out" style="font-family:var(--fn);white-space:nowrap">⚠ Overdue</button>
-    <button class="btn-xs btn-out" style="font-family:var(--fn);white-space:nowrap">⏰ Due soon</button>
-    <button class="btn-xs btn-out" style="font-family:var(--fn);white-space:nowrap">✅ Compliant</button>
+  <!-- Filter chips — click one to narrow the fleet list to boats
+       in that state. State is held on window.vesselsFilter and read
+       by renderVesselsList(). Chips are proper 44px tap targets
+       (were 30px, which failed the iOS HIG floor). -->
+  <div class="vf-row">
+    <button class="vf-chip on" data-vf="all"      onclick="setVesselsFilter('all')">All vessels <span class="vf-count" id="vf-count-all"></span></button>
+    <button class="vf-chip"    data-vf="overdue"  onclick="setVesselsFilter('overdue')">⚠ Overdue <span class="vf-count" id="vf-count-overdue"></span></button>
+    <button class="vf-chip"    data-vf="duesoon"  onclick="setVesselsFilter('duesoon')">⏰ Due soon <span class="vf-count" id="vf-count-duesoon"></span></button>
+    <button class="vf-chip"    data-vf="compliant" onclick="setVesselsFilter('compliant')">✅ Compliant <span class="vf-count" id="vf-count-compliant"></span></button>
   </div>
   <div class="scroll">
     <div style="height:12px"></div>

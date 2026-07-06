@@ -715,6 +715,59 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
 .role-badge{display:inline-flex;align-items:center;gap:5px;background:var(--seap);color:var(--sea);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;}
 
 /* ═══════════════════════════════════════════════════════════════
+   VESSELS FILTER CHIPS — Fleet-state pills on the Vessels screen
+   -----------------------------------------------------------------
+   Was: four .btn-xs buttons (30px tall) with no onclick handler.
+   Now: proper filter chips with a count badge, 44px tap target
+   height, animated active state, and real filtering logic in
+   setVesselsFilter() + renderVesselsList().
+   ═══════════════════════════════════════════════════════════════ */
+.vf-row {
+  display: flex; gap: 8px;
+  padding: 12px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--bdr);
+  overflow-x: auto;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+.vf-row::-webkit-scrollbar { display: none; }
+.vf-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 0 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--bdr);
+  background: var(--card);
+  color: var(--text);
+  font-family: var(--fn); font-size: 14px; font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 100ms ease;
+}
+.vf-chip:hover  { border-color: var(--sea); }
+.vf-chip:active { transform: scale(.96); }
+.vf-chip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.vf-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(15,23,42,.08);
+  color: var(--mid);
+  font-size: 11px; font-weight: 800;
+  letter-spacing: -.02em;
+}
+.vf-chip.on .vf-count {
+  background: rgba(255,255,255,.20);
+  color: #fff;
+}
+.vf-count:empty { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════
    FIRST-RUN TUTORIAL — coachmark walkthrough
    -----------------------------------------------------------------
    Overlay is a full-viewport dim. When a step spotlights a real UI
