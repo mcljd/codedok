@@ -744,6 +744,7 @@
   function selectJur(el, type) {
     document.querySelectorAll('.jur-opt').forEach((o) => o.classList.remove('on'));
     el.classList.add('on');
+    window.__onboardJur = type;   // remembered so finishOnboarding can save it
     const uk = document.getElementById('jur-info-uk');
     const ie = document.getElementById('jur-info-ie');
     const iee = document.getElementById('ie-exemption-panel');
@@ -752,6 +753,23 @@
     if (iee) iee.style.display = (type === 'ie' || type === 'both') ? 'block' : 'none';
   }
   window.selectJur = selectJur;
+
+  // Finish onboarding: persist the jurisdiction choice onto the vessel
+  // just created (was previously discarded — "Continue" only called
+  // goHome()), then land the user on home with a friendly confirmation.
+  function finishOnboarding() {
+    const type = window.__onboardJur || 'uk';
+    const map = { uk: ['UK'], ie: ['IE'], both: ['UK', 'IE'] };
+    const jurisdictions = map[type] || ['UK'];
+    const vessels = Store.snapshot().vessels || [];
+    const last = vessels[vessels.length - 1];
+    if (last && Store.updateVessel) {
+      Store.updateVessel(last.id, { jurisdictions });
+    }
+    window.__onboardJur = null;
+    goHome();
+  }
+  window.finishOnboarding = finishOnboarding;
 
   function selectIEClass(el) {
     el.closest('.card').querySelectorAll('.row').forEach((r) => (r.style.background = ''));
@@ -9140,20 +9158,34 @@ ${sectionsHtml}
   // ---------- Onboarding save ----------
 
   function saveOnboardVessel() {
-    const name = (document.getElementById('onb-name') || {}).value;
+    const nameEl = document.getElementById('onb-name');
+    const name = (nameEl || {}).value;
     const type = (document.getElementById('onb-type') || {}).value;
     const cat = (document.getElementById('onb-cat') || {}).value;
     const ssr = (document.getElementById('onb-ssr') || {}).value;
     const port = (document.getElementById('onb-port') || {}).value;
+    const crew = parseInt((document.getElementById('onb-crew') || {}).value || '0', 10) || 0;
 
-    if (!name || !name.trim()) { go('s-onboard-jur'); return; }
+    // Name is the ONE required field. Show a friendly inline error and
+    // keep them here — the old code silently advanced with no vessel
+    // created, which left the user on step 2 with nothing saved.
+    const err = document.getElementById('onb-name-err');
+    if (!name || !name.trim()) {
+      if (err) err.style.display = 'block';
+      if (nameEl) { nameEl.style.borderColor = 'var(--red)'; nameEl.focus(); }
+      return;
+    }
+    if (err) err.style.display = 'none';
+    if (nameEl) nameEl.style.borderColor = '';
+
     const catShort = (cat || '').match(/Category \d/);
     Store.addVessel({
       name: name.trim(),
       type: (type || '').replace(/\s*\(.*\)/, ''),
-      category: catShort ? catShort[0].replace('Category', 'Cat') : 'Cat 2',
+      category: catShort ? catShort[0].replace('Category', 'Cat') : 'Cat 5',
       ssr: (ssr || '').trim(),
       port: (port || '').trim(),
+      persons: crew || undefined,
       icon: '⛵'
     });
     go('s-onboard-jur');
