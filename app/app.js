@@ -10287,30 +10287,108 @@ ${sectionsHtml}
     }
   }
 
+  // Search accepts a full email OR any fragment ("joe", "@gmail").
+  // A full email that resolves to exactly one account opens the full
+  // card straight away; anything else lists matches you can click.
   async function supportSearch() {
     const emailEl = document.getElementById('sup-search');
     const box = document.getElementById('sup-result');
     if (!emailEl || !box) return;
-    const email = (emailEl.value || '').trim().toLowerCase();
-    if (!email.includes('@')) { alert('Enter the customer\'s email.'); return; }
-    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Looking up…</div>';
+    const q = (emailEl.value || '').trim().toLowerCase();
+    if (!q) { alert('Type an email or part of one to search.'); return; }
+    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Searching…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      // A complete-looking email → try the exact lookup first.
+      if (q.includes('@') && /\.[a-z]{2,}$/.test(q)) {
+        const { data, error } = await client.functions.invoke('admin-user-actions', {
+          body: { action: 'find_user', email: q }
+        });
+        if (error) throw error;
+        if (data && data.user) { renderSupportUserCard(data.user); return; }
+        // No exact hit — fall through to a fuzzy list.
+      }
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'list_users', q, per_page: 50, page: 1 }
+      });
+      if (error) throw error;
+      supportRenderUserList((data && data.rows) || [], data, q);
+    } catch (err) {
+      console.error('support search failed', err);
+      box.innerHTML = supportErrorCard('Search', err);
+    }
+  }
+  window.supportSearch = supportSearch;
+
+  // Browse the whole user base, newest first, paginated.
+  async function supportBrowseUsers(page) {
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Loading users…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'list_users', per_page: 25, page: page || 1 }
+      });
+      if (error) throw error;
+      supportRenderUserList((data && data.rows) || [], data, '');
+    } catch (err) {
+      console.error('browse users failed', err);
+      box.innerHTML = supportErrorCard('Browse', err);
+    }
+  }
+  window.supportBrowseUsers = supportBrowseUsers;
+
+  // Render a clickable list of users. Each row opens the full card.
+  function supportRenderUserList(rows, meta, q) {
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    if (!rows.length) {
+      box.innerHTML = `<div class="card mx" style="padding:16px;color:var(--mid);font-size:13px">No users${q ? ' matching “' + escapeHtml(q) + '”' : ''}.</div>`;
+      return;
+    }
+    const page    = (meta && meta.page) || 1;
+    const perPage = (meta && meta.per_page) || 25;
+    const total   = (meta && meta.total) || rows.length;
+    const pages   = Math.max(1, Math.ceil(total / perPage));
+    const kindColor = (k) => (k === 'admin' || k === 'support') ? 'var(--amber)' : k === 'surveyor' ? '#6366f1' : 'var(--sea)';
+    const list = rows.map((r) => `
+      <div class="row" style="cursor:pointer" onclick="supportOpenUser('${escapeHtml(r.email)}')">
+        <div class="row-body">
+          <div class="row-name" style="font-size:14px">${escapeHtml(r.name || r.email)}</div>
+          <div class="row-sub" style="font-size:12px">${escapeHtml(r.email)}${r.banned ? ' · <span style=\"color:var(--red)\">banned</span>' : ''}${!r.email_confirmed ? ' · <span style=\"color:var(--amber)\">unverified</span>' : ''}</div>
+        </div>
+        <span class="chip" style="background:transparent;color:${kindColor(r.kind)};border:1px solid currentColor;font-size:11px">${escapeHtml(r.kind || 'user')}</span>
+        <span class="chev">›</span>
+      </div>`).join('');
+    const pager = pages > 1 && !q ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid var(--bdr)">
+        <button class="btn btn-out btn-sm" ${page <= 1 ? 'disabled style="opacity:.4"' : `onclick="supportBrowseUsers(${page - 1})"`}>‹ Prev</button>
+        <span style="font-size:12px;color:var(--mid)">Page ${page} of ${pages} · ${total} users</span>
+        <button class="btn btn-out btn-sm" ${page >= pages ? 'disabled style="opacity:.4"' : `onclick="supportBrowseUsers(${page + 1})"`}>Next ›</button>
+      </div>` : `<div style="padding:10px 16px;font-size:12px;color:var(--lt);text-align:center">${total} ${q ? 'match' + (total === 1 ? '' : 'es') : 'users'}</div>`;
+    box.innerHTML = `<div class="card mx" style="padding:0;overflow:hidden">${list}${pager}</div>`;
+  }
+  window.supportRenderUserList = supportRenderUserList;
+
+  // Open the full card for one user by email (from a list row).
+  async function supportOpenUser(email) {
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Loading…</div>';
     try {
       const client = await window.Supa.getClient();
       const { data, error } = await client.functions.invoke('admin-user-actions', {
         body: { action: 'find_user', email }
       });
       if (error) throw error;
-      if (!data || !data.user) {
-        box.innerHTML = '<div class="card mx" style="padding:16px;color:var(--mid);font-size:13px">No user with that email.</div>';
-        return;
-      }
+      if (!data || !data.user) { box.innerHTML = '<div class="card mx" style="padding:16px;color:var(--mid)">User not found.</div>'; return; }
       renderSupportUserCard(data.user);
     } catch (err) {
-      console.error('find_user failed', err);
       box.innerHTML = supportErrorCard('Lookup', err);
     }
   }
-  window.supportSearch = supportSearch;
+  window.supportOpenUser = supportOpenUser;
 
   // Common error card for every support-console action. Recognises
   // the "Failed to send a request to the Edge Function" browser

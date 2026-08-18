@@ -320,10 +320,13 @@
     <div id="sup-me" style="font-size:13px;color:var(--mid);margin-bottom:14px"></div>
 
     <div class="card mx" style="padding:16px;margin-bottom:14px">
-      <label class="fl">Find a user by email</label>
+      <label class="fl">Find a user</label>
       <div style="display:flex;gap:8px;margin-top:6px">
-        <input class="fi" id="sup-search" type="email" placeholder="joe@example.com" style="flex:1" onkeydown="if(event.key==='Enter')supportSearch()">
+        <input class="fi" id="sup-search" type="text" placeholder="email or part of one — e.g. joe or @gmail" style="flex:1" onkeydown="if(event.key==='Enter')supportSearch()">
         <button class="btn btn-sea" onclick="supportSearch()" style="height:52px;padding:0 20px">Search</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-out" style="flex:1;min-height:44px" onclick="supportBrowseUsers(1)">👥 Browse all users</button>
       </div>
     </div>
 
