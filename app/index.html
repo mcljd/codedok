@@ -1298,18 +1298,16 @@
 <div class="shell" id="s-vessels">
   <div class="sb sb-cd"></div>
   <div class="tbar">
-    <div class="tbar-title">Vessels</div>
-    <button class="btn btn-sm btn-sea" onclick="go('s-onboard')">+ Add</button>
+    <div class="tbar-title">My boats</div>
+    <button class="btn btn-sm btn-sea" onclick="go('s-onboard')">+ Add a boat</button>
   </div>
-  <!-- Filter chips — click one to narrow the fleet list to boats
-       in that state. State is held on window.vesselsFilter and read
-       by renderVesselsList(). Chips are proper 44px tap targets
-       (were 30px, which failed the iOS HIG floor). -->
+  <!-- Filter chips — tap one to show only boats in that state. Plain
+       labels; counts fill in from renderVesselsList(). 44px targets. -->
   <div class="vf-row">
-    <button class="vf-chip on" data-vf="all"      onclick="setVesselsFilter('all')">All vessels <span class="vf-count" id="vf-count-all"></span></button>
+    <button class="vf-chip on" data-vf="all"      onclick="setVesselsFilter('all')">All <span class="vf-count" id="vf-count-all"></span></button>
     <button class="vf-chip"    data-vf="overdue"  onclick="setVesselsFilter('overdue')">⚠ Overdue <span class="vf-count" id="vf-count-overdue"></span></button>
-    <button class="vf-chip"    data-vf="duesoon"  onclick="setVesselsFilter('duesoon')">⏰ Due soon <span class="vf-count" id="vf-count-duesoon"></span></button>
-    <button class="vf-chip"    data-vf="compliant" onclick="setVesselsFilter('compliant')">✅ Compliant <span class="vf-count" id="vf-count-compliant"></span></button>
+    <button class="vf-chip"    data-vf="duesoon"  onclick="setVesselsFilter('duesoon')">⏳ Due soon <span class="vf-count" id="vf-count-duesoon"></span></button>
+    <button class="vf-chip"    data-vf="compliant" onclick="setVesselsFilter('compliant')">✓ Ready <span class="vf-count" id="vf-count-compliant"></span></button>
   </div>
   <div class="scroll">
     <div style="height:12px"></div>
@@ -1550,8 +1548,8 @@
     <button class="btn btn-sm btn-sea" onclick="go('s-scan')">+ Add</button>
   </div>
   <div class="tabbar">
-    <button class="tab on" onclick="switchTab(this,'cr-urgent')">Urgent (5)</button>
-    <button class="tab" onclick="switchTab(this,'cr-vessel')">Vessel certs</button>
+    <button class="tab on" onclick="switchTab(this,'cr-urgent')">To do</button>
+    <button class="tab" onclick="switchTab(this,'cr-vessel')">Certificates</button>
     <button class="tab" onclick="switchTab(this,'cr-equipment')">Equipment</button>
     <button class="tab" onclick="switchTab(this,'cr-crew')">Crew</button>
     <button class="tab" onclick="switchTab(this,'cr-insurance')">Insurance</button>

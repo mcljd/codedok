@@ -1681,11 +1681,21 @@
 
   function vesselCoverHtml(v, opts) {
     opts = opts || {};
-    const score = Store.complianceScore(v.id);
     const counts = Store.urgencyCounts(v.id);
-    const ready = counts.overdue === 0;
-    const total = Store.vesselCerts(v.id).length + Store.vesselEquipment(v.id).length;
-    const ringColor = scoreColor(score);
+    // Traffic-light status — one glance tells a novice if this boat
+    // needs attention. No percentage ring, no four-number grid.
+    let state, badgeIcon, statusText;
+    if (counts.overdue > 0) {
+      state = 'bad'; badgeIcon = '!';
+      statusText = `${counts.overdue} overdue — needs sorting`;
+    } else if (counts.due30 > 0) {
+      state = 'warn'; badgeIcon = '⏳';
+      statusText = `${counts.due30} due soon`;
+    } else {
+      state = 'good'; badgeIcon = '✓';
+      statusText = 'Ready for survey';
+    }
+    const statusColor = state === 'bad' ? 'var(--red)' : state === 'warn' ? 'var(--amber)' : 'var(--green)';
     return `
       <div class="vcover" onclick="setActiveVessel('${v.id}'); go('s-vessel-detail')">
         <div class="vc-pattern"></div>
@@ -1699,27 +1709,16 @@
               <div class="vcover-meta">${escapeHtml(v.type || '')}${v.port ? ' · ' + escapeHtml(v.port) : ''}</div>
               <div style="margin-top:4px;display:flex;gap:5px;align-items:center">
                 <span class="cat-pill">${escapeHtml(v.category || '')}</span>
-                ${v.ssr ? `<span class="cat-pill" style="background:rgba(255,255,255,.04)">SSR ${escapeHtml(v.ssr)}</span>` : ''}
               </div>
             </div>
           </div>
-          <div style="position:relative;width:54px;height:54px;flex-shrink:0">
-            ${ringSvg(score, ringColor, 54, true)}
-            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:white;letter-spacing:-.4px">${score}</div>
-          </div>
+          <div class="ss-badge ss-${state}" style="width:44px;height:44px;font-size:22px">${badgeIcon}</div>
         </div>
         <div class="vcover-body">
-          <div class="vcover-stats">
-            <div class="vcover-stat ${counts.overdue ? 'rd' : 'ok'}"><div class="num">${counts.overdue}</div><div class="lbl">Overdue</div></div>
-            <div class="vcover-stat ${counts.due30 ? 'am' : 'ok'}"><div class="num">${counts.due30}</div><div class="lbl">Due soon</div></div>
-            <div class="vcover-stat ok"><div class="num">${counts.valid}</div><div class="lbl">Valid</div></div>
-            <div class="vcover-stat bl"><div class="num">${total}</div><div class="lbl">Tracked</div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <span style="font-size:14px;font-weight:700;color:${statusColor}">${escapeHtml(statusText)}</span>
+            <span style="font-size:12px;color:var(--lt)">Open →</span>
           </div>
-          ${opts.compact ? '' : `
-            <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between">
-              ${ready ? '<span class="insp-pill rdy">✓ Ready for survey</span>' : `<span class="insp-pill notready">⚠ Not ready</span>`}
-              <span style="font-size:11px;color:var(--lt)">Tap to open →</span>
-            </div>`}
         </div>
       </div>`;
   }
@@ -2170,7 +2169,7 @@
         html += `</div>`;
       }
       if (due30Count > 0) {
-        html += `<div class="h-section" style="color:var(--amber)">⏰ Due within 30 days · ${due30Count}</div>`;
+        html += `<div class="h-section" style="color:var(--amber)">⏳ Due soon · ${due30Count}</div>`;
         html += `<div style="padding:0 16px">`;
         due30Certs.forEach((c) => { html += ticketHtml(c, 'cert'); });
         due30Equip.forEach((e) => { html += ticketHtml(e, 'equipment'); });
@@ -2254,7 +2253,7 @@
     const totalUrgent = overdueCnt + due30Cnt;
     const urgentTab = screen.querySelector('.tab.on') ? screen.querySelector('.tabbar .tab') : null;
     const tabs = screen.querySelectorAll('.tabbar .tab');
-    if (tabs[0]) tabs[0].textContent = `Urgent (${totalUrgent})`;
+    if (tabs[0]) tabs[0].textContent = totalUrgent > 0 ? `To do (${totalUrgent})` : 'To do';
   }
 
   // ---------- Vessel detail ----------
