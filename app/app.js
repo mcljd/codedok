@@ -436,6 +436,25 @@
     return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
+  // Turn a raw Supabase/Postgres/network error into something a
+  // customer can read. Never surface RLS text, JWT internals, SQL
+  // constraint names, or stack traces. The real detail still goes to
+  // console for us. Use this in customer-facing catch blocks instead
+  // of alert('...' + err.message).
+  function friendlyErr(err, fallback) {
+    const raw = ((err && err.message) || String(err || '')).toLowerCase();
+    if (/jwt|token|session|expired|not authenticated|auth/.test(raw))
+      return 'Your session timed out. Please sign in again.';
+    if (/row-level security|permission denied|not allowed|forbidden|policy/.test(raw))
+      return "You don't have permission to do that. If that seems wrong, contact hello@codedok.com.";
+    if (/duplicate|unique|already exists/.test(raw))
+      return 'That already exists.';
+    if (/network|failed to fetch|timeout|offline|send a request/.test(raw))
+      return "Couldn't reach the server. Check your connection and try again.";
+    return fallback || 'Something went wrong. Please try again, or contact hello@codedok.com if it keeps happening.';
+  }
+  window.friendlyErr = friendlyErr;
+
   function daysFmt(d) {
     if (d === Infinity) return 'No expiry';
     if (d < 0) return `Expired ${Math.abs(d)} day${Math.abs(d) === 1 ? '' : 's'} ago`;
@@ -605,6 +624,55 @@
 
   // ---------- Navigation ----------
 
+  // Screens that still contain hardcoded demo/mockup markup and have
+  // no real-data renderer wired into go(). Shown to a real operator
+  // they'd display fake vessels. Each maps to a short label for the
+  // placeholder. The notification bell (s-notif) gets a real
+  // empty-state instead of "coming soon".
+  const MOCKUP_SCREENS = {
+    's-gap':             'AI gap analysis',
+    's-surveys':         'Survey history',
+    's-inspection-pack': 'Inspection pack',
+    's-jur-dash':        'Legal readiness',
+    's-ie-licence':      'Irish PBL licence',
+    's-deficiencies':    'Deficiency log',
+    's-export-pack':     'Export packs'
+  };
+
+  function guardMockupScreen(id, shell) {
+    if (!shell) return;
+    const session = loadSession();
+    const isDemo = session && session.mode === 'demo';
+    if (isDemo) return;   // demo sessions keep the sales mockup
+
+    const sc = shell.querySelector('.scroll');
+    if (!sc) return;
+
+    if (id === 's-notif') {
+      // Real empty-state for the notification bell. Once a live
+      // notifications feed exists this can render from it.
+      sc.innerHTML = `
+        <div style="padding:48px 24px;text-align:center">
+          <div style="font-size:44px;margin-bottom:14px">🔔</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">You're all caught up</div>
+          <div style="font-size:14px;color:var(--mid);line-height:1.55;max-width:320px;margin:0 auto">We'll alert you here — and by push if you enable it — before any certificate or service is due. Nothing needs your attention right now.</div>
+          <button class="btn btn-sea" style="margin-top:22px;min-height:48px;padding:0 22px" onclick="goHome()">Back to home</button>
+        </div>`;
+      return;
+    }
+
+    if (MOCKUP_SCREENS[id]) {
+      const label = MOCKUP_SCREENS[id];
+      sc.innerHTML = `
+        <div style="padding:48px 24px;text-align:center">
+          <div style="font-size:44px;margin-bottom:14px">🛠️</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">${escapeHtml(label)} — in progress</div>
+          <div style="font-size:14px;color:var(--mid);line-height:1.55;max-width:340px;margin:0 auto">This is landing during your trial. In the meantime everything you need lives in <b>Records</b> and the <b>Compliance calendar</b>. Tell us if this is a feature you'd want first.</div>
+          <button class="btn btn-sea" style="margin-top:22px;min-height:48px;padding:0 22px" onclick="goHome()">Back to home</button>
+        </div>`;
+    }
+  }
+
   function go(id) {
     // On the marketing host, redirect any attempt to enter an app
     // shell (s-login, s-home, s-onboard, etc.) to app.codedok.com.
@@ -624,6 +692,13 @@
       const sc = t.querySelector('.scroll');
       if (sc) sc.scrollTop = 0;
     }
+    // Trial-safety guard: several screens still ship static mockup
+    // content (Tsunami IV / Lagavulin demo data) and have no
+    // real-data renderer. For a REAL (non-demo) operator those would
+    // display another skipper's fake fleet — confusing and
+    // embarrassing. Swap that content for a clean "in progress"
+    // placeholder. Demo sessions keep the mockup (it's a sales demo).
+    guardMockupScreen(id, t);
     // Toggle a body-scoped class so layout rules can break out of
     // the default 393px phone-frame shell without depending on the
     // CSS :has() selector (which fails in older browsers).
@@ -4812,7 +4887,7 @@
       });
     } catch (err) {
       console.error('enablePushReminders failed:', err);
-      alert('Could not enable reminders: ' + (err && err.message ? err.message : err));
+      alert(friendlyErr(err, "Couldn't enable reminders. Please try again."));
     }
   }
   window.enablePushReminders = enablePushReminders;
@@ -5653,7 +5728,7 @@
       ${sms ? `
         <div class="h-section">Submitted SMS</div>
         <div style="padding:0 16px">
-          <div class="qa-tile" onclick="alert('In production this opens the SMS preview side-by-side. For prototype: download or print from operator side.')">
+          <div class="qa-tile" onclick="go('s-sms')">
             <div class="qa-icon bl">📋</div>
             <div style="flex:1"><div class="qa-title">${escapeHtml(sms.title || 'Safety Management System')}</div><div class="qa-sub">v${sms.version || 1} · ${escapeHtml(sms.status)}</div></div>
             <span class="chev">›</span>
@@ -6031,11 +6106,11 @@
 
       ${inv.status === 'sent' ? `
         <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
-          <button class="btn btn-sea btn-full" onclick="payInvoiceFlow('${inv.id}')">💷 Pay £${inv.total} now</button>
-          <button class="btn btn-out btn-full" onclick="alert('Decline flow — would notify the surveyor')">Decline this quote</button>
+          <button class="btn btn-sea btn-full" onclick="payInvoiceFlow('${inv.id}')">✓ Accept £${inv.total} quote</button>
+          <button class="btn btn-out btn-full" onclick="declineQuoteFlow('${inv.id}')">Decline this quote</button>
         </div>
         <div style="padding:0 16px">
-          <div style="background:var(--seap);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--mid);line-height:1.6">🔒 Paid securely via CodedOK Pay (Stripe). Funds are held until the surveyor delivers the work — they're released to the surveyor on completion.</div>
+          <div style="background:var(--ampp);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--mid);line-height:1.6">ℹ️ Card payments go live later. During the trial, accepting a quote just records it and notifies the surveyor — no money changes hands.</div>
         </div>` : `
         <div style="padding:14px 16px">
           <div class="card" style="padding:14px 16px;text-align:center">
@@ -6060,12 +6135,20 @@
       ],
       onConfirm: () => {
         Store.payInvoice(invoiceId, 'stripe');
-        alert('Paid. The surveyor gets a notification and starts work.');
+        alert('Quote accepted — the surveyor is notified. No card is charged during the trial.');
         go('s-home');
       }
     });
   }
   window.payInvoiceFlow = payInvoiceFlow;
+
+  function declineQuoteFlow(invoiceId) {
+    if (!confirm('Decline this quote? The surveyor will see it was declined.')) return;
+    Store.declineInvoice(invoiceId);
+    alert('Quote declined.');
+    go('s-home');
+  }
+  window.declineQuoteFlow = declineQuoteFlow;
 
   function invoiceRow(inv) {
     const v = Store.getVessel(inv.vessel_id);
@@ -7172,10 +7255,10 @@
             <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;color:var(--lt)"><span>Unlimited edits + Word/PDF export</span><span>included</span></div>
             <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;color:var(--lt)"><span>Surveyor review &amp; sign-off</span><span>billed separately</span></div>
             <div style="height:1px;background:var(--bdr);margin:8px 0"></div>
-            <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800"><span>Total today</span><span>£10</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800"><span>Total today</span><span style="color:var(--green)">Free (trial)</span></div>
           </div>
-          <div style="font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:12px">Mock checkout — production uses Stripe. You'll receive a generated draft you can review, edit, and send to Anchor Marine (or any approved surveyor) for sign-off.</div>
-          <button class="btn btn-sea btn-full" onclick="runSmsGeneration()">💷 Pay £10 &amp; generate now</button>
+          <div style="font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:12px">Free during your trial — no charge. You'll get a generated draft you can review, edit, and send to your surveyor for sign-off.</div>
+          <button class="btn btn-sea btn-full" onclick="runSmsGeneration()">✨ Generate my SMS draft</button>
           <button class="btn btn-out btn-full" style="margin-top:8px" onclick="smsAiBack()">‹ Back</button>
         </div>
       </div>`;
@@ -7689,7 +7772,7 @@
       showInvitationShare(email, url);
     } catch (err) {
       console.error('inviteSurveyorByEmail failed', err);
-      alert('Could not create invite: ' + (err && err.message ? err.message : err));
+      alert(friendlyErr(err, 'Could not create the invite. Please try again.'));
     }
   }
   window.inviteSurveyorByEmail = inviteSurveyorByEmail;
@@ -7789,7 +7872,7 @@
       showInvitationShare(email, url);
     } catch (err) {
       console.error('submitInviteSurveyorModal failed', err);
-      alert('Could not create invite: ' + (err && err.message ? err.message : err));
+      alert(friendlyErr(err, 'Could not create the invite. Please try again.'));
     }
   }
   window.submitInviteSurveyorModal = submitInviteSurveyorModal;
@@ -7955,12 +8038,12 @@
               <span>${escapeHtml(opts.price)}</span>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 12px;background:var(--seap);border-radius:10px">
-            <span style="font-size:14px">🔒</span>
-            <div style="font-size:11px;color:var(--mid);line-height:1.5">Mock checkout for prototype. Production will use Stripe Checkout — secure card entry, instant receipt, Anchor Marine paid out after sign-off delivered.</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 12px;background:var(--ampp);border-radius:10px">
+            <span style="font-size:14px">ℹ️</span>
+            <div style="font-size:11px;color:var(--mid);line-height:1.5">Card payments aren't switched on yet. Accepting records the quote so you can see the flow — <b>no money changes hands.</b></div>
           </div>
           <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
-            <button class="btn btn-sea btn-full" id="checkout-confirm">Pay ${escapeHtml(opts.price)} (mock)</button>
+            <button class="btn btn-sea btn-full" id="checkout-confirm">Accept quote — no charge</button>
             <button class="btn btn-out btn-full" onclick="document.getElementById('checkout-sheet').remove()">Cancel</button>
           </div>
         </div>
@@ -8432,7 +8515,7 @@ ${sectionsHtml}
       showInvitationShare(email, url);
     } catch (err) {
       console.error('submitTeamInvite failed', err);
-      alert('Could not create invite: ' + (err && err.message ? err.message : err));
+      alert(friendlyErr(err, 'Could not create the invite. Please try again.'));
     }
   }
   window.submitTeamInvite = submitTeamInvite;
@@ -8609,7 +8692,7 @@ ${sectionsHtml}
       document.getElementById('add-my-qual-modal').remove();
       renderMyQuals();
     } catch (err) {
-      fail('Could not save: ' + (err && err.message ? err.message : err));
+      fail(friendlyErr(err, 'Could not save. Please try again.'));
     }
   }
   window.submitAddMyQual = submitAddMyQual;
@@ -8746,7 +8829,7 @@ ${sectionsHtml}
       if (typeof renderTrialBanner === 'function') renderTrialBanner();
     } catch (err) {
       console.error('selectPlan failed', err);
-      alert('Could not switch plan: ' + (err && err.message ? err.message : err));
+      alert(friendlyErr(err, 'Could not switch plan. Please try again.'));
     }
   }
   window.selectPlan = selectPlan;
@@ -9308,6 +9391,14 @@ ${sectionsHtml}
   // ---------- Demo data controls ----------
 
   function resetDemoData() {
+    // Belt-and-braces: even though the Account row that calls this is
+    // hidden for real accounts, never let a live operator wipe their
+    // own data with demo fixtures.
+    const session = loadSession();
+    if (session && session.mode === 'live' && !isDemoOperatorEmail(session.email)) {
+      alert('Demo data is only available on the demo account.');
+      return;
+    }
     if (!confirm('Restore the demo data (Tsunami IV & Lagavulin)? This will wipe any vessels you added.')) return;
     Store.resetToSeed();
     const sv = document.getElementById('s-vessels');
@@ -9462,16 +9553,22 @@ ${sectionsHtml}
       // Role precedence:
       //   1. If the existing row is already 'admin' or 'support', KEEP IT.
       //      These roles are set out-of-band (by DBA / SQL) and must never
-      //      be silently downgraded to whatever the sign-up form said —
-      //      that used to happen and it kept flipping support accounts
-      //      back to operator on every sign-in.
+      //      be silently downgraded to whatever the sign-up form said.
       //   2. Otherwise use sign-up metadata > existing row > email inference.
+      //
+      // SECURITY: the metadata whitelist below deliberately EXCLUDES
+      // 'admin' and 'support'. user_metadata.kind is attacker-controlled
+      // (anyone can call auth.signUp with options.data.kind='admin'), so
+      // allowing those here would let a self-service signup mint itself
+      // a privileged role. Privileged roles are ONLY ever assigned by
+      // the service role (SQL editor / support console). A DB trigger
+      // (migration 0020) is the real gate — this is defence in depth.
       const chosenKind = authUser.user_metadata && authUser.user_metadata.kind;
       const inferred = kindFromEmail(authUser.email);
       const privilegedExisting = row && (row.kind === 'admin' || row.kind === 'support');
       const desiredKind = privilegedExisting
         ? row.kind
-        : ['operator','surveyor','admin','support','builder'].includes(chosenKind)
+        : ['operator','surveyor','builder'].includes(chosenKind)
           ? chosenKind
           : (row && row.kind) || inferred;
 

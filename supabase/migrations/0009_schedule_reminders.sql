@@ -11,7 +11,9 @@
 --   2. Set Vault secret `project_url` to https://<ref>.supabase.co
 --   3. In Edge Functions → send-reminders → Secrets, add:
 --        VAPID_PUBLIC_KEY  — BESwTm9pizzS1pXWoABM-oQH2p0ZN6ZGWGc_IAmFgCn7-ZMnxCnQhGRgiIv039pVWtdlt2TrThY0K_9OXi2q6_Y
---        VAPID_PRIVATE_KEY — _qtQgjFNCqGAA_HRaQCpDZ_N5204Ga-geFoOG_SaVuY
+--        VAPID_PRIVATE_KEY — <set as an edge-function secret, never commit it>
+--        (the private key that was previously here has been ROTATED and
+--         scrubbed — see docs/TRIAL-READINESS.md Part A)
 --        VAPID_SUBJECT     — mailto:hello@codedok.com  (or your own contact)
 
 create extension if not exists pg_cron with schema extensions;

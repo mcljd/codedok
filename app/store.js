@@ -1185,6 +1185,18 @@
     return inv;
   }
 
+  function declineInvoice(invoiceId) {
+    const inv = getInvoice(invoiceId);
+    if (!inv) return;
+    inv.status = 'declined';
+    inv.declined_at = isoOffset(0);
+    const j = getJob(inv.job_id);
+    if (j) j.status = 'declined';
+    logAction('invoice.declined', 'invoice', inv.id, { amount: inv.total });
+    save(state);
+    return inv;
+  }
+
   function declineJob(jobId, reason) {
     const j = getJob(jobId);
     if (!j) return;
@@ -1532,6 +1544,7 @@
     invoicesForSurveyor,
     invoicesForOperator,
     payInvoice,
+    declineInvoice,
     declineJob,
     startJob,
     completeJob,
