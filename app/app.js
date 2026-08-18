@@ -10390,6 +10390,61 @@ ${sectionsHtml}
   }
   window.supportOpenUser = supportOpenUser;
 
+  // View the support-action audit trail. Optional targetEmail filters
+  // to actions taken against one customer (used from the user card).
+  async function supportViewAuditLog(targetEmail) {
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Loading action log…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'support_audit', limit: 100, target_email: targetEmail || undefined }
+      });
+      if (error) throw error;
+      const rows = (data && data.rows) || [];
+      const heading = targetEmail
+        ? `Actions on ${escapeHtml(targetEmail)}`
+        : 'Support action log';
+      if (!rows.length) {
+        box.innerHTML = `<div class="card mx" style="padding:16px"><div style="font-weight:700;margin-bottom:6px">${heading}</div><div style="color:var(--mid);font-size:13px">No actions recorded yet. Every password reset, delete, ban and role change gets logged here with who did it.</div></div>`;
+        return;
+      }
+      // Colour + label per action type.
+      const label = (a) => ({
+        set_password: '🔑 Password reset', send_magic_link: '✉️ Magic link sent',
+        delete_user: '🗑️ Account deleted', change_email: '✏️ Email changed',
+        verify_email: '✓ Email verified', change_kind: '🔀 Role changed',
+        ban_user: '⛔ Banned', unban_user: '✅ Unbanned'
+      }[a] || a);
+      const danger = (a) => a === 'delete_user' || a === 'ban_user';
+      const list = rows.map((r) => {
+        const detail = r.details && Object.keys(r.details).length
+          ? Object.entries(r.details).map(([k, v]) => `${k}: ${escapeHtml(String(v))}`).join(' · ')
+          : '';
+        return `
+          <div class="row" style="cursor:default">
+            <div class="row-body">
+              <div class="row-name" style="font-size:13px;color:${danger(r.action) ? 'var(--red)' : 'var(--text)'}">${label(r.action)}</div>
+              <div class="row-sub" style="font-size:12px">${r.target_email ? escapeHtml(r.target_email) + ' · ' : ''}by ${escapeHtml(r.actor_email || 'unknown')}${detail ? ' · ' + detail : ''}</div>
+            </div>
+            <span style="font-size:11px;color:var(--lt);white-space:nowrap">${fmtDate(r.at) || ''}</span>
+          </div>`;
+      }).join('');
+      box.innerHTML = `
+        <div class="card mx" style="padding:0;overflow:hidden">
+          <div style="padding:14px 16px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:700;font-size:14px">${heading}</div>
+            <span style="font-size:12px;color:var(--lt)">${rows.length} entr${rows.length === 1 ? 'y' : 'ies'}</span>
+          </div>
+          ${list}
+        </div>`;
+    } catch (err) {
+      box.innerHTML = supportErrorCard('Action log', err);
+    }
+  }
+  window.supportViewAuditLog = supportViewAuditLog;
+
   // Common error card for every support-console action. Recognises
   // the "Failed to send a request to the Edge Function" browser
   // message (Supabase's default when the function isn't reachable)
@@ -10452,8 +10507,9 @@ ${sectionsHtml}
 
         <!-- Data views -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--bdr);margin-top:6px">
-          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportLoadVessels('${escapeHtml(u.id || u.auth_user_id)}')">🛥️ Show vessels</button>
-          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportLoadActivity('${escapeHtml(u.id || u.auth_user_id)}')">📋 Recent activity</button>
+          <button class="btn btn-out" style="flex:1;min-width:130px;min-height:44px" onclick="supportLoadVessels('${escapeHtml(u.id || u.auth_user_id)}')">🛥️ Vessels</button>
+          <button class="btn btn-out" style="flex:1;min-width:130px;min-height:44px" onclick="supportLoadActivity('${escapeHtml(u.id || u.auth_user_id)}')">📋 Their activity</button>
+          <button class="btn btn-out" style="flex:1;min-width:130px;min-height:44px" onclick="supportViewAuditLog('${escapeHtml(u.email)}')">🛡️ Support history</button>
         </div>
         <div id="sup-detail-panel" style="margin-top:14px"></div>
       </div>`;

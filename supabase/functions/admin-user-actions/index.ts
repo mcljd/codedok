@@ -42,7 +42,7 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-async function assertCallerIsSupport(req: Request): Promise<{ ok: true; userId: string } | Response> {
+async function assertCallerIsSupport(req: Request): Promise<{ ok: true; userId: string; email: string } | Response> {
   const authHeader = req.headers.get("authorization") || "";
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
   if (!token) return json({ error: "missing_auth" }, 401);
@@ -57,6 +57,7 @@ async function assertCallerIsSupport(req: Request): Promise<{ ok: true; userId: 
   const { data: userData, error: userErr } = await callerClient.auth.getUser();
   if (userErr || !userData.user) return json({ error: "invalid_session" }, 401);
   const authUserId = userData.user.id;
+  const actorEmail = userData.user.email || "";
 
   // Look up their public.users row using the service role so RLS
   // can't hide their own kind from them.
@@ -72,7 +73,30 @@ async function assertCallerIsSupport(req: Request): Promise<{ ok: true; userId: 
   if (row.kind !== "support" && row.kind !== "admin") {
     return json({ error: "forbidden", reason: "not_a_support_user" }, 403);
   }
-  return { ok: true, userId: authUserId };
+  return { ok: true, userId: authUserId, email: actorEmail };
+}
+
+// Record a support action to the audit log. Best-effort — a logging
+// failure must never break the action the agent actually wanted.
+async function logSupportAction(
+  service: any,
+  actor: { userId: string; email: string },
+  action: string,
+  target: { email?: string; auth_id?: string },
+  details: Record<string, unknown> = {},
+): Promise<void> {
+  try {
+    await service.from("support_audit_log").insert({
+      actor_email: actor.email || null,
+      actor_auth_id: actor.userId || null,
+      action,
+      target_email: target.email || null,
+      target_auth_id: target.auth_id || null,
+      details,
+    });
+  } catch (e) {
+    console.error("support audit log insert failed", e);
+  }
 }
 
 async function handler(req: Request): Promise<Response> {
@@ -81,6 +105,7 @@ async function handler(req: Request): Promise<Response> {
 
   const gate = await assertCallerIsSupport(req);
   if (gate instanceof Response) return gate;
+  const actor = { userId: gate.userId, email: gate.email };
 
   let body: any = {};
   try { body = await req.json(); } catch (_) { return json({ error: "invalid_json" }, 400); }
@@ -139,6 +164,7 @@ async function handler(req: Request): Promise<Response> {
         if (password.length < 12) return json({ error: "password_too_short" }, 400);
         const { error } = await service.auth.admin.updateUserById(id, { password });
         if (error) throw error;
+        await logSupportAction(service, actor, "set_password", { auth_id: id });
         return json({ ok: true });
       }
 
@@ -147,14 +173,22 @@ async function handler(req: Request): Promise<Response> {
         if (!email) return json({ error: "email_required" }, 400);
         const { error } = await service.auth.admin.generateLink({ type: "magiclink", email });
         if (error) throw error;
+        await logSupportAction(service, actor, "send_magic_link", { email });
         return json({ ok: true });
       }
 
       case "delete_user": {
         const id = String(body.auth_user_id || "");
         if (!id) return json({ error: "auth_user_id_required" }, 400);
+        // Capture the email for the audit trail before the row is gone.
+        let delEmail: string | undefined;
+        try {
+          const { data: g } = await service.auth.admin.getUserById(id);
+          delEmail = g?.user?.email || undefined;
+        } catch (_) { /* non-fatal */ }
         const { error } = await service.auth.admin.deleteUser(id);
         if (error) throw error;
+        await logSupportAction(service, actor, "delete_user", { auth_id: id, email: delEmail });
         return json({ ok: true });
       }
 
@@ -215,6 +249,7 @@ async function handler(req: Request): Promise<Response> {
         const { error: authErr } = await service.auth.admin.updateUserById(id, { email });
         if (authErr) throw authErr;
         await service.from("users").update({ email }).eq("auth_user_id", id);
+        await logSupportAction(service, actor, "change_email", { auth_id: id, email }, { new_email: email });
         return json({ ok: true });
       }
 
@@ -226,6 +261,7 @@ async function handler(req: Request): Promise<Response> {
         if (!id) return json({ error: "auth_user_id_required" }, 400);
         const { error } = await service.auth.admin.updateUserById(id, { email_confirm: true });
         if (error) throw error;
+        await logSupportAction(service, actor, "verify_email", { auth_id: id });
         return json({ ok: true });
       }
 
@@ -239,6 +275,7 @@ async function handler(req: Request): Promise<Response> {
         if (!id || !allowed.includes(newKind)) return json({ error: "invalid_kind_or_id" }, 400);
         const { error } = await service.from("users").update({ kind: newKind }).eq("auth_user_id", id);
         if (error) throw error;
+        await logSupportAction(service, actor, "change_kind", { auth_id: id }, { new_kind: newKind });
         return json({ ok: true, kind: newKind });
       }
 
@@ -250,6 +287,7 @@ async function handler(req: Request): Promise<Response> {
         if (!id) return json({ error: "auth_user_id_required" }, 400);
         const { error } = await service.auth.admin.updateUserById(id, { ban_duration: dur });
         if (error) throw error;
+        await logSupportAction(service, actor, dur === "none" ? "unban_user" : "ban_user", { auth_id: id }, { duration: dur });
         return json({ ok: true, ban_duration: dur });
       }
 
@@ -285,6 +323,22 @@ async function handler(req: Request): Promise<Response> {
           .order("created_at", { ascending: false });
         if (vErr) throw vErr;
         return json({ rows: vessels || [] });
+      }
+
+      case "support_audit": {
+        // Read the support-action audit trail. Optional target_email
+        // filter narrows to actions taken against one customer.
+        const limit  = Math.min(200, Math.max(1, Number(body.limit) || 50));
+        const target = String(body.target_email || "").toLowerCase().trim();
+        let qb = service
+          .from("support_audit_log")
+          .select("at,actor_email,action,target_email,target_auth_id,details")
+          .order("at", { ascending: false })
+          .limit(limit);
+        if (target) qb = qb.eq("target_email", target);
+        const { data, error } = await qb;
+        if (error) throw error;
+        return json({ rows: data || [] });
       }
 
       default:
