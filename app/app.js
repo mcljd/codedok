@@ -2251,7 +2251,6 @@
       + s.equipment.filter((e) => { const d = Store.daysUntil(e.next_service_at); return d >= 0 && d <= 30; }).length
       + s.crewCerts.filter((cc) => { const d = Store.daysUntil(cc.expires_at); return d >= 0 && d <= 30; }).length;
     const totalUrgent = overdueCnt + due30Cnt;
-    const urgentTab = screen.querySelector('.tab.on') ? screen.querySelector('.tabbar .tab') : null;
     const tabs = screen.querySelectorAll('.tabbar .tab');
     if (tabs[0]) tabs[0].textContent = totalUrgent > 0 ? `To do (${totalUrgent})` : 'To do';
   }
