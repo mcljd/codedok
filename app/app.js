@@ -6461,7 +6461,8 @@
     function progressCount() {
       return Object.values(state).filter((v) => v).length;
     }
-    document.getElementById('sv-insp-progress').textContent = `${progressCount()}/${totalChecks}`;
+    const _progEl = document.getElementById('sv-insp-progress');
+    if (_progEl) _progEl.textContent = `${progressCount()}/${totalChecks}`;
 
     function checkRow(prefix, idx, label, sub) {
       const key = `${prefix}-${idx}`;
