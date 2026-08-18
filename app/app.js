@@ -1294,45 +1294,43 @@
             <div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.55">Add one vessel. We'll suggest the certificates and gear you need based on your MCA category, and remind you before anything expires.</div>
           </div>`;
       } else {
-        const fleetScore = Store.complianceScore();
+        // ── Simple, plain-language status for novice users. ──
+        // No percentage ring, no "items adrift" jargon. One big
+        // traffic-light badge + a sentence anyone understands, then
+        // two large buttons for the only two things most people do:
+        // add a certificate, or look at what's coming up.
         const counts = Store.urgencyCounts();
-        const ready = counts.overdue === 0;
-        const ringColor = scoreColor(fleetScore);
-        const badgeHtml = ready
-          ? `<span class="insp-pill rdy">✓ Ready for survey</span>`
-          : `<span class="insp-pill notready pulse-rd">⚠ ${counts.overdue} urgent item${counts.overdue === 1 ? '' : 's'}</span>`;
-        const headlineText = ready
-          ? 'On course'
-          : counts.overdue === 1 ? 'One item adrift' : `${counts.overdue} items adrift`;
-        const subText = ready
-          ? 'All certificates and gear current — keep an eye on the horizon.'
-          : `Tackle the urgent items first, then we'll line up the rest for survey day.`;
+        let state, badgeIcon, headline, sub;
+        if (counts.overdue > 0) {
+          state = 'bad'; badgeIcon = '!';
+          headline = counts.overdue === 1 ? '1 thing is overdue' : `${counts.overdue} things are overdue`;
+          sub = 'These have run out and need sorting. Tap below to see them.';
+        } else if (counts.due30 > 0) {
+          state = 'warn'; badgeIcon = '⏳';
+          headline = counts.due30 === 1 ? '1 thing due soon' : `${counts.due30} things due soon`;
+          sub = 'Nothing overdue — just a few renewals coming up in the next month.';
+        } else {
+          state = 'good'; badgeIcon = '✓';
+          headline = "You're all set";
+          sub = 'Every certificate and service is up to date. Nothing to do right now.';
+        }
         statusEl.innerHTML = `
           <div class="hero-stars" aria-hidden="true"></div>
-          <div class="hero-top-row">
-            <div class="hero-ring-wrap">
-              ${ringSvg(fleetScore, ringColor, 124)}
-              <div class="hero-ring-num">
-                <span class="hero-ring-pct">${fleetScore}</span><span class="hero-ring-percent">%</span>
-              </div>
-            </div>
-            <div class="hero-summary">
-              <div class="hero-label">Fleet compliance</div>
-              <div class="hero-headline">${escapeHtml(headlineText)}</div>
-              <div class="hero-sub">${subText}</div>
-              ${badgeHtml}
+          <div class="ss-status">
+            <div class="ss-badge ss-${state}">${badgeIcon}</div>
+            <div class="ss-text">
+              <div class="ss-headline">${escapeHtml(headline)}</div>
+              <div class="ss-sub">${escapeHtml(sub)}</div>
             </div>
           </div>
-          <div class="home-tile-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px">
-            <div class="tile tile-sm"><div class="tile-num rd">${counts.overdue}</div><div class="tile-lbl">Overdue</div></div>
-            <div class="tile tile-sm"><div class="tile-num am">${counts.due30}</div><div class="tile-lbl">Due 30d</div></div>
-            <div class="tile tile-sm"><div class="tile-num ok">${counts.valid}</div><div class="tile-lbl">Valid</div></div>
-          </div>
-          <button class="hero-cta" onclick="exportFleetInspectionPack()">
-            <span class="hero-cta-ic">📄</span>
-            <span class="hero-cta-lbl">Inspection pack</span>
-            <span class="hero-cta-arrow">→</span>
-          </button>`;
+          <div class="ss-actions">
+            <button class="ss-btn ss-btn-primary" onclick="try{document.getElementById('cert-camera-input').click()}catch(e){}">
+              <span class="ss-btn-ic">📷</span><span>Add a certificate</span>
+            </button>
+            <button class="ss-btn ss-btn-ghost" onclick="go('s-calendar')">
+              <span class="ss-btn-ic">📅</span><span>What's coming up</span>
+            </button>
+          </div>`;
       }
     }
 

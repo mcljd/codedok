@@ -1008,6 +1008,61 @@ body.safari-chrome .floating-fab { bottom: calc(96px + env(safe-area-inset-botto
     linear-gradient(180deg, #1C252B 0%, #0F4C5C 100%);
   box-shadow: 0 18px 50px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.06);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SIMPLE HOME STATUS — novice-friendly. Big traffic-light badge,
+   plain-language headline, two large buttons. Replaces the % ring +
+   "items adrift" jargon that confused first-time users.
+   ═══════════════════════════════════════════════════════════════ */
+.ss-status {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 16px;
+  padding: 6px 2px 4px;
+}
+.ss-badge {
+  width: 64px; height: 64px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; font-weight: 800; flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.ss-badge.ss-good { background: rgba(52,199,89,.22);  color: #6ee7a7; }
+.ss-badge.ss-warn { background: rgba(217,119,6,.24);  color: #fcd34d; }
+.ss-badge.ss-bad  { background: rgba(220,38,38,.24);  color: #fca5a5; }
+.ss-text { min-width: 0; flex: 1; }
+.ss-headline {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 22px; font-weight: 800; letter-spacing: -.4px;
+  color: #fff; line-height: 1.15; margin-bottom: 5px;
+}
+.ss-sub { font-size: 14px; line-height: 1.5; color: rgba(255,255,255,.72); }
+
+.ss-actions {
+  position: relative; z-index: 1;
+  display: flex; gap: 10px; margin-top: 18px;
+}
+.ss-btn {
+  flex: 1; min-height: 60px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
+  border-radius: 16px; cursor: pointer;
+  font-family: var(--fn); font-size: 14px; font-weight: 700;
+  border: 0; transition: transform 120ms ease, filter 160ms ease;
+  text-align: center;
+}
+.ss-btn:active { transform: scale(.97); }
+.ss-btn-ic { font-size: 24px; line-height: 1; }
+.ss-btn-primary {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  color: #04252b;
+  box-shadow: 0 10px 26px rgba(6,182,212,.40);
+}
+.ss-btn-primary:hover { filter: brightness(1.06); }
+.ss-btn-ghost {
+  background: rgba(255,255,255,.10);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
+}
+.ss-btn-ghost:hover { background: rgba(255,255,255,.16); }
 .hero-home::before {
   background:
     radial-gradient(circle at 85% -10%, rgba(255,255,255,.12) 0%, transparent 55%),
