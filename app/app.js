@@ -429,6 +429,24 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  // Escape a value for embedding as a SINGLE-QUOTED JS string argument
+  // inside a DOUBLE-QUOTED HTML onclick attribute — e.g.
+  //   `<button onclick="fn('${jsAttr(name)}')">`
+  // escapeHtml is WRONG here: it turns ' into &#39;, which the HTML
+  // parser decodes back to ' before the JS runs, prematurely closing
+  // the string (a name like O'Brien becomes a syntax error and the
+  // button silently does nothing). Correct order: JS-escape backslash
+  // and single-quote first (\' survives HTML decode intact), then
+  // HTML-escape & and the " attribute delimiter.
+  function jsAttr(s) {
+    return String(s == null ? '' : s)
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;');
+  }
+  window.jsAttr = jsAttr;
+
   function fmtDate(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
@@ -1575,7 +1593,7 @@
           const vesselId = child && child.vessel_id;
           const itemLabel = child ? (child.name || child.label || '') : '';
           const quoteBtn = isOverdue
-            ? `<button class="btn btn-sm btn-sea" style="height:36px;padding:0 12px;font-size:12px;font-weight:700;flex-shrink:0" onclick="event.stopPropagation(); quickQuoteForItem('${vesselId || ''}','${escapeHtml(itemLabel).replace(/'/g, '&#39;')}')">📞 Get a quote</button>`
+            ? `<button class="btn btn-sm btn-sea" style="height:36px;padding:0 12px;font-size:12px;font-weight:700;flex-shrink:0" onclick="event.stopPropagation(); quickQuoteForItem('${vesselId || ''}','${jsAttr(itemLabel)}')">📞 Get a quote</button>`
             : '';
           return `
             <div class="qa-tile" onclick="${it.cert ? "go('s-vessel-detail')" : it.equipment ? "go('s-equipment-list')" : "go('s-crew')"}">
@@ -2901,7 +2919,7 @@
       <div class="slbl">Service certificate</div>
       <div style="padding:0 16px">
         ${e.file ? `
-          <div class="qa-tile" style="cursor:pointer" onclick="viewAttachment('${e.file.data_url}','${escapeHtml(e.file.name).replace(/'/g, '&#39;')}')">
+          <div class="qa-tile" style="cursor:pointer" onclick="viewAttachment('${e.file.data_url}','${jsAttr(e.file.name)}')">
             <div class="qa-icon bl">📎</div>
             <div style="flex:1;min-width:0">
               <div class="qa-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(e.file.name)}</div>
@@ -2988,7 +3006,7 @@
             <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(f.name)}</div>
             <div style="font-size:11px;color:var(--lt);margin-top:2px">${escapeHtml(f.type || 'unknown')} · ${fmtBytes(f.size)}</div>
           </div>
-          <button class="btn btn-xs btn-out" onclick="viewAttachment('${f.data_url}','${escapeHtml(f.name).replace(/'/g, '&#39;')}')">View</button>
+          <button class="btn btn-xs btn-out" onclick="viewAttachment('${f.data_url}','${jsAttr(f.name)}')">View</button>
         </div>
         <div style="background:var(--grnp);border:1px solid rgba(79,122,82,.2);border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:center;margin-top:10px">
           <span style="font-size:14px">📎</span>
@@ -3257,7 +3275,7 @@
                 </div>
               </div>
               <div style="display:flex;gap:8px">
-                <button class="btn btn-xs btn-sea" style="flex:1" onclick="viewAttachment('${f.data_url}','${escapeHtml(f.name).replace(/'/g, '&#39;')}')">👁 View</button>
+                <button class="btn btn-xs btn-sea" style="flex:1" onclick="viewAttachment('${f.data_url}','${jsAttr(f.name)}')">👁 View</button>
                 <button class="btn btn-xs btn-out" style="flex:1" onclick="attachToExistingCert('${c.id}')">↻ Replace</button>
                 <button class="btn btn-xs btn-out" style="flex:1;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="removeCertFile('${c.id}')">✕ Remove</button>
               </div>
@@ -5752,7 +5770,7 @@
       ${j.delivery && j.delivery.file ? `
         <div class="h-section">Delivered ${fmtDate(j.delivery.delivered_at)}</div>
         <div style="padding:0 16px">
-          <div class="qa-tile" style="cursor:pointer;border:2px solid var(--green);background:var(--grnp)" onclick="viewAttachment('${j.delivery.file.data_url}','${escapeHtml(j.delivery.file.name).replace(/'/g, '&#39;')}')">
+          <div class="qa-tile" style="cursor:pointer;border:2px solid var(--green);background:var(--grnp)" onclick="viewAttachment('${j.delivery.file.data_url}','${jsAttr(j.delivery.file.name)}')">
             <div class="qa-icon ok">📎</div>
             <div style="flex:1;min-width:0">
               <div class="qa-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(j.delivery.file.name)}</div>
@@ -6922,7 +6940,7 @@
                     </div>
                     ${acked
                       ? `<button class="btn btn-sm btn-out" style="height:32px;padding:0 12px;font-size:12px" onclick="revokeCrewAck('${d.id}','${c.id}')">Revoke</button>`
-                      : `<button class="btn btn-sm btn-sea" style="height:32px;padding:0 12px;font-size:12px" onclick="signCrewAck('${d.id}','${c.id}','${escapeHtml(c.name).replace(/'/g, '&#39;')}')">Sign</button>`}
+                      : `<button class="btn btn-sm btn-sea" style="height:32px;padding:0 12px;font-size:12px" onclick="signCrewAck('${d.id}','${c.id}','${jsAttr(c.name)}')">Sign</button>`}
                   </div>`;
               }).join('')}
           </div>
@@ -6948,7 +6966,7 @@
             })() : ''}
           </div>
 
-          <button class="btn btn-out btn-full" onclick="downloadSmsAsWord('${escapeHtml(d.title || 'SMS').replace(/'/g, '&#39;')}', '${(d.body || '').replace(/'/g, '&#39;').replace(/\n/g, ' ')}')">📥 Download Word + PDF</button>
+          <button class="btn btn-out btn-full" onclick="downloadSmsAsWord('${jsAttr(d.title || 'SMS')}', '${jsAttr((d.body || '').replace(/\n/g, ' '))}')">📥 Download Word + PDF</button>
         </div>
       </div>`;
   }
@@ -7197,7 +7215,7 @@
     } else if (s.kind === 'options') {
       body = `<div style="display:flex;flex-direction:column;gap:8px">
         ${s.opts.map((o) => `
-          <button onclick="smsAiSelect('${s.key}', '${escapeHtml(o).replace(/'/g, '&#39;')}')" class="qa-tile" style="text-align:left;width:100%;border:${smsAiInputs[s.key] === o ? '2px solid var(--sea)' : '1px solid var(--bdr)'}">
+          <button onclick="smsAiSelect('${s.key}', '${jsAttr(o)}')" class="qa-tile" style="text-align:left;width:100%;border:${smsAiInputs[s.key] === o ? '2px solid var(--sea)' : '1px solid var(--bdr)'}">
             <div style="flex:1"><div class="qa-title" style="font-size:13px">${escapeHtml(o)}</div></div>
             ${smsAiInputs[s.key] === o ? '<div style="color:var(--sea);font-weight:700">✓</div>' : ''}
           </button>`).join('')}
