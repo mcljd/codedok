@@ -8107,6 +8107,11 @@ ${sectionsHtml}
     a.click();
     setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
   }
+  // Exposed on window because it's invoked directly from an inline
+  // onclick (the "Download Word + PDF" button on a delivered SMS
+  // doc). onclick handlers run in global scope, so a function that
+  // only lives inside this IIFE would throw "not defined".
+  window.downloadSmsAsWord = downloadSmsAsWord;
 
   function renderSmsPrintDoc(draft) {
     if (!window.Codes) return;
@@ -10718,15 +10723,35 @@ ${sectionsHtml}
     tip.innerHTML = tooltipCardHtml(step);
   }
 
+  // Resolve a coachmark target. Every shell lives in the DOM at
+  // once (hidden ones are display:none), so a bare
+  // document.querySelector('.tabbar') can match a HIDDEN shell whose
+  // rect is all zeros — planting the spotlight in the top-left
+  // corner. Prefer a match inside the active shell, and reject any
+  // element whose rect has no size (off-screen / hidden).
+  function resolveTutorialTarget(selector) {
+    if (!selector) return null;
+    const active = document.querySelector('.shell.on');
+    const candidates = [];
+    if (active) candidates.push(active.querySelector(selector));
+    candidates.push(document.querySelector(selector));
+    for (const el of candidates) {
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) return el;
+    }
+    return null;
+  }
+
   function paintCoachmark(step) {
     const scrim = document.getElementById('tutorial-scrim');
     const spot  = document.getElementById('tutorial-spotlight');
     const tip   = document.getElementById('tutorial-tooltip');
     if (!scrim || !spot || !tip) return;
-    const target = step.target ? document.querySelector(step.target) : null;
+    const target = resolveTutorialTarget(step.target);
     if (!target) {
-      // Target isn't in the DOM yet or doesn't exist for this user
-      // (e.g. Records tabbar with no vessels). Fall back to modal.
+      // Target isn't visible for this user (e.g. Records tabbar with
+      // no vessels, or the render hasn't settled). Fall back to modal.
       paintModal(step);
       return;
     }
@@ -10768,7 +10793,7 @@ ${sectionsHtml}
   function repositionTutorial() {
     const step = TUTORIAL_STEPS[tutorialStepIdx];
     if (!step || step.mode !== 'coachmark') return;
-    const target = step.target ? document.querySelector(step.target) : null;
+    const target = resolveTutorialTarget(step.target);
     const spot = document.getElementById('tutorial-spotlight');
     const tip  = document.getElementById('tutorial-tooltip');
     if (!target || !spot || !tip) return;

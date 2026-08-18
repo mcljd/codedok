@@ -100,13 +100,25 @@ async function handler(req: Request): Promise<Response> {
         if (authErr) throw authErr;
         const authUser = (authList?.users || []).find((u) => (u.email || "").toLowerCase() === email);
         if (!authUser) return json({ user: null });
-        // Pull the mirror row + orgs they own.
-        const [{ data: pub }, { data: memb }] = await Promise.all([
-          service.from("users").select("id,name,email,kind,created_at").eq("auth_user_id", authUser.id).maybeSingle(),
-          service.from("memberships").select("org_id,role,organizations(name)").eq("user_id", authUser.id),
-        ]);
+        // Pull the public.users mirror row FIRST — memberships and
+        // audit_log key off public.users.id, NOT the auth id, so we
+        // need it before we can look up the user's orgs.
+        const { data: pub } = await service
+          .from("users")
+          .select("id,name,kind,created_at")
+          .eq("auth_user_id", authUser.id)
+          .maybeSingle();
+        const pubId = pub?.id || null;
+        const { data: memb } = pubId
+          ? await service.from("memberships").select("org_id,role,organizations(name)").eq("user_id", pubId)
+          : { data: [] };
         return json({
           user: {
+            // id is the public.users primary key — the client passes
+            // this to user_vessels / user_activity. auth_user_id is
+            // the auth.users key — the client passes this to
+            // set_password / delete_user / ban / change_email etc.
+            id: pubId,
             auth_user_id: authUser.id,
             email: authUser.email,
             name: pub?.name || null,
@@ -114,6 +126,7 @@ async function handler(req: Request): Promise<Response> {
             created_at: authUser.created_at,
             last_sign_in_at: authUser.last_sign_in_at,
             email_confirmed_at: authUser.email_confirmed_at,
+            banned: !!authUser.banned_until && new Date(authUser.banned_until) > new Date(),
             orgs: (memb || []).map((m: any) => ({ id: m.org_id, role: m.role, name: m.organizations?.name })),
           },
         });
