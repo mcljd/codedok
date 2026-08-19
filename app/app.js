@@ -3025,121 +3025,63 @@
 
       <!-- Form -->
       <div class="card mx" style="margin-top:12px">
-        <div class="fg"><label class="fl">Document type</label>
-          <select class="fs" id="sc-name-picker" onchange="pickDocType(this.value)">
-            <option value="__custom__">— pick a type or use custom name below —</option>
-            <optgroup label="Vessel — MCA / SPV Code / Workboat Code">
-              <option>MCA Coding Certificate</option>
-              <option>Compliance Examination Certificate</option>
-              <option>Stability Information Book</option>
-              <option>Simplified Stability Declaration (under-15m)</option>
-              <option>Loadline Certificate (≥24m)</option>
-              <option>Tonnage Certificate</option>
-              <option>Ship Radio Licence (VHF)</option>
-              <option>MMSI Registration</option>
-              <option>Beacon Registry Confirmation (EPIRB)</option>
-              <option>Sea Trials Documentation</option>
-              <option>Structural Fire Protection Records (≥15m)</option>
-              <option>Class Certificate</option>
-            </optgroup>
-            <optgroup label="Owner Declarations (SPV Code 2025)">
-              <option>Declaration of Compliance</option>
-              <option>Manning Declaration</option>
-              <option>Stability &amp; Loading Declaration</option>
-              <option>Radio &amp; MMSI Declaration</option>
-            </optgroup>
-            <optgroup label="Insurance">
-              <option>Public Liability Insurance (PLI)</option>
-              <option>Hull &amp; Machinery Insurance</option>
-              <option>Employer's Liability Insurance</option>
-              <option>Passenger Liability Insurance</option>
-            </optgroup>
-            <optgroup label="Crew — Deck (Workboat Code Table A5.1)">
-              <option>STCW Master (Workboat &lt;500GT, unlimited)</option>
-              <option>STCW Master (Code Vessels &lt;200GT, unlimited)</option>
-              <option>STCW Master (Code Vessels &lt;200GT, ≤150nm)</option>
-              <option>RYA/MCA Yachtmaster Ocean CoC</option>
-              <option>RYA/MCA Yachtmaster Offshore CoC/Service</option>
-              <option>RYA/MCA Yachtmaster Coastal CoC/Service</option>
-              <option>MCA Boatmasters' Licence</option>
-              <option>RYA/MCA Powerboat Advanced CoC</option>
-              <option>RYA/MCA Powerboat Advanced Practical (pre-2005)</option>
-              <option>RYA/MCA Powerboat Level 2</option>
-              <option>RYA/MCA Day Skipper Theory &amp; Practical</option>
-              <option>Certificate of Competency (Competent Authority)</option>
-              <option>Local Authority Licence</option>
-            </optgroup>
-            <optgroup label="Crew — Engineering (Workboat Code Table A5.2)">
-              <option>Approved Engine Course (Part 1)</option>
-              <option>Marine Engine Operators Licence (MEOL)</option>
-              <option>Engine Ratings / AEC (Part 1 &amp; 2)</option>
-              <option>Senior Marine Engine Operators Licence (SMEOL)</option>
-              <option>STCW C/Eng (Y4)</option>
-              <option>Small Vessel Second Engineer CoC</option>
-              <option>STCW III/2 Small Vessel Chief Engineer</option>
-            </optgroup>
-            <optgroup label="Crew — Mandatory Training (Workboat Code Table A5.3)">
-              <option>RYA Basic Sea Survival / STCW PST</option>
-              <option>First Aid at Sea / SeaFish Basic First Aid</option>
-              <option>STCW Fire Fighting &amp; Fire Prevention</option>
-              <option>Radar &amp; Meteorology (MCA-approved)</option>
-              <option>Stability Training</option>
-              <option>Electronic Chart Systems (ECDIS)</option>
-              <option>Navigation Equipment Training</option>
-              <option>Catering Training (MIN 698)</option>
-            </optgroup>
-            <optgroup label="Crew — Medical">
-              <option>ENG1 Seafarer Medical</option>
-              <option>ML5 Medical Fitness Certificate</option>
-            </optgroup>
-            <optgroup label="Equipment service records">
-              <option>Liferaft service certificate</option>
-              <option>EPIRB service / battery certificate</option>
-              <option>PLB battery certificate</option>
-              <option>SART battery certificate</option>
-              <option>Pyrotechnics service certificate</option>
-              <option>Fire extinguisher service</option>
-              <option>Fixed fire system service</option>
-              <option>Lifejacket service</option>
-              <option>First aid kit inspection (Cat C)</option>
-            </optgroup>
-          </select>
+        <div class="fg"><label class="fl">What is this document?</label>
+          <input class="fi" id="sc-name" list="sc-name-suggest" value="${escapeHtml(defaultName)}" placeholder="e.g. Coding Certificate">
+          <datalist id="sc-name-suggest">
+            <option>MCA Coding Certificate</option>
+            <option>Public Liability Insurance</option>
+            <option>Hull &amp; Machinery Insurance</option>
+            <option>Ship Radio Licence (VHF)</option>
+            <option>EPIRB registration</option>
+            <option>Liferaft service</option>
+            <option>Fire extinguisher service</option>
+            <option>Lifejackets</option>
+            <option>Flares / pyrotechnics</option>
+            <option>Stability Information Book</option>
+            <option>ENG1 / ML5 Medical</option>
+            <option>Skipper certificate</option>
+            <option>First aid at sea</option>
+            <option>Sea survival</option>
+          </datalist>
+          <div class="fl-help">Start typing — pick from the list or write your own.</div>
         </div>
         <div class="divider"></div>
-        <div class="fg"><label class="fl">Custom name <span style="color:var(--lt);font-weight:400;font-size:11px">(only used if picker is set to custom)</span></label>
-          <input class="fi" id="sc-name" value="${escapeHtml(defaultName)}">
-        </div>
-        <div class="divider"></div>
-        <div class="fg"><label class="fl">Vessel</label>
+        <div class="fg"><label class="fl">Which boat?</label>
           <select class="fs" id="sc-vessel">
             ${Store.snapshot().vessels.map((vv) => `<option value="${vv.id}" ${vv.id === (v && v.id) ? 'selected' : ''}>${escapeHtml(vv.name)}</option>`).join('')}
           </select>
         </div>
         <div class="divider"></div>
-        <div class="fg"><label class="fl">Category</label>
+        <div class="fg"><label class="fl">What kind?</label>
           <select class="fs" id="sc-category">
             <option value="vessel" ${defaultCategory === 'vessel' ? 'selected' : ''}>Vessel certificate</option>
-            <option value="equipment" ${defaultCategory === 'equipment' ? 'selected' : ''}>Equipment</option>
+            <option value="equipment" ${defaultCategory === 'equipment' ? 'selected' : ''}>Safety equipment</option>
             <option value="insurance" ${defaultCategory === 'insurance' ? 'selected' : ''}>Insurance</option>
             <option value="crew" ${defaultCategory === 'crew' ? 'selected' : ''}>Crew qualification</option>
           </select>
         </div>
         <div class="divider"></div>
-        <div class="fg"><label class="fl">Issuer / authority</label>
-          <input class="fi" id="sc-issuer" placeholder="e.g. CA / insurer / equipment / MCA">
-        </div>
-        <div class="divider"></div>
-        <div class="fg"><label class="fl">Certificate number</label>
-          <input class="fi" id="sc-number" placeholder="Optional">
-        </div>
-        <div class="divider"></div>
-        <div class="fg"><label class="fl">Issue date</label>
-          <input class="fi" id="sc-issued" type="date" value="${today}">
-        </div>
-        <div class="divider"></div>
         <div class="fg"><label class="fl">Expiry date</label>
           <input class="fi" id="sc-expires" type="date">
+          <div class="fl-help">This is what we remind you about. Leave blank if it never expires.</div>
         </div>
+        <div class="divider"></div>
+        <details>
+          <summary style="cursor:pointer;font-size:14px;font-weight:600;color:var(--sea);padding:8px 0;list-style:none">▸ Add issuer, number, issue date (optional)</summary>
+          <div style="padding-top:6px">
+            <div class="fg"><label class="fl">Issuer / authority</label>
+              <input class="fi" id="sc-issuer" placeholder="e.g. MCA, insurer, YDSA">
+            </div>
+            <div class="divider"></div>
+            <div class="fg"><label class="fl">Certificate number</label>
+              <input class="fi" id="sc-number" placeholder="Optional">
+            </div>
+            <div class="divider"></div>
+            <div class="fg"><label class="fl">Issue date</label>
+              <input class="fi" id="sc-issued" type="date">
+            </div>
+          </div>
+        </details>
       </div>
 
       <div style="padding:16px 16px 0;display:flex;flex-direction:column;gap:10px">
@@ -3151,18 +3093,18 @@
 
   function saveScanCert(defaultIcon, defaultKind) {
     if (!pendingScan) return;
-    // Prefer the picker value when it isn't the "custom" sentinel;
-    // fall back to the free-text field so users can still type their
-    // own name for anything not in the standard list.
-    const pickerEl = document.getElementById('sc-name-picker');
-    const pickerVal = pickerEl && pickerEl.value;
-    const custom = (document.getElementById('sc-name') || {}).value || 'Certificate';
-    const name = (pickerVal && pickerVal !== '__custom__') ? pickerVal : custom;
-    const vesselId = (document.getElementById('sc-vessel') || {}).value;
+    const name = (document.getElementById('sc-name') || {}).value || 'Certificate';
+    let vesselId = (document.getElementById('sc-vessel') || {}).value;
+    // Cold start: no boat yet (the vessel dropdown was empty). Set one
+    // up automatically rather than dead-ending with "pick a vessel
+    // first" — matches the AI-extract path. The user names it after.
+    let autoCreatedVessel = false;
     if (!vesselId) {
-      alert('Pick a vessel first.');
-      return;
+      const starter = Store.addVessel({ name: 'My boat' });
+      vesselId = starter && starter.id;
+      autoCreatedVessel = !!vesselId;
     }
+    if (!vesselId) { alert('Add a boat first, then add this document to it.'); return; }
     const category = (document.getElementById('sc-category') || {}).value || 'vessel';
     const issuer = (document.getElementById('sc-issuer') || {}).value || '';
     const number = (document.getElementById('sc-number') || {}).value || '';
@@ -3199,6 +3141,9 @@
     }
     pendingScan = null;
     activeVesselId = vesselId;
+    if (autoCreatedVessel) {
+      alert('Saved.\n\nWe set up a boat to keep it under — let\'s give it its proper name.');
+    }
     go('s-vessel-detail');
   }
   window.saveScanCert = saveScanCert;
@@ -5189,7 +5134,10 @@
       return;
     }
     if (!window.Supa || !window.Supa.ready) {
-      alert("CodedOK isn't connected to the cloud yet. Reload, sign in, and try again.");
+      // Offline / not signed in yet — don't throw the photo away. Keep
+      // it and let them type the details; it saves locally and syncs
+      // once they're back online.
+      await fallbackToManualCert(file, "You're offline just now, so we can't auto-read it. Your photo is saved — pop the details in and it'll sync later.");
       return;
     }
 
@@ -5207,10 +5155,30 @@
     } catch (err) {
       hideCertSpinner();
       console.error('cert extract failed', err);
-      alert("Couldn't read that certificate: " + (err.message || err) + "\n\nYou can still add it manually under + Add cert.");
+      // Never lose the photo. Drop straight into the manual form with
+      // the file already attached so all they do is fill in the fields.
+      await fallbackToManualCert(file, "We couldn't read that one automatically — no bother. Your photo's saved; just fill in the details and save.");
     }
   }
   window.handleCertPhotoUpload = handleCertPhotoUpload;
+
+  // Shared fallback for the AI cert path: keep the photo the user just
+  // took, stash it as a pending manual scan, and route to the manual
+  // form so nothing is lost when extraction can't run.
+  async function fallbackToManualCert(file, message) {
+    let stashed = null;
+    try {
+      const data_url = await compressImage(file);
+      stashed = { name: file.name, type: file.type, size: file.size, data_url, added_at: new Date().toISOString() };
+    } catch (_) { stashed = null; }
+    pendingScan = stashed
+      ? { kind: 'cert', categoryHint: 'vessel', file: stashed }
+      : { kind: 'cert', categoryHint: 'vessel', manual: true, file: null };
+    // Pre-select the boat the AI path was targeting, if any.
+    if (pendingCertVesselId) activeVesselId = pendingCertVesselId;
+    if (message) alert(message);
+    go('s-scan-confirm');
+  }
 
   function readFileAsBase64(file) {
     return new Promise((resolve, reject) => {
