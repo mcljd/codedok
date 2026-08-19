@@ -1326,8 +1326,8 @@
           <div class="hero-stars" aria-hidden="true"></div>
           <div style="position:relative;z-index:1;padding:6px 2px 2px">
             <div style="font-size:13px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Welcome to CodedOK</div>
-            <div style="font-size:22px;font-weight:800;color:white;letter-spacing:-.4px;line-height:1.15;margin-bottom:8px">Hi ${escapeHtml(firstName)} — let's set your boat up in 90 seconds.</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.55">Add one vessel. We'll suggest the certificates and gear you need based on your MCA category, and remind you before anything expires.</div>
+            <div style="font-size:22px;font-weight:800;color:white;letter-spacing:-.4px;line-height:1.15;margin-bottom:8px">Hi ${escapeHtml(firstName)} — let's get your first certificate in.</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.55">Snap a photo of any certificate and we read the details for you. We'll set your boat up around it and remind you before anything runs out.</div>
           </div>`;
       } else {
         // ── Simple, plain-language status for novice users. ──
@@ -1360,7 +1360,7 @@
             </div>
           </div>
           <div class="ss-actions">
-            <button class="ss-btn ss-btn-primary" onclick="try{document.getElementById('cert-camera-input').click()}catch(e){}">
+            <button class="ss-btn ss-btn-primary" onclick="scanCertWithAI()">
               <span class="ss-btn-ic">📷</span><span>Add a certificate</span>
             </button>
             <button class="ss-btn ss-btn-ghost" onclick="go('s-calendar')">
@@ -1502,7 +1502,7 @@
             <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px">Welcome to CodedOK</div>
             <div style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.4px;line-height:1.15;margin-bottom:10px">Get started in 30 seconds.</div>
             <div style="font-size:14px;color:var(--mid);line-height:1.55;margin-bottom:22px;max-width:300px;margin-left:auto;margin-right:auto">Photograph any certificate — coding cert, PLI, liferaft, radio licence — and we'll fill in the rest.</div>
-            <button onclick="document.getElementById('cert-camera-input').click()" style="background:linear-gradient(135deg,#06b6d4 0%,#0891b2 100%);color:#050614;border:0;border-radius:14px;padding:18px 28px;font-family:var(--fn);font-size:16px;font-weight:800;cursor:pointer;width:100%;max-width:320px;box-shadow:0 14px 36px rgba(6,182,212,.30);display:inline-flex;align-items:center;justify-content:center;gap:10px">
+            <button onclick="scanCertWithAI()" style="background:linear-gradient(135deg,#06b6d4 0%,#0891b2 100%);color:#050614;border:0;border-radius:14px;padding:18px 28px;font-family:var(--fn);font-size:16px;font-weight:800;cursor:pointer;width:100%;max-width:320px;box-shadow:0 14px 36px rgba(6,182,212,.30);display:inline-flex;align-items:center;justify-content:center;gap:10px">
               <span style="font-size:22px">📷</span>
               Snap your first certificate
             </button>
@@ -1538,7 +1538,7 @@
       fab.type = 'button';
       fab.setAttribute('aria-label', 'Add certificate');
       fab.onclick = () => {
-        try { document.getElementById('cert-camera-input').click(); } catch (_) {}
+        try { scanCertWithAI(); } catch (_) {}
       };
       fab.style.cssText = [
         'position:fixed',
@@ -5309,9 +5309,19 @@
     const issuer = (document.getElementById('cer-issuer') || {}).value || '';
     const number = (document.getElementById('cer-number') || {}).value || '';
     if (!name) { alert('Type / name is required.'); return; }
+    let autoCreatedVessel = false;
     if (!vesselId) {
       const v = (Store.snapshot().vessels || [])[0];
       vesselId = v && v.id;
+    }
+    // Cold start: a brand-new user snapping their very first certificate
+    // has no boat yet. Rather than dead-end them with "add a vessel
+    // first", set up a starter boat automatically so the photo actually
+    // saves. We nudge them to name it right after.
+    if (!vesselId) {
+      const starter = Store.addVessel({ name: 'My boat' });
+      vesselId = starter && starter.id;
+      autoCreatedVessel = !!vesselId;
     }
     if (!vesselId) { alert('No vessel to add this to. Add a vessel first.'); return; }
 
@@ -5355,6 +5365,16 @@
     const overrideMsg = audit && audit.overrides.length
       ? `\n\n(You corrected ${audit.overrides.length} field${audit.overrides.length === 1 ? '' : 's'} the AI got wrong — both versions are saved in the audit log.)`
       : '';
+    if (autoCreatedVessel) {
+      // First cert on a fresh account created a placeholder boat.
+      // Take them straight to it so they can pop the real name in.
+      alert(`${kind === 'equipment' ? 'Equipment' : 'Certificate'} saved.\n\nWe set up a boat to keep it under — let's give it its proper name.`);
+      setActiveVessel(vesselId);
+      go('s-vessel-detail');
+      if (typeof renderVesselDetail === 'function') renderVesselDetail();
+      renderHome();
+      return;
+    }
     alert(`${kind === 'equipment' ? 'Equipment' : 'Certificate'} added.${overrideMsg}`);
     renderHome();
     if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
@@ -9184,6 +9204,8 @@ ${sectionsHtml}
     const ssr = (document.getElementById('onb-ssr') || {}).value;
     const port = (document.getElementById('onb-port') || {}).value;
     const crew = parseInt((document.getElementById('onb-crew') || {}).value || '0', 10) || 0;
+    const jurPick = (document.getElementById('onb-jur') || {}).value || 'uk';
+    const jurMap = { uk: ['UK'], ie: ['IE'], both: ['UK', 'IE'] };
 
     // Name is the ONE required field. Show a friendly inline error and
     // keep them here — the old code silently advanced with no vessel
@@ -9205,9 +9227,15 @@ ${sectionsHtml}
       ssr: (ssr || '').trim(),
       port: (port || '').trim(),
       persons: crew || undefined,
+      jurisdictions: jurMap[jurPick] || ['UK'],
       icon: '⛵'
     });
-    go('s-onboard-jur');
+    // One-screen onboarding: the old "Step 2 — where do you operate?"
+    // wall of jargon (SPV Code / Workboat Code / MSO / PBL) with three
+    // fields that were never saved is gone. Jurisdiction is captured as
+    // a plain optional picker above (defaults to UK), so we land the
+    // user straight on home with their boat ready.
+    goHome();
   }
   window.saveOnboardVessel = saveOnboardVessel;
 

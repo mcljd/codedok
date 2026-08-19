@@ -1162,13 +1162,11 @@
     <button class="back" onclick="goBackFromOnboard()">‹ Back</button>
     <div style="display:flex;gap:6px">
       <div style="width:40px;height:4px;border-radius:2px;background:var(--sea)"></div>
-      <div style="width:40px;height:4px;border-radius:2px;background:var(--bdr)"></div>
     </div>
     <div style="width:60px"></div>
   </div>
   <div class="scroll pb24">
     <div style="padding:24px 20px 0">
-      <div style="font-size:11px;font-weight:700;color:var(--sea);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Step 1 of 2</div>
       <h2 style="font-size:24px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:-.3px">Add your boat</h2>
       <p style="font-size:14px;color:var(--lt);margin-bottom:24px;line-height:1.6">Just the name to start — you can fill in the rest any time. Takes under a minute.</p>
     </div>
@@ -1220,6 +1218,14 @@
             <option value="5">5</option>
           </select>
         </div>
+        <div class="divider"></div>
+        <div class="fg"><label class="fl">Where do you operate?</label>
+          <select class="fs" id="onb-jur">
+            <option value="uk" selected>UK waters</option>
+            <option value="ie">Irish waters</option>
+            <option value="both">Both UK &amp; Irish waters</option>
+          </select>
+        </div>
       </div>
     </details>
 
@@ -1234,7 +1240,7 @@
     </div>
 
     <div style="padding:20px 16px 0">
-      <button class="btn btn-sea btn-full" onclick="saveOnboardVessel()">Continue — Select jurisdiction →</button>
+      <button class="btn btn-sea btn-full" onclick="saveOnboardVessel()">✓ Add my boat</button>
     </div>
   </div>
 </div>
