@@ -996,7 +996,7 @@
   // Append a record to the SMS edit log. Used to show audit trail in
   // the builder footer + the inspection-pack PDF — "last edited 12 Sep
   // by Joseph; reviewed 14 Sep by Anchor Marine" is the surveyor
-  // trust signal Sea-Flux's cloud library can't show.
+  // trust signal that a plain cloud document library can't show.
   function appendSmsEdit(docId, info) {
     const d = (state.sms_documents || []).find((x) => x.id === docId);
     if (!d) return null;

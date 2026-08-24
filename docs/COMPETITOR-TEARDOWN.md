@@ -1,6 +1,6 @@
-# Sea-Flux Teardown
+# the incumbent tool Teardown
 
-Source: sea-flux.com / sea-flux.com/uk, Capterra, SoftwareWorld. Pulled May 2026.
+Source: a competing tool / a competing tool, Capterra, SoftwareWorld. Pulled May 2026.
 
 ---
 
@@ -54,16 +54,16 @@ The buyer is a **spreadsheet-graduate** running 5–20 vessels. Owner-operators 
 ## Where Coded Ok wins (the angles)
 
 ### 1. Niche-first positioning
-Sea-Flux is "commercial fleets". Coded Ok is **"the app for UK & Irish coded vessel operators"** — Workboat Code Ed 3, Sport/Pleasure Code 2025, MCA categories, YDSA/RYA cert workflows. That niche language makes a £30k charter skipper feel seen; Sea-Flux makes them feel like a small fish.
+the incumbent tool is "commercial fleets". Coded Ok is **"the app for UK & Irish coded vessel operators"** — Workboat Code Ed 3, Sport/Pleasure Code 2025, MCA categories, YDSA/RYA cert workflows. That niche language makes a £30k charter skipper feel seen; the incumbent tool makes them feel like a small fish.
 
 ### 2. Mobile-first, scan-first
-Sea-Flux: forms → fields → save. Coded Ok: **point camera at the cert, OCR fills the form, confirm**. You already have the scan screen — make it the front door, not a side door.
+the incumbent tool: forms → fields → save. Coded Ok: **point camera at the cert, OCR fills the form, confirm**. You already have the scan screen — make it the front door, not a side door.
 
 ### 3. One-tap inspection pack
-Sea-Flux's docs are "stored". Coded Ok generates a **single signed PDF** the surveyor can read on their iPad — vessel particulars, all certs, crew tickets, equipment service history, last-inspection deficiencies. This is the headline demo.
+the incumbent tool's docs are "stored". Coded Ok generates a **single signed PDF** the surveyor can read on their iPad — vessel particulars, all certs, crew tickets, equipment service history, last-inspection deficiencies. This is the headline demo.
 
 ### 4. Public, transparent pricing
-Sea-Flux hides theirs. Publish ours on the marketing page. For a small-vessel buyer, "fill in this form" loses to "£19/month, start now".
+the incumbent tool hides theirs. Publish ours on the marketing page. For a small-vessel buyer, "fill in this form" loses to "£19/month, start now".
 
 ### 5. Native polish
 Their reviews praise functionality, not design. Apple-Wallet crew tickets, push (not email) reminders, biometric unlock, native scan, smooth motion design — these are the table stakes for App Store top-rated, and they don't have them.
@@ -94,4 +94,4 @@ They claim offline; we make it the *default*. Harbour wifi is bad. The app works
 
 ## The one-paragraph pitch we should be able to say
 
-> "Coded Ok is the iPhone app for UK and Irish coded vessel skippers — every certificate, every crew ticket, every piece of equipment in one place. Scan a cert with the camera, get a renewal reminder before it expires, and one tap before a survey produces a single PDF the inspector signs off on. From £19/month per vessel, with a managed Safety Management System service for operators that need one. Sea-Flux for the small skipper — but actually built for a phone."
+> "Coded Ok is the iPhone app for UK and Irish coded vessel skippers — every certificate, every crew ticket, every piece of equipment in one place. Scan a cert with the camera, get a renewal reminder before it expires, and one tap before a survey produces a single PDF the inspector signs off on. From £19/month per vessel, with a managed Safety Management System service for operators that need one. the incumbent tool for the small skipper — but actually built for a phone."

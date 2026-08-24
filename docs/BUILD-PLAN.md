@@ -1,6 +1,6 @@
 # CodedOK v1 — Build Plan
 
-Goal: ship a paid iOS + Android app that the App Store featuring team would notice, that beats Sea-Flux on the experience a UK/IE coded-boat skipper has on their phone, with a clear premium SMS add-on, and a free surveyor seat that doubles as a viral loop.
+Goal: ship a paid iOS + Android app that the App Store featuring team would notice, that beats the incumbent tool on the experience a UK/IE coded-boat skipper has on their phone, with a clear premium SMS add-on, and a free surveyor seat that doubles as a viral loop.
 
 Brand spelling: **CodedOK** (one word, lowercase d, capital OK). Bundle ID: `com.codedok.app`.
 
@@ -127,7 +127,7 @@ Row-level security:
 
 ## 3. Pricing model
 
-Public, on the marketing page. Sea-Flux hides theirs — we publish.
+Public, on the marketing page. the incumbent tool hides theirs — we publish.
 
 | Tier | Price | Includes |
 |---|---|---|
@@ -158,7 +158,7 @@ Public, on the marketing page. Sea-Flux hides theirs — we publish.
 - TestFlight build with Joseph + 5 friendly skippers
 
 ### Phase 2 — Polish & Differentiators (weeks 5-8)
-**Goal:** the things Sea-Flux can't say they have.
+**Goal:** the things the incumbent tool can't say they have.
 
 - **Equipment as first-class** (new screens, photos, service log, certs)
 - **One-tap inspection pack** PDF (server-side render, share sheet)
@@ -285,7 +285,7 @@ Hold every screen against these:
 
 ## 9. Surveyor module (the viral loop)
 
-Sea-Flux doesn't have this. Every surveyor we onboard becomes a referral channel for their other clients. The surveyor experience must be excellent or they'll never recommend it.
+the incumbent tool doesn't have this. Every surveyor we onboard becomes a referral channel for their other clients. The surveyor experience must be excellent or they'll never recommend it.
 
 ### Surveyor flow
 
@@ -310,7 +310,7 @@ Toggleable **public surveyor listing** at `codedok.com/find-a-surveyor` — oper
 
 ### Why this is a moat
 
-Sea-Flux's reviews praise it for ease-of-use *for crew*. Nothing about surveyors. A surveyor who runs five inspections a month on CodedOK clients is going to recommend it to their *own* clients — instant pipeline. McCollam Marine introductions get us to skippers; surveyor module gets us to *every other skipper they survey*.
+the incumbent tool's reviews praise it for ease-of-use *for crew*. Nothing about surveyors. A surveyor who runs five inspections a month on CodedOK clients is going to recommend it to their *own* clients — instant pipeline. McCollam Marine introductions get us to skippers; surveyor module gets us to *every other skipper they survey*.
 
 ## 10. Distribution & route to first 50 customers
 
