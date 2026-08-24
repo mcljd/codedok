@@ -115,6 +115,18 @@
         const table = serverTable(item.table);
         if (item.op === 'delete') {
           await client.from(table).update({ deleted_at: new Date().toISOString() }).eq('id', item.id);
+        } else if (item.table === 'organizations') {
+          // organizations has an owner-only UPDATE policy. PostgREST
+          // upsert (INSERT ... ON CONFLICT DO UPDATE) makes Postgres
+          // weigh that UPDATE policy, which a brand-new org fails — the
+          // creator isn't an "owner" yet because the owner-membership
+          // doesn't exist at this instant (classic bootstrap trap). A
+          // plain INSERT only checks the permissive insert policy
+          // (auth.uid() not null) and succeeds. On a later sync the row
+          // already exists → duplicate-key (23505), which just means
+          // "already synced", so we swallow it rather than retry forever.
+          const { error } = await client.from('organizations').insert(item.row);
+          if (error && error.code !== '23505') throw error;
         } else if (item.table === 'memberships') {
           // Composite-key join table — conflict on (org_id,user_id), not id.
           const { error } = await client.from('memberships').upsert(item.row, { onConflict: 'org_id,user_id' });
