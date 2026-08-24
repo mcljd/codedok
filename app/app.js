@@ -10442,15 +10442,41 @@ ${sectionsHtml}
         return;
       }
       box.innerHTML = data.rows.map((r) => `
-        <div style="padding:10px 0;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;gap:10px">
+        <div onclick="supportOpenByEmail('${jsAttr(r.email || '')}')" style="padding:11px 6px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;gap:10px;align-items:center;cursor:pointer;border-radius:8px" onmouseover="this.style.background='var(--slate)'" onmouseout="this.style.background='transparent'">
           <div style="min-width:0"><div style="font-weight:600;color:var(--text);font-size:13px">${escapeHtml(r.email || '—')}</div><div style="font-size:11px;color:var(--lt)">${escapeHtml(r.kind || '')}</div></div>
-          <div style="font-size:11px;color:var(--lt);white-space:nowrap">${fmtDate(r.last_sign_in_at)}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:11px;color:var(--lt);white-space:nowrap">${fmtDate(r.last_sign_in_at)}</span><span class="chev">›</span></div>
         </div>`).join('');
     } catch (err) {
       console.error('recent_signins failed', err);
       box.innerHTML = supportErrorCard('Recent sign-ins', err);
     }
   }
+
+  // Open a user's full support card straight from a list row (recent
+  // sign-ins, search results). Looks the account up by email and
+  // renders the card into #sup-result, then scrolls to it.
+  async function supportOpenByEmail(email) {
+    if (!email) return;
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Loading…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'find_user', email: String(email).toLowerCase().trim() }
+      });
+      if (error) throw error;
+      if (data && data.user) {
+        renderSupportUserCard(data.user);
+        try { box.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+      } else {
+        box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Couldn\'t load that account.</div>';
+      }
+    } catch (err) {
+      box.innerHTML = supportErrorCard('Open user', err);
+    }
+  }
+  window.supportOpenByEmail = supportOpenByEmail;
 
   // Search accepts a full email OR any fragment ("joe", "@gmail").
   // A full email that resolves to exactly one account opens the full
