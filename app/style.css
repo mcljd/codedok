@@ -277,68 +277,56 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
    readers of this section know where to look. */
 
 /* ═══════════════════════════════════════════════════════════════
-   DESKTOP SIDEBAR (≥1200px) — turn the mobile bottom-nav into a
-   proper left rail so the app reads like a desktop web app instead
-   of a phone stretched wide. Only applies to top-level screens (the
-   ones that carry a <nav class="bnav">); detail screens keep their
-   back-button tbar and full width. Uses :has() — same feature the
-   viewport-lock rules above already rely on.
+   DESKTOP RAIL (≥1200px) — one persistent left sidebar (#dnav) across
+   EVERY app screen (home, vessels, records, tools, account and all
+   their sub-screens: vessel detail, calendar, scanner…), replacing the
+   mobile bottom nav. This keeps navigation present on deep screens
+   instead of vanishing on detail/tool views. Hidden below 1200px
+   (touch uses the bottom nav) and on the marketing landing.
    ═══════════════════════════════════════════════════════════════ */
-@media (min-width: 1200px) {
-  /* Reserve the rail's width so nothing sits under it. */
-  .shell.on:not(#s-land):has(> .bnav) { padding-left: 244px; }
+#dnav { display: none; }
 
-  /* The nav itself becomes a fixed, full-height dark rail. */
-  .shell.on:not(#s-land):has(> .bnav) .bnav {
+@media (min-width: 1200px) {
+  /* Per-screen bottom navs give way to the persistent rail. */
+  .shell:not(#s-land) .bnav { display: none !important; }
+  /* Reserve the rail width on every app screen. */
+  .shell.on:not(#s-land) { padding-left: 244px; }
+
+  /* The rail. Hidden on the marketing landing (body.shell-fullbleed). */
+  body:not(.shell-fullbleed) #dnav {
+    display: flex; flex-direction: column;
     position: fixed; left: 0; top: 0; bottom: 0;
     width: 244px; height: 100vh; height: 100dvh;
-    flex-direction: column; justify-content: flex-start; align-items: stretch;
-    gap: 4px;
     padding: 22px 16px calc(18px + var(--safe));
     background: var(--ink);
-    border-top: none;
     border-right: 1px solid rgba(255,255,255,.08);
-    -webkit-backdrop-filter: none; backdrop-filter: none;
-    box-shadow: none;
-    z-index: 60;
+    gap: 4px; z-index: 100;
   }
-  /* Wordmark at the top of the rail. */
-  .shell.on:not(#s-land):has(> .bnav) .bnav::before {
-    content: "⚓ CodedOK";
-    display: block;
-    font-family: var(--fn);
-    font-weight: 800; font-size: 19px; letter-spacing: -.3px;
-    color: #fff;
-    padding: 6px 14px 22px;
+  #dnav .dnav-brand {
+    font-family: var(--fn); font-weight: 800; font-size: 19px;
+    letter-spacing: -.3px; color: #fff; padding: 6px 14px 22px;
   }
-  /* Nav items: horizontal icon + label rows, full width, left-aligned. */
-  .shell.on:not(#s-land):has(> .bnav) .bni {
-    flex-direction: row; justify-content: flex-start; align-items: center;
-    gap: 14px; width: 100%;
-    min-height: 50px; padding: 12px 14px;
-    border-radius: 12px;
-    color: rgba(255,255,255,.66);
+  #dnav .dni {
+    display: flex; flex-direction: row; align-items: center; gap: 14px;
+    width: 100%; min-height: 50px; padding: 12px 14px; border-radius: 12px;
+    border: none; background: none; cursor: pointer; font-family: var(--fn);
+    color: rgba(255,255,255,.66); position: relative; text-align: left;
     transition: background 150ms ease, color 150ms ease;
   }
-  .shell.on:not(#s-land):has(> .bnav) .bni:hover { background: rgba(255,255,255,.07); color: #fff; }
-  .shell.on:not(#s-land):has(> .bnav) .bni.on { background: rgba(34,211,238,.16); color: #fff; position: relative; }
-  /* Base CSS paints the active label dark teal (--sea) — invisible on
-     the dark rail. Force it bright, and turn off the mobile top-dot. */
-  .shell.on:not(#s-land):has(> .bnav) .bni.on .bni-lb { color: #fff; font-weight: 700; }
-  .shell.on:not(#s-land):has(> .bnav) .bni.on::before {
-    display: block; content: ''; position: absolute;
-    left: 0; top: 10px; bottom: 10px; width: 3px;
-    border-radius: 0 3px 3px 0; background: var(--seal, #22d3ee);
+  #dnav .dni:hover { background: rgba(255,255,255,.07); color: #fff; }
+  #dnav .dni.on { background: rgba(34,211,238,.16); color: #fff; }
+  #dnav .dni.on::before {
+    content: ''; position: absolute; left: 0; top: 10px; bottom: 10px;
+    width: 3px; border-radius: 0 3px 3px 0; background: var(--seal, #22d3ee);
   }
-  .shell.on:not(#s-land):has(> .bnav) .bni-ic { font-size: 21px; margin: 0; width: 24px; text-align: center; flex-shrink: 0; filter: none; }
-  .shell.on:not(#s-land):has(> .bnav) .bni-lb { font-size: 15px; font-weight: 600; }
+  #dnav .dni-ic { font-size: 21px; width: 24px; text-align: center; flex-shrink: 0; }
+  #dnav .dni-lb { font-size: 15px; font-weight: 600; }
 
-  /* Content gets a wider, comfortable column inside the main area. */
-  .shell:not(#s-land):has(> .bnav) .scroll > * { max-width: 920px; }
+  /* Comfortable reading column on every screen except the home
+     dashboard (which manages its own 1360px width below). */
+  .shell:not(#s-land):not(#s-home) .scroll > * { max-width: 920px; margin-left: auto; margin-right: auto; }
 
-  /* On desktop the status banner already carries a prominent
-     "Add a certificate" button, and a floating FAB collides with the
-     side column — so retire it here. */
+  /* The floating + FAB collides with the rail/side column on desktop. */
   #home-quick-add-fab { display: none !important; }
 }
 

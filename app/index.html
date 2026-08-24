@@ -256,6 +256,20 @@
 </head>
 <body>
 
+<!-- Persistent desktop sidebar. Hidden below 1200px (the bottom nav
+     takes over on touch); shown on every app screen ≥1200px so deep
+     tool/detail screens keep their navigation. Active item is set by
+     setDnavActive() from go(). Hidden on the marketing landing via
+     body.shell-fullbleed. -->
+<nav id="dnav" aria-label="Main navigation">
+  <div class="dnav-brand">⚓ CodedOK</div>
+  <button class="dni" data-nav="home"    onclick="goHome()"><span class="dni-ic">🏠</span><span class="dni-lb">Home</span></button>
+  <button class="dni" data-nav="vessels" onclick="go('s-vessels')"><span class="dni-ic">⛵</span><span class="dni-lb">Vessels</span></button>
+  <button class="dni" data-nav="records" onclick="go('s-certs')"><span class="dni-ic">📋</span><span class="dni-lb">Records</span></button>
+  <button class="dni" data-nav="tools"   onclick="go('s-tools')"><span class="dni-ic">🛠️</span><span class="dni-lb">Tools</span></button>
+  <button class="dni" data-nav="account" onclick="go('s-account')"><span class="dni-ic">⚙️</span><span class="dni-lb">Account</span></button>
+</nav>
+
 <!-- ════════════════════════════════════
   ADMIN DESKTOP SIDEBAR — Joseph's workspace as the platform owner.
   Visible only when body.desktop-admin.

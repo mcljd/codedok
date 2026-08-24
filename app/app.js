@@ -721,6 +721,7 @@
     // the default 393px phone-frame shell without depending on the
     // CSS :has() selector (which fails in older browsers).
     document.body.classList.toggle('shell-fullbleed', id === 's-land');
+    setDnavActive(id);
     if (id === 's-home')               renderHome();
     if (id === 's-vessels')            renderVesselsList();
     if (id === 's-vessel-detail')      renderVesselDetail();
@@ -758,6 +759,29 @@
     }
   }
   window.go = go;
+
+  // Highlight the matching item on the persistent desktop rail (#dnav).
+  // Sub-screens (vessel detail, calendar, scan, equipment…) map back to
+  // their top-level section so the rail always shows where you are.
+  const DNAV_SECTIONS = {
+    home:    ['s-home'],
+    vessels: ['s-vessels', 's-vessel-detail', 's-onboard', 's-onboard-jur'],
+    records: ['s-certs', 's-records', 's-scan', 's-scan-confirm',
+              's-equipment-list', 's-equipment-detail', 's-equipment-add'],
+    tools:   ['s-tools', 's-calendar', 's-gap', 's-surveys', 's-deficiencies',
+              's-jur-dash', 's-ie-licence', 's-inspection-pack', 's-export-pack',
+              's-sms', 's-sms-builder', 's-handoff', 's-my-quals'],
+    account: ['s-account', 's-notif', 's-plans', 's-support']
+  };
+  function setDnavActive(id) {
+    let active = '';
+    for (const k in DNAV_SECTIONS) {
+      if (DNAV_SECTIONS[k].indexOf(id) >= 0) { active = k; break; }
+    }
+    document.querySelectorAll('#dnav .dni').forEach((b) => {
+      b.classList.toggle('on', b.getAttribute('data-nav') === active);
+    });
+  }
 
   function selectJur(el, type) {
     document.querySelectorAll('.jur-opt').forEach((o) => o.classList.remove('on'));
