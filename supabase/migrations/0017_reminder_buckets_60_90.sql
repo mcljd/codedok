@@ -51,16 +51,38 @@ from (
 
   union all
 
-  -- Crew certs / qualifications → the crew member themselves.
-  select cc.user_id, 'crew_cert', cc.id,
-         cc.cert_type, cr.vessel_id, v.name,
+  -- Crew certs → every member of the crew member's org. The crew_certs
+  -- table keys to crew via person_id (there is no crew_id / user_id /
+  -- cert_type column); crew belongs to an org, not a single vessel, so
+  -- vessel columns are null and the label carries the crew member name.
+  select m.user_id, 'crew_cert', cc.id,
+         cr.name || ' — ' || cc.name, null::text, null::text,
          cc.expires_at
   from crew_certs cc
-  join crew cr       on cr.id = cc.crew_id
-  left join vessels v on v.id = cr.vessel_id
-  where cc.expires_at is not null
-    and cc.user_id is not null
-    and cc.deleted_at is null
+  join crew cr         on cr.id = cc.person_id
+  join memberships m   on m.org_id = cr.org_id
+  where cc.expires_at is not null and cc.deleted_at is null
+
+  union all
+
+  -- Surveyor grants → the surveyor themselves (they need to renew access).
+  select sg.surveyor_user_id, 'grant', sg.id,
+         'Surveyor access', sg.vessel_id, v.name,
+         sg.expires_at
+  from surveyor_grants sg
+  join vessels v       on v.id = sg.vessel_id
+  where sg.expires_at is not null and sg.revoked_at is null
+
+  union all
+
+  -- SMS review due → every member of the owning org.
+  select m.user_id, 'sms_review', sd.id,
+         coalesce(sd.title, 'SMS review'), sd.vessel_id, v.name,
+         sd.review_due_at
+  from sms_documents sd
+  join vessels v       on v.id = sd.vessel_id
+  join memberships m   on m.org_id = sd.org_id
+  where sd.review_due_at is not null and sd.deleted_at is null
 ) src;
 
 comment on view expiring_items is
