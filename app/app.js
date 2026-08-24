@@ -10952,12 +10952,18 @@ ${sectionsHtml}
         return;
       }
       panel.innerHTML = `
-        <div style="font-size:12px;color:var(--lt);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Vessels (${rows.length})</div>
-        <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:12px;color:var(--lt);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Vessels (${rows.length}) — tap Certs to fix a record</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
           ${rows.map((v) => `
-            <div style="padding:10px 12px;background:var(--slate);border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:10px">
-              <div><div style="font-weight:600;color:var(--text);font-size:13px">${escapeHtml(v.name)}</div><div style="font-size:11px;color:var(--lt)">${escapeHtml(v.type || '')} · ${escapeHtml(v.category || '')} · ${escapeHtml(v.port || '—')}</div></div>
-              <div style="font-family:monospace;font-size:10px;color:var(--lt)">${escapeHtml(v.ssr || v.id)}</div>
+            <div style="padding:10px 12px;background:var(--slate);border-radius:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+                <div style="min-width:0"><div style="font-weight:600;color:var(--text);font-size:13px">${escapeHtml(v.name)}</div><div style="font-size:11px;color:var(--lt)">${escapeHtml(v.type || '')} · ${escapeHtml(v.category || '')} · ${escapeHtml(v.port || '—')}</div></div>
+                <div style="display:flex;gap:6px;flex-shrink:0">
+                  <button class="btn btn-out btn-xs" style="min-height:32px" onclick="supportEditVessel('${escapeHtml(v.id)}','${jsAttr(v.name)}')">✎ Edit</button>
+                  <button class="btn btn-out btn-xs" style="min-height:32px" onclick="supportVesselCerts('${escapeHtml(v.id)}','${jsAttr(v.name)}')">📋 Certs</button>
+                </div>
+              </div>
+              <div id="sup-vcerts-${escapeHtml(v.id)}" style="margin-top:8px"></div>
             </div>`).join('')}
         </div>`;
     } catch (err) {
@@ -10965,6 +10971,112 @@ ${sectionsHtml}
     }
   }
   window.supportLoadVessels = supportLoadVessels;
+
+  // Edit a customer's vessel details (support-side fix).
+  async function supportEditVessel(vesselId, name) {
+    const which = prompt(`Edit "${name}" — which field?\n\nType one: name, category, port, ssr`, 'name');
+    if (!which) return;
+    const field = which.trim().toLowerCase();
+    if (!['name', 'category', 'port', 'ssr'].includes(field)) { alert('Type one of: name, category, port, ssr'); return; }
+    const val = prompt(`New value for ${field}:`);
+    if (val == null) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'update_vessel', vessel_id: vesselId, patch: { [field]: val } }
+      });
+      if (error) throw error;
+      alert('Saved. The change reaches their device on next sync.');
+      supportVesselCerts(vesselId, name, true); // refresh any open cert list header
+    } catch (err) { alert('Update failed: ' + (err.message || err)); }
+  }
+  window.supportEditVessel = supportEditVessel;
+
+  // Load + manage a vessel's certs inline (edit expiry, delete, add).
+  async function supportVesselCerts(vesselId, name, silent) {
+    const box = document.getElementById('sup-vcerts-' + vesselId);
+    if (!box) return;
+    if (!silent) box.innerHTML = '<div style="color:var(--mid);font-size:12px;padding:6px 0">Loading certs…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'vessel_certs', vessel_id: vesselId }
+      });
+      if (error) throw error;
+      const rows = (data && data.rows) || [];
+      const rowHtml = rows.map((c) => {
+        const exp = c.expires_at ? fmtDate(c.expires_at) : 'no expiry';
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bdr)">
+            <div style="min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.name || '—')}</div><div style="font-size:11px;color:var(--lt)">Expires ${escapeHtml(exp)}${c.number ? ' · ' + escapeHtml(c.number) : ''}</div></div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <button class="btn btn-out btn-xs" style="min-height:30px" onclick="supportEditCert('${escapeHtml(c.id)}','${jsAttr(c.name || '')}','${escapeHtml(c.expires_at || '')}','${escapeHtml(vesselId)}','${jsAttr(name)}')">✎</button>
+              <button class="btn btn-out btn-xs" style="min-height:30px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="supportDeleteCert('${escapeHtml(c.id)}','${jsAttr(c.name || '')}','${escapeHtml(vesselId)}','${jsAttr(name)}')">🗑</button>
+            </div>
+          </div>`;
+      }).join('');
+      box.innerHTML = `
+        <div style="background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;margin-top:4px">
+          <div style="font-size:11px;color:var(--lt);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Certificates (${rows.length})</div>
+          ${rows.length ? rowHtml : '<div style="font-size:12px;color:var(--lt);padding:6px 0">No certificates on this boat.</div>'}
+          <button class="btn btn-sea btn-xs" style="margin-top:8px;width:100%;min-height:34px" onclick="supportAddCert('${escapeHtml(vesselId)}','${jsAttr(name)}')">+ Add certificate</button>
+        </div>`;
+    } catch (err) {
+      box.innerHTML = supportErrorCard('Certs', err);
+    }
+  }
+  window.supportVesselCerts = supportVesselCerts;
+
+  async function supportEditCert(certId, certName, currentExpiry, vesselId, vesselName) {
+    const which = prompt(`Edit "${certName}" — which field?\n\nType one: name, expiry, issuer, number`, 'expiry');
+    if (!which) return;
+    const f = which.trim().toLowerCase();
+    const map = { name: 'name', expiry: 'expires_at', issuer: 'issuer', number: 'number' };
+    if (!map[f]) { alert('Type one of: name, expiry, issuer, number'); return; }
+    const hint = f === 'expiry' ? '\n\nUse YYYY-MM-DD (e.g. 2027-03-14). Blank = no expiry.' : '';
+    const val = prompt(`New ${f} for "${certName}":${hint}`, f === 'expiry' ? (currentExpiry || '') : '');
+    if (val == null) return;
+    if (f === 'expiry' && val && !/^\d{4}-\d{2}-\d{2}$/.test(val.trim())) { alert('Date must be YYYY-MM-DD.'); return; }
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'update_cert', cert_id: certId, patch: { [map[f]]: val.trim() } }
+      });
+      if (error) throw error;
+      supportVesselCerts(vesselId, vesselName);
+    } catch (err) { alert('Update failed: ' + (err.message || err)); }
+  }
+  window.supportEditCert = supportEditCert;
+
+  async function supportDeleteCert(certId, certName, vesselId, vesselName) {
+    if (!confirm(`Delete "${certName}" from this boat? This removes it from the customer's records.`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'delete_cert', cert_id: certId }
+      });
+      if (error) throw error;
+      supportVesselCerts(vesselId, vesselName);
+    } catch (err) { alert('Delete failed: ' + (err.message || err)); }
+  }
+  window.supportDeleteCert = supportDeleteCert;
+
+  async function supportAddCert(vesselId, vesselName) {
+    const name = prompt(`Add a certificate to "${vesselName}".\n\nCertificate name:`);
+    if (!name) return;
+    const expiry = prompt('Expiry date (YYYY-MM-DD, or blank for none):', '');
+    if (expiry == null) return;
+    if (expiry && !/^\d{4}-\d{2}-\d{2}$/.test(expiry.trim())) { alert('Date must be YYYY-MM-DD.'); return; }
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'add_cert', vessel_id: vesselId, name: name.trim(), expires_at: expiry.trim() || null }
+      });
+      if (error) throw error;
+      supportVesselCerts(vesselId, vesselName);
+    } catch (err) { alert('Add failed: ' + (err.message || err)); }
+  }
+  window.supportAddCert = supportAddCert;
 
   async function supportLoadActivity(userId) {
     const panel = document.getElementById('sup-detail-panel');

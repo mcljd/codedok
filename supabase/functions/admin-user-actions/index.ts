@@ -368,6 +368,79 @@ async function handler(req: Request): Promise<Response> {
         return json({ ok: true, plan, trial_ends_at: patch.trial_ends_at || null });
       }
 
+      case "vessel_certs": {
+        // List a vessel's certificates so support can fix them.
+        const vId = String(body.vessel_id || "");
+        if (!vId) return json({ error: "vessel_id_required" }, 400);
+        const { data, error } = await service
+          .from("certs")
+          .select("id,name,issuer,number,category,expires_at,issued_at")
+          .eq("vessel_id", vId)
+          .is("deleted_at", null)
+          .order("expires_at", { ascending: true, nullsFirst: false });
+        if (error) throw error;
+        return json({ rows: data || [] });
+      }
+
+      case "update_cert": {
+        // Fix any field on a customer's certificate.
+        const cId = String(body.cert_id || "");
+        const patch = (body.patch && typeof body.patch === "object") ? body.patch : null;
+        if (!cId || !patch) return json({ error: "cert_id_and_patch_required" }, 400);
+        const allowed = ["name", "issuer", "number", "category", "expires_at", "issued_at"];
+        const clean: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        for (const k of allowed) if (k in patch) clean[k] = patch[k] === "" ? null : patch[k];
+        const { error } = await service.from("certs").update(clean).eq("id", cId);
+        if (error) throw error;
+        await logSupportAction(service, actor, "update_cert", {}, { cert_id: cId, patch: clean });
+        return json({ ok: true });
+      }
+
+      case "add_cert": {
+        // Add a missing certificate to a customer's vessel.
+        const vId = String(body.vessel_id || "");
+        if (!vId) return json({ error: "vessel_id_required" }, 400);
+        const id = "c_" + crypto.randomUUID().replace(/-/g, "").slice(0, 14);
+        const row = {
+          id, vessel_id: vId,
+          name: String(body.name || "Certificate"),
+          issuer: String(body.issuer || ""),
+          number: String(body.number || ""),
+          category: String(body.category || "vessel"),
+          expires_at: body.expires_at || null,
+          issued_at: body.issued_at || null,
+          updated_at: new Date().toISOString(),
+        };
+        const { error } = await service.from("certs").insert(row);
+        if (error) throw error;
+        await logSupportAction(service, actor, "add_cert", {}, { vessel_id: vId, cert_id: id, name: row.name });
+        return json({ ok: true, id });
+      }
+
+      case "delete_cert": {
+        // Soft-delete a customer's certificate (sync tombstone).
+        const cId = String(body.cert_id || "");
+        if (!cId) return json({ error: "cert_id_required" }, 400);
+        const { error } = await service.from("certs").update({ deleted_at: new Date().toISOString() }).eq("id", cId);
+        if (error) throw error;
+        await logSupportAction(service, actor, "delete_cert", {}, { cert_id: cId });
+        return json({ ok: true });
+      }
+
+      case "update_vessel": {
+        // Fix a customer's vessel details.
+        const vId = String(body.vessel_id || "");
+        const patch = (body.patch && typeof body.patch === "object") ? body.patch : null;
+        if (!vId || !patch) return json({ error: "vessel_id_and_patch_required" }, 400);
+        const allowed = ["name", "type", "category", "port", "ssr", "length", "persons"];
+        const clean: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        for (const k of allowed) if (k in patch) clean[k] = patch[k] === "" ? null : patch[k];
+        const { error } = await service.from("vessels").update(clean).eq("id", vId);
+        if (error) throw error;
+        await logSupportAction(service, actor, "update_vessel", {}, { vessel_id: vId, patch: clean });
+        return json({ ok: true });
+      }
+
       case "grant_trial": {
         // Give an organisation a free trial: set plan='trial' and push
         // trial_ends_at out to `days` from today. Support/admin only
