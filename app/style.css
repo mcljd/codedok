@@ -328,7 +328,13 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 
   /* The floating + FAB collides with the rail/side column on desktop. */
   #home-quick-add-fab { display: none !important; }
+
+  /* Tools screen: two-column tile grid uses the desktop width. */
+  #s-tools .tool-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 }
+
+/* Tools tile list — column on phones, grid on desktop (above). */
+.tool-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
 
 /* ═══════════════════════════════════════════════════════════════
    DESKTOP HOME DASHBOARD (≥1200px) — stop being a single phone

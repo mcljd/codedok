@@ -2103,7 +2103,7 @@
       </div>
 
       <div class="h-section">Compliance tools</div>
-      <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+      <div class="tool-list">
         <div class="qa-tile" onclick="go('s-calendar')">
           <div class="qa-icon bl">📆</div>
           <div style="flex:1"><div class="qa-title">Compliance calendar</div><div class="qa-sub">Every deadline by month</div></div>
@@ -2127,7 +2127,7 @@
       </div>
 
       <div class="h-section">Surveys &amp; export</div>
-      <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+      <div class="tool-list">
         <div class="qa-tile" onclick="go('s-surveys')">
           <div class="qa-icon bl">🔍</div>
           <div style="flex:1"><div class="qa-title">Surveys</div><div class="qa-sub">Book, history, upcoming</div></div>
@@ -2146,7 +2146,7 @@
       </div>
 
       <div class="h-section">Team &amp; sharing</div>
-      <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+      <div class="tool-list">
         <div class="qa-tile" onclick="go('s-crew')">
           <div class="qa-icon pu">👥</div>
           <div style="flex:1"><div class="qa-title">Manage crew</div><div class="qa-sub">All crew across vessels</div></div>
