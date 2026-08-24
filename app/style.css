@@ -8278,19 +8278,25 @@ body.shell-fullbleed #s-land > .sb { display: none !important; }
   position: absolute;
   left: 28px;
   right: 28px;
-  top: 50%;
+  top: 80px;
   height: 2px;
   background: linear-gradient(90deg, transparent, #34c759, transparent);
   box-shadow: 0 0 18px rgba(52,199,89,.8);
   animation: iphone-scan 2.4s linear infinite;
+  will-change: transform, opacity;
 }
+/* Animate transform (compositor) not top (layout) — no per-frame reflow. */
 @keyframes iphone-scan {
-  0% { top: 80px; opacity: 0; }
+  0% { transform: translateY(0); opacity: 0; }
   20% { opacity: 1; }
   80% { opacity: 1; }
-  100% { top: calc(100% - 200px); opacity: 0; }
+  100% { transform: translateY(340px); opacity: 0; }
 }
-@media (max-width: 720px) { #s-land .iphone-scanner-line { animation: none; top: 50%; } }
+@media (max-width: 720px) { #s-land .iphone-scanner-line { animation: none; top: 50%; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  #s-land .iphone-scanner-line { animation: none; top: 50%; transform: none; }
+  #s-land .iphone-scanner-detect-dot { animation: none; }
+}
 
 #s-land .iphone-scanner-detect {
   position: absolute;
