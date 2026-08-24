@@ -17,7 +17,7 @@ import Anthropic from "npm:@anthropic-ai/sdk@^0.27.0";
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 // The 11-section schema, aligned to SPV Code 2025 Appendix 7. The model

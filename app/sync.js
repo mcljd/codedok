@@ -111,6 +111,33 @@
     for (const localKey of TABLES) {
       const table = serverTable(localKey);
       try {
+        // memberships is a join table with a composite key (org_id,
+        // user_id) and NO id / updated_at / deleted_at columns — so it
+        // can't use the id-keyed, updated_at-cursored path the other
+        // tables do (ordering by updated_at 400s: "column
+        // memberships.updated_at does not exist"). Pull it whole and
+        // dedupe on the composite key. It's a tiny table, so pulling
+        // every row each pass is cheap. Rows arrive server-side via
+        // accept_invitation; owners already hold theirs locally.
+        if (localKey === 'memberships') {
+          const { data, error } = await client
+            .from(table)
+            .select('*')
+            .order('created_at', { ascending: true })
+            .limit(500);
+          if (error) throw error;
+          if (!data || data.length === 0) continue;
+          const collection = state[localKey] || [];
+          const sameMember = (a, b) => a.org_id === b.org_id && a.user_id === b.user_id;
+          for (const row of data) {
+            const idx = collection.findIndex((x) => sameMember(x, row));
+            if (idx >= 0) collection[idx] = row;
+            else collection.push(row);
+          }
+          state[localKey] = collection;
+          continue;
+        }
+
         const { data, error } = await client
           .from(table)
           .select('*')
