@@ -39,6 +39,29 @@
   };
   function serverTable(t) { return SERVER_TABLE[t] || t; }
 
+  // Fields the client keeps on a row locally but that have NO matching
+  // column on the server table. If we push them, PostgREST rejects the
+  // whole row with 400 "Could not find the 'X' column of '<table>' in
+  // the schema cache" — so the record never syncs. Strip them first.
+  //   file       — the inline base64 attachment (a scan/photo). Belongs
+  //                in Supabase Storage keyed by file_url, not inline in
+  //                the row; kept local until file-to-storage sync exists.
+  //   extraction — the AI extraction + human-override audit blob.
+  //   issued_at  — certs has no issued_at column yet.
+  // The essential fields (name, expires_at, issuer, number, category,
+  // service dates…) are all real columns and sync fine.
+  const LOCAL_ONLY_FIELDS = {
+    certs:     ['file', 'extraction', 'issued_at'],
+    equipment: ['file', 'extraction']
+  };
+  function forServer(localTable, row) {
+    const drop = LOCAL_ONLY_FIELDS[localTable];
+    if (!drop || !row) return row;
+    const out = {};
+    for (const k in row) { if (!drop.includes(k)) out[k] = row[k]; }
+    return out;
+  }
+
   const QUEUE_KEY = 'codedok-sync-queue';
   const LAST_PULL_KEY = 'codedok-sync-last-pull';
   let timer = null;
@@ -113,6 +136,7 @@
     for (const item of queue) {
       try {
         const table = serverTable(item.table);
+        const row = forServer(item.table, item.row);
         if (item.op === 'delete') {
           await client.from(table).update({ deleted_at: new Date().toISOString() }).eq('id', item.id);
         } else if (item.table === 'organizations') {
@@ -125,14 +149,14 @@
           // (auth.uid() not null) and succeeds. On a later sync the row
           // already exists → duplicate-key (23505), which just means
           // "already synced", so we swallow it rather than retry forever.
-          const { error } = await client.from('organizations').insert(item.row);
+          const { error } = await client.from('organizations').insert(row);
           if (error && error.code !== '23505') throw error;
         } else if (item.table === 'memberships') {
           // Composite-key join table — conflict on (org_id,user_id), not id.
-          const { error } = await client.from('memberships').upsert(item.row, { onConflict: 'org_id,user_id' });
+          const { error } = await client.from('memberships').upsert(row, { onConflict: 'org_id,user_id' });
           if (error) throw error;
         } else {
-          const { error } = await client.from(table).upsert(item.row, { onConflict: 'id' });
+          const { error } = await client.from(table).upsert(row, { onConflict: 'id' });
           if (error) throw error;
         }
       } catch (err) {
