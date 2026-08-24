@@ -178,12 +178,18 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   .shell .btn.btn-sm { min-height: 44px; }
 
   /* Vessels list becomes a proper 2-column grid on iPad. Same
-     pattern applied to Records and Equipment cards below. */
-  #s-vessels [data-dyn="vessel-card"] {
+     pattern applied to Records and Equipment cards below. The empty
+     state is NOT a tile — exclude it so it doesn't strand at half
+     width on the left; centre it instead. */
+  #s-vessels [data-dyn="vessel-card"]:not(.empty) {
     display: inline-block;
     width: calc(50% - 6px);
     vertical-align: top;
     box-sizing: border-box;
+  }
+  #s-vessels [data-dyn="vessel-card"].empty {
+    display: block !important; width: auto !important; max-width: 560px !important;
+    margin: 32px auto !important;
   }
   /* Records ticket rows benefit from more breathing room. */
   #s-records .ticket { border-radius: 14px; margin-bottom: 10px; }
@@ -247,12 +253,16 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   .shell .fi, .shell .fs { height: 52px; font-size: 16px; }
   .shell .fl { font-size: 14px; }
   .shell .btn { min-height: 54px; font-size: 16px; }
-  /* Multi-column layouts on wide screens. */
-  #s-vessels [data-dyn="vessel-card"] {
+  /* Multi-column layouts on wide screens (but not the empty state). */
+  #s-vessels [data-dyn="vessel-card"]:not(.empty) {
     display: inline-block;
     width: calc(50% - 6px);
     vertical-align: top;
     box-sizing: border-box;
+  }
+  #s-vessels [data-dyn="vessel-card"].empty {
+    display: block !important; width: auto !important; max-width: 560px !important;
+    margin: 32px auto !important;
   }
   #s-vessel-detail .scroll > * { max-width: 880px; }
   #s-vessel-detail #vd-hero { max-width: none; padding-left: 40px; padding-right: 40px; }
