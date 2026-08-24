@@ -10419,6 +10419,7 @@ ${sectionsHtml}
         setTimeout(() => signOut(), 1600);
         return;
       }
+      loadPlatformStats();
       loadRecentSignIns();
     } catch (err) {
       console.error('renderSupportConsole failed', err);
@@ -10426,6 +10427,69 @@ ${sectionsHtml}
     }
   }
   window.renderSupportConsole = renderSupportConsole;
+
+  // Platform overview — headline numbers so the admin sees the whole
+  // business at a glance the moment they land on the console.
+  async function loadPlatformStats() {
+    const box = document.getElementById('sup-stats');
+    if (!box) return;
+    box.innerHTML = '<div style="color:var(--mid);font-size:12px;padding:4px 2px">Loading overview…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'platform_stats' }
+      });
+      if (error) throw error;
+      const k = (data && data.kinds) || {};
+      const tile = (n, label, accent) => `
+        <div class="sup-stat" style="${accent ? 'border-color:' + accent + '33' : ''}">
+          <div class="sup-stat-n" style="${accent ? 'color:' + accent : ''}">${n}</div>
+          <div class="sup-stat-l">${label}</div>
+        </div>`;
+      box.innerHTML = `
+        <div class="sup-stat-grid">
+          ${tile(data.total_users || 0, 'Users')}
+          ${tile(k.operator || 0, 'Operators')}
+          ${tile(k.surveyor || 0, 'Surveyors')}
+          ${tile(data.orgs || 0, 'Organisations')}
+          ${tile(data.vessels || 0, 'Boats')}
+          ${tile(data.certs || 0, 'Certificates')}
+          ${tile(data.active_trials || 0, 'Active trials', 'var(--sea)')}
+          ${tile(data.expiring_trials || 0, 'Trials ≤14d', (data.expiring_trials ? 'var(--amber)' : ''))}
+        </div>`;
+    } catch (err) {
+      box.innerHTML = `<div style="color:var(--lt);font-size:12px;padding:4px 2px">Overview unavailable (${escapeHtml((err && err.message) || 'error')}). Redeploy admin-user-actions to enable it.</div>`;
+    }
+  }
+  window.loadPlatformStats = loadPlatformStats;
+
+  // Set an org's plan (free / trial / pro / team). Trial prompts for a
+  // length; the others apply immediately. Full billing control from the
+  // support card.
+  async function supportSetPlan(orgId, orgName, plan) {
+    if (!orgId || !plan) return;
+    let days = null;
+    if (plan === 'trial') {
+      const d = prompt(`Trial length for "${orgName}" in days:`, '90');
+      if (d == null) return;
+      days = parseInt(d, 10);
+      if (!days || days < 1) { alert('Enter a number of days, e.g. 90.'); return; }
+    } else if (!confirm(`Set "${orgName}" to the ${plan.toUpperCase()} plan?`)) {
+      return;
+    }
+    try {
+      const client = await window.Supa.getClient();
+      const body = { action: 'set_plan', org_id: orgId, plan };
+      if (days) body.days = days;
+      const { data, error } = await client.functions.invoke('admin-user-actions', { body });
+      if (error) throw error;
+      if (data && data.error) throw new Error(data.error);
+      alert(`"${orgName}" is now on the ${plan.toUpperCase()} plan${data && data.trial_ends_at ? ' until ' + data.trial_ends_at : ''}.`);
+    } catch (err) {
+      alert('Set plan failed: ' + (err.message || err));
+    }
+  }
+  window.supportSetPlan = supportSetPlan;
 
   async function loadRecentSignIns() {
     const box = document.getElementById('sup-recent');
@@ -10696,11 +10760,24 @@ ${sectionsHtml}
           <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="supportDeleteUser('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}')">Delete account</button>
         </div>
 
-        <!-- Billing — grant a free trial to any of the user's orgs. -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--bdr);margin-top:6px">
+        <!-- Billing — full plan control per organisation. -->
+        <div style="padding-top:12px;border-top:1px solid var(--bdr);margin-top:6px">
+          <div style="font-size:11px;color:var(--lt);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Billing &amp; plan</div>
           ${(u.orgs || []).length
-            ? (u.orgs || []).map((o) => `<button class="btn btn-out" style="flex:1;min-width:170px;min-height:44px" onclick="supportGrantTrial('${escapeHtml(o.id)}','${jsAttr(o.name || o.id)}')">🎁 Grant trial — ${escapeHtml(o.name || o.id)}</button>`).join('')
-            : '<span style="color:var(--lt);font-size:12px;align-self:center">No organisation to grant a trial to yet.</span>'}
+            ? (u.orgs || []).map((o) => {
+                const oid = escapeHtml(o.id); const on = jsAttr(o.name || o.id); const onh = escapeHtml(o.name || o.id);
+                return `
+                <div style="margin-bottom:10px">
+                  <div style="font-size:12px;color:var(--mid);margin-bottom:6px"><strong style="color:var(--text)">${onh}</strong></div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn btn-out btn-sm" style="flex:1;min-width:84px" onclick="supportSetPlan('${oid}','${on}','free')">Free</button>
+                    <button class="btn btn-sea btn-sm" style="flex:1;min-width:84px" onclick="supportSetPlan('${oid}','${on}','trial')">🎁 Trial…</button>
+                    <button class="btn btn-out btn-sm" style="flex:1;min-width:84px" onclick="supportSetPlan('${oid}','${on}','pro')">Pro</button>
+                    <button class="btn btn-out btn-sm" style="flex:1;min-width:84px" onclick="supportSetPlan('${oid}','${on}','team')">Team</button>
+                  </div>
+                </div>`;
+              }).join('')
+            : '<span style="color:var(--lt);font-size:12px">No organisation to manage yet.</span>'}
         </div>
 
         <!-- Data views -->

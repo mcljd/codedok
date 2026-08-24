@@ -336,6 +336,17 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
 /* Tools tile list — column on phones, grid on desktop (above). */
 .tool-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
 
+/* Support console — platform overview stat tiles. */
+.sup-stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 600px)  { .sup-stat-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1200px) { .sup-stat-grid { grid-template-columns: repeat(4, 1fr); } }
+.sup-stat {
+  background: var(--card); border: 1px solid var(--bdr); border-radius: 12px;
+  padding: 14px 12px; text-align: center;
+}
+.sup-stat-n { font-size: 24px; font-weight: 800; color: var(--text); line-height: 1.1; letter-spacing: -.5px; }
+.sup-stat-l { font-size: 11px; color: var(--lt); font-weight: 600; margin-top: 4px; letter-spacing: .02em; }
+
 /* ═══════════════════════════════════════════════════════════════
    DESKTOP HOME DASHBOARD (≥1200px) — stop being a single phone
    column. Full-width status banner on top, then a real two-column

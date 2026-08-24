@@ -325,6 +325,49 @@ async function handler(req: Request): Promise<Response> {
         return json({ rows: vessels || [] });
       }
 
+      case "platform_stats": {
+        // Whole-business overview for the support console header.
+        const { data: authList } = await service.auth.admin.listUsers({ perPage: 1000 });
+        const totalUsers = (authList?.users || []).length;
+        const { data: pubs } = await service.from("users").select("kind");
+        const kinds: Record<string, number> = {};
+        (pubs || []).forEach((p: any) => { const k = p.kind || "user"; kinds[k] = (kinds[k] || 0) + 1; });
+        const { data: orgRows } = await service.from("organizations").select("id,plan,trial_ends_at");
+        const orgs = orgRows || [];
+        const vCount = await service.from("vessels").select("id", { count: "exact", head: true });
+        const cCount = await service.from("certs").select("id", { count: "exact", head: true });
+        const today = new Date().toISOString().slice(0, 10);
+        const in14 = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+        const activeTrials = orgs.filter((o: any) => o.plan === "trial" && (!o.trial_ends_at || o.trial_ends_at >= today)).length;
+        const expiringTrials = orgs.filter((o: any) => o.plan === "trial" && o.trial_ends_at && o.trial_ends_at >= today && o.trial_ends_at <= in14).length;
+        return json({
+          total_users: totalUsers,
+          kinds,
+          orgs: orgs.length,
+          vessels: vCount.count || 0,
+          certs: cCount.count || 0,
+          active_trials: activeTrials,
+          expiring_trials: expiringTrials,
+        });
+      }
+
+      case "set_plan": {
+        // Set an org's plan. 'trial' also stamps trial_ends_at from `days`.
+        const orgId = String(body.org_id || "");
+        const plan = String(body.plan || "").toLowerCase();
+        const allowed = ["free", "trial", "pro", "team"];
+        if (!orgId || !allowed.includes(plan)) return json({ error: "invalid_plan_or_id" }, 400);
+        const patch: Record<string, unknown> = { plan };
+        if (plan === "trial") {
+          const days = Math.min(3650, Math.max(1, Number(body.days) || 90));
+          patch.trial_ends_at = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+        }
+        const { error } = await service.from("organizations").update(patch).eq("id", orgId);
+        if (error) throw error;
+        await logSupportAction(service, actor, "set_plan", {}, { org_id: orgId, plan, ...(patch.trial_ends_at ? { trial_ends_at: patch.trial_ends_at } : {}) });
+        return json({ ok: true, plan, trial_ends_at: patch.trial_ends_at || null });
+      }
+
       case "grant_trial": {
         // Give an organisation a free trial: set plan='trial' and push
         // trial_ends_at out to `days` from today. Support/admin only
