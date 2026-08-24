@@ -10646,6 +10646,13 @@ ${sectionsHtml}
           <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="supportDeleteUser('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}')">Delete account</button>
         </div>
 
+        <!-- Billing — grant a free trial to any of the user's orgs. -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--bdr);margin-top:6px">
+          ${(u.orgs || []).length
+            ? (u.orgs || []).map((o) => `<button class="btn btn-out" style="flex:1;min-width:170px;min-height:44px" onclick="supportGrantTrial('${escapeHtml(o.id)}','${jsAttr(o.name || o.id)}')">🎁 Grant trial — ${escapeHtml(o.name || o.id)}</button>`).join('')
+            : '<span style="color:var(--lt);font-size:12px;align-self:center">No organisation to grant a trial to yet.</span>'}
+        </div>
+
         <!-- Data views -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--bdr);margin-top:6px">
           <button class="btn btn-out" style="flex:1;min-width:130px;min-height:44px" onclick="supportLoadVessels('${escapeHtml(u.id || u.auth_user_id)}')">🛥️ Vessels</button>
@@ -10655,6 +10662,27 @@ ${sectionsHtml}
         <div id="sup-detail-panel" style="margin-top:14px"></div>
       </div>`;
   }
+
+  async function supportGrantTrial(orgId, orgName) {
+    if (!orgId) { alert('No organisation id.'); return; }
+    const daysStr = prompt(`Grant a free trial to "${orgName}".\n\nHow many days? (e.g. 30, 90, 365)`, '90');
+    if (daysStr == null) return;
+    const days = parseInt(daysStr, 10);
+    if (!days || days < 1) { alert('Enter a number of days, e.g. 90.'); return; }
+    if (!confirm(`Give "${orgName}" a ${days}-day free trial?\n\nTheir plan is set to trial and the end date extended to ${days} days from today.`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'grant_trial', org_id: orgId, days }
+      });
+      if (error) throw error;
+      if (data && data.error) throw new Error(data.error);
+      alert(`Done — "${orgName}" now has a free trial until ${(data && data.trial_ends_at) || 'the new date'}.`);
+    } catch (err) {
+      alert('Grant trial failed: ' + (err.message || err));
+    }
+  }
+  window.supportGrantTrial = supportGrantTrial;
 
   async function supportResetPassword(email, authId) {
     const pw = prompt(`Set new password for ${email}:\n\n(Minimum 12 characters. They'll be able to sign in immediately with this password. Deliver it to them through a secure channel — not email.)`);

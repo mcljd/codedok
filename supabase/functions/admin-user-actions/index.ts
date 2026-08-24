@@ -325,6 +325,23 @@ async function handler(req: Request): Promise<Response> {
         return json({ rows: vessels || [] });
       }
 
+      case "grant_trial": {
+        // Give an organisation a free trial: set plan='trial' and push
+        // trial_ends_at out to `days` from today. Support/admin only
+        // (gated above). Used from the support console's user card.
+        const orgId = String(body.org_id || "");
+        const days = Math.min(3650, Math.max(1, Number(body.days) || 90));
+        if (!orgId) return json({ error: "org_id_required" }, 400);
+        const ends = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+        const { error } = await service
+          .from("organizations")
+          .update({ plan: "trial", trial_ends_at: ends })
+          .eq("id", orgId);
+        if (error) throw error;
+        await logSupportAction(service, actor, "grant_trial", {}, { org_id: orgId, days, trial_ends_at: ends });
+        return json({ ok: true, trial_ends_at: ends, days });
+      }
+
       case "support_audit": {
         // Read the support-action audit trail. Optional target_email
         // filter narrows to actions taken against one customer.
