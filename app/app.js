@@ -1479,7 +1479,10 @@
     // is the first 30 seconds for a fresh user — must read as obvious.
     const onbHostId = 'home-onboarding';
     let onbEl = document.getElementById(onbHostId);
-    const sectionLabels = document.querySelectorAll('#s-home .scroll > .slbl');
+    // Labels now live inside the .home-dash columns (desktop dashboard),
+    // so match any .slbl within #s-home rather than only direct
+    // scroll children.
+    const sectionLabels = document.querySelectorAll('#s-home .slbl');
     const homeActionsHost = document.getElementById('home-actions');
     const homeSmsHost = document.getElementById('home-sms-card');
     const homeVesselsHost = document.getElementById('home-vessels');

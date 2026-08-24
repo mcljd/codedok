@@ -1279,21 +1279,28 @@
       <div id="home-status"></div>
     </div>
 
-    <!-- NEEDS DOING -->
-    <div class="slbl">Needs doing</div>
-    <div id="home-actions" style="padding:0 16px;display:flex;flex-direction:column;gap:10px"></div>
-
-    <!-- URGENCY SUMMARY (hidden — replaced by tiles in the hero) -->
-    <div id="home-urgency-label" class="slbl" style="display:none">Deadlines by urgency</div>
-    <div id="home-urgency" class="urg" style="display:none"></div>
-
-    <!-- Featured: Safety Management System -->
-    <div id="home-sms-card" style="padding:14px 16px 0"></div>
-    <div class="slbl">
-      <span>My boats</span>
-      <span class="slbl-act" onclick="go('s-vessels')">See all →</span>
+    <!-- Two-column work area on desktop; stacks in source order on
+         mobile so the phone layout is unchanged. Host divs keep their
+         ids, so renderHome targets them exactly as before. -->
+    <div class="home-dash">
+      <div class="home-dash-main">
+        <!-- NEEDS DOING -->
+        <div class="slbl" id="home-needs-label">Needs doing</div>
+        <div id="home-actions" style="padding:0 16px;display:flex;flex-direction:column;gap:10px"></div>
+        <!-- URGENCY SUMMARY (hidden — replaced by tiles in the hero) -->
+        <div id="home-urgency-label" class="slbl" style="display:none">Deadlines by urgency</div>
+        <div id="home-urgency" class="urg" style="display:none"></div>
+      </div>
+      <div class="home-dash-side">
+        <!-- Featured: Safety Management System -->
+        <div id="home-sms-card" style="padding:14px 16px 0"></div>
+        <div class="slbl" id="home-boats-label">
+          <span>My boats</span>
+          <span class="slbl-act" onclick="go('s-vessels')">See all →</span>
+        </div>
+        <div id="home-vessels" class="card mx"></div>
+      </div>
     </div>
-    <div id="home-vessels" class="card mx"></div>
 
     <div class="spacer"></div>
   </div>

@@ -326,8 +326,56 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   /* Content gets a wider, comfortable column inside the main area. */
   .shell:not(#s-land):has(> .bnav) .scroll > * { max-width: 920px; }
 
-  /* The quick-add FAB overlaps nothing now; nudge it clear of the edge. */
-  #home-quick-add-fab { right: 28px; }
+  /* On desktop the status banner already carries a prominent
+     "Add a certificate" button, and a floating FAB collides with the
+     side column — so retire it here. */
+  #home-quick-add-fab { display: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DESKTOP HOME DASHBOARD (≥1200px) — stop being a single phone
+   column. Full-width status banner on top, then a real two-column
+   work area: priority work ("Needs doing") in the main column,
+   boats + SMS in a side column. Columns stack on mobile (plain divs).
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width: 1200px) {
+  #s-home .scroll { padding: 26px 40px 48px; }
+  /* Override the generic 920px reading cap for the dashboard. */
+  #s-home .scroll > * { max-width: 1360px !important; margin-left: auto !important; margin-right: auto !important; }
+  #s-home #home-status-wrap { padding: 0; }
+
+  #s-home .home-dash {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 384px;
+    gap: 0 30px;
+    align-items: start;
+    margin-top: 22px;
+  }
+  #s-home .home-dash-main, #s-home .home-dash-side { min-width: 0; }
+
+  /* The grid supplies the gutters — drop the mobile side paddings so
+     cards align to the column edges. */
+  #s-home .home-dash #home-actions { padding: 0; }
+  #s-home .home-dash #home-sms-card { padding: 0; }
+  #s-home .home-dash .card.mx { margin-left: 0; margin-right: 0; }
+
+  /* Section labels: first label in each column aligns to the top; the
+     rest get breathing room above. */
+  #s-home .home-dash .slbl { margin: 20px 4px 12px; }
+  #s-home .home-dash-main > .slbl:first-child,
+  #s-home .home-dash-side  > .slbl:first-child { margin-top: 4px; }
+  /* SMS card is the side column's first item — give the label under it
+     normal spacing. */
+  #s-home .home-dash-side > #home-sms-card { margin-bottom: 4px; }
+
+  /* Needs-doing rows can breathe a little more on desktop. */
+  #s-home #home-actions > * { border-radius: 14px; }
+
+  /* The "Deadlines by urgency" block is vestigial (replaced by the hero
+     tiles) — drop the orphaned label/holder on desktop so it doesn't
+     dangle under the Needs-doing list. */
+  #s-home .home-dash #home-urgency-label,
+  #s-home .home-dash #home-urgency { display: none !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
