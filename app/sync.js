@@ -50,9 +50,13 @@
   //   issued_at  — certs has no issued_at column yet.
   // The essential fields (name, expires_at, issuer, number, category,
   // service dates…) are all real columns and sync fine.
+  // Only `file` (the inline base64 scan) stays local: it belongs in the
+  // cert-files Storage bucket keyed by file_url, not inline in the row.
+  // issued_at + extraction now have real columns (migration 0021) and
+  // sync like everything else.
   const LOCAL_ONLY_FIELDS = {
-    certs:     ['file', 'extraction', 'issued_at'],
-    equipment: ['file', 'extraction']
+    certs:     ['file'],
+    equipment: ['file']
   };
   function forServer(localTable, row) {
     const drop = LOCAL_ONLY_FIELDS[localTable];

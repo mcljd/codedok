@@ -4766,7 +4766,7 @@
   // Web push reminders — opt-in flow.
   // VAPID public key is safe to ship in the client.
   // ─────────────────────────────────────────────────────────────
-  const VAPID_PUBLIC_KEY = 'BESwTm9pizzS1pXWoABM-oQH2p0ZN6ZGWGc_IAmFgCn7-ZMnxCnQhGRgiIv039pVWtdlt2TrThY0K_9OXi2q6_Y';
+  const VAPID_PUBLIC_KEY = 'BA5CbWe6UMDIBFjr_ZNtN-PzhEJPAdWOpLOWxJAfTk7FjB-bj0369e0WRldZWnQGKg_BfhNUUU8D3Te6BzKP6us';
 
   function pushSupported() {
     return 'serviceWorker' in navigator
