@@ -1587,26 +1587,24 @@
       } else {
         actionsEl.innerHTML = items.map((it) => {
           const a = actionLine(it); if (!a) return '';
-          // Speed-dial: overdue items get a one-tap "Get a quote" button
-          // that drops the operator into a pre-filled job request to the
-          // preferred surveyor (McCollam). Closes the loop the app was
-          // built to close — see action without leaving CodedOK.
-          const isOverdue = (it.days != null && it.days < 0);
+          // Self-service fleet management: tapping an item takes the
+          // operator straight to the right boat (or crew) to sort it
+          // themselves — renew the cert, log the service, upload the
+          // paperwork. No surveyor-marketplace detour.
           const child = it.cert || it.equipment || it.crewCert;
           const vesselId = child && child.vessel_id;
-          const itemLabel = child ? (child.name || child.label || '') : '';
-          const quoteBtn = isOverdue
-            ? `<button class="btn btn-sm btn-sea" style="height:36px;padding:0 12px;font-size:12px;font-weight:700;flex-shrink:0" onclick="event.stopPropagation(); quickQuoteForItem('${vesselId || ''}','${jsAttr(itemLabel)}')">📞 Get a quote</button>`
-            : '';
+          const setV = vesselId ? `setActiveVessel('${vesselId}');` : '';
+          const openAction = it.crewCert
+            ? "go('s-crew')"
+            : `${setV}go('s-vessel-detail')`;
           return `
-            <div class="qa-tile" onclick="${it.cert ? "go('s-vessel-detail')" : it.equipment ? "go('s-equipment-list')" : "go('s-crew')"}">
+            <div class="qa-tile" onclick="${openAction}">
               <div class="qa-icon ${a.sev}">${a.icon}</div>
               <div style="flex:1;min-width:0">
                 <div class="qa-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.title}</div>
                 <div class="qa-sub">${a.sub}</div>
               </div>
-              ${quoteBtn}
-              ${quoteBtn ? '' : '<span class="chev">›</span>'}
+              <span class="chev">›</span>
             </div>`;
         }).join('');
       }
