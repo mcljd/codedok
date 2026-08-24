@@ -77,6 +77,32 @@
     emitStatus();
   }
 
+  // memberships is a composite-key join table with no id / updated_at /
+  // deleted_at columns, so it can't go through queueWrite (which keys on
+  // id and stamps updated_at — a column that doesn't exist here). Queue
+  // it explicitly with only its real columns; flushQueue upserts it on
+  // the (org_id,user_id) conflict target. Without this, a solo
+  // operator's owner-membership was created locally by addVessel but
+  // never reached the server — so their vessel pushes then failed RLS
+  // (vessels write checks org membership) and their data stayed
+  // browser-only.
+  function queueMembership(mem) {
+    if (!mem || !mem.org_id || !mem.user_id) return;
+    pushQueue({
+      table: 'memberships',
+      id: mem.org_id + ':' + mem.user_id,   // composite key, for coalescing only
+      op: 'upsert',
+      row: {
+        org_id: mem.org_id,
+        user_id: mem.user_id,
+        role: mem.role || 'member',
+        permissions: mem.permissions || ['view_all']
+      },
+      at: new Date().toISOString()
+    });
+    emitStatus();
+  }
+
   async function flushQueue() {
     if (!window.Supa || !window.Supa.ready) return;
     const client = await window.Supa.getClient();
@@ -89,8 +115,13 @@
         const table = serverTable(item.table);
         if (item.op === 'delete') {
           await client.from(table).update({ deleted_at: new Date().toISOString() }).eq('id', item.id);
+        } else if (item.table === 'memberships') {
+          // Composite-key join table — conflict on (org_id,user_id), not id.
+          const { error } = await client.from('memberships').upsert(item.row, { onConflict: 'org_id,user_id' });
+          if (error) throw error;
         } else {
-          await client.from(table).upsert(item.row, { onConflict: 'id' });
+          const { error } = await client.from(table).upsert(item.row, { onConflict: 'id' });
+          if (error) throw error;
         }
       } catch (err) {
         // Network blip — keep in queue and try again next pass.
@@ -287,6 +318,22 @@
       Store[fn] = function () {
         const result = orig.apply(Store, arguments);
         try {
+          // addVessel lazily creates the operator's org + owner-membership
+          // on first use. Push those FIRST (queue is FIFO) so the server
+          // has them before the vessel arrives — the vessels-write RLS
+          // check reads org membership, so an un-pushed membership means
+          // the vessel insert is rejected and the data never leaves the
+          // device. users row is already upserted server-side at sign-in.
+          if (fn === 'addVessel' && result && result.org_id) {
+            const snap = Store.snapshot();
+            const org = (snap.organizations || []).find((o) => o.id === result.org_id);
+            if (org) queueWrite('organizations', org);
+            const myId = snap.user && snap.user.id;
+            const mem = (snap.memberships || []).find((m) =>
+              m.org_id === result.org_id && (!myId || m.user_id === myId));
+            if (mem) queueMembership(mem);
+          }
+
           if (table === 'vessels' && fn === 'deleteVessel') {
             // delete by id (first arg)
             queueWrite('vessels', { id: arguments[0], deleted_at: new Date().toISOString() });
