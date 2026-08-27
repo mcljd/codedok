@@ -93,6 +93,19 @@ function buildBody(items: ExpiringItem[]): { title: string; body: string } {
 async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
+  // Optional caller gate. This function ships the anon key in the client,
+  // so without a gate anyone could trigger the reminder fan-out at will.
+  // Fail-open by design: it only enforces once you SET a CRON_SECRET
+  // secret on the function AND have your scheduler send it as the
+  // 'x-cron-secret' header — until then behaviour is unchanged, so this
+  // can't accidentally silence reminders.
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  if (cronSecret && req.headers.get("x-cron-secret") !== cronSecret) {
+    return new Response(JSON.stringify({ error: "forbidden" }), {
+      status: 403, headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
+
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false, autoRefreshToken: false },
   });

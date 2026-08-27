@@ -121,6 +121,16 @@ async function sendViaResend(to: string, subject: string, html: string, text: st
 async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
+  // Optional caller gate — fail-open. Enforces only once CRON_SECRET is
+  // set on the function and the scheduler sends the 'x-cron-secret'
+  // header; unchanged (open) until then, so it can't break the emails.
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  if (cronSecret && req.headers.get("x-cron-secret") !== cronSecret) {
+    return new Response(JSON.stringify({ error: "forbidden" }), {
+      status: 403, headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
+
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false, autoRefreshToken: false } });
 
   const { data: items, error: itemsErr } = await sb
