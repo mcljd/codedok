@@ -1,0 +1,22 @@
+{
+  "name": "codedok-native",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor native wrapper for the CodedOK web app — the iOS (and later Android) App Store build. The web app itself lives in app/ and is deployed separately via Cloudflare (wrangler); this only packages it into a native binary.",
+  "scripts": {
+    "add:ios": "cap add ios",
+    "sync": "cap sync",
+    "open:ios": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
+    "@capacitor/camera": "^6.1.2",
+    "@capacitor/push-notifications": "^6.0.4",
+    "@capacitor/status-bar": "^6.0.2",
+    "@capacitor/splash-screen": "^6.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}
