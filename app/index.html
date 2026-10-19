@@ -1332,9 +1332,11 @@
 ════════════════════════════════════ -->
 <div class="shell" id="s-vessels">
   <div class="sb sb-cd"></div>
-  <div class="tbar">
-    <div class="tbar-title">My boats</div>
-    <button class="btn btn-sm btn-sea" onclick="go('s-onboard')">+ Add a boat</button>
+  <div class="ios-home-head">
+    <div><div class="ios-largetitle">My boats</div></div>
+    <div class="ios-head-actions">
+      <button class="ios-head-btn ios-head-help" onclick="go('s-onboard')" aria-label="Add a boat" style="font-size:25px">+</button>
+    </div>
   </div>
   <!-- Filter chips — tap one to show only boats in that state. Plain
        labels; counts fill in from renderVesselsList(). 44px targets. -->
@@ -1578,9 +1580,11 @@
 ════════════════════════════════════ -->
 <div class="shell" id="s-certs">
   <div class="sb sb-cd"></div>
-  <div class="tbar">
-    <div class="tbar-title">Records</div>
-    <button class="btn btn-sm btn-sea" onclick="go('s-scan')">+ Add</button>
+  <div class="ios-home-head">
+    <div><div class="ios-largetitle">Records</div></div>
+    <div class="ios-head-actions">
+      <button class="ios-head-btn ios-head-help" onclick="go('s-scan')" aria-label="Add a record" style="font-size:25px">+</button>
+    </div>
   </div>
   <div class="tabbar">
     <button class="tab on" onclick="switchTab(this,'cr-urgent')">To do</button>
@@ -2210,9 +2214,11 @@
 ════════════════════════════════════ -->
 <div class="shell" id="s-account">
   <div class="sb sb-cd"></div>
-  <div class="tbar">
-    <div class="tbar-title">Account</div>
-    <div class="avatar">JM</div>
+  <div class="ios-home-head">
+    <div><div class="ios-largetitle">Account</div></div>
+    <div class="ios-head-actions">
+      <div class="avatar">JM</div>
+    </div>
   </div>
   <div class="scroll">
 
@@ -3129,12 +3135,14 @@
 ════════════════════════════════════ -->
 <div class="shell" id="s-tools">
   <div class="sb sb-cd"></div>
-  <div class="lt-head">
+  <div class="ios-home-head">
     <div>
-      <div class="lt-title">Tools</div>
-      <div class="lt-sub">Build your SMS, plan around deadlines, prep for survey day.</div>
+      <div class="ios-largetitle">Tools</div>
+      <div class="ios-eyebrow" style="margin-top:3px;max-width:30ch">Build your SMS, plan deadlines, prep for survey day.</div>
     </div>
-    <div class="avatar lt-avatar" id="tools-avatar" style="cursor:pointer" onclick="go('s-account')">JM</div>
+    <div class="ios-head-actions">
+      <div class="avatar lt-avatar" id="tools-avatar" style="cursor:pointer" onclick="go('s-account')">JM</div>
+    </div>
   </div>
   <div class="scroll" id="tools-scroll"></div>
   <nav class="bnav">
