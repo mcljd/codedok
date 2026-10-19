@@ -86,14 +86,34 @@ changes needed, these light up once the plugins are synced:
 > one enhancement. If `npm install` ever fails on `capacitor-document-scanner`,
 > you can remove it from `package.json`; the camera path still works.
 
-### Native push (the one remaining backend task)
+### Native push — now wired end-to-end
 
-`native.js` exposes `CodedokNative.initPush()` which registers for APNs and
-hands back a device token. To actually deliver reminders to iOS you still
-need to, on the backend: (1) store the APNs token (a `device_push_tokens`
-table), and (2) branch `send-reminders` to dispatch via APNs for native
-tokens as well as web-push for browser endpoints. Until then, iOS users get
-in-app reminders and email; web push already works on the web.
+Native reminders are fully built. On sign-in the app registers the device
+with APNs and stores the token in the `device_push_tokens` table (migration
+`0023`), and the `send-reminders` edge function now fans out to both web-push
+browsers **and** native iOS devices via APNs. All you have to do is give the
+function the APNs auth key and turn on the capability:
+
+1. **Push Notifications capability** in Xcode (Signing & Capabilities) and
+   **Background Modes → Remote notifications** (per section 3 above).
+2. **Create an APNs Auth Key** (`.p8`): App Store Connect → Users and Access
+   → **Integrations / Keys** → **+**, enable **Apple Push Notifications
+   service (APNs)**, download the `.p8` once (you can't re-download it), and
+   note the **Key ID** and your **Team ID**.
+3. **Set these secrets on the `send-reminders` function** (Supabase →
+   Edge Functions → Secrets):
+   - `APNS_KEY_ID` — the 10-char Key ID
+   - `APNS_TEAM_ID` — your Apple Developer Team ID
+   - `APNS_PRIVATE_KEY` — the full `.p8` contents (including the
+     `-----BEGIN/END PRIVATE KEY-----` lines)
+   - `APNS_TOPIC` — `com.codedok.app` (only needed if the bundle id differs)
+4. Deploy: `supabase functions deploy send-reminders`.
+
+Until those secrets are set the APNs branch is **skipped** (fail-open), so
+web push keeps working unchanged. App Store and TestFlight builds use the
+production APNs gateway (the default). Only a build run directly from Xcode
+uses the sandbox gateway — for that, set `window.CodedokConfig.apnsEnv =
+'sandbox'` in `index.html` so its token is stored against the sandbox host.
 
 ## 4. App Store Connect — create the listing
 

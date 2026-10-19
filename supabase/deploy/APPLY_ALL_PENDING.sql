@@ -1,8 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════
--- CodedOK — APPLY ALL pending migrations (0017 → 0020)
+-- CodedOK — APPLY ALL pending migrations (0017 → 0023)
 -- Paste this whole file into the Supabase SQL Editor and click Run.
 -- All statements are idempotent — safe to run more than once.
--- Generated from supabase/migrations/0017–0020.
+-- Generated from supabase/migrations/0017–0023.
 -- ═══════════════════════════════════════════════════════════════
 
 -- Lets us add the 'support' enum value (0018) and, in the same run,
@@ -267,3 +267,70 @@ comment on function public.org_is_unclaimed is
   'True if an org has no memberships yet (bootstrap window). Used by the memberships self-insert policy to block joining a populated org.';
 -- ▲▲▲ end 0020_trial_security_gates.sql ▲▲▲
 
+
+
+-- ▼▼▼ 0021_cert_issued_extraction.sql ▼▼▼
+-- Adds cert/equipment columns the client captures but had no column for
+-- (issue date + AI extraction audit blob). Idempotent.
+alter table certs     add column if not exists issued_at  date;
+alter table certs     add column if not exists extraction jsonb;
+alter table equipment add column if not exists extraction jsonb;
+
+comment on column certs.extraction is
+  'AI extraction + human-override audit for certs added via the vision scanner. {raw, saved, overrides, confidence, receivedAt}.';
+comment on column equipment.extraction is
+  'AI extraction + human-override audit for equipment added via the vision scanner.';
+-- ▲▲▲ end 0021_cert_issued_extraction.sql ▲▲▲
+
+
+-- ▼▼▼ 0022_ai_usage_rate_limit.sql ▼▼▼
+-- Per-user rate-limit counter for the paid AI endpoints. Service-role
+-- write only (RLS on, no policies). Idempotent.
+create table if not exists public.ai_usage_log (
+  id           uuid primary key default gen_random_uuid(),
+  auth_user_id uuid,
+  fn           text not null,
+  at           timestamptz not null default now()
+);
+
+create index if not exists ai_usage_log_lookup
+  on public.ai_usage_log (auth_user_id, fn, at desc);
+
+alter table public.ai_usage_log enable row level security;
+
+comment on table public.ai_usage_log is
+  'One row per paid-AI-endpoint call, keyed by auth user. Backs the per-user daily rate limit in extract-cert / generate-sms. Service-role write only.';
+-- ▲▲▲ end 0022_ai_usage_rate_limit.sql ▲▲▲
+
+
+-- ▼▼▼ 0023_native_push_tokens.sql ▼▼▼
+-- Native iOS/Android push device tokens (APNs/FCM). Web push uses
+-- push_subscriptions; native tokens live here. send-reminders fans out to
+-- both. RLS: users manage only their own rows; the edge function reads all
+-- via the service role. Idempotent.
+create table if not exists device_push_tokens (
+  id           text primary key,
+  user_id      text not null references users(id) on delete cascade,
+  platform     text not null default 'ios'
+               check (platform in ('ios', 'android')),
+  token        text not null,
+  environment  text not null default 'prod'
+               check (environment in ('prod', 'sandbox')),
+  app_version  text,
+  created_at   timestamptz not null default now(),
+  last_seen_at timestamptz not null default now()
+);
+
+create unique index if not exists device_push_tokens_token_uq
+  on device_push_tokens(token);
+create index if not exists device_push_tokens_user_idx
+  on device_push_tokens(user_id);
+
+alter table device_push_tokens enable row level security;
+
+drop policy if exists "device_push_tokens self all" on device_push_tokens;
+create policy "device_push_tokens self all"
+  on device_push_tokens for all
+  using (user_id in (select id from current_user_row()))
+  with check (user_id in (select id from current_user_row()));
+-- ▲▲▲ end 0023_native_push_tokens.sql ▲▲▲

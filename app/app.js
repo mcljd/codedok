@@ -4856,6 +4856,35 @@
   }
   window.ensurePushUi = ensurePushUi;
 
+  // Native push registration (iOS/Android). On the Capacitor build the web
+  // PushManager/VAPID flow doesn't apply — instead we register with APNs and
+  // store the device token server-side so send-reminders can target it.
+  // No-op on web. Idempotent: the token's row id is derived from the token,
+  // so re-registering on each sign-in just refreshes last_seen_at.
+  async function registerNativePush(userId) {
+    const N = window.CodedokNative;
+    if (!N || !N.isNative || typeof N.initPush !== 'function' || !userId) return;
+    await N.initPush(async (token) => {
+      if (!token) return;
+      try {
+        const client = await window.Supa.getClient();
+        let h = 0;
+        for (let i = 0; i < token.length; i++) h = (h * 31 + token.charCodeAt(i)) >>> 0;
+        const env = (window.CodedokConfig && window.CodedokConfig.apnsEnv) || 'prod';
+        const row = {
+          id: 'dt_' + h.toString(36),
+          user_id: userId,
+          platform: 'ios',
+          token: token,
+          environment: env === 'sandbox' ? 'sandbox' : 'prod',
+          last_seen_at: new Date().toISOString()
+        };
+        await client.from('device_push_tokens').upsert(row, { onConflict: 'token' });
+      } catch (err) { console.warn('register native push token failed', err); }
+    });
+  }
+  window.registerNativePush = registerNativePush;
+
   function dismissPushCard() {
     try { localStorage.setItem('codedok-push-dismissed', '1'); } catch (_) {}
     const el = document.getElementById('home-push-card');
@@ -9740,6 +9769,10 @@ ${sectionsHtml}
       // shouldn't see the pitch on every visit, only the sign-in
       // screen (or the app, if their session is still live).
       try { localStorage.setItem('codedok-knows-user', '1'); } catch (_) {}
+
+      // On the native build, register this device for APNs push so expiry
+      // reminders reach the phone. Fire-and-forget; no-op on web.
+      try { registerNativePush(row.id); } catch (_) {}
 
       // Demo-account gating. Two seeded experiences:
       //   mcljd303@icloud.com               → operator demo (skipper view)
