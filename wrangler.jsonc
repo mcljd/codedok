@@ -7,7 +7,12 @@
   },
   "assets": {
     "directory": "app",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Serve extensionless clean URLs: /support -> support.html, etc.
+    // (Apple requires working Support + Privacy Policy URLs.) Static
+    // assets are matched before the SPA not-found fallback, so these
+    // real pages win over the app shell.
+    "html_handling": "auto-trailing-slash"
   },
   "compatibility_flags": [
     "nodejs_compat"
