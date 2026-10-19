@@ -108,6 +108,20 @@ function the APNs auth key and turn on the capability:
      `-----BEGIN/END PRIVATE KEY-----` lines)
    - `APNS_TOPIC` — `com.codedok.app` (only needed if the bundle id differs)
 4. Deploy: `supabase functions deploy send-reminders`.
+5. **Verify with one curl** before trusting the daily cron. Grab a device
+   token (log `CodedokNative.initPush`'s token on your phone, or read the
+   newest `device_push_tokens` row), then:
+   ```bash
+   curl -X POST https://<project>.supabase.co/functions/v1/send-reminders \
+     -H "Authorization: Bearer <SERVICE_ROLE_KEY>" \
+     -H "x-cron-secret: <CRON_SECRET if you set one>" \
+     -H "content-type: application/json" \
+     -d '{"test":true,"token":"<device-token>","environment":"prod"}'
+   ```
+   A success returns `{"ok":true,"apnsStatus":200,...}` and the push lands on
+   the phone. A failure returns Apple's reason (e.g. `BadDeviceToken`,
+   `TopicDisallowed`, `InvalidProviderToken`) so you know exactly what to
+   fix. Use `"environment":"sandbox"` for a build run from Xcode.
 
 Until those secrets are set the APNs branch is **skipped** (fail-open), so
 web push keeps working unchanged. App Store and TestFlight builds use the

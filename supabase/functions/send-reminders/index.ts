@@ -109,7 +109,7 @@ async function sendApns(
   title: string,
   body: string,
   collapseId: string,
-): Promise<{ ok: boolean; prune: boolean }> {
+): Promise<{ ok: boolean; prune: boolean; status?: number; reason?: string }> {
   const host = device.environment === "sandbox"
     ? "api.sandbox.push.apple.com"
     : "api.push.apple.com";
@@ -131,16 +131,16 @@ async function sendApns(
       },
       body: payload,
     });
-    if (res.status === 200) return { ok: true, prune: false };
+    if (res.status === 200) return { ok: true, prune: false, status: 200 };
     // 410 Unregistered, or 400 BadDeviceToken → token is dead, prune it.
     let reason = "";
     try { reason = (await res.json())?.reason || ""; } catch (_) { /* ignore */ }
     const prune = res.status === 410 || reason === "BadDeviceToken" || reason === "Unregistered";
     if (!prune) console.warn("apns send failed", res.status, reason);
-    return { ok: false, prune };
+    return { ok: false, prune, status: res.status, reason };
   } catch (err) {
     console.warn("apns send error", err);
-    return { ok: false, prune: false };
+    return { ok: false, prune: false, reason: String((err as any)?.message || err) };
   }
 }
 
@@ -212,6 +212,43 @@ async function handler(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ error: "forbidden" }), {
       status: 403, headers: { ...cors, "Content-Type": "application/json" },
     });
+  }
+
+  // ── Self-test ───────────────────────────────────────────────────────
+  // POST { "test": true, "token": "<apns-device-token>", "environment":
+  // "prod"|"sandbox" } sends ONE push straight to that device and returns
+  // Apple's status/reason — bypassing the whole expiring-items pipeline.
+  // Verify APNs end-to-end with a single curl before trusting the cron:
+  //   curl -X POST .../functions/v1/send-reminders \
+  //     -H "Authorization: Bearer <SERVICE_ROLE_KEY>" \
+  //     -H "x-cron-secret: <CRON_SECRET if set>" \
+  //     -H "content-type: application/json" \
+  //     -d '{"test":true,"token":"<hex token from the device>","environment":"sandbox"}'
+  // Gated by the same CRON_SECRET check above.
+  let body: any = {};
+  try { body = await req.json(); } catch (_) { /* cron fires with no body */ }
+  if (body && body.test) {
+    if (!APNS_ENABLED) {
+      return json({ ok: false, error: "apns_not_configured",
+        detail: "Set APNS_KEY_ID, APNS_TEAM_ID and APNS_PRIVATE_KEY secrets on this function." }, 400);
+    }
+    const token = String(body.token || "").trim();
+    if (!token) return json({ ok: false, error: "missing_token", detail: "Pass the device token as \"token\"." }, 400);
+    const environment = body.environment === "sandbox" ? "sandbox" : "prod";
+    const r = await sendApns(
+      { id: "test", user_id: "test", token, environment },
+      String(body.title || "CodedOK test push"),
+      String(body.body || "If you can see this, native reminders are working. ⚓"),
+      "codedok-test",
+    );
+    return json({
+      ok: r.ok,
+      environment,
+      host: environment === "sandbox" ? "api.sandbox.push.apple.com" : "api.push.apple.com",
+      apnsStatus: r.status ?? null,
+      apnsReason: r.reason || (r.ok ? "" : "unknown"),
+      topic: APNS_TOPIC,
+    }, r.ok ? 200 : 502);
   }
 
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE, {
