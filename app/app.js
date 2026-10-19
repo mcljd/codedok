@@ -28,6 +28,16 @@
     return (email || '').toLowerCase() === DEMO_OPERATOR_EMAIL;
   }
 
+  // Running inside the native iOS/Android shell (Capacitor) rather than
+  // the web PWA. Apple's rules forbid selling digital upgrades in-app
+  // without IAP, so the native build sells nothing: paid upgrade CTAs
+  // are hidden and billing is pointed at the web. Web PWA is unaffected.
+  function isNativeApp() {
+    try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+    catch (_) { return false; }
+  }
+  window.isNativeApp = isNativeApp;
+
   // ---------- Active vessel context ----------
   // Many screens (vessel detail, equipment, hand-off) operate on a single
   // active vessel. We keep that on window for prototype simplicity.
@@ -8840,15 +8850,21 @@ ${sectionsHtml}
       return;
     }
 
+    const native = isNativeApp();
     const cards = PLAN_DEFS.map((p) => {
       const isCurrent = p.id === currentPlan;
+      const paid = p.id !== 'solo';
       const edge = isCurrent ? 'var(--green)' : (p.recommended ? 'var(--sea)' : 'var(--bdr)');
       const tag = isCurrent
         ? '<span class="chip chip-ok" style="margin-left:8px">Current</span>'
         : (p.recommended ? '<span class="chip chip-bl" style="margin-left:8px">Recommended</span>' : '');
+      // Native build: never render an in-app purchase button for paid
+      // tiers — point the operator to manage billing on the web instead.
       const cta = isCurrent
         ? `<button class="btn btn-out btn-full" style="height:46px;font-weight:700" disabled>You're on this plan</button>`
-        : `<button class="btn btn-sea btn-full" style="height:46px;font-weight:700" onclick="selectPlan('${p.id}','${orgId}')">Switch to ${escapeHtml(p.label)}</button>`;
+        : (native && paid
+            ? `<div style="font-size:12px;color:var(--mid);line-height:1.5;text-align:center;padding:12px 0 2px">Manage your plan at <strong style="color:var(--sea)">codedok.com</strong></div>`
+            : `<button class="btn btn-sea btn-full" style="height:46px;font-weight:700" onclick="selectPlan('${p.id}','${orgId}')">Switch to ${escapeHtml(p.label)}</button>`);
       const perks = p.perks.map((x) => `<li style="font-size:13px;color:var(--text);line-height:1.55;margin:4px 0;display:flex;gap:8px"><span style="color:var(--green);font-weight:700">✓</span><span>${escapeHtml(x)}</span></li>`).join('');
       return `
         <div class="card" style="padding:18px;border:2px solid ${edge};border-radius:16px;margin-bottom:12px">
@@ -8865,11 +8881,14 @@ ${sectionsHtml}
         </div>`;
     }).join('');
 
-    body.innerHTML = `
-      <div style="background:rgba(15,76,92,.06);border:1px solid rgba(15,76,92,.15);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:var(--mid);line-height:1.55">
-        <strong style="color:var(--sea)">Solo is free forever.</strong> Pro and Team paid upgrades launch alongside Stripe checkout — pick the plan you'll want and we'll email you the day it's live.
-      </div>
-      ${cards}`;
+    const banner = native
+      ? `<div style="background:rgba(15,76,92,.06);border:1px solid rgba(15,76,92,.15);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:var(--mid);line-height:1.55">
+          <strong style="color:var(--sea)">Everything you need is free.</strong> Need multiple vessels or a team? Manage your plan any time at <strong style="color:var(--sea)">codedok.com</strong>.
+        </div>`
+      : `<div style="background:rgba(15,76,92,.06);border:1px solid rgba(15,76,92,.15);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:var(--mid);line-height:1.55">
+          <strong style="color:var(--sea)">Solo is free forever.</strong> Pro and Team paid upgrades launch alongside Stripe checkout — pick the plan you'll want and we'll email you the day it's live.
+        </div>`;
+    body.innerHTML = banner + cards;
   }
   window.renderPlans = renderPlans;
 
