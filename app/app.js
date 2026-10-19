@@ -10556,7 +10556,7 @@ ${sectionsHtml}
     const pages   = Math.max(1, Math.ceil(total / perPage));
     const kindColor = (k) => (k === 'admin' || k === 'support') ? 'var(--amber)' : k === 'surveyor' ? '#6366f1' : 'var(--sea)';
     const list = rows.map((r) => `
-      <div class="row" style="cursor:pointer" onclick="supportOpenUser('${escapeHtml(r.email)}')">
+      <div class="row" style="cursor:pointer" onclick="supportOpenUser('${jsAttr(r.email)}')">
         <div class="row-body">
           <div class="row-name" style="font-size:14px">${escapeHtml(r.name || r.email)}</div>
           <div class="row-sub" style="font-size:12px">${escapeHtml(r.email)}${r.banned ? ' · <span style=\"color:var(--red)\">banned</span>' : ''}${!r.email_confirmed ? ' · <span style=\"color:var(--amber)\">unverified</span>' : ''}</div>
@@ -10696,16 +10696,16 @@ ${sectionsHtml}
 
         <!-- Primary actions row -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-          <button class="btn btn-sea" style="flex:1;min-width:140px;min-height:44px" onclick="supportResetPassword('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}')">Reset password</button>
-          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportSendMagicLink('${escapeHtml(u.email)}')">Send magic link</button>
-          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportChangeEmail('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}')">Change email</button>
+          <button class="btn btn-sea" style="flex:1;min-width:140px;min-height:44px" onclick="supportResetPassword('${jsAttr(u.email)}','${escapeHtml(u.auth_user_id)}')">Reset password</button>
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportSendMagicLink('${jsAttr(u.email)}')">Send magic link</button>
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportChangeEmail('${jsAttr(u.email)}','${escapeHtml(u.auth_user_id)}')">Change email</button>
         </div>
 
         <!-- Role + status row -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-          ${isPriv ? '' : `<button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportChangeKind('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}','${escapeHtml(u.kind || 'operator')}')">Change role</button>`}
-          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportBan('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}',${u.banned ? true : false})">${u.banned ? 'Unban account' : 'Ban account…'}</button>
-          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="supportDeleteUser('${escapeHtml(u.email)}','${escapeHtml(u.auth_user_id)}')">Delete account</button>
+          ${isPriv ? '' : `<button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportChangeKind('${jsAttr(u.email)}','${escapeHtml(u.auth_user_id)}','${escapeHtml(u.kind || 'operator')}')">Change role</button>`}
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportBan('${jsAttr(u.email)}','${escapeHtml(u.auth_user_id)}',${u.banned ? true : false})">${u.banned ? 'Unban account' : 'Ban account…'}</button>
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="supportDeleteUser('${jsAttr(u.email)}','${escapeHtml(u.auth_user_id)}')">Delete account</button>
         </div>
 
         <!-- Billing — full plan control per organisation. -->
@@ -10732,7 +10732,7 @@ ${sectionsHtml}
         <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--bdr);margin-top:6px">
           <button class="btn btn-out" style="flex:1;min-width:130px;min-height:44px" onclick="supportLoadVessels('${escapeHtml(u.id || u.auth_user_id)}')">🛥️ Vessels</button>
           <button class="btn btn-out" style="flex:1;min-width:130px;min-height:44px" onclick="supportLoadActivity('${escapeHtml(u.id || u.auth_user_id)}')">📋 Their activity</button>
-          <button class="btn btn-out" style="flex:1;min-width:130px;min-height:44px" onclick="supportViewAuditLog('${escapeHtml(u.email)}')">🛡️ Support history</button>
+          <button class="btn btn-out" style="flex:1;min-width:130px;min-height:44px" onclick="supportViewAuditLog('${jsAttr(u.email)}')">🛡️ Support history</button>
         </div>
         <div id="sup-detail-panel" style="margin-top:14px"></div>
       </div>`;
