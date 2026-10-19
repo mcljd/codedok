@@ -5514,3 +5514,41 @@ body.shell-fullbleed #s-land > .sb { display: none !important; }
    the inline ▸ is the only marker. */
 details > summary::-webkit-details-marker { display:none; }
 details > summary { list-style: none; }
+
+/* ═══════════════════════════════════════════════════════════════
+   iOS-NATIVE HOME — large-title header, inset grouped Needs-doing
+   list, translucent tab bar. Part of the App Store redesign; uses
+   theme tokens so light/dark both work.
+   ═══════════════════════════════════════════════════════════════ */
+.ios-home-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:4px 18px 12px;background:var(--page);flex-shrink:0;}
+.ios-eyebrow{font-size:15px;color:var(--lt);font-weight:400;margin-bottom:2px;letter-spacing:-.1px;}
+.ios-largetitle{font-size:32px;font-weight:800;letter-spacing:-.6px;color:var(--text);line-height:1.04;}
+.ios-head-actions{display:flex;gap:6px;align-items:center;padding-top:6px;flex-shrink:0;}
+.ios-head-btn{width:42px;height:42px;border-radius:50%;border:0;background:transparent;color:var(--sea);font-size:22px;font-weight:700;cursor:pointer;display:grid;place-items:center;font-family:var(--fn);padding:0;line-height:1;}
+.ios-head-btn:active{transform:scale(.94);}
+.ios-head-help{background:var(--seap);font-size:18px;}
+.ios-head-btn .notif-dot{position:absolute;top:9px;right:9px;}
+
+.ios-group{background:var(--card);border:1px solid var(--bdr);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(16,32,40,.05);}
+.ios-row{display:flex;align-items:center;gap:13px;padding:13px 14px;position:relative;cursor:pointer;}
+.ios-row + .ios-row::before{content:"";position:absolute;top:0;left:55px;right:0;height:1px;background:var(--bdr);}
+.ios-row:active{background:var(--slate);}
+.ios-row-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:19px;flex-shrink:0;background:var(--slate);}
+.ios-row-ic.rd{background:var(--redp);}
+.ios-row-ic.am{background:var(--ampp);}
+.ios-row-tx{flex:1;min-width:0;}
+.ios-row-tt{font-size:16px;font-weight:600;color:var(--text);letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ios-row-ss{font-size:13px;color:var(--lt);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ios-pill{font-size:12px;font-weight:700;padding:4px 9px;border-radius:8px;white-space:nowrap;flex-shrink:0;}
+.ios-pill.red{background:var(--redp);color:var(--red);}
+.ios-pill.amber{background:var(--ampp);color:var(--amber);}
+.ios-chev{color:var(--lt);font-size:18px;flex-shrink:0;line-height:1;}
+
+/* Translucent iOS tab bar on phones (desktop keeps the sidebar). */
+@media (max-width:767px){
+  .bnav{background:color-mix(in srgb, var(--card) 85%, transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--bdr);}
+}
+
+/* Vestigial 'Deadlines by urgency' block — replaced by the hero status;
+   hide its orphan label/holder everywhere (was only hidden on desktop). */
+#home-urgency-label, #home-urgency { display: none !important; }

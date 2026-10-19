@@ -1336,8 +1336,8 @@
     if (greeting) {
       const firstName = (s.user && s.user.name) ? s.user.name.split(' ')[0] : '';
       greeting.innerHTML = `
-        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:3px;font-weight:500">Good ${part}${firstName ? ', ' + escapeHtml(firstName) : ''}</div>
-        <div class="h-display" style="font-size:24px">Your boats</div>
+        <div class="ios-eyebrow">Good ${part}${firstName ? ', ' + escapeHtml(firstName) : ''}</div>
+        <div class="ios-largetitle">Home</div>
       `;
     }
     const av = document.getElementById('home-avatar');
@@ -1618,7 +1618,7 @@
             <div style="flex:1"><div class="qa-title">All caught up</div><div class="qa-sub">No items due in the next 60 days</div></div>
           </div>`;
       } else {
-        actionsEl.innerHTML = items.map((it) => {
+        actionsEl.innerHTML = '<div class="ios-group">' + items.map((it) => {
           const a = actionLine(it); if (!a) return '';
           // Self-service fleet management: tapping an item takes the
           // operator straight to the right boat (or crew) to sort it
@@ -1630,16 +1630,20 @@
           const openAction = it.crewCert
             ? "go('s-crew')"
             : `${setV}go('s-vessel-detail')`;
+          const pill = a.sev === 'rd'
+            ? '<span class="ios-pill red">Overdue</span>'
+            : '<span class="ios-pill amber">Due soon</span>';
           return `
-            <div class="qa-tile" onclick="${openAction}">
-              <div class="qa-icon ${a.sev}">${a.icon}</div>
-              <div style="flex:1;min-width:0">
-                <div class="qa-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.title}</div>
-                <div class="qa-sub">${a.sub}</div>
+            <div class="ios-row" onclick="${openAction}">
+              <div class="ios-row-ic ${a.sev}">${a.icon}</div>
+              <div class="ios-row-tx">
+                <div class="ios-row-tt">${a.title}</div>
+                <div class="ios-row-ss">${a.sub}</div>
               </div>
-              <span class="chev">›</span>
+              ${pill}
+              <span class="ios-chev">›</span>
             </div>`;
-        }).join('');
+        }).join('') + '</div>';
       }
     }
 

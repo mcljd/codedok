@@ -1268,23 +1268,18 @@
   S2 — HOME (COMMAND CENTRE)
 ════════════════════════════════════ -->
 <div class="shell" id="s-home">
-  <div class="sb sb-dk"></div>
+  <div class="sb sb-cd"></div>
 
-  <!-- Dark header -->
-  <div style="background:var(--ink);padding:0 20px 10px;flex-shrink:0">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <div id="home-greeting">
-        <div style="font-size:13px;color:rgba(255,255,255,.75);margin-bottom:2px">Good morning</div>
-        <div style="font-size:20px;font-weight:700;color:white;letter-spacing:-.2px">Fleet Status</div>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <button onclick="openHelp()" aria-label="Help" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:50%;width:44px;height:44px;color:white;font-size:19px;font-weight:700;cursor:pointer;font-family:var(--fn);padding:0">?</button>
-        <div style="position:relative;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center" onclick="go('s-notif')" aria-label="Notifications">
-          <span style="font-size:24px">🔔</span>
-          <div class="notif-dot"></div>
-        </div>
-        <div class="avatar" id="home-avatar" onclick="go('s-account')" style="cursor:pointer">JM</div>
-      </div>
+  <!-- iOS large-title header (renderHome fills #home-greeting) -->
+  <div class="ios-home-head">
+    <div id="home-greeting">
+      <div class="ios-eyebrow">Good morning</div>
+      <div class="ios-largetitle">Home</div>
+    </div>
+    <div class="ios-head-actions">
+      <button onclick="openHelp()" aria-label="Help" class="ios-head-btn ios-head-help">?</button>
+      <button onclick="go('s-notif')" aria-label="Notifications" class="ios-head-btn" style="position:relative">🔔<span class="notif-dot"></span></button>
+      <div class="avatar" id="home-avatar" onclick="go('s-account')" style="cursor:pointer">JM</div>
     </div>
   </div>
 
