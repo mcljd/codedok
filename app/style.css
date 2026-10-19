@@ -5559,3 +5559,10 @@ details > summary { list-style: none; }
 html.is-native #home-pwa-install,
 html.is-native .qr-fab,
 html.is-native #qr-fab { display: none !important; }
+
+/* Monochrome SVG icons in the tab bar and large-title header buttons.
+   stroke="currentColor" so the existing .bni.on { color: var(--sea) }
+   active state and the header button colour apply with no extra rules. */
+.bni-ic svg { width: 24px; height: 24px; display: block; }
+.bni-ic { filter: none; }
+.ios-head-btn svg { width: 21px; height: 21px; display: block; }

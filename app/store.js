@@ -74,12 +74,12 @@
       vessels: [
         { id: 'v_silver_sands', org_id: 'org_jm', name: 'Tsunami IV', type: 'Open RIB charter', category: 'Cat 2',
           ssr: '987654', length: 8.5, persons: 10, port: 'Ballycastle', certifier: 'YDSA',
-          icon: '⛵', photo: 'icons/vessels/tsunami.jpg', jurisdictions: ['UK'],
+          icon: '⛵', jurisdictions: ['UK'],
           make: 'Stormrider RIB', engine: 'Suzuki 300hp 4-stroke',
           built_by: 'redbay', hull_number: 'RB-487', built_at: isoOffset(-720) },
         { id: 'v_cormorant',    org_id: 'org_jm', name: 'Lagavulin',    type: 'Cabin RIB charter', category: 'Cat 2',
           ssr: '456789', length: 11.0, persons: 12, port: 'Ballycastle', certifier: 'YDSA',
-          icon: '🚤', photo: 'icons/vessels/lagavulin.jpg', jurisdictions: ['UK'],
+          icon: '🚤', jurisdictions: ['UK'],
           make: 'Stormrider Cabin RIB', engine: 'Twin Suzuki 4-stroke',
           built_by: 'redbay', hull_number: 'RB-512', built_at: isoOffset(-400) }
       ],

@@ -1403,12 +1403,8 @@
             </div>
           </div>
           <div class="ss-actions">
-            <button class="ss-btn ss-btn-primary" onclick="scanCertWithAI()">
-              <span class="ss-btn-ic">📷</span><span>Add a certificate</span>
-            </button>
-            <button class="ss-btn ss-btn-ghost" onclick="go('s-calendar')">
-              <span class="ss-btn-ic">📅</span><span>What's coming up</span>
-            </button>
+            <button class="ss-btn ss-btn-primary" onclick="scanCertWithAI()">Add a certificate</button>
+            <button class="ss-btn ss-btn-ghost" onclick="go('s-calendar')">What's coming up</button>
           </div>`;
       }
     }
@@ -1578,7 +1574,10 @@
     (function () {
       const existing = document.getElementById('home-quick-add-fab');
       if (existing) existing.remove();
-      if (isFirstTime) return;
+      // Retired: the status hero's "Add a certificate" button already covers
+      // this, and the floating button overlapped the "My boats" row. Kept
+      // as a no-op so any stale FAB from a previous render is still removed.
+      return;
       const fab = document.createElement('button');
       fab.id = 'home-quick-add-fab';
       fab.type = 'button';
@@ -1732,15 +1731,17 @@
         line = 'MCA-aligned in 11 guided sections · submit to CodedOK for AI polish';
         cta  = 'Build your SMS →';
       }
+      // Deliberately plain: one row, no icon tile, no second CTA line.
+      // It sits under the "needs doing" list and must not compete with it.
       smsCardEl.innerHTML = `
-        <div class="card" style="padding:14px;border-radius:14px;cursor:pointer;border-left:4px solid ${color}" onclick="go('s-sms')">
-          <div style="display:flex;align-items:center;gap:14px">
-            <div style="width:48px;height:48px;border-radius:13px;background:${color === 'var(--green)' ? 'var(--grnp)' : color === 'var(--sea)' ? 'var(--seap)' : color === 'var(--amber)' ? 'var(--ampp)' : 'var(--purpp)'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${icon}</div>
+        <div class="card" style="padding:14px 16px;border-radius:14px;cursor:pointer" onclick="go('s-sms')">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:4px;align-self:stretch;border-radius:2px;background:${color};flex-shrink:0"></div>
             <div style="flex:1;min-width:0">
               <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.25">Safety Management System</div>
               <div style="font-size:13px;color:var(--mid);margin-top:3px;line-height:1.4">${escapeHtml(line)}</div>
-              <div style="font-size:13px;font-weight:700;color:var(--sea);margin-top:8px">${cta}</div>
             </div>
+            <div style="font-size:13px;font-weight:700;color:var(--sea);flex-shrink:0;white-space:nowrap">${cta.replace(/\s*→$/, '')}</div>
             <span class="chev" style="flex-shrink:0">›</span>
           </div>
         </div>`;
@@ -2253,7 +2254,7 @@
         html += `</div>`;
       }
       if (due30Count > 0) {
-        html += `<div class="h-section" style="color:var(--amber)">⏳ Due soon · ${due30Count}</div>`;
+        html += `<div class="h-section" style="color:var(--amber)">Due soon · ${due30Count}</div>`;
         html += `<div style="padding:0 16px">`;
         due30Certs.forEach((c) => { html += ticketHtml(c, 'cert'); });
         due30Equip.forEach((e) => { html += ticketHtml(e, 'equipment'); });
