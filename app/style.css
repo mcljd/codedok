@@ -5552,3 +5552,10 @@ details > summary { list-style: none; }
 /* Vestigial 'Deadlines by urgency' block — replaced by the hero status;
    hide its orphan label/holder everywhere (was only hidden on desktop). */
 #home-urgency-label, #home-urgency { display: none !important; }
+
+/* Native app (Capacitor): hide the PWA "add to home screen" nudge and the
+   QR-beam fabs — meaningless once installed as a real native app. The
+   is-native class is set by native.js when running inside the shell. */
+html.is-native #home-pwa-install,
+html.is-native .qr-fab,
+html.is-native #qr-fab { display: none !important; }

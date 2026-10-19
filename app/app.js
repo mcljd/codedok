@@ -5126,7 +5126,25 @@
 
   // Open the iOS camera by default — used by the operator's "Snap a cert"
   // button on vessel detail. Accepts image, PDF or DOCX.
-  function pickCertPhoto(vesselId) {
+  async function pickCertPhoto(vesselId) {
+    // On the native iOS/Android build, use the real document scanner
+    // (VisionKit on iOS): auto edge-detection, de-skew and glare
+    // reduction give a far cleaner image for the AI to read. Falls back
+    // to the web camera input everywhere else, or if the scanner can't
+    // run.
+    const N = window.CodedokNative;
+    if (N && N.isNative && typeof N.scanDocument === 'function') {
+      try {
+        const file = await N.scanDocument();
+        if (file === 'cancelled') return;        // user backed out
+        if (file instanceof File) {
+          try { N.haptic && N.haptic('success'); } catch (_) {}
+          pendingCertVesselId = vesselId || null;
+          await processCertFile(file);
+          return;
+        }
+      } catch (err) { console.warn('native scan failed, using web picker', err); }
+    }
     openCertPicker(vesselId, { camera: true });
   }
   window.pickCertPhoto = pickCertPhoto;
@@ -5176,6 +5194,15 @@
   async function handleCertPhotoUpload(e) {
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
+    await processCertFile(file);
+  }
+  window.handleCertPhotoUpload = handleCertPhotoUpload;
+
+  // Shared cert-ingest pipeline: validate → AI extraction → review modal,
+  // with a manual-form fallback that never loses the file. Fed by both the
+  // web file inputs (handleCertPhotoUpload) and the native document
+  // scanner (pickCertPhoto below), so both paths behave identically.
+  async function processCertFile(file) {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       alert('That file is too big (over 10 MB). Try compressing it or saving as a smaller PDF.');
@@ -5208,7 +5235,7 @@
       await fallbackToManualCert(file, "We couldn't read that one automatically — no bother. Your photo's saved; just fill in the details and save.");
     }
   }
-  window.handleCertPhotoUpload = handleCertPhotoUpload;
+  window.processCertFile = processCertFile;
 
   // Shared fallback for the AI cert path: keep the photo the user just
   // took, stash it as a pending manual scan, and route to the manual

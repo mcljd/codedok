@@ -51,8 +51,49 @@ npm run open:ios     # opens it in Xcode
   Background Modes, **Remote notifications**.
 - Create an **APNs Auth Key** (App Store Connect → Users and Access → Keys)
   and add it to the `send-reminders` setup so pushes reach iOS. (Web push
-  and native push differ — the native plugin is wired for this.)
+  and native push differ — see "Native push" below.)
 - Set the app icon (use `app/icons/icon-512.png`) and a launch screen.
+
+### Required privacy strings (Info.plist)
+
+The native document scanner and camera need usage descriptions, or the app
+**crashes on first scan** and Apple rejects the build. In Xcode open
+`ios/App/App/Info.plist` and add:
+
+| Key | Value |
+|---|---|
+| `NSCameraUsageDescription` | `CodedOK uses the camera to scan your certificates so it can read and file them for you.` |
+| `NSPhotoLibraryUsageDescription` | `CodedOK lets you attach certificate photos and PDFs from your library.` |
+| `NSPhotoLibraryAddUsageDescription` | `CodedOK can save a copy of scanned documents to your library.` |
+
+### Native features already wired (in `app/native.js`)
+
+The web app auto-detects the native shell and upgrades itself — no code
+changes needed, these light up once the plugins are synced:
+
+- **Document scanner** — the "Take a photo" cert flow uses iOS **VisionKit**
+  (`capacitor-document-scanner`): automatic edge-detection, perspective
+  correction and glare reduction, then straight into the AI reader. Falls
+  back to the native camera, then the web file input, if unavailable.
+- **Native camera** (`@capacitor/camera`) — with in-place cropping.
+- **Haptics** (`@capacitor/haptics`) — a success tap when a scan lands.
+- **Status bar / splash** (`@capacitor/status-bar`, `@capacitor/splash-screen`).
+- **Share sheet** (`@capacitor/share`) — available for exporting packs.
+
+> All of these degrade gracefully: if a plugin is missing or a user
+> cancels, the app silently falls back to the existing web behaviour, so a
+> plugin that fails to install never breaks the build — you just lose that
+> one enhancement. If `npm install` ever fails on `capacitor-document-scanner`,
+> you can remove it from `package.json`; the camera path still works.
+
+### Native push (the one remaining backend task)
+
+`native.js` exposes `CodedokNative.initPush()` which registers for APNs and
+hands back a device token. To actually deliver reminders to iOS you still
+need to, on the backend: (1) store the APNs token (a `device_push_tokens`
+table), and (2) branch `send-reminders` to dispatch via APNs for native
+tokens as well as web-push for browser endpoints. Until then, iOS users get
+in-app reminders and email; web push already works on the web.
 
 ## 4. App Store Connect — create the listing
 
