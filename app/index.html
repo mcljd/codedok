@@ -1596,7 +1596,7 @@
 
     <div id="cr-urgent" class="tc on">
       <!-- Overdue section -->
-      <div class="slbl" style="color:var(--red)">🚨 Overdue — act now</div>
+      <div class="slbl" style="color:var(--red)">Overdue — act now</div>
       <div class="card mx">
         <div class="row"><div class="row-ic rd">🧨</div><div class="row-body"><div class="row-name">Cat C Pyrotechnics</div><div class="row-sub">Tsunami IV · Expired 10 Apr</div></div><span class="chip chip-rd">-5 days</span><span class="chev">›</span></div>
         <div class="row"><div class="row-ic rd">🛟</div><div class="row-body"><div class="row-name">Life raft service</div><div class="row-sub">Tsunami IV · Service overdue</div></div><span class="chip chip-rd">Overdue</span><span class="chev">›</span></div>
@@ -2246,8 +2246,14 @@
       </div>
     </div>
 
+    <!-- Native build sells nothing in-app (App Store 3.1.1): paid tiers
+         below carry .paid-only and are hidden when html.is-native. -->
+    <div class="card mx native-only" style="margin-bottom:10px;padding:16px 18px;font-size:14px;color:var(--mid);line-height:1.5">
+      Need more vessels or a team? Manage your plan any time at <strong style="color:var(--text)">codedok.com</strong>.
+    </div>
+
     <!-- Pro — Featured -->
-    <div class="card mx" style="margin-bottom:10px;border-color:var(--sea);border-width:2px">
+    <div class="card mx paid-only" style="margin-bottom:10px;border-color:var(--sea);border-width:2px">
       <div style="background:var(--sea);padding:8px 18px;display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:12px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.06em">Most popular</span>
         <span style="font-size:11px;color:rgba(255,255,255,.7)">For charter operations</span>
@@ -2269,7 +2275,7 @@
     </div>
 
     <!-- Team -->
-    <div class="card mx" style="margin-bottom:10px">
+    <div class="card mx paid-only" style="margin-bottom:10px">
       <div style="padding:18px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
           <div><div style="font-size:16px;font-weight:700;color:var(--text)">Team</div><div style="font-size:13px;color:var(--lt)">Charter fleets, multiple skippers</div></div>
@@ -2287,7 +2293,7 @@
     </div>
 
     <!-- AI Add-on -->
-    <div style="margin:0 16px 16px">
+    <div class="paid-only" style="margin:0 16px 16px">
       <div style="background:var(--ink2);border-radius:14px;padding:18px">
         <div style="font-size:12px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">🤖 AI gap analysis</div>
         <div style="font-size:16px;font-weight:700;color:white;margin-bottom:6px">Full compliance health check</div>

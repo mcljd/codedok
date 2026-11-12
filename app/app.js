@@ -2247,7 +2247,7 @@
         html += emptyState('✅', 'All caught up', 'No overdue or imminent expiries across the fleet.');
       }
       if (overdueCount > 0) {
-        html += `<div class="h-section" style="color:var(--red)">🚨 Overdue · ${overdueCount}</div>`;
+        html += `<div class="h-section" style="color:var(--red)">Overdue · ${overdueCount}</div>`;
         html += `<div style="padding:0 16px">`;
         overdueCerts.forEach((c) => { html += ticketHtml(c, 'cert'); });
         overdueEquip.forEach((e) => { html += ticketHtml(e, 'equipment'); });

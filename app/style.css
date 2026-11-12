@@ -317,7 +317,7 @@ html,body{font-family:var(--fn);background:var(--ink);color:var(--text);min-heig
   #dnav .dni.on { background: rgba(34,211,238,.16); color: #fff; }
   #dnav .dni.on::before {
     content: ''; position: absolute; left: 0; top: 10px; bottom: 10px;
-    width: 3px; border-radius: 0 3px 3px 0; background: var(--seal, #EB2F33);
+    width: 3px; border-radius: 0 3px 3px 0; background: var(--seal, #1F6FB5);
   }
   #dnav .dni-ic { font-size: 21px; width: 24px; text-align: center; flex-shrink: 0; }
   #dnav .dni-lb { font-size: 15px; font-weight: 600; }
@@ -3693,10 +3693,10 @@ body.shell-fullbleed #s-land > .sb { display: none !important; }
   display: block;
 }
 #s-land .ios-italic.ios-italic-light {
-  /* Solid scarlet: the brand's one accent. (A clipped gradient here let
+  /* Solid brass-sand: the brand's one warm accent. (A clipped gradient here let
      the parent's dark text-shadow bleed through and dull it to maroon.) */
-  color: #EB2F33;
-  -webkit-text-fill-color: #EB2F33;
+  color: #F2C98A;
+  -webkit-text-fill-color: #F2C98A;
   text-shadow: none;
 }
 #s-land .ios-sub.ios-sub-light { color: rgba(255,255,255,.88); max-width: 560px; margin-left: 0; margin-right: 0; text-shadow: 0 2px 12px rgba(0,0,0,.55); }
@@ -4446,7 +4446,7 @@ body.shell-fullbleed #s-land > .sb { display: none !important; }
   color: #fff;
 }
 #s-land .ios-final .ios-italic {
-  background: linear-gradient(120deg, #EB2F33 0%, #EB2F33 100%);
+  background: linear-gradient(120deg, #F2C98A 0%, #F2C98A 100%);
   -webkit-background-clip: text;
           background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -5566,3 +5566,63 @@ html.is-native #qr-fab { display: none !important; }
 .bni-ic svg { width: 24px; height: 24px; display: block; }
 .bni-ic { filter: none; }
 .ios-head-btn svg { width: 21px; height: 21px; display: block; }
+
+/* ══════════════════════════════════════════════════════════════════
+   APPLE DESIGN LAYER (HIG-aligned) — the in-app look.
+   • One tint (Harbour Blue) for everything tappable.
+   • Status uses Apple's system green / orange / red; red = overdue only.
+   • System font (SF on Apple devices), grouped grey background, white
+     cards with no borders or heavy shadows, 12px controls.
+   The marketing landing (#s-land) keeps its own scoped theme.
+   ══════════════════════════════════════════════════════════════════ */
+:root {
+  --tint: #1F6FB5;
+  --sea:  #1F6FB5; --seal: #1F6FB5; --seap: rgba(31,111,181,.10);
+  --ink:  #03203D; --ink2: #0A2D4F; --ink3: #123A60;
+  --green:#248A3D; --grnp: rgba(52,199,89,.14);
+  --amber:#C93400; --ampp: rgba(255,149,0,.15);
+  --red:  #D70015; --redp: rgba(255,59,48,.12);
+  --page: #F2F2F7; --card: #FFFFFF; --card-2: #FFFFFF;
+  --bdr:  #E5E5EA; --bdr-strong: #C6C6C8;
+  --text: #1C1C1E; --text-2: #3A3A3C; --mid: #6C6C70; --lt: #8E8E93; --lt-2: #AEAEB2;
+  --fn:         -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Inter', sans-serif;
+  --fn-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'Inter', sans-serif;
+}
+
+/* System font throughout the app (inline monospace etc. still wins). */
+.shell:not(#s-land), .shell:not(#s-land) * { font-family: var(--fn); }
+.shell:not(#s-land) .ios-largetitle { font-family: var(--fn-display); font-weight: 700; font-size: 34px; letter-spacing: .2px; }
+
+/* Grouped background, flat white cards. */
+.shell:not(#s-land) .card { box-shadow: none; border-color: transparent; border-radius: 14px; }
+.shell:not(#s-land) .ios-group { box-shadow: none; }
+
+/* Home status: a calm white summary card, not a dark glowing slab. */
+.hero.hero-home {
+  background: var(--card) !important; background-image: none !important;
+  box-shadow: none !important; border-radius: 16px; padding: 18px;
+}
+.hero-home::before, .hero-home .hero-stars { display: none !important; }
+.ss-headline { font-family: var(--fn-display); color: var(--text); font-size: 20px; font-weight: 700; letter-spacing: -.2px; }
+.ss-sub { color: var(--mid); }
+.ss-badge { width: 54px; height: 54px; font-size: 26px; box-shadow: none; }
+.ss-badge.ss-good { background: rgba(52,199,89,.14);  color: #248A3D; }
+.ss-badge.ss-warn { background: rgba(255,149,0,.15);  color: #C93400; }
+.ss-badge.ss-bad  { background: rgba(255,59,48,.12);  color: #D70015; }
+.ss-actions { margin-top: 16px; gap: 10px; }
+.ss-btn { min-height: 50px; border-radius: 12px; font-size: 16px; font-weight: 600; }
+.ss-btn-primary { background: var(--tint); color: #fff; box-shadow: none; }
+.ss-btn-ghost   { background: rgba(31,111,181,.10); color: var(--tint); box-shadow: none; }
+
+/* Buttons: Apple filled / tinted styles, 12px corners. */
+.shell:not(#s-land) .btn { border-radius: 12px; font-weight: 600; }
+.shell:not(#s-land) .btn-sea { background: var(--tint); color: #fff; box-shadow: none; }
+
+/* Tab bar: tint for the active tab, system grey otherwise. */
+.bni { color: #8E8E93; }
+.bni.on { color: var(--tint); }
+
+/* Native (App Store) build: no paid offers in-app; web keeps them. */
+.native-only { display: none; }
+html.is-native .native-only { display: block; }
+html.is-native .paid-only { display: none !important; }
