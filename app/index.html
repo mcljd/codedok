@@ -594,86 +594,31 @@
         </div>
 
         <div class="ios-hero-stage">
-          <!-- iPhone mock — Home / Fleet dashboard -->
-          <div class="iphone iphone-hero">
-          <div class="iphone-screen">
-            <div class="iphone-island"></div>
-            <div class="iphone-statusbar">
-              <span class="iphone-time">9:41</span>
-              <div class="iphone-status-icons">
-                <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx=".5"/><rect x="4.5" y="5" width="3" height="6" rx=".5"/><rect x="9" y="2" width="3" height="9" rx=".5"/><rect x="13.5" y="0" width="3" height="11" rx=".5"/></svg>
-                <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M7.5 9.5a1 1 0 100 .5"/><path d="M3 6a6 6 0 019 0"/><path d="M.5 3a10 10 0 0114 0"/></svg>
-                <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x=".5" y=".5" width="22" height="11" rx="2.5" fill="none" stroke="currentColor" stroke-width=".8"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="1.5" height="4" rx=".5" fill="currentColor"/></svg>
-              </div>
+          <!-- Animated hero (CSS only): the REAL app slides up on an iPhone,
+               then two iOS-style notifications show what it does. Motion
+               is switched off for prefers-reduced-motion. -->
+          <div class="hero-phone">
+            <div class="hero-phone-float">
+              <img src="/img/landing/founding-phone.jpg" width="780" height="1688" decoding="async"
+                   alt="The CodedOK app on iPhone: a charter boat's overdue certificates, with buttons to add a certificate or see what's coming up">
             </div>
-            <div class="iphone-app">
-              <div class="iphone-app-head">
-                <div>
-                  <div class="iphone-app-greet">Good morning, Joseph</div>
-                  <div class="iphone-app-title">Your boats</div>
-                </div>
-                <div class="iphone-avatar">JM</div>
-              </div>
-
-              <div class="iphone-comp-card">
-                <div class="iphone-comp-ring">
-                  <svg viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="6"/>
-                    <circle cx="50" cy="50" r="44" fill="none" stroke="#34c759" stroke-width="6" stroke-linecap="round" stroke-dasharray="259.6 276.5" transform="rotate(-90 50 50)"/>
-                  </svg>
-                  <div class="iphone-comp-num">94<span>%</span></div>
-                </div>
-                <div class="iphone-comp-meta">
-                  <div class="iphone-comp-lbl">FLEET COMPLIANCE</div>
-                  <div class="iphone-comp-headline">Ready for survey</div>
-                  <div class="iphone-comp-sub">MV Aurora · 9.8m RIB · Cat 2</div>
-                </div>
-              </div>
-
-              <div class="iphone-tiles">
-                <div class="iphone-tile"><div class="iphone-tile-num ok">28</div><div class="iphone-tile-lbl">OK</div></div>
-                <div class="iphone-tile"><div class="iphone-tile-num warn">2</div><div class="iphone-tile-lbl">Soon</div></div>
-                <div class="iphone-tile"><div class="iphone-tile-num crit">1</div><div class="iphone-tile-lbl">Lapsed</div></div>
-              </div>
-
-              <div class="iphone-section-lbl">Action needed</div>
-
-              <div class="iphone-row crit">
-                <div class="iphone-row-ic">⚠</div>
-                <div class="iphone-row-body">
-                  <div class="iphone-row-name">VHF DSC Licence</div>
-                  <div class="iphone-row-sub">Lapsed — renew now</div>
-                </div>
-                <div class="iphone-row-pill crit">Action</div>
-              </div>
-              <div class="iphone-row warn">
-                <div class="iphone-row-ic">⏱</div>
-                <div class="iphone-row-body">
-                  <div class="iphone-row-name">Liferaft service</div>
-                  <div class="iphone-row-sub">Due in 18 days</div>
-                </div>
-                <div class="iphone-row-pill warn">Soon</div>
-              </div>
-              <div class="iphone-row ok">
-                <div class="iphone-row-ic">✓</div>
-                <div class="iphone-row-body">
-                  <div class="iphone-row-name">MCA Coding Cert</div>
-                  <div class="iphone-row-sub">Valid until 14 Mar 2027</div>
-                </div>
-                <div class="iphone-row-pill ok">OK</div>
-              </div>
-
-              <div class="iphone-fab">📷</div>
-            </div>
-            <div class="iphone-tabbar">
-              <div class="iphone-tab on"><div class="iphone-tab-ic">⌂</div><div>Home</div></div>
-              <div class="iphone-tab"><div class="iphone-tab-ic">⛵</div><div>Vessels</div></div>
-              <div class="iphone-tab"><div class="iphone-tab-ic">📋</div><div>Records</div></div>
-              <div class="iphone-tab"><div class="iphone-tab-ic">⚙</div><div>Account</div></div>
-            </div>
-            <div class="iphone-home-indicator"></div>
           </div>
-        </div>
+          <div class="hero-note hero-note-1" aria-hidden="true">
+            <img src="/icons/icon-120.png" alt="">
+            <div class="hn-body">
+              <div class="hn-top"><b>CodedOK</b><span>now</span></div>
+              <div class="hn-title">Life raft service due in 30 days</div>
+              <div class="hn-msg">Tsunami IV · book it before it lapses</div>
+            </div>
+          </div>
+          <div class="hero-note hero-note-2" aria-hidden="true">
+            <img src="/icons/icon-120.png" alt="">
+            <div class="hn-body">
+              <div class="hn-top"><b>CodedOK</b><span>now</span></div>
+              <div class="hn-title">Certificate scanned ✓</div>
+              <div class="hn-msg">YDSA Coding Certificate · valid to Nov 2027</div>
+            </div>
+          </div>
         </div><!-- /.ios-hero-stage -->
       </div>
     </section>

@@ -4459,8 +4459,9 @@
     try { shown = sessionStorage.getItem('codedok-qr-shown') || '0'; } catch (_) {}
     if (shown === '1') return;
     try { sessionStorage.setItem('codedok-qr-shown', '1'); } catch (_) {}
-    // Small delay so the landing reveal animation isn't fighting the modal.
-    setTimeout(openQrPopup, 1200);
+    // No longer auto-opens: a modal 1.2s after arrival covered the animated
+    // hero and interrupted the first impression. The persistent "Open on
+    // phone" button (ensureDesktopQrFab) still opens it on demand.
   }
   window.maybeAutoShowQrOnLanding = maybeAutoShowQrOnLanding;
 
