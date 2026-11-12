@@ -8,7 +8,7 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F3F5F4",
-  "theme_color": "#0F4C5C",
+  "theme_color": "#03203D",
   "icons": [
     { "src": "icons/codedok-mark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "icons/icon-120.png", "sizes": "120x120", "type": "image/png" },

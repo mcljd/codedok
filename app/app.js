@@ -404,9 +404,9 @@
     const safe = (name || 'attachment').replace(/[<>"']/g, '');
     w.document.write(`
       <!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe}</title>
-      <style>body{margin:0;background:#1C252B;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;color:white}
+      <style>body{margin:0;background:#03203D;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;color:white}
       iframe,img{max-width:100%;max-height:100vh;background:white}
-      .dl{position:fixed;top:14px;right:14px;background:#0F4C5C;color:white;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600}</style></head>
+      .dl{position:fixed;top:14px;right:14px;background:#03203D;color:white;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600}</style></head>
       <body>${url.startsWith('data:application/pdf')
         ? `<iframe src="${safeUrl}" style="width:100vw;height:100vh;border:none"></iframe>`
         : `<img src="${safeUrl}" alt="${safe}">`}
@@ -529,12 +529,12 @@
     let cardFill, tickStroke;
     if (tone === 'mono-light') {
       cardFill   = '#F3F5F4';   // Fog White card on dark surface
-      tickStroke = '#0F4C5C';   // Deep Tide tick
+      tickStroke = '#03203D';   // Deep Tide tick
     } else if (tone === 'mono-dark') {
-      cardFill   = '#1C252B';   // Harbour Black card on light surface
+      cardFill   = '#03203D';   // Harbour Black card on light surface
       tickStroke = '#FFFFFF';
     } else {
-      cardFill   = '#0F4C5C';   // Deep Tide card
+      cardFill   = '#03203D';   // Deep Tide card
       tickStroke = '#F3F5F4';   // Fog White tick
     }
 
@@ -1544,7 +1544,7 @@
             <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px">Welcome to CodedOK</div>
             <div style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.4px;line-height:1.15;margin-bottom:10px">Get started in 30 seconds.</div>
             <div style="font-size:14px;color:var(--mid);line-height:1.55;margin-bottom:22px;max-width:300px;margin-left:auto;margin-right:auto">Photograph any certificate — coding cert, PLI, liferaft, radio licence — and we'll fill in the rest.</div>
-            <button onclick="scanCertWithAI()" style="background:linear-gradient(135deg,#06b6d4 0%,#0891b2 100%);color:#050614;border:0;border-radius:14px;padding:18px 28px;font-family:var(--fn);font-size:16px;font-weight:800;cursor:pointer;width:100%;max-width:320px;box-shadow:0 14px 36px rgba(6,182,212,.30);display:inline-flex;align-items:center;justify-content:center;gap:10px">
+            <button onclick="scanCertWithAI()" style="background:linear-gradient(135deg,#639CC5 0%,#4F88B3 100%);color:#03203D;border:0;border-radius:14px;padding:18px 28px;font-family:var(--fn);font-size:16px;font-weight:800;cursor:pointer;width:100%;max-width:320px;box-shadow:0 14px 36px rgba(99,156,197,.30);display:inline-flex;align-items:center;justify-content:center;gap:10px">
               <span style="font-size:22px">📷</span>
               Snap your first certificate
             </button>
@@ -1592,11 +1592,11 @@
         'width:60px',
         'height:60px',
         'border-radius:50%',
-        'background:linear-gradient(135deg,#06b6d4 0%,#0891b2 100%)',
-        'color:#050614',
+        'background:linear-gradient(135deg,#639CC5 0%,#4F88B3 100%)',
+        'color:#03203D',
         'border:0',
         'cursor:pointer',
-        'box-shadow:0 14px 36px rgba(6,182,212,.45),0 0 0 1px rgba(255,255,255,.10)',
+        'box-shadow:0 14px 36px rgba(99,156,197,.45),0 0 0 1px rgba(255,255,255,.10)',
         'z-index:48',
         'display:flex',
         'align-items:center',
@@ -2110,7 +2110,7 @@
     const smsStatusPill = smsState === 'active'
       ? '<span style="background:rgba(79,122,82,.18);color:#bbf7d0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● Live</span>'
       : smsState === 'draft'
-      ? '<span style="background:rgba(15,76,92,.22);color:#67e8f9;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● In progress</span>'
+      ? '<span style="background:rgba(3,32,61,.22);color:#9CC3E0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● In progress</span>'
       : '<span style="background:rgba(124,58,237,.22);color:#c4b5fd;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">Featured</span>';
 
     wrap.innerHTML = `
@@ -3260,7 +3260,7 @@
           </div>
 
           ${f ? `
-            <div style="background:var(--seap);border:1px solid rgba(15,76,92,.2);border-radius:12px;padding:12px 14px;margin-bottom:14px">
+            <div style="background:var(--seap);border:1px solid rgba(3,32,61,.2);border-radius:12px;padding:12px 14px;margin-bottom:14px">
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
                 <span style="font-size:18px">📎</span>
                 <div style="flex:1;min-width:0">
@@ -3606,7 +3606,7 @@
           const v = (h1 ^ (x * 2654435761) ^ (y * 40503) ^ h2) >>> 0;
           on = (v & 1) === 1;
         }
-        if (on) svg += `<rect x="${(x*cell).toFixed(2)}" y="${(y*cell).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" fill="#1C252B"/>`;
+        if (on) svg += `<rect x="${(x*cell).toFixed(2)}" y="${(y*cell).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" fill="#03203D"/>`;
       }
     }
     svg += '</svg>';
@@ -4278,12 +4278,12 @@
         <h3 id="ios-install-title">Two taps to install</h3>
         <p style="margin-bottom:18px">iOS only lets you add apps from the Share menu. Here's the path:</p>
         <ol style="text-align:left;margin:0 0 6px;padding:0 0 0 22px;font-size:14px;color:#475569;line-height:1.7">
-          <li>Tap <strong style="color:#0F4C5C">Share</strong>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin:0 2px;color:#0F4C5C"><path d="M12 3v12M7 8l5-5 5 5M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>
+          <li>Tap <strong style="color:#03203D">Share</strong>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin:0 2px;color:#03203D"><path d="M12 3v12M7 8l5-5 5 5M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>
             in the Safari toolbar
           </li>
-          <li>Scroll down and tap <strong style="color:#0F4C5C">Add to Home Screen</strong></li>
-          <li>Tap <strong style="color:#0F4C5C">Add</strong> in the top-right</li>
+          <li>Scroll down and tap <strong style="color:#03203D">Add to Home Screen</strong></li>
+          <li>Tap <strong style="color:#03203D">Add</strong> in the top-right</li>
         </ol>
         <p style="font-size:12px;color:#94a3b8;margin:18px 0 0">CodedOK will open like a native app — full-screen, offline-ready, works at sea.</p>
       </div>
@@ -4347,7 +4347,7 @@
     const isIOS = /iPhone|iPad|iPod/.test(ua);
     const canPrompt = !!window.__codedokInstallEvent;
     const cta = canPrompt
-      ? `<button onclick="installPwa()" style="background:#0F4C5C;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer">Install</button>`
+      ? `<button onclick="installPwa()" style="background:#03203D;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer">Install</button>`
       : (isIOS
           ? `<span style="color:#cbd5e1;font-size:12px;line-height:1.4">Tap <strong style="color:#fff">Share</strong> → <strong style="color:#fff">Add to Home Screen</strong></span>`
           : ``);
@@ -4359,7 +4359,7 @@
       'right:12px',
       'bottom:calc(12px + env(safe-area-inset-bottom, 0px))',
       'z-index:9999',
-      'background:rgba(15,76,92,0.97)',
+      'background:rgba(3,32,61,0.97)',
       'color:#fff',
       'border-radius:14px',
       'box-shadow:0 10px 30px rgba(0,0,0,0.25)',
@@ -4482,7 +4482,7 @@
       'left:50%',
       'transform:translateX(-50%) translateY(-20px)',
       'z-index:9997',
-      'background:#0F4C5C',
+      'background:#03203D',
       'color:#fff',
       'border-radius:14px',
       'padding:12px 18px',
@@ -4539,8 +4539,8 @@
     banner.id = 'rev-banner';
     banner.style.cssText = [
       'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:99999',
-      'background:linear-gradient(90deg,#06b6d4 0%,#0891b2 100%)',
-      'color:#050614',
+      'background:linear-gradient(90deg,#639CC5 0%,#4F88B3 100%)',
+      'color:#03203D',
       'padding:10px 18px',
       'font-family:Inter,-apple-system,sans-serif',
       'font-size:13px', 'font-weight:600',
@@ -4550,7 +4550,7 @@
     ].join(';');
     banner.innerHTML = `
       <div><strong>Review mode.</strong> Tap "+ Add comment" then click anywhere on the page to leave feedback.</div>
-      <button id="rev-exit" style="background:rgba(5,6,20,.15);color:#050614;border:0;padding:6px 12px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">Exit</button>
+      <button id="rev-exit" style="background:rgba(5,6,20,.15);color:#03203D;border:0;padding:6px 12px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">Exit</button>
     `;
     document.body.appendChild(banner);
     // Push body content down so banner doesn't cover content
@@ -4569,11 +4569,11 @@
 
     function renderFab() {
       fab.innerHTML = `
-        <button id="rev-add" style="background:#0f172a;color:#fff;border:0;padding:14px 18px;border-radius:999px;font-family:Inter,sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 14px 36px rgba(0,0,0,.30);display:inline-flex;align-items:center;gap:8px">
+        <button id="rev-add" style="background:#03203D;color:#fff;border:0;padding:14px 18px;border-radius:999px;font-family:Inter,sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 14px 36px rgba(0,0,0,.30);display:inline-flex;align-items:center;gap:8px">
           <span style="font-size:18px;line-height:1">+</span> Add comment
         </button>
         ${comments.length ? `
-          <button id="rev-summary" style="background:#fff;color:#0f172a;border:1px solid rgba(15,23,42,.10);padding:10px 14px;border-radius:999px;font-family:Inter,sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.15)">📋 ${comments.length} comment${comments.length === 1 ? '' : 's'} · Send →</button>
+          <button id="rev-summary" style="background:#fff;color:#03203D;border:1px solid rgba(15,23,42,.10);padding:10px 14px;border-radius:999px;font-family:Inter,sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.15)">📋 ${comments.length} comment${comments.length === 1 ? '' : 's'} · Send →</button>
         ` : ''}
       `;
       const addBtn = document.getElementById('rev-add');
@@ -4625,11 +4625,11 @@
         'top:' + (rect.top - 4) + 'px',
         'width:' + (rect.width + 8) + 'px',
         'height:' + (rect.height + 8) + 'px',
-        'border:2px solid #06b6d4',
+        'border:2px solid #639CC5',
         'border-radius:6px',
         'pointer-events:none',
         'z-index:99998',
-        'box-shadow:0 0 0 4px rgba(6,182,212,.20)',
+        'box-shadow:0 0 0 4px rgba(99,156,197,.20)',
       ].join(';');
       document.body.appendChild(ring);
 
@@ -4642,7 +4642,7 @@
         'top:' + Math.min(y + 16, window.innerHeight - 240) + 'px',
         'width:320px',
         'background:#fff',
-        'color:#0f172a',
+        'color:#03203D',
         'border-radius:14px',
         'padding:16px',
         'box-shadow:0 24px 60px rgba(0,0,0,.30),0 0 0 1px rgba(0,0,0,.08)',
@@ -4651,11 +4651,11 @@
       ].join(';');
       pop.innerHTML = `
         <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;margin-bottom:6px">Commenting on</div>
-        <div style="font-size:13px;color:#0f172a;background:#f1f5f9;padding:8px 10px;border-radius:8px;margin-bottom:12px;max-height:60px;overflow:hidden">"${snippet.replace(/"/g, '&quot;') || '(element)'}"</div>
+        <div style="font-size:13px;color:#03203D;background:#f1f5f9;padding:8px 10px;border-radius:8px;margin-bottom:12px;max-height:60px;overflow:hidden">"${snippet.replace(/"/g, '&quot;') || '(element)'}"</div>
         <textarea id="rev-text" placeholder="What needs to change here?" style="width:100%;min-height:90px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;box-sizing:border-box"></textarea>
         <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
-          <button id="rev-cancel" style="background:#f1f5f9;color:#0f172a;border:0;padding:9px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
-          <button id="rev-save" style="background:#0f172a;color:#fff;border:0;padding:9px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Save comment</button>
+          <button id="rev-cancel" style="background:#f1f5f9;color:#03203D;border:0;padding:9px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+          <button id="rev-save" style="background:#03203D;color:#fff;border:0;padding:9px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Save comment</button>
         </div>
       `;
       document.body.appendChild(pop);
@@ -4710,7 +4710,7 @@
         'font-family:Inter,-apple-system,sans-serif',
       ].join(';');
       modal.innerHTML = `
-        <div style="background:#fff;color:#0f172a;border-radius:18px;max-width:560px;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.40)">
+        <div style="background:#fff;color:#03203D;border-radius:18px;max-width:560px;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.40)">
           <div style="padding:22px 24px 14px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">
             <div>
               <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.3px">Your ${comments.length} comment${comments.length === 1 ? '' : 's'}</div>
@@ -4723,15 +4723,15 @@
               <div style="padding:14px 0;border-bottom:1px solid #f1f5f9">
                 <div style="font-size:11px;color:#64748b;letter-spacing:.04em;text-transform:uppercase;font-weight:600">#${i + 1} · ${c.path.length > 36 ? c.path.slice(0, 33) + '…' : c.path}</div>
                 <div style="font-size:13px;color:#475569;background:#f8fafc;padding:6px 10px;border-radius:6px;margin:6px 0">"${(c.snippet || '').replace(/"/g, '&quot;').slice(0, 100)}"</div>
-                <div style="font-size:14px;color:#0f172a;line-height:1.5">${(c.comment || '').replace(/</g, '&lt;')}</div>
+                <div style="font-size:14px;color:#03203D;line-height:1.5">${(c.comment || '').replace(/</g, '&lt;')}</div>
                 <button data-rev-del="${i}" style="background:none;border:0;color:#94a3b8;font-size:12px;cursor:pointer;margin-top:4px;padding:0;font-family:inherit">Delete</button>
               </div>
             `).join('')}
           </div>
           <div style="padding:16px 24px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;background:#fafbfc">
             <button id="rev-clear-all" style="background:none;border:0;color:#94a3b8;font-size:13px;cursor:pointer;font-family:inherit;padding:10px 14px">Clear all</button>
-            <button id="rev-copy" style="background:#f1f5f9;color:#0f172a;border:0;padding:11px 16px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">📋 Copy all</button>
-            <button id="rev-send" style="background:linear-gradient(135deg,#06b6d4,#0891b2);color:#050614;border:0;padding:11px 18px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Send to Joseph →</button>
+            <button id="rev-copy" style="background:#f1f5f9;color:#03203D;border:0;padding:11px 16px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">📋 Copy all</button>
+            <button id="rev-send" style="background:linear-gradient(135deg,#639CC5,#4F88B3);color:#03203D;border:0;padding:11px 18px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Send to Joseph →</button>
           </div>
         </div>
       `;
@@ -5799,9 +5799,9 @@
     const sms = j.sms_doc_id ? Store.snapshot().sms_documents.find((d) => d.id === j.sms_doc_id) : null;
 
     const statusBadge = ({
-      requested: '<span class="insp-pill" style="background:rgba(15,76,92,.15);color:var(--sea);border:1px solid rgba(15,76,92,.3)">📥 New request</span>',
+      requested: '<span class="insp-pill" style="background:rgba(3,32,61,.15);color:var(--sea);border:1px solid rgba(3,32,61,.3)">📥 New request</span>',
       quoted:    '<span class="insp-pill" style="background:rgba(217,119,6,.15);color:var(--amber);border:1px solid rgba(217,119,6,.3)">⏳ Quote sent</span>',
-      paid:      '<span class="insp-pill" style="background:rgba(15,76,92,.15);color:var(--sea);border:1px solid rgba(15,76,92,.3)">💷 Paid · ready to do work</span>',
+      paid:      '<span class="insp-pill" style="background:rgba(3,32,61,.15);color:var(--sea);border:1px solid rgba(3,32,61,.3)">💷 Paid · ready to do work</span>',
       in_progress:'<span class="insp-pill" style="background:rgba(217,119,6,.15);color:var(--amber);border:1px solid rgba(217,119,6,.3)">🛠️ In progress</span>',
       completed: '<span class="insp-pill rdy">✓ Completed</span>',
       declined:  '<span class="insp-pill notready">✕ Declined</span>'
@@ -5943,7 +5943,7 @@
         </div>
 
         <div style="padding:0 20px 14px">
-          <div style="background:var(--seap);border:1px solid rgba(15,76,92,.2);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:14px">
+          <div style="background:var(--seap);border:1px solid rgba(3,32,61,.2);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:14px">
             📎 Upload your signed PDF — it lands directly on the operator's vessel record. ${defaultDocType === 'coding_cert' ? 'A new MCA Coding Certificate will be created with this file attached.' : defaultDocType === 'sms_signed' ? 'The operator\'s SMS will be marked Signed with your version replacing the draft.' : 'The file will be attached to this job.'}
           </div>
 
@@ -6679,7 +6679,7 @@
     canvas.height = Math.round(rect.height * dpr);
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
-    ctx.strokeStyle = '#0a1628';
+    ctx.strokeStyle = '#03203D';
     ctx.lineWidth = 2.5;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -6884,7 +6884,7 @@
       })()}
 
       <div data-dyn="sms" style="padding:0 16px 6px">
-        <div class="card" onclick="openSmsAiWizard()" style="padding:16px;cursor:pointer;border-left:4px solid var(--purp);background:linear-gradient(135deg, rgba(124,58,237,.06), rgba(15,76,92,.06))">
+        <div class="card" onclick="openSmsAiWizard()" style="padding:16px;cursor:pointer;border-left:4px solid var(--purp);background:linear-gradient(135deg, rgba(124,58,237,.06), rgba(3,32,61,.06))">
           <div style="display:flex;align-items:center;gap:14px">
             <div style="font-size:28px">✨</div>
             <div style="flex:1;min-width:0">
@@ -7138,7 +7138,7 @@
     host.innerHTML = `
       <div style="min-height:100vh;background:var(--page);font-family:var(--fn);padding:24px 16px 60px">
         <div style="max-width:760px;margin:0 auto">
-          <div style="background:var(--ink);color:white;border-radius:18px;padding:28px 24px;margin-bottom:18px;background-image:radial-gradient(circle at 80% 0%, rgba(15,76,92,.22), transparent 60%)">
+          <div style="background:var(--ink);color:white;border-radius:18px;padding:28px 24px;margin-bottom:18px;background-image:radial-gradient(circle at 80% 0%, rgba(3,32,61,.22), transparent 60%)">
             <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Safety Management System · read-only</div>
             <div style="font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.15">${escapeHtml(v ? v.name : (doc.title || 'SMS'))}</div>
             <div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:6px">v${doc.version}${doc.signed_at ? ' · signed ' + fmtDate(doc.signed_at) : ''}${v && v.category ? ' · ' + escapeHtml(v.category) : ''}</div>
@@ -7610,7 +7610,7 @@
           </div>
           <span class="chip chip-bl">${pct}% done</span>
         </div>
-        <div style="display:inline-flex;align-items:center;gap:6px;background:var(--seap);border:1px solid rgba(15,76,92,.2);color:var(--sea);font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;margin-bottom:10px">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:var(--seap);border:1px solid rgba(3,32,61,.2);color:var(--sea);font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;margin-bottom:10px">
           <span>📖</span><span>Satisfies ${escapeHtml(sec.ref)}</span>
         </div>
         <div style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:12px">${escapeHtml(sec.blurb)}</div>
@@ -8240,19 +8240,19 @@
 <![endif]-->
 <style>
 @page { size: A4; margin: 25mm 22mm; }
-body { font-family: 'Times New Roman', Cambria, Georgia, serif; font-size: 11pt; line-height: 1.5; color: #0f172a; }
-h1 { font-size: 22pt; font-weight: 700; color: #1C252B; margin: 0 0 6pt 0; letter-spacing: -.5pt; }
-h2 { font-size: 14pt; font-weight: 700; color: #1C252B; margin: 18pt 0 6pt 0; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; page-break-after: avoid; }
+body { font-family: 'Times New Roman', Cambria, Georgia, serif; font-size: 11pt; line-height: 1.5; color: #03203D; }
+h1 { font-size: 22pt; font-weight: 700; color: #03203D; margin: 0 0 6pt 0; letter-spacing: -.5pt; }
+h2 { font-size: 14pt; font-weight: 700; color: #03203D; margin: 18pt 0 6pt 0; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; page-break-after: avoid; }
 h3 { font-size: 11pt; font-weight: 700; color: #1e3454; margin: 12pt 0 4pt 0; page-break-after: avoid; }
 .cover { text-align: center; padding: 60pt 0 40pt; }
-.cover-title { font-size: 30pt; font-weight: 700; color: #1C252B; letter-spacing: -1pt; margin-bottom: 10pt; }
+.cover-title { font-size: 30pt; font-weight: 700; color: #03203D; letter-spacing: -1pt; margin-bottom: 10pt; }
 .cover-vessel { font-size: 18pt; color: #1e3454; font-style: italic; margin-bottom: 30pt; }
 .cover-meta { font-size: 11pt; color: #475569; }
 .foot { font-size: 9pt; color: #94a3b8; text-align: center; margin-top: 30pt; padding-top: 12pt; border-top: 1pt solid #cbd5e1; }
 .signoff { margin-top: 24pt; padding: 14pt; border: 1pt solid #cbd5e1; }
 .signoff-row { display: flex; gap: 24pt; margin-top: 18pt; }
 .signoff-cell { flex: 1; }
-.signoff-line { border-bottom: 1pt solid #1C252B; height: 24pt; }
+.signoff-line { border-bottom: 1pt solid #03203D; height: 24pt; }
 </style>
 </head>
 <body>
@@ -8267,7 +8267,7 @@ h3 { font-size: 11pt; font-weight: 700; color: #1e3454; margin: 12pt 0 4pt 0; pa
   </div>
 </div>
 
-<p style="font-size:10pt;color:#475569;font-style:italic;border-left:3pt solid #0F4C5C;padding:6pt 12pt;margin:18pt 0">
+<p style="font-size:10pt;color:#475569;font-style:italic;border-left:3pt solid #03203D;padding:6pt 12pt;margin:18pt 0">
 This Safety Management System is built on the requirements of the Sport or Pleasure Vessel Code 2025 (Appendix 7) and the Workboat Code Edition 3 (Appendix on Safety Management). It is the responsibility of the vessel owner/operator to ensure the SMS is implemented, maintained, and reviewed.
 </p>
 
@@ -8333,8 +8333,8 @@ ${sectionsHtml}
       <div class="pp-head">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#0F4C5C" stroke-width="2.2" stroke-linecap="round"/>
-            <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#0F4C5C" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
+            <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#03203D" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#03203D" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
             <circle cx="20" cy="18" r="5" fill="#4F7A52"/>
             <path d="M17.5,18 L19.2,19.8 L23,15.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           </svg>
@@ -8365,8 +8365,8 @@ ${sectionsHtml}
         <h2>Approval &amp; Sign-off</h2>
         <p style="font-size:11px">I confirm that this Safety Management System has been prepared in accordance with the relevant Code, and that I will implement it on board ${escapeHtml(v ? v.name : 'the vessel')}.</p>
         <table style="margin-top:14px"><tr>
-          <td style="width:50%;border-bottom:1px solid #1C252B;height:30px"></td>
-          <td style="width:50%;border-bottom:1px solid #1C252B;height:30px"></td>
+          <td style="width:50%;border-bottom:1px solid #03203D;height:30px"></td>
+          <td style="width:50%;border-bottom:1px solid #03203D;height:30px"></td>
         </tr><tr>
           <td><div style="font-size:9px;color:#475569">Signed (Owner/Operator)</div></td>
           <td><div style="font-size:9px;color:#475569">Date</div></td>
@@ -8509,7 +8509,7 @@ ${sectionsHtml}
         <div id="team-invite-role-picker" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
           ${Object.entries(TEAM_ROLE_PRESETS).map(([id, p], idx) => `
             <button type="button" class="role-pick${idx === 1 ? ' on' : ''}" data-role="${id}" onclick="pickTeamRole('${id}')"
-              style="background:${idx === 1 ? 'rgba(15,76,92,.15)' : 'var(--bg2)'};border:2px solid ${idx === 1 ? 'var(--sea)' : 'var(--bdr)'};color:var(--text);padding:10px;border-radius:10px;font-family:var(--fn);font-size:12px;font-weight:700;cursor:pointer;text-align:left">
+              style="background:${idx === 1 ? 'rgba(3,32,61,.15)' : 'var(--bg2)'};border:2px solid ${idx === 1 ? 'var(--sea)' : 'var(--bdr)'};color:var(--text);padding:10px;border-radius:10px;font-family:var(--fn);font-size:12px;font-weight:700;cursor:pointer;text-align:left">
               ${escapeHtml(p.label)}
               <div style="font-size:10px;font-weight:500;color:var(--mid);margin-top:2px;line-height:1.4">${escapeHtml(p.blurb)}</div>
             </button>`).join('')}
@@ -8521,7 +8521,7 @@ ${sectionsHtml}
             const vessels = (Store.snapshot().vessels || []);
             if (!vessels.length) return '<div style="font-size:12px;color:var(--mid);padding:8px 10px;border:1px dashed var(--bdr);border-radius:10px">Add a vessel first.</div>';
             return `
-              <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bdr);border-radius:10px;cursor:pointer;background:rgba(15,76,92,.04)">
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bdr);border-radius:10px;cursor:pointer;background:rgba(3,32,61,.04)">
                 <input type="checkbox" class="team-vessel-all" id="team-vessel-all" checked onchange="toggleAllVesselScopes(this.checked)" style="accent-color:var(--sea)">
                 <span style="font-size:13px;color:var(--text);font-weight:600">All vessels (current and future)</span>
               </label>
@@ -8579,7 +8579,7 @@ ${sectionsHtml}
     document.querySelectorAll('#team-invite-role-picker .role-pick').forEach((btn) => {
       const active = btn.dataset.role === role;
       btn.classList.toggle('on', active);
-      btn.style.background  = active ? 'rgba(15,76,92,.15)' : 'var(--bg2)';
+      btn.style.background  = active ? 'rgba(3,32,61,.15)' : 'var(--bg2)';
       btn.style.borderColor = active ? 'var(--sea)' : 'var(--bdr)';
     });
     document.querySelectorAll('#team-invite-perms .team-perm').forEach((cb) => {
@@ -8939,10 +8939,10 @@ ${sectionsHtml}
     }).join('');
 
     const banner = native
-      ? `<div style="background:rgba(15,76,92,.06);border:1px solid rgba(15,76,92,.15);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:var(--mid);line-height:1.55">
+      ? `<div style="background:rgba(3,32,61,.06);border:1px solid rgba(3,32,61,.15);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:var(--mid);line-height:1.55">
           <strong style="color:var(--sea)">Everything you need is free.</strong> Need multiple vessels or a team? Manage your plan any time at <strong style="color:var(--sea)">codedok.com</strong>.
         </div>`
-      : `<div style="background:rgba(15,76,92,.06);border:1px solid rgba(15,76,92,.15);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:var(--mid);line-height:1.55">
+      : `<div style="background:rgba(3,32,61,.06);border:1px solid rgba(3,32,61,.15);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:var(--mid);line-height:1.55">
           <strong style="color:var(--sea)">Solo is free forever.</strong> Pro and Team paid upgrades launch alongside Stripe checkout — pick the plan you'll want and we'll email you the day it's live.
         </div>`;
     body.innerHTML = banner + cards;
@@ -9266,7 +9266,7 @@ ${sectionsHtml}
     }
 
     preview.innerHTML = `
-      <div style="background:var(--seap);border:1px solid rgba(15,76,92,.2);border-radius:12px;padding:14px 16px">
+      <div style="background:var(--seap);border:1px solid rgba(3,32,61,.2);border-radius:12px;padding:14px 16px">
         <div style="font-size:12px;font-weight:700;color:var(--sea);margin-bottom:6px">📋 Based on your category — ${escapeHtml(lastVessel.category)}</div>
         <div style="font-size:11px;color:var(--mid);line-height:1.6;margin-bottom:8px">CodedOK will track these on your behalf:</div>
         <div style="font-size:11px;color:var(--mid);line-height:1.7">
@@ -9395,8 +9395,8 @@ ${sectionsHtml}
           <div>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#0F4C5C" stroke-width="2.2" stroke-linecap="round"/>
-                <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#0F4C5C" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
+                <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#03203D" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#03203D" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
                 <circle cx="20" cy="18" r="5" fill="#4F7A52"/>
                 <path d="M17.5,18 L19.2,19.8 L23,15.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
               </svg>
@@ -9406,8 +9406,8 @@ ${sectionsHtml}
             <div class="pp-meta">Generated ${escapeHtml(today)}${issuedBySurveyor && surveyor ? ' by ' + escapeHtml(surveyor.surveyor && surveyor.surveyor.company ? surveyor.surveyor.company : surveyor.name) : ' · ' + escapeHtml(operator.name || '')}</div>
           </div>
           ${issuedBySurveyor ? `
-            <div style="text-align:right;border-left:2px solid #1C252B;padding-left:14px">
-              <div style="font-family:'Times New Roman',serif;font-size:18px;font-weight:700;color:#1C252B;letter-spacing:.5px">Anchor Marine</div>
+            <div style="text-align:right;border-left:2px solid #03203D;padding-left:14px">
+              <div style="font-family:'Times New Roman',serif;font-size:18px;font-weight:700;color:#03203D;letter-spacing:.5px">Anchor Marine</div>
               <div style="font-family:'Times New Roman',serif;font-size:9px;color:#475569;letter-spacing:.15em;text-transform:uppercase;margin-top:2px">Naval Architects · Marine Surveyors</div>
               <div style="font-size:11px;color:#94a3b8;margin-top:6px">${escapeHtml((surveyor.surveyor && surveyor.surveyor.regions || []).join(' · '))}</div>
               ${surveyor.surveyor && surveyor.surveyor.phone ? `<div style="font-size:11px;color:#475569;margin-top:2px">${escapeHtml(surveyor.surveyor.phone)}</div>` : ''}
@@ -9471,7 +9471,7 @@ ${sectionsHtml}
               const days = Store.daysUntil(c.expires_at);
               const cls = days === Infinity ? 'pp-status-ok' : days < 0 ? 'pp-status-bad' : days <= 30 ? 'pp-status-warn' : 'pp-status-ok';
               const label = days === Infinity ? 'No expiry' : days < 0 ? 'EXPIRED' : days <= 30 ? `${days}d` : 'Valid';
-              const fileMark = c.file ? '<span style="color:#0F4C5C;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
+              const fileMark = c.file ? '<span style="color:#03203D;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
               return `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.issuer || '—')}</td><td>${escapeHtml(c.number || '—')}</td><td>${fmtDate(c.expires_at)}</td><td><span class="${cls}">${label}</span></td><td>${fileMark}</td></tr>`;
             }).join('')}
           </table>
@@ -9485,7 +9485,7 @@ ${sectionsHtml}
               const days = Store.daysUntil(e.next_service_at);
               const cls = e.next_service_at == null ? 'pp-status-ok' : days < 0 ? 'pp-status-bad' : days <= 30 ? 'pp-status-warn' : 'pp-status-ok';
               const label = e.next_service_at == null ? '—' : days < 0 ? 'OVERDUE' : days <= 30 ? `${days}d` : 'OK';
-              const fileMark = e.file ? '<span style="color:#0F4C5C;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
+              const fileMark = e.file ? '<span style="color:#03203D;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
               return `<tr><td>${escapeHtml(e.name)}</td><td>${escapeHtml((e.make || '') + ' ' + (e.model || ''))}</td><td>${e.qty || 1}</td><td>${fmtDate(e.last_service_at)}</td><td>${fmtDate(e.next_service_at)}</td><td><span class="${cls}">${label}</span></td><td>${fileMark}</td></tr>`;
             }).join('')}
           </table>
@@ -9524,13 +9524,13 @@ ${sectionsHtml}
           <div style="display:flex;gap:32px;align-items:flex-end;margin-top:18px">
             <div style="flex:1">
               <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:24px">Surveyor signature</div>
-              <div style="border-bottom:1px solid #1C252B;height:1px;margin-bottom:6px"></div>
-              <div style="font-family:'Times New Roman',serif;font-size:13px;font-weight:700;color:#1C252B">${escapeHtml((surveyor.surveyor && surveyor.surveyor.company) || surveyor.name || '')}</div>
+              <div style="border-bottom:1px solid #03203D;height:1px;margin-bottom:6px"></div>
+              <div style="font-family:'Times New Roman',serif;font-size:13px;font-weight:700;color:#03203D">${escapeHtml((surveyor.surveyor && surveyor.surveyor.company) || surveyor.name || '')}</div>
               <div style="font-size:10px;color:#475569">${escapeHtml((surveyor.surveyor && surveyor.surveyor.qualifications || []).join(' · '))}</div>
             </div>
             <div style="flex:1">
               <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:24px">Date</div>
-              <div style="border-bottom:1px solid #1C252B;height:1px;margin-bottom:6px"></div>
+              <div style="border-bottom:1px solid #03203D;height:1px;margin-bottom:6px"></div>
               <div style="font-size:13px;font-weight:600">${escapeHtml(today)}</div>
             </div>
           </div>
@@ -10087,7 +10087,7 @@ ${sectionsHtml}
     document.querySelectorAll('#signup-role-picker .role-pick').forEach((btn) => {
       const isActive = btn.dataset.role === role;
       btn.classList.toggle('on', isActive);
-      btn.style.background = isActive ? 'rgba(15,76,92,.2)' : 'rgba(255,255,255,.04)';
+      btn.style.background = isActive ? 'rgba(3,32,61,.2)' : 'rgba(255,255,255,.04)';
       btn.style.borderColor = isActive ? 'var(--seal)' : 'rgba(255,255,255,.08)';
     });
     // Surveyors don't have a business they're billing under — the field

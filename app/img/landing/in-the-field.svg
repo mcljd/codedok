@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1100" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Coded RIB at speed offshore">
   <defs>
     <linearGradient id="sky-f" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#243036"/>
-      <stop offset="100%" stop-color="#0F4C5C"/>
+      <stop offset="0%"  stop-color="#0A2D4F"/>
+      <stop offset="100%" stop-color="#03203D"/>
     </linearGradient>
     <linearGradient id="water-f" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#0F4C5C"/>
+      <stop offset="0%"  stop-color="#03203D"/>
       <stop offset="100%" stop-color="#0A2630"/>
     </linearGradient>
     <linearGradient id="rib-tube" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#1C252B"/>
+      <stop offset="0%"  stop-color="#03203D"/>
       <stop offset="100%" stop-color="#0A1418"/>
     </linearGradient>
   </defs>
@@ -72,24 +72,24 @@
   <!-- Foreground RIB at speed, three-quarter view -->
   <g transform="translate(1100 660)">
     <!-- Hull underside (bouncing on plane — slight rise) -->
-    <path d="M 0 0 L 540 0 L 510 -60 L 30 -60 Z" fill="#1C252B"/>
+    <path d="M 0 0 L 540 0 L 510 -60 L 30 -60 Z" fill="#03203D"/>
     <!-- Inflatable tube — red accent for that "coastguard / pilot" feel -->
     <path d="M 30 -60 L 510 -60 L 480 -88 L 60 -88 Z" fill="url(#rib-tube)"/>
-    <path d="M 60 -88 Q 280 -100, 480 -88" stroke="#A14A3B" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <path d="M 60 -88 Q 280 -100, 480 -88" stroke="#D3262A" stroke-width="14" fill="none" stroke-linecap="round"/>
     <!-- Hull stripe -->
     <rect x="40" y="-40" width="460" height="6" fill="#F3F5F4" opacity=".7"/>
     <!-- Console / cabin -->
     <path d="M 200 -88 L 360 -88 L 350 -158 L 220 -158 Z" fill="#F3F5F4"/>
-    <rect x="218" y="-150" width="120" height="40" fill="#0F4C5C"/>
+    <rect x="218" y="-150" width="120" height="40" fill="#03203D"/>
     <!-- T-top frame -->
-    <rect x="212" y="-200" width="140" height="6"  fill="#1C252B"/>
-    <rect x="216" y="-200" width="6"  height="60" fill="#1C252B"/>
-    <rect x="342" y="-200" width="6"  height="60" fill="#1C252B"/>
+    <rect x="212" y="-200" width="140" height="6"  fill="#03203D"/>
+    <rect x="216" y="-200" width="6"  height="60" fill="#03203D"/>
+    <rect x="342" y="-200" width="6"  height="60" fill="#03203D"/>
     <!-- Antenna -->
-    <rect x="279" y="-238" width="4" height="42" fill="#1C252B"/>
+    <rect x="279" y="-238" width="4" height="42" fill="#03203D"/>
     <!-- Outboard motors -->
-    <rect x="490" y="-50" width="14" height="42" fill="#1C252B"/>
-    <rect x="486" y="-58" width="22" height="14" fill="#1C252B"/>
+    <rect x="490" y="-50" width="14" height="42" fill="#03203D"/>
+    <rect x="486" y="-58" width="22" height="14" fill="#03203D"/>
     <!-- Bow spray right at the front -->
     <g fill="#F3F5F4" opacity=".85">
       <circle cx="-10" cy="-20" r="18"/>

@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Coded vessel at harbour at first light">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#1C252B"/>
+      <stop offset="0%"  stop-color="#03203D"/>
       <stop offset="55%" stop-color="#173846"/>
-      <stop offset="100%" stop-color="#0F4C5C"/>
+      <stop offset="100%" stop-color="#03203D"/>
     </linearGradient>
     <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#0F4C5C"/>
+      <stop offset="0%"  stop-color="#03203D"/>
       <stop offset="100%" stop-color="#0A2F3A"/>
     </linearGradient>
     <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#1E7A86"/>
-      <stop offset="100%" stop-color="#0F4C5C"/>
+      <stop offset="0%"  stop-color="#3A78A6"/>
+      <stop offset="100%" stop-color="#03203D"/>
     </linearGradient>
   </defs>
 
@@ -54,14 +54,14 @@
 
   <!-- Pier on the left -->
   <g>
-    <rect x="0" y="780" width="220" height="36" fill="#1C252B"/>
+    <rect x="0" y="780" width="220" height="36" fill="#03203D"/>
     <rect x="0" y="816" width="220" height="14" fill="#0A1418"/>
     <!-- Bollards -->
-    <rect x="34"  y="752" width="20" height="32" rx="3" fill="#243036"/>
-    <rect x="112" y="752" width="20" height="32" rx="3" fill="#243036"/>
-    <rect x="188" y="752" width="20" height="32" rx="3" fill="#243036"/>
+    <rect x="34"  y="752" width="20" height="32" rx="3" fill="#0A2D4F"/>
+    <rect x="112" y="752" width="20" height="32" rx="3" fill="#0A2D4F"/>
+    <rect x="188" y="752" width="20" height="32" rx="3" fill="#0A2D4F"/>
     <!-- Lamp post -->
-    <rect x="40" y="540" width="6" height="220" fill="#243036"/>
+    <rect x="40" y="540" width="6" height="220" fill="#0A2D4F"/>
     <circle cx="43" cy="534" r="14" fill="#FCBF60" opacity=".75"/>
     <circle cx="43" cy="534" r="8"  fill="#F3F5F4"/>
   </g>
@@ -77,33 +77,33 @@
   <g transform="translate(380 720)">
     <!-- Reflection in water -->
     <g transform="translate(0 220) scale(1, -.5)" opacity=".35">
-      <path d="M 0 0 L 760 0 L 680 -110 L 80 -110 Z" fill="#0F4C5C"/>
-      <path d="M 0 0 L 760 0 L 730 30 L 30 30 Z" fill="#1C252B"/>
+      <path d="M 0 0 L 760 0 L 680 -110 L 80 -110 Z" fill="#03203D"/>
+      <path d="M 0 0 L 760 0 L 730 30 L 30 30 Z" fill="#03203D"/>
       <rect x="220" y="-200" width="280" height="90" rx="4" fill="#F3F5F4"/>
       <rect x="350" y="-300" width="20" height="100" fill="#F3F5F4"/>
     </g>
     <!-- Hull -->
     <path d="M 0 0 L 760 0 L 680 -110 L 80 -110 Z" fill="url(#hull)"/>
     <!-- Boot stripe -->
-    <path d="M 0 0 L 760 0 L 730 24 L 30 24 Z" fill="#1C252B"/>
+    <path d="M 0 0 L 760 0 L 730 24 L 30 24 Z" fill="#03203D"/>
     <!-- White rail/strake -->
     <rect x="80" y="-118" width="600" height="8" fill="#F3F5F4"/>
     <!-- Deckhouse / wheelhouse -->
     <path d="M 220 -110 L 500 -110 L 480 -200 L 240 -200 Z" fill="#F3F5F4"/>
-    <rect x="252" y="-188" width="50" height="38" fill="#0F4C5C"/>
-    <rect x="312" y="-188" width="50" height="38" fill="#0F4C5C"/>
-    <rect x="372" y="-188" width="50" height="38" fill="#0F4C5C"/>
-    <rect x="432" y="-188" width="36" height="38" fill="#0F4C5C"/>
+    <rect x="252" y="-188" width="50" height="38" fill="#03203D"/>
+    <rect x="312" y="-188" width="50" height="38" fill="#03203D"/>
+    <rect x="372" y="-188" width="50" height="38" fill="#03203D"/>
+    <rect x="432" y="-188" width="36" height="38" fill="#03203D"/>
     <!-- Roof rail -->
-    <rect x="220" y="-210" width="280" height="6" fill="#1C252B"/>
+    <rect x="220" y="-210" width="280" height="6" fill="#03203D"/>
     <!-- Mast -->
-    <rect x="346" y="-330" width="8" height="130" fill="#1C252B"/>
+    <rect x="346" y="-330" width="8" height="130" fill="#03203D"/>
     <!-- Mast cross-bar -->
-    <rect x="320" y="-260" width="60" height="4" fill="#1C252B"/>
+    <rect x="320" y="-260" width="60" height="4" fill="#03203D"/>
     <!-- Aerial -->
-    <rect x="349" y="-356" width="2" height="26" fill="#1C252B"/>
+    <rect x="349" y="-356" width="2" height="26" fill="#03203D"/>
     <!-- Nav light -->
-    <circle cx="350" cy="-336" r="4" fill="#A14A3B"/>
+    <circle cx="350" cy="-336" r="4" fill="#D3262A"/>
     <!-- Mooring line to bollard -->
     <path d="M 80 -54 Q 50 -10, -288 -32" stroke="#C58A2A" stroke-width="3" fill="none" stroke-linecap="round"/>
   </g>

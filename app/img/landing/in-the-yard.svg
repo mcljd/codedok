@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1400" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Coded vessel on a travel lift in the boat yard">
   <defs>
     <linearGradient id="sky-y" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#1E7A86"/>
-      <stop offset="55%" stop-color="#0F4C5C"/>
+      <stop offset="0%"  stop-color="#3A78A6"/>
+      <stop offset="55%" stop-color="#03203D"/>
       <stop offset="100%" stop-color="#0A2F3A"/>
     </linearGradient>
     <linearGradient id="water-y" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#0F4C5C"/>
+      <stop offset="0%"  stop-color="#03203D"/>
       <stop offset="100%" stop-color="#0A1418"/>
     </linearGradient>
     <linearGradient id="hull-y" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#A14A3B"/>
-      <stop offset="100%" stop-color="#1C252B"/>
+      <stop offset="0%"  stop-color="#D3262A"/>
+      <stop offset="100%" stop-color="#03203D"/>
     </linearGradient>
   </defs>
 
@@ -52,10 +52,10 @@
 
   <!-- Concrete pier rails along the bottom edge -->
   <g>
-    <rect x="0"    y="900" width="400"  height="120" fill="#243036"/>
-    <rect x="1600" y="900" width="400"  height="120" fill="#243036"/>
+    <rect x="0"    y="900" width="400"  height="120" fill="#0A2D4F"/>
+    <rect x="1600" y="900" width="400"  height="120" fill="#0A2D4F"/>
     <!-- Pier rails -->
-    <g stroke="#1C252B" stroke-width="4" fill="none">
+    <g stroke="#03203D" stroke-width="4" fill="none">
       <line x1="0"   y1="900" x2="400" y2="900"/>
       <line x1="40"  y1="840" x2="40"  y2="900"/>
       <line x1="120" y1="840" x2="120" y2="900"/>
@@ -88,9 +88,9 @@
     </g>
     <!-- Wheels -->
     <circle cx="540" cy="980" r="56" fill="#0A1418"/>
-    <circle cx="540" cy="980" r="32" fill="#243036"/>
+    <circle cx="540" cy="980" r="32" fill="#0A2D4F"/>
     <circle cx="620" cy="980" r="56" fill="#0A1418"/>
-    <circle cx="620" cy="980" r="32" fill="#243036"/>
+    <circle cx="620" cy="980" r="32" fill="#0A2D4F"/>
   </g>
   <!-- Right leg -->
   <g>
@@ -103,9 +103,9 @@
       <text x="1420" y="504" text-anchor="middle">E</text>
     </g>
     <circle cx="1380" cy="980" r="56" fill="#0A1418"/>
-    <circle cx="1380" cy="980" r="32" fill="#243036"/>
+    <circle cx="1380" cy="980" r="32" fill="#0A2D4F"/>
     <circle cx="1460" cy="980" r="56" fill="#0A1418"/>
-    <circle cx="1460" cy="980" r="32" fill="#243036"/>
+    <circle cx="1460" cy="980" r="32" fill="#0A2D4F"/>
   </g>
   <!-- Top beam -->
   <rect x="500" y="160" width="1000" height="80" fill="#1E40AF"/>
@@ -114,11 +114,11 @@
   <g fill="#0A1418">
     <rect x="720" y="240" width="40" height="60"/>
     <rect x="1240" y="240" width="40" height="60"/>
-    <circle cx="740" cy="320" r="18" fill="#243036"/>
-    <circle cx="1260" cy="320" r="18" fill="#243036"/>
+    <circle cx="740" cy="320" r="18" fill="#0A2D4F"/>
+    <circle cx="1260" cy="320" r="18" fill="#0A2D4F"/>
   </g>
   <!-- Sling straps holding the boat -->
-  <g stroke="#243036" stroke-width="14" fill="none">
+  <g stroke="#0A2D4F" stroke-width="14" fill="none">
     <line x1="740"  y1="340" x2="780"  y2="800"/>
     <line x1="1260" y1="340" x2="1220" y2="800"/>
   </g>
@@ -128,26 +128,26 @@
     <!-- Hull below waterline (anti-foul red) -->
     <path d="M 80 240 L 640 240 L 540 380 L 180 380 Z" fill="url(#hull-y)"/>
     <!-- Hull above waterline -->
-    <path d="M 0 100 L 720 100 L 640 240 L 80 240 Z" fill="#1C252B"/>
+    <path d="M 0 100 L 720 100 L 640 240 L 80 240 Z" fill="#03203D"/>
     <!-- Bootstripe -->
     <rect x="60" y="222" width="600" height="18" fill="#F3F5F4"/>
     <!-- Inflatable tube around the gunwale -->
-    <path d="M 0 100 L 720 100 L 700 60 L 20 60 Z" fill="#A14A3B"/>
+    <path d="M 0 100 L 720 100 L 700 60 L 20 60 Z" fill="#D3262A"/>
     <!-- Cabin -->
     <path d="M 200 60 L 520 60 L 500 -40 L 220 -40 Z" fill="#F3F5F4"/>
-    <rect x="232" y="-32" width="60" height="40" fill="#0F4C5C"/>
-    <rect x="302" y="-32" width="60" height="40" fill="#0F4C5C"/>
-    <rect x="372" y="-32" width="60" height="40" fill="#0F4C5C"/>
-    <rect x="442" y="-32" width="50" height="40" fill="#0F4C5C"/>
+    <rect x="232" y="-32" width="60" height="40" fill="#03203D"/>
+    <rect x="302" y="-32" width="60" height="40" fill="#03203D"/>
+    <rect x="372" y="-32" width="60" height="40" fill="#03203D"/>
+    <rect x="442" y="-32" width="50" height="40" fill="#03203D"/>
     <!-- Roof rail -->
-    <rect x="200" y="-50" width="320" height="6" fill="#1C252B"/>
+    <rect x="200" y="-50" width="320" height="6" fill="#03203D"/>
     <!-- Radar arch -->
-    <rect x="306" y="-80" width="8" height="30" fill="#1C252B"/>
-    <rect x="406" y="-80" width="8" height="30" fill="#1C252B"/>
-    <rect x="290" y="-92" width="140" height="14" rx="2" fill="#1C252B"/>
+    <rect x="306" y="-80" width="8" height="30" fill="#03203D"/>
+    <rect x="406" y="-80" width="8" height="30" fill="#03203D"/>
+    <rect x="290" y="-92" width="140" height="14" rx="2" fill="#03203D"/>
     <!-- Mast / antennas -->
-    <rect x="356" y="-180" width="6" height="100" fill="#1C252B"/>
-    <circle cx="359" cy="-188" r="8" fill="#A14A3B"/>
+    <rect x="356" y="-180" width="6" height="100" fill="#03203D"/>
+    <circle cx="359" cy="-188" r="8" fill="#D3262A"/>
   </g>
 
   <!-- Subtle dust / haze in the air around the lift -->
