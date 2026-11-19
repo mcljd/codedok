@@ -93,6 +93,15 @@
       return data;
     },
 
+    // Sign in with Apple (native iPhone app). `token` is Apple's identity
+    // token and `nonce` the raw value whose SHA-256 was sent to Apple.
+    async signInWithApple(token, nonce) {
+      const client = await loadSupabase();
+      const { data, error } = await client.auth.signInWithIdToken({ provider: 'apple', token, nonce });
+      if (error) throw error;
+      return data;
+    },
+
     // Email + password sign-up. Supabase emails a verification link;
     // the user must click it before signInWithPassword will succeed.
     // 'extra' is merged into user_metadata so we can capture role

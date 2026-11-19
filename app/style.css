@@ -5903,3 +5903,12 @@ html.is-native #plans-body { padding-top: 16px !important; }
   .tabbar.tabbar-v2, #s-vessel-detail .tabbar, #s-certs .tabbar { padding-left: 4px !important; padding-right: 4px !important; }
   .tabbar.tabbar-v2 .tab, #s-vessel-detail .tabbar .tab, #s-certs .tabbar .tab { padding: 14px 8px !important; }
 }
+
+/* ── Sign in with Apple (HIG: white button on dark backgrounds, 44pt+, SF-style label) ── */
+.apple-only { display: none; }
+html.is-native .apple-only { display: block; }
+.apple-or { display: flex; align-items: center; gap: 12px; margin: 16px 0 12px; color: rgba(255,255,255,.7); font-size: 13px; }
+.apple-or::before, .apple-or::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.22); }
+.apple-btn { width: 100%; min-height: 50px; border: 0; border-radius: 12px; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; font: 600 17px/1 -apple-system, "SF Pro Text", var(--fn); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.apple-btn:active { opacity: .85; }
+.apple-btn svg { margin-top: -3px; }

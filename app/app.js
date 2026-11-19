@@ -10357,6 +10357,41 @@ ${sectionsHtml}
   }
   window.submitSignIn = submitSignIn;
 
+  // ----- Sign in with Apple (iPhone app only) -----
+  async function signInWithApple() {
+    if (authInFlight) return;
+    const N = window.CodedokNative;
+    const fail = (t) => { showLoginError(t); const se = document.getElementById('signup-error'); if (se) { se.textContent = t; se.style.display = 'block'; } };
+    if (!N || !N.apple || !N.apple.available()) return fail('Sign in with Apple is only available in the iPhone app.');
+    if (!window.Supa || !window.CodedOkConfig || !window.CodedOkConfig.supabaseUrl) return fail("Cloud sign-in isn't configured.");
+    authInFlight = true;
+    try {
+      const a = await N.apple.signIn();
+      setAuthLoading(true, 'Signing in…');
+      const data = await window.Supa.signInWithApple(a.token, a.nonce);
+      // Apple only shares the name the first time, so save it straight away.
+      // Best-effort: failing to store a name must never block sign-in.
+      if (a.name && data && data.user) {
+        try {
+          const client = await window.Supa.getClient();
+          await client.auth.updateUser({ data: { name: a.name } });
+          await client.from('users').update({ name: a.name, initials: a.name.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase() }).eq('auth_user_id', data.user.id);
+        } catch (_) {}
+      }
+      // handleSignedIn() routes via Supa.onAuthChange, as for password sign-in.
+    } catch (err) {
+      setAuthLoading(false);
+      const msg = (err && err.message) ? String(err.message) : '';
+      // Cancelling Apple's sheet isn't an error worth showing.
+      if (/cancel|1001|AuthorizationError error 1000/i.test(msg) || (err && (err.code === '1001' || err.code === 1001))) return;
+      if (/provider.*not enabled|Unsupported provider/i.test(msg)) return fail('Sign in with Apple is not switched on yet. Use your email and password.');
+      fail(msg || "Couldn't sign in with Apple. Try again or use your email.");
+    } finally {
+      authInFlight = false;
+    }
+  }
+  window.signInWithApple = signInWithApple;
+
   function showLoginError(text) {
     const el = document.getElementById('login-error');
     if (!el) return;

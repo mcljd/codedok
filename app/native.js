@@ -257,12 +257,42 @@
   // until then there's nothing to buy, so no dead-end "See plans" screen.
   if (iapAvailable()) { try { document.documentElement.classList.add('iap-live'); } catch (_) {} }
 
+  // ---- Sign in with Apple (native only) ----
+  // Apple puts whatever nonce we send into the identity token, so we send
+  // the SHA-256 of a random value and give Supabase the raw value to check.
+  function randomNonce() {
+    var a = new Uint8Array(16); crypto.getRandomValues(a);
+    return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+  }
+  function sha256Hex(str) {
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)).then(function (buf) {
+      return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+    });
+  }
+  function appleAvailable() { return isNative && Cap.getPlatform && Cap.getPlatform() === 'ios'; }
+  function appleSignIn() {
+    if (!appleAvailable()) return Promise.reject(new Error('Sign in with Apple is only available in the iPhone app.'));
+    var P = plugin('SignInWithApple');
+    if (!P && Cap.registerPlugin) { try { P = Cap.registerPlugin('SignInWithApple'); } catch (_) {} }
+    if (!P) return Promise.reject(new Error('Sign in with Apple is not available in this build.'));
+    var raw = randomNonce();
+    return sha256Hex(raw).then(function (hashed) {
+      return P.authorize({ clientId: 'com.codedok.app', redirectURI: 'https://codedok.com', scopes: 'email name', nonce: hashed });
+    }).then(function (res) {
+      var r = (res && res.response) || {};
+      if (!r.identityToken) throw new Error('Apple did not return a sign-in token.');
+      var name = [r.givenName, r.familyName].filter(Boolean).join(' ');
+      return { token: r.identityToken, nonce: raw, name: name, email: r.email || null };
+    });
+  }
+
   window.CodedokNative = {
     isNative: isNative,
     scanDocument: scanDocument,
     takePhoto: takePhoto,
     shareFile: shareFile,
     haptic: haptic,
+    apple: { available: appleAvailable, signIn: appleSignIn },
     initChrome: initChrome,
     initPush: initPush,
     setStatusBar: setStatusBar,
