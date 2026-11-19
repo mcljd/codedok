@@ -10369,6 +10369,14 @@ ${sectionsHtml}
       const a = await N.apple.signIn();
       setAuthLoading(true, 'Signing in…');
       const data = await window.Supa.signInWithApple(a.token, a.nonce);
+      // Hand Apple's one-time code to the server so it can keep the refresh
+      // token needed to revoke access if the person later deletes their account.
+      if (a.code) {
+        try {
+          const c0 = await window.Supa.getClient();
+          c0.functions.invoke('apple-link', { body: { authorization_code: a.code } }).catch(() => {});
+        } catch (_) {}
+      }
       // Apple only shares the name the first time, so save it straight away.
       // Best-effort: failing to store a name must never block sign-in.
       if (a.name && data && data.user) {
@@ -10661,16 +10669,16 @@ ${sectionsHtml}
     if (window.Supa && window.Supa.ready) {
       try {
         const client = await window.Supa.getClient();
-        const { error } = await client.rpc('delete_my_account');
-        if (!error) rpcOk = true;
-        else console.warn('delete_my_account RPC failed', error);
+        const { data, error } = await client.functions.invoke('delete-account', { body: {} });
+        if (!error && data && data.ok) rpcOk = true;
+        else console.warn('delete-account failed', error || data);
       } catch (err) {
-        console.warn('delete_my_account RPC threw', err);
+        console.warn('delete-account threw', err);
       }
     }
 
     if (rpcOk) {
-      alert("Your account has been queued for deletion.\n\nWe'll erase all your data within 30 days. You'll receive a confirmation email when it's complete.");
+      alert("Your account and data have been deleted.");
       clearSession();
       if (window.Store && Store.resetSession) Store.resetSession();
       if (window.Supa && window.Supa.signOut) window.Supa.signOut().catch(() => {});

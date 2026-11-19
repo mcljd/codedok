@@ -14,3 +14,12 @@ verify_jwt = true
 # Called by signed-in users (surveyor or operator) to extract structured
 # fields from a single certificate photo / PDF via Claude vision.
 verify_jwt = true
+
+[functions.apple-link]
+# Called by a signed-in user right after Sign in with Apple to store the
+# refresh token (needed to revoke it on account deletion).
+verify_jwt = true
+
+[functions.delete-account]
+# Called by a signed-in user to delete their own account + data.
+verify_jwt = true

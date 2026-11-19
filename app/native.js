@@ -282,7 +282,7 @@
       var r = (res && res.response) || {};
       if (!r.identityToken) throw new Error('Apple did not return a sign-in token.');
       var name = [r.givenName, r.familyName].filter(Boolean).join(' ');
-      return { token: r.identityToken, nonce: raw, name: name, email: r.email || null };
+      return { token: r.identityToken, nonce: raw, name: name, email: r.email || null, code: r.authorizationCode || null };
     });
   }
 
