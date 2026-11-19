@@ -5912,3 +5912,9 @@ html.is-native .apple-only { display: block; }
 .apple-btn { width: 100%; min-height: 50px; border: 0; border-radius: 12px; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; gap: 8px; font: 600 17px/1 -apple-system, "SF Pro Text", var(--fn); cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .apple-btn:active { opacity: .85; }
 .apple-btn svg { margin-top: -3px; }
+
+/* ── Full logo lockup on marketing surfaces ── */
+#s-land .ios-logo-full { height: 38px; width: auto; display: block; }
+#s-land .ios-logo-footer { height: 46px; }
+#s-land .ios-brand { gap: 0; }
+@media (max-width: 519px) { #s-land .ios-logo-full { height: 32px; } #s-land .ios-logo-footer { height: 40px; } }

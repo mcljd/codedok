@@ -786,3 +786,7 @@ footer.cdk-footer a:hover { color: var(--sonar-light); text-decoration: none; }
   .cdk-related { padding: 48px 18px 0; }
   footer.cdk-footer { padding: 32px 18px 40px; }
 }
+
+/* Full logo lockup in the nav/footer */
+.cdk-logo-full { height: 36px; width: auto; display: block; }
+.cdk-footer-inner .cdk-logo-full { display: inline-block; vertical-align: middle; height: 30px; }
