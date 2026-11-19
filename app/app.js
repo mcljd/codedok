@@ -5150,9 +5150,80 @@
 
   let pendingCertVesselId = null;
 
+  // ---------- AI permission ----------
+  // Certificate reading and SMS drafting send the user's photo/answers to
+  // a third-party AI service (Anthropic). The user must be told and must
+  // agree first (Apple guideline 5.1.2 / UK GDPR). Saying no is fine:
+  // everything has a manual route. Stored per device; changeable in
+  // Account → Privacy & data.
+  const AI_CONSENT_KEY = 'codedok-ai-consent';
+  function hasAiConsent() { try { return localStorage.getItem(AI_CONSENT_KEY) === 'granted'; } catch (_) { return false; } }
+  function setAiConsent(on) { try { localStorage.setItem(AI_CONSENT_KEY, on ? 'granted' : 'declined'); } catch (_) {} }
+  window.hasAiConsent = hasAiConsent;
+
+  // Resolves true if the user has allowed AI (asks if they haven't yet).
+  function ensureAiConsent(purpose) {
+    if (hasAiConsent()) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const old = document.getElementById('ai-consent-sheet');
+      if (old) old.remove();
+      const what = purpose === 'sms' ? 'your answers' : 'the photo or file you choose';
+      const does = purpose === 'sms' ? 'draft your Safety Management System' : 'read the certificate and fill in the details';
+      const m = document.createElement('div');
+      m.id = 'ai-consent-sheet';
+      m.className = 'bdrop on';
+      m.innerHTML = `
+        <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+          <div class="sh-pull"></div>
+          <div class="sh-head"><div class="sh-title">Use AI for this?</div></div>
+          <div style="padding:0 20px 14px">
+            <div style="font-size:15px;color:var(--text);line-height:1.5;margin-bottom:10px">CodedOK sends ${what} to an AI service (Anthropic's Claude) to ${does}.</div>
+            <div style="font-size:14px;color:var(--mid);line-height:1.5;margin-bottom:16px">It may include personal details, such as names on a certificate. It's used only to give you the result and, under Anthropic's business terms, isn't used to train its models. You can change this any time in Account → Privacy &amp; data.</div>
+            <button class="btn btn-sea btn-full" id="ai-allow" style="min-height:50px;font-size:17px">Allow</button>
+            <button class="btn btn-out btn-full" id="ai-deny" style="margin-top:8px;min-height:50px">Not now — enter it myself</button>
+            <div style="text-align:center;margin-top:8px"><a href="#" id="ai-policy" style="font-size:14px;color:var(--tint)">Read the privacy policy</a></div>
+          </div>
+        </div>`;
+      document.body.appendChild(m);
+      const done = (v) => { m.remove(); resolve(v); };
+      m.querySelector('#ai-allow').onclick = () => { setAiConsent(true); done(true); };
+      m.querySelector('#ai-deny').onclick = () => { setAiConsent(false); done(false); };
+      m.querySelector('#ai-policy').onclick = (e) => { e.preventDefault(); done(false); go('s-privacy'); };
+    });
+  }
+  window.ensureAiConsent = ensureAiConsent;
+
+  // Account → Privacy & data
+  function openPrivacySheet() {
+    const old = document.getElementById('privacy-sheet');
+    if (old) old.remove();
+    const m = document.createElement('div');
+    m.id = 'privacy-sheet';
+    m.className = 'bdrop on';
+    m.onclick = (e) => { if (e.target === m) m.remove(); };
+    m.innerHTML = `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+        <div class="sh-pull"></div>
+        <div class="sh-head"><div class="sh-title">Privacy &amp; data</div><button class="sh-x" onclick="document.getElementById('privacy-sheet').remove()">×</button></div>
+        <div style="padding:0 20px 14px">
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;cursor:pointer">
+            <span><span style="display:block;font-size:16px;font-weight:600;color:var(--text)">AI features</span>
+            <span style="display:block;font-size:14px;color:var(--mid);margin-top:2px;line-height:1.4">Let CodedOK send certificate photos and your answers to Anthropic's Claude to read certificates and draft your SMS.</span></span>
+            <input type="checkbox" id="priv-ai" ${hasAiConsent() ? 'checked' : ''} style="width:51px;height:31px;flex-shrink:0;accent-color:var(--tint)">
+          </label>
+          <button class="btn btn-out btn-full" style="margin-top:10px" onclick="document.getElementById('privacy-sheet').remove();go('s-privacy')">Read the privacy policy</button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+    m.querySelector('#priv-ai').onchange = (e) => setAiConsent(e.target.checked);
+  }
+  window.openPrivacySheet = openPrivacySheet;
+
   // Open the iOS camera by default — used by the operator's "Snap a cert"
   // button on vessel detail. Accepts image, PDF or DOCX.
   async function pickCertPhoto(vesselId) {
+    // AI reads the photo, so ask permission first; "no" goes manual.
+    if (!(await ensureAiConsent('cert'))) { pendingCertVesselId = vesselId || null; openCertManual(); return; }
     // On the native iOS/Android build, use the real document scanner
     // (VisionKit on iOS): auto edge-detection, de-skew and glare
     // reduction give a far cleaner image for the AI to read. Falls back
@@ -5191,7 +5262,8 @@
 
   // Open a file picker for PDF / DOCX / image. Used by the surveyor's
   // "Upload certificate" flow — most surveyor docs come as PDFs.
-  function pickCertDocument(vesselId) {
+  async function pickCertDocument(vesselId) {
+    if (!(await ensureAiConsent('cert'))) { pendingCertVesselId = vesselId || null; openCertManual(); return; }
     openCertPicker(vesselId, { camera: false });
   }
   window.pickCertDocument = pickCertDocument;
@@ -5239,6 +5311,12 @@
       // it and let them type the details; it saves locally and syncs
       // once they're back online.
       await fallbackToManualCert(file, "You're offline just now, so we can't auto-read it. Your photo is saved — pop the details in and it'll sync later.");
+      return;
+    }
+
+    // Safety net: never send a file to the AI without permission.
+    if (!hasAiConsent()) {
+      await fallbackToManualCert(file, '');
       return;
     }
 
@@ -7246,7 +7324,10 @@
   let smsAiInputs = null;
   let smsAiStep = 0;
 
-  function openSmsAiWizard() {
+  async function openSmsAiWizard() {
+    // Answers go to the AI service, so ask permission first. Declining
+    // leaves the normal manual SMS builder one tap away.
+    if (!(await ensureAiConsent('sms'))) return;
     smsAiStep = 0;
     smsAiInputs = {
       vessel_id: (Store.getVessel(activeVesselId) || (Store.snapshot().vessels[0] || {})).id || null,
@@ -7398,7 +7479,7 @@
     // Try the real Claude API via the Supabase edge function first. Falls
     // back to the local template substitution if the function isn't
     // deployed or any error occurs — so the app keeps working in dev.
-    if (window.Supa && window.Supa.ready) {
+    if (window.Supa && window.Supa.ready && hasAiConsent()) {
       try {
         const v = Store.getVessel(smsAiInputs.vessel_id) || {};
         const payload = {

@@ -2234,7 +2234,7 @@
       <div class="row" onclick="openInviteSurveyorModal()"><div class="row-ic bl">⚓</div><div class="row-body"><div class="row-name">Invite your surveyor</div><div class="row-sub">Free seat per vessel · they sign off inspections in the app</div></div><span class="chev">›</span></div>
       <div class="row" onclick="go('s-notif')"><div class="row-ic bl">🔔</div><div class="row-body"><div class="row-name">Notification settings</div></div><span class="chev">›</span></div>
       <div class="row" onclick="openChangePassword()"><div class="row-ic bl">🔑</div><div class="row-body"><div class="row-name">Change password</div><div class="row-sub">Set a new password for your account</div></div><span class="chev">›</span></div>
-      <div class="row"><div class="row-ic bl">🔒</div><div class="row-body"><div class="row-name">Privacy &amp; data</div></div><span class="chev">›</span></div>
+      <div class="row" onclick="openPrivacySheet()"><div class="row-ic bl">🔒</div><div class="row-body"><div class="row-name">Privacy &amp; data</div><div class="row-sub">AI features and the privacy policy</div></div><span class="chev">›</span></div>
       <div class="row" onclick="openTutorial()"><div class="row-ic bl">🎓</div><div class="row-body"><div class="row-name">Take the tour</div><div class="row-sub">60-second walkthrough of the app</div></div><span class="chev">›</span></div>
       <div class="row"><div class="row-ic bl">❓</div><div class="row-body"><div class="row-name">Help &amp; support</div></div><span class="chev">›</span></div>
       <div class="row" onclick="signOut()"><div class="row-ic rd">↩️</div><div class="row-body"><div class="row-name">Sign out</div><div class="row-sub">Return to the login screen</div></div><span class="chev">›</span></div>
@@ -2416,20 +2416,23 @@
     <ul style="margin:0 0 14px;padding-left:20px">
       <li>Your name, email address and (optionally) business name when you sign up.</li>
       <li>The vessel, certificate, equipment, crew and SMS information you enter into the app.</li>
-      <li>Notification subscription details (web-push endpoint + keys) if you opt in to reminders.</li>
+      <li>Photos and documents you add (such as certificate scans).</li>
+      <li>Notification subscription details (push token) if you opt in to reminders.</li>
       <li>Standard server logs (IP address, browser, timestamps) for security and debugging.</li>
     </ul>
     <h2 style="font-size:18px;margin:14px 0 8px">How we use it</h2>
     <p style="margin:0 0 14px">To run the service, deliver expiry reminders, support you, and improve the app. We don't sell your data and don't share it with third parties for marketing.</p>
+    <h2 style="font-size:18px;margin:14px 0 8px">AI features</h2>
+    <p style="margin:0 0 14px">CodedOK can use AI to read a certificate you photograph or upload, and to draft a Safety Management System from your answers. <strong>Only when you choose to use these features, and only after you give permission in the app</strong>, we send the photo or file (or your answers) to <strong>Anthropic</strong>, which runs the Claude AI model. A certificate can contain personal details such as names. The data is sent only to produce the result you asked for. Under Anthropic's business terms it is not used to train its models. You can decline, or switch this off at any time in Account → Privacy &amp; data, and enter details by hand instead.</p>
     <h2 style="font-size:18px;margin:14px 0 8px">Who hosts your data</h2>
-    <p style="margin:0 0 14px">Application database and authentication: Supabase (data hosted in the EU region). Static app delivery: Cloudflare. Email delivery: Resend. Error monitoring: Sentry (if enabled). All process data as our data processor under appropriate Data Processing Agreements.</p>
+    <p style="margin:0 0 14px">Application database and authentication: Supabase (data hosted in the EU region). Static app delivery: Cloudflare. Email delivery: Resend. AI features (with your permission): Anthropic. Subscriptions: Apple handles payment, and RevenueCat processes your subscription status. Error monitoring: Sentry (if enabled). All process data as our data processor under appropriate Data Processing Agreements.</p>
     <h2 style="font-size:18px;margin:14px 0 8px">Your rights (UK GDPR / DPA 2018)</h2>
     <p style="margin:0 0 14px">You can request access, correction, portability, or deletion of your personal data at any time. To delete your account, open Account → Delete account, or email <a href="mailto:privacy@codedok.com">privacy@codedok.com</a>. We'll respond within 30 days.</p>
     <h2 style="font-size:18px;margin:14px 0 8px">Cookies and analytics</h2>
     <p style="margin:0 0 14px">We use localStorage for offline functionality and a session token for sign-in. We use Google Analytics 4 to understand how the site is used in aggregate — IP addresses are anonymised before processing. No advertising cookies, no third-party marketing trackers.</p>
     <h2 style="font-size:18px;margin:14px 0 8px">Contact</h2>
     <p style="margin:0 0 14px">Data queries: <a href="mailto:privacy@codedok.com">privacy@codedok.com</a></p>
-    <p style="font-size:12px;color:var(--mid);margin-top:24px">Last updated: 13 May 2026.</p>
+    <p style="font-size:12px;color:var(--mid);margin-top:24px">Last updated: November 2026.</p>
   </div>
 </div>
 

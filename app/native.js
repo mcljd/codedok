@@ -231,6 +231,10 @@
     window.location.href = 'https://apps.apple.com/account/subscriptions';
   }
 
+  // Subscription UI only appears once a RevenueCat key is configured —
+  // until then there's nothing to buy, so no dead-end "See plans" screen.
+  if (iapAvailable()) { try { document.documentElement.classList.add('iap-live'); } catch (_) {} }
+
   window.CodedokNative = {
     isNative: isNative,
     scanDocument: scanDocument,
