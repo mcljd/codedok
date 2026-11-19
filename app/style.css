@@ -5884,3 +5884,22 @@ html.is-native #plans-body { padding-top: 16px !important; }
 #s-login .auth-sub { color: rgba(255,255,255,.78) !important; }
 #s-login .auth-fineprint { color: rgba(255,255,255,.7); font-size: 12px; }
 #s-login .auth-fineprint a { color: #fff; text-decoration: underline; }
+
+/* ── Tab strips: fit five tabs on a phone without cutting the last one off ── */
+@media (max-width: 519px) {
+  .tabbar { padding: 0 6px; gap: 0; }
+  .tabbar .tab { flex: 1 0 auto; padding: 12px 9px; font-size: 13px; text-align: center; }
+}
+
+/* ── Swipe-to-remove rows (iOS swipe action) ── */
+.swipe-row { position: relative; overflow: hidden; border-radius: 14px; margin-bottom: 10px; }
+.swipe-row .swipe-fg { position: relative; z-index: 1; margin-bottom: 0; transition: transform .22s cubic-bezier(.2,.8,.2,1); background: var(--card); will-change: transform; }
+.swipe-row.dragging .swipe-fg { transition: none; }
+.swipe-act { position: absolute; top: 0; right: 0; bottom: 0; width: 88px; border: 0; background: #D70015; color: #fff; font: 600 15px/1 var(--fn); cursor: pointer; z-index: 0; }
+.swipe-row.open .swipe-fg { transform: translateX(-88px); }
+@media (hover: none) { .swipe-row .crewc-head .btn-xs { display: none; } }
+@media (prefers-reduced-motion: reduce) { .swipe-row .swipe-fg { transition: none; } }
+@media (max-width: 519px) {
+  .tabbar.tabbar-v2, #s-vessel-detail .tabbar, #s-certs .tabbar { padding-left: 4px !important; padding-right: 4px !important; }
+  .tabbar.tabbar-v2 .tab, #s-vessel-detail .tabbar .tab, #s-certs .tabbar .tab { padding: 14px 8px !important; }
+}

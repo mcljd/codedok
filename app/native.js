@@ -297,6 +297,43 @@
     });
   })();
 
+  // Swipe-left on a .swipe-row reveals its action (iOS swipe actions).
+  (function () {
+    var startX = 0, startY = 0, row = null, fg = null, base = 0, horiz = null, W = 88;
+    function closeAll(except) {
+      var open = document.querySelectorAll('.swipe-row.open');
+      for (var i = 0; i < open.length; i++) if (open[i] !== except) open[i].classList.remove('open');
+    }
+    document.addEventListener('touchstart', function (e) {
+      var r = e.target.closest && e.target.closest('.swipe-row');
+      if (!r) { closeAll(null); return; }
+      row = r; fg = r.querySelector('.swipe-fg'); if (!fg) { row = null; return; }
+      var t = e.touches[0]; startX = t.clientX; startY = t.clientY; horiz = null;
+      base = r.classList.contains('open') ? -W : 0; closeAll(r);
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (!row) return;
+      var t = e.touches[0], dx = t.clientX - startX, dy = t.clientY - startY;
+      if (horiz === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) horiz = Math.abs(dx) > Math.abs(dy);
+      if (!horiz) return;
+      row.classList.add('dragging');
+      var x = Math.max(-W - 20, Math.min(0, base + dx));
+      fg.style.transform = 'translateX(' + x + 'px)';
+    }, { passive: true });
+    document.addEventListener('touchend', function () {
+      if (!row) return;
+      var r = row, f = fg; row = null; fg = null;
+      r.classList.remove('dragging');
+      if (horiz) {
+        var m = /translateX\((-?[\d.]+)px\)/.exec(f.style.transform || '');
+        var x = m ? parseFloat(m[1]) : base;
+        f.style.transform = '';
+        if (x < -W / 2) { r.classList.add('open'); try { if (window.CodedokNative && CodedokNative.haptic) CodedokNative.haptic('light'); } catch (_) {} }
+        else r.classList.remove('open');
+      }
+    }, { passive: true });
+  })();
+
   if (isNative) {
     // Collapse the large title as a screen scrolls. Hysteresis (on at 36px,
     // off at 6px) plus an overflow guard stop short pages flickering when

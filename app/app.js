@@ -2122,13 +2122,22 @@
         </div>
       </div>
 
-      <div class="h-section">Compliance tools</div>
+      <div class="h-section">Plan ahead</div>
       <div class="tool-list">
         <div class="qa-tile" onclick="go('s-calendar')">
           <div class="qa-icon bl">📆</div>
           <div style="flex:1"><div class="qa-title">Compliance calendar</div><div class="qa-sub">Every deadline by month</div></div>
           <span class="chev">›</span>
         </div>
+        <div class="qa-tile" onclick="go('s-surveys')">
+          <div class="qa-icon bl">🔍</div>
+          <div style="flex:1"><div class="qa-title">Surveys</div><div class="qa-sub">Book, history, upcoming</div></div>
+          <span class="chev">›</span>
+        </div>
+      </div>
+
+      <div class="h-section">Check &amp; fix</div>
+      <div class="tool-list">
         <div class="qa-tile" onclick="go('s-gap')">
           <div class="qa-icon pu">🤖</div>
           <div style="flex:1"><div class="qa-title">AI gap analysis</div><div class="qa-sub">Check vessel against full MCA Code</div></div>
@@ -2146,13 +2155,8 @@
         </div>
       </div>
 
-      <div class="h-section">Surveys &amp; export</div>
+      <div class="h-section">Share with a surveyor</div>
       <div class="tool-list">
-        <div class="qa-tile" onclick="go('s-surveys')">
-          <div class="qa-icon bl">🔍</div>
-          <div style="flex:1"><div class="qa-title">Surveys</div><div class="qa-sub">Book, history, upcoming</div></div>
-          <span class="chev">›</span>
-        </div>
         <div class="qa-tile" onclick="exportFleetInspectionPack()">
           <div class="qa-icon ok">📄</div>
           <div style="flex:1"><div class="qa-title">Inspection pack PDF</div><div class="qa-sub">One-tap, surveyor-ready</div></div>
@@ -2163,18 +2167,18 @@
           <div style="flex:1"><div class="qa-title">Export packs</div><div class="qa-sub">UK, Ireland, or combined</div></div>
           <span class="chev">›</span>
         </div>
+        <div class="qa-tile" onclick="go('s-handoff')">
+          <div class="qa-icon bl">🔗</div>
+          <div style="flex:1"><div class="qa-title">Skipper hand-off QR</div><div class="qa-sub">Time-limited read-only access</div></div>
+          <span class="chev">›</span>
+        </div>
       </div>
 
-      <div class="h-section">Team &amp; sharing</div>
+      <div class="h-section">Your team</div>
       <div class="tool-list">
         <div class="qa-tile" onclick="go('s-crew')">
           <div class="qa-icon pu">👥</div>
           <div style="flex:1"><div class="qa-title">Manage crew</div><div class="qa-sub">All crew across vessels</div></div>
-          <span class="chev">›</span>
-        </div>
-        <div class="qa-tile" onclick="go('s-handoff')">
-          <div class="qa-icon bl">🔗</div>
-          <div style="flex:1"><div class="qa-title">Skipper hand-off QR</div><div class="qa-sub">Time-limited read-only access</div></div>
           <span class="chev">›</span>
         </div>
       </div>
@@ -2547,7 +2551,9 @@
         const certs = Store.snapshot().crewCerts.filter((cc) => cc.person_id === p.id);
         const otherVessels = (p.vessel_ids || []).filter((id) => id !== vesselId).map((id) => Store.getVessel(id)).filter(Boolean);
         html += `
-          <div class="crewc">
+          <div class="swipe-row">
+          <button class="swipe-act" aria-label="Remove ${escapeHtml(p.name)} from this vessel" onclick="event.stopPropagation();unassignCrew('${p.id}','${vesselId}')">Remove</button>
+          <div class="crewc swipe-fg">
             <div class="crewc-head">
               <div class="crewc-av" style="background:var(--${p.avatar_color || 'sea'})">${escapeHtml(p.initials)}</div>
               <div style="flex:1;min-width:0">
@@ -2564,6 +2570,7 @@
                 return `<div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:var(--mid)">${escapeHtml(cc.name)}</span><span class="chip ${cls}">${label}</span></div>`;
               }).join('') || '<div style="font-size:12px;color:var(--lt)">No certificates on file</div>'}
             </div>
+          </div>
           </div>`;
       });
     }
