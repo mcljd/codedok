@@ -13,12 +13,12 @@ const config: CapacitorConfig = {
   webDir: 'app',
   ios: {
     contentInset: 'always',
-    backgroundColor: '#0f172a',
+    backgroundColor: '#03203D',
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 600,
-      backgroundColor: '#0f172a',
+      backgroundColor: '#03203D',
       showSpinner: false,
     },
     PushNotifications: {

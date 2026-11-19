@@ -1,0 +1,52 @@
+# Codemagic: builds the CodedOK iOS app on a cloud Mac and uploads it to
+# App Store Connect — no local Mac or Xcode needed. Start it manually from
+# codemagic.io (Start new build → this branch → "CodedOK iOS").
+#
+# Needs one environment-variable group in Codemagic called
+# `app_store_credentials` (all marked Secret):
+#   APP_STORE_CONNECT_ISSUER_ID      — App Store Connect → Users and Access → Integrations
+#   APP_STORE_CONNECT_KEY_IDENTIFIER — the API key's Key ID
+#   APP_STORE_CONNECT_PRIVATE_KEY    — full contents of the downloaded .p8 file
+#   CERTIFICATE_PRIVATE_KEY          — an RSA key used for the signing certificate
+# See docs/CODEMAGIC.md for the step-by-step.
+workflows:
+  ios-app-store:
+    name: CodedOK iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      groups:
+        - app_store_credentials
+      vars:
+        BUNDLE_ID: com.codedok.app
+        XCODE_WORKSPACE: ios/App/App.xcworkspace
+        XCODE_SCHEME: App
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: npm install --no-audit --no-fund
+      - name: Copy the web app into the iOS project and install pods
+        script: npx cap sync ios
+      - name: Set up code signing (creates the certificate and profile if missing)
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Set a unique build number
+        script: |
+          cd ios/App
+          agvtool new-version -all "$BUILD_NUMBER"
+      - name: Build the app
+        script: xcode-project build-ipa --workspace "$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: false
