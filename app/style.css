@@ -2434,11 +2434,11 @@ h1, h2, h3, .slbl {
   .ring-wrap { width: 76px !important; height: 76px !important; }
   .ring-wrap > svg { width: 76px !important; height: 76px !important; }
   .ring-pct { font-size: 19px !important; }
-  .ring-pct-lbl { font-size: 9px !important; }
+  .ring-pct-lbl { font-size: 12px !important; }
 
   /* Inline 26px ring text used on home — override */
   .hero .ring-val > div:first-child { font-size: 19px !important; }
-  .hero .ring-val span { font-size: 11px !important; }
+  .hero .ring-val span { font-size: 12px !important; }
 
   /* Display headings — slightly smaller */
   .h-display { font-size: 20px !important; letter-spacing: -.4px !important; }
@@ -2446,25 +2446,25 @@ h1, h2, h3, .slbl {
   /* Tiles in hero strips */
   .tile { padding: 8px 10px !important; }
   .tile-num { font-size: 17px !important; }
-  .tile-lbl { font-size: 9px !important; }
+  .tile-lbl { font-size: 12px !important; }
 
   /* Quick action / qa-tile — small but reasonable */
   .qa-tile { padding: 12px !important; }
   .qa-icon { width: 36px !important; height: 36px !important; font-size: 17px !important; }
-  .qa-title { font-size: 13px !important; }
-  .qa-sub { font-size: 11px !important; }
+  .qa-title { font-size: 15px !important; }
+  .qa-sub { font-size: 13px !important; }
 
   /* Top dark header on home — less bottom padding */
   #s-home > div[style*="background:var(--ink)"] {
     padding: 0 18px 12px !important;
   }
-  #home-greeting > div:first-child { font-size: 11px !important; margin-bottom: 1px !important; }
+  #home-greeting > div:first-child { font-size: 13px !important; margin-bottom: 1px !important; }
   #home-greeting .h-display { font-size: 18px !important; }
 
   /* Section headings — slightly smaller */
   .h-section { font-size: 14px !important; margin: 14px 16px 6px !important; }
   .h-section-row { margin: 14px 16px 6px !important; }
-  .slbl { padding: 14px 20px 6px !important; font-size: 10px !important; }
+  .slbl { padding: 14px 20px 6px !important; font-size: 14px !important; }
 
   /* Vessel detail / surveyor vessel hero compaction */
   #s-vessel-detail > div[style*="background:var(--ink)"],
@@ -2475,15 +2475,15 @@ h1, h2, h3, .slbl {
   .vcover-emoji { width: 38px !important; height: 38px !important; font-size: 18px !important; }
   .vcover-name { font-size: 15px !important; }
   .vcover-stat .num { font-size: 15px !important; }
-  .vcover-stat .lbl { font-size: 8px !important; }
+  .vcover-stat .lbl { font-size: 12px !important; }
 
   /* Vessel cover card body padding */
   .vcover-body { padding: 12px 14px !important; }
   .vcover-head { padding: 14px 14px 10px !important; }
 
   /* Status badges */
-  .insp-pill { font-size: 10px !important; padding: 5px 9px !important; }
-  .cat-pill { font-size: 9px !important; padding: 2px 7px !important; }
+  .insp-pill { font-size: 12px !important; padding: 5px 10px !important; }
+  .cat-pill { font-size: 12px !important; padding: 3px 8px !important; }
 
   /* Action card margins */
   .action-card { padding: 12px !important; }
@@ -2503,9 +2503,9 @@ h1, h2, h3, .slbl {
 
   /* Tickets + crew cards padding */
   .ticket-body { padding: 10px 12px !important; gap: 10px !important; }
-  .ticket-name { font-size: 13px !important; }
-  .ticket-sub { font-size: 11px !important; }
-  .ticket-ic { width: 34px !important; height: 34px !important; font-size: 15px !important; }
+  .ticket-name { font-size: 16px !important; }
+  .ticket-sub { font-size: 14px !important; }
+  .ticket-ic { width: 38px !important; height: 38px !important; font-size: 17px !important; }
 
   .crewc { padding: 12px !important; }
   .crewc-av { width: 38px !important; height: 38px !important; }
@@ -2514,7 +2514,7 @@ h1, h2, h3, .slbl {
   /* Bottom nav slightly tighter */
   .bnav { padding: 8px 0 calc(8px + var(--safe)) !important; }
   .bni-ic { font-size: 19px !important; }
-  .bni-lb { font-size: 9px !important; }
+  .bni-lb { font-size: 11px !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -5749,3 +5749,49 @@ html.is-native .sb { height: env(safe-area-inset-top, 20px); min-height: env(saf
 .dni-ic .cdk-ic, .ad-sb-ic .cdk-ic, .sv-sb-ic .cdk-ic { width: 20px; height: 20px; }
 html.is-native .web-only { display: none !important; }
 html.is-native #plans-body { padding-top: 16px !important; }
+
+/* ══════════════════════════════════════════════════════════════════
+   UI/UX AUDIT FIXES — app screens only (marketing #s-land untouched)
+   • Secondary text ≥ 4.5:1 contrast; nothing under 12px
+   • One status signal per row (pill), two-line rows
+   • Tap areas ≥ 44px without changing layout
+   • ALL-CAPS only where it earns it
+   ══════════════════════════════════════════════════════════════════ */
+:root { --lt: #6B6B70; --lt-2: #8A8A8E; }
+.bni { color: #6B6B70; }
+.bni.on { color: var(--tint); }
+
+/* Type floor: anything set inline below 12px is lifted to 12px. */
+.shell:not(#s-land) [style*="font-size:8px"],
+.shell:not(#s-land) [style*="font-size:9px"],
+.shell:not(#s-land) [style*="font-size:10px"],
+.shell:not(#s-land) [style*="font-size:11px"] { font-size: 12px !important; }
+.shell:not(#s-land) .ss-sub, .shell:not(#s-land) .row-sub, .shell:not(#s-land) .ios-eyebrow { font-size: 14px; }
+
+/* Section labels and chips in normal case (iOS 26 style). */
+.shell:not(#s-land) .slbl { text-transform: none; letter-spacing: 0; font-weight: 600; font-size: 14px; color: var(--mid); }
+.shell:not(#s-land) .h-section { text-transform: none; letter-spacing: 0; font-size: 15px; }
+.shell:not(#s-land) .cat-pill { text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 600; }
+
+/* Rows: two lines, one status pill. The coloured side-bar was a third
+   signal on top of the icon and the pill — gone. */
+.shell:not(#s-land) .ticket-stripe { display: none; }
+.shell:not(#s-land) .ticket { border-left: 0; }
+.shell:not(#s-land) .ticket-body { padding: 14px 16px; }
+.shell:not(#s-land) .ticket-name { font-size: 16px; font-weight: 600; line-height: 1.3; }
+.shell:not(#s-land) .ticket-sub { font-size: 14px; color: var(--mid); margin-top: 2px; }
+.shell:not(#s-land) .ticket-vessel { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: var(--mid); }
+.shell:not(#s-land) .ticket-vessel::after { content: ' · '; }
+.shell:not(#s-land) .cb { flex-direction: row; align-items: baseline; gap: 4px; min-width: 0; padding: 5px 11px; border-radius: 999px; white-space: nowrap; }
+.shell:not(#s-land) .cb-num, .shell:not(#s-land) .cb-lbl { font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; margin: 0; line-height: 1.2; }
+
+/* Tap targets: grow the hit area, not the visual size. */
+.ios-head-btn, .avatar, .btn-xs, .btn-sm, .sh-x, .slbl-act, .auth-demo-link, #vd-hero button { position: relative; }
+.ios-head-btn::after, .avatar::after, .btn-xs::after, .btn-sm::after, .sh-x::after, .slbl-act::after, #vd-hero button::after { content: ''; position: absolute; inset: -5px; }
+.auth-demo-link::after { inset: -15px -10px; }
+.auth-card a, .auth-card .auth-link { display: inline-block; padding: 13px 6px; margin: -13px -6px; }
+.shell:not(#s-land) .tabs button, .shell:not(#s-land) .vf-chip { min-height: 44px; }
+.shell:not(#s-land) .vcover-cam, .shell:not(#s-land) .vcover-meta,
+.shell:not(#s-land) .scard-sub, .shell:not(#s-land) .vf-count { font-size: 12px !important; }
+.shell:not(#s-land) .scard-lbl { font-size: 12px !important; text-transform: none !important; letter-spacing: 0 !important; font-weight: 600; }
+.shell:not(#s-land) .ticket-vessel::after { white-space: pre; }

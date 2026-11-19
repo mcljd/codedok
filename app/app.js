@@ -1372,15 +1372,12 @@
       statusEl.className = 'hero hero-home';
       statusEl.style.cssText = 'padding:18px 16px 16px';
       if (isFirstTime) {
-        const firstName = (s.user && s.user.name) ? s.user.name.split(' ')[0] : 'there';
-        statusEl.innerHTML = `
-          <div class="hero-stars" aria-hidden="true"></div>
-          <div style="position:relative;z-index:1;padding:6px 2px 2px">
-            <div style="font-size:13px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Welcome to CodedOK</div>
-            <div style="font-size:22px;font-weight:800;color:white;letter-spacing:-.4px;line-height:1.15;margin-bottom:8px">Hi ${escapeHtml(firstName)} — let's get your first certificate in.</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.55">Snap a photo of any certificate and we read the details for you. We'll set your boat up around it and remind you before anything runs out.</div>
-          </div>`;
+        // The onboarding card below is the single welcome; this slot
+        // used to repeat it (and rendered white-on-white).
+        statusEl.style.display = 'none';
+        statusEl.innerHTML = '';
       } else {
+        statusEl.style.display = '';
         // ── Simple, plain-language status for novice users. ──
         // No percentage ring, no "items adrift" jargon. One big
         // traffic-light badge + a sentence anyone understands, then
@@ -1548,17 +1545,11 @@
       // hatch for the cautious / vessel-without-paperwork case.
       onbEl.innerHTML = `
         <div style="padding:24px 16px 8px">
-          <div class="card" style="padding:28px 22px;border-radius:20px;background:linear-gradient(180deg,rgba(34,211,238,.10) 0%,var(--card) 100%);border:1px solid rgba(34,211,238,.30);text-align:center">
-            <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px">Welcome to CodedOK</div>
-            <div style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.4px;line-height:1.15;margin-bottom:10px">Get started in 30 seconds.</div>
-            <div style="font-size:14px;color:var(--mid);line-height:1.55;margin-bottom:22px;max-width:300px;margin-left:auto;margin-right:auto">Photograph any certificate — coding cert, PLI, liferaft, radio licence — and we'll fill in the rest.</div>
-            <button onclick="scanCertWithAI()" style="background:linear-gradient(135deg,#639CC5 0%,#4F88B3 100%);color:#03203D;border:0;border-radius:14px;padding:18px 28px;font-family:var(--fn);font-size:16px;font-weight:800;cursor:pointer;width:100%;max-width:320px;box-shadow:0 14px 36px rgba(99,156,197,.30);display:inline-flex;align-items:center;justify-content:center;gap:10px">
-              <span style="font-size:22px">📷</span>
-              Snap your first certificate
-            </button>
-            <div style="margin-top:18px">
-              <button onclick="go('s-onboard')" style="background:none;border:0;color:var(--mid);font-family:var(--fn);font-size:13px;cursor:pointer;text-decoration:underline">Or add a vessel manually</button>
-            </div>
+          <div class="card" style="padding:28px 22px;border-radius:16px;text-align:center">
+            <div style="font-size:24px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2;margin-bottom:8px">Add your first certificate</div>
+            <div style="font-size:15px;color:var(--mid);line-height:1.5;margin-bottom:22px;max-width:300px;margin-left:auto;margin-right:auto">Take a photo of any certificate. CodedOK reads it, files it, and reminds you before it runs out.</div>
+            <button class="btn btn-sea btn-full" onclick="scanCertWithAI()" style="min-height:52px;font-size:17px">Scan a certificate</button>
+            <button onclick="go('s-onboard')" style="background:none;border:0;color:var(--tint);font-family:var(--fn);font-size:16px;cursor:pointer;min-height:44px;margin-top:8px;width:100%">Add a boat manually</button>
           </div>
         </div>`;
       sectionLabels.forEach((el) => { el.style.display = 'none'; });
@@ -1761,11 +1752,8 @@
       vesselsEl.className = '';
       vesselsEl.style.cssText = 'padding:0 16px;display:flex;flex-direction:column;gap:10px';
       if (s.vessels.length === 0) {
-        vesselsEl.innerHTML = `
-          <div class="qa-tile" onclick="go('s-onboard')">
-            <div class="qa-icon bl">+</div>
-            <div style="flex:1"><div class="qa-title">Add a vessel</div><div class="qa-sub">Start tracking compliance for any MCA-coded boat</div></div>
-          </div>`;
+        // First run: the welcome card already offers "Add a boat manually".
+        vesselsEl.innerHTML = '';
       } else {
         vesselsEl.innerHTML = s.vessels.map((v) => vesselCoverHtml(v, { compact: true })).join('');
       }
@@ -2210,7 +2198,7 @@
     const firstVesselId = person && person.vessel_ids && person.vessel_ids[0];
     const vessel = firstVesselId ? Store.getVessel(firstVesselId) : null;
     const vesselChip = (fleetSize > 1 && vessel)
-      ? `<span class="ticket-vessel">${escapeHtml(vessel.icon || '⛵')} ${escapeHtml(vessel.name)}${(person && person.vessel_ids && person.vessel_ids.length > 1) ? ' +' + (person.vessel_ids.length - 1) : ''}</span>`
+      ? `<span class="ticket-vessel">${escapeHtml(vessel.name)}${(person && person.vessel_ids && person.vessel_ids.length > 1) ? ' +' + (person.vessel_ids.length - 1) : ''}</span>`
       : '';
     const subParts = [];
     if (person) subParts.push(escapeHtml(person.role) + ' · ' + escapeHtml(person.name));
@@ -2394,8 +2382,8 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <button class="back" onclick="go('s-vessels')" style="color:rgba(255,255,255,.75)">‹ Vessels</button>
           <div style="display:flex;gap:6px;align-items:center">
-            <button onclick="openInviteSurveyorModal('${v.id}')" title="Invite your surveyor" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:white;font-size:12px;font-weight:600;padding:8px 12px;border-radius:999px;cursor:pointer;font-family:var(--fn);height:36px;display:inline-flex;align-items:center;gap:5px">⚓ Invite surveyor</button>
-            <button onclick="openEditVessel('${v.id}')" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:white;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;font-family:var(--fn);height:36px">✎ Edit</button>
+            <button onclick="openInviteSurveyorModal('${v.id}')" title="Invite your surveyor" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:white;font-size:14px;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer;font-family:var(--fn);height:36px;display:inline-flex;align-items:center;gap:5px">Invite surveyor</button>
+            <button onclick="openEditVessel('${v.id}')" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:white;font-size:14px;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer;font-family:var(--fn);height:36px">Edit</button>
           </div>
         </div>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:relative;z-index:1">
@@ -2419,8 +2407,7 @@
           <div style="position:relative;width:64px;height:64px;flex-shrink:0">
             ${ringSvg(score, scoreColor(score), 64, true)}
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-              <div style="font-size:16px;font-weight:800;color:white;letter-spacing:-.4px;line-height:1">${score}<span style="font-size:9px;font-weight:600;color:rgba(255,255,255,.6)">%</span></div>
-              <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.07em;margin-top:2px">SCORE</div>
+              <div style="font-size:20px;font-weight:700;color:white;letter-spacing:-.4px;line-height:1" aria-label="Compliance score ${score} percent">${score}<span style="font-size:12px;font-weight:600;color:rgba(255,255,255,.7)">%</span></div>
             </div>
           </div>
         </div>`;
@@ -2500,18 +2487,18 @@
     const fleetSize = (Store.snapshot().vessels || []).length;
     const vessel = item.vessel_id ? Store.getVessel(item.vessel_id) : null;
     const vesselChip = (fleetSize > 1 && vessel)
-      ? `<span class="ticket-vessel">${escapeHtml(vessel.icon || '⛵')} ${escapeHtml(vessel.name)}</span>`
+      ? `<span class="ticket-vessel">${escapeHtml(vessel.name)}</span>`
       : '';
 
     const subParts = [];
+    // List rows answer one question — "what is it, and is it OK?".
+    // Issuer, reference number etc. live in the detail sheet.
+    // The pill already says late / days left, so the date is just the date.
     if (kind === 'cert') {
-      if (item.issuer) subParts.push(escapeHtml(item.issuer));
-      if (item.number) subParts.push(escapeHtml(item.number));
-      if (expIso) subParts.push('Expires ' + fmtDate(expIso));
+      if (expIso) subParts.push(fmtDate(expIso));
     } else {
       if (item.qty > 1) subParts.push('×' + item.qty);
-      if (item.make || item.model) subParts.push(escapeHtml(`${item.make || ''} ${item.model || ''}`.trim()));
-      if (expIso) subParts.push('Service ' + fmtDate(expIso));
+      if (expIso) subParts.push(fmtDate(expIso));
     }
     const hasFile = !!(item.file && item.file.data_url);
     const clip = hasFile ? '<span title="File attached" style="font-size:11px;color:var(--sea);margin-left:4px">📎</span>' : '';
@@ -5138,7 +5125,7 @@
             <div style="font-size:30px;flex-shrink:0;width:48px;text-align:center">4️⃣</div>
             <div>
               <div style="font-size:16px;font-weight:700;color:var(--text)">Stuck? Tap the surveyor</div>
-              <div style="font-size:14px;color:var(--mid);margin-top:3px;line-height:1.55">Book Anchor Marine right in the app for a quote, survey, or signed SMS. Pay through the app — no chasing invoices.</div>
+              <div style="font-size:14px;color:var(--mid);margin-top:3px;line-height:1.55">Invite your surveyor from Account. They can see your records and sign off your inspections in the app.</div>
             </div>
           </div>
           <button class="btn btn-sea btn-full" onclick="closeHelp()" style="margin-top:14px">Got it</button>
@@ -6861,11 +6848,10 @@
       <div data-dyn="sms" style="padding:14px 16px 6px">
         <div class="hero" style="padding:18px">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;position:relative;z-index:1">
-            <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.07em">Premium · MCA-aligned</div>
-            <span style="background:var(--purp);color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px">£10 to generate · review billed by surveyor</span>
+            <div style="font-size:12px;font-weight:600;color:var(--seal)">MCA-aligned</div>
           </div>
           <div class="h-display" style="font-size:22px;margin-bottom:4px">Safety Management System</div>
-          <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.6;position:relative;z-index:1">A guided, 11-section SMS builder based on the Sport or Pleasure Vessel Code 2025 (Appendix 7) and Workboat Code Ed 3. Build it free, pay £10 to unlock Word + PDF, then send it to your surveyor for sign-off.</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.6;position:relative;z-index:1">A guided, 11-section SMS builder based on the Sport or Pleasure Vessel Code 2025 (Appendix 7) and Workboat Code Ed 3. Build it, export Word + PDF, then send it to your surveyor for sign-off.</div>
         </div>
       </div>
 
@@ -6897,8 +6883,8 @@
           <div style="display:flex;align-items:center;gap:14px">
             <div style="font-size:28px">✨</div>
             <div style="flex:1;min-width:0">
-              <div style="font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px">Generate with AI — £10 one-off</div>
-              <div style="font-size:12px;color:var(--mid);margin-top:3px;line-height:1.55">Answer 6 questions about your operation. We generate a tailored 11-section SMS, you edit and sign. Anchor Marine reviews if you want.</div>
+              <div style="font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px">Generate with AI</div>
+              <div style="font-size:13px;color:var(--mid);margin-top:3px;line-height:1.5">Answer 6 questions about your operation. We draft a tailored 11-section SMS; you edit and sign it, then your surveyor can review.</div>
             </div>
             <span class="chev">›</span>
           </div>
@@ -7381,18 +7367,15 @@
       <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
         <div class="sh-pull"></div>
         <div class="sh-head">
-          <div class="sh-title">Generate SMS — pay £10</div>
+          <div class="sh-title">Generate your SMS</div>
           <button class="sh-x" onclick="closeSmsAiWizard()">×</button>
         </div>
         <div style="padding:0 20px 14px">
           <div style="background:var(--slate);border-radius:12px;padding:14px 16px;margin-bottom:14px">
-            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:var(--mid)">Tailored 11-section SMS for ${escapeHtml(v ? v.name : 'your vessel')}</span><span style="font-weight:600;color:var(--text)">£10</span></div>
-            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;color:var(--lt)"><span>Unlimited edits + Word/PDF export</span><span>included</span></div>
-            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;color:var(--lt)"><span>Surveyor review &amp; sign-off</span><span>billed separately</span></div>
-            <div style="height:1px;background:var(--bdr);margin:8px 0"></div>
-            <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800"><span>Total today</span><span style="color:var(--green)">Free (trial)</span></div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:var(--mid)">Tailored 11-section SMS for ${escapeHtml(v ? v.name : 'your vessel')}</span><span style="font-weight:600;color:var(--green)">Free</span></div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:var(--mid)"><span>Unlimited edits + Word/PDF export</span><span>included</span></div>
           </div>
-          <div style="font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:12px">Free during your trial — no charge. You'll get a generated draft you can review, edit, and send to your surveyor for sign-off.</div>
+          <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:12px">You'll get a draft you can review, edit, and send to your surveyor for sign-off.</div>
           <button class="btn btn-sea btn-full" onclick="runSmsGeneration()">✨ Generate my SMS draft</button>
           <button class="btn btn-out btn-full" style="margin-top:8px" onclick="smsAiBack()">‹ Back</button>
         </div>
@@ -10229,6 +10212,9 @@ ${sectionsHtml}
     const ids = ['login-step-signin', 'login-step-signup', 'login-step-sent'];
     const map = { signin: 'login-step-signin', signup: 'login-step-signup', sent: 'login-step-sent' };
     const target = map[mode] || 'login-step-signin';
+    // The heading must match the form: new users aren't "back".
+    const h1 = document.getElementById('auth-h1');
+    if (h1) h1.textContent = mode === 'signup' ? 'Create your account' : mode === 'sent' ? 'Check your email' : 'Welcome back';
     ids.forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.style.display = id === target ? '' : 'none';
