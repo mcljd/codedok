@@ -171,5 +171,11 @@
   if (isNative) {
     try { initChrome(); } catch (_) {}
     try { document.documentElement.classList.add('is-native'); } catch (_) {}
+    // A native app doesn't pinch-zoom, and iOS shouldn't auto-zoom into
+    // form fields either: lock the viewport scale inside the shell only.
+    try {
+      var vp = document.querySelector('meta[name="viewport"]');
+      if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+    } catch (_) {}
   }
 })();

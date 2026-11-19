@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+  // Retired web-app hosts (app., mobile., demo.) go straight to the
+  // marketing site before anything else loads. The iPhone app runs on
+  // "localhost", so it never matches.
+  (function () {
+    var h = (location.hostname || '').toLowerCase();
+    if (/\.codedok\.com$/.test(h) && h !== 'www.codedok.com') location.replace('https://codedok.com/');
+  })();
+</script>
 <title>CodedOK — AI-powered MCA Sport &amp; Pleasure Vessel Code 2025 compliance</title>
 <meta name="description" content="AI-powered compliance app for UK &amp; Irish coded vessels. Built for the MCA SPV Code 2025, Workboat Code Ed.3 and Irish PBL. Snap a cert, stay survey-ready.">
 <link rel="canonical" href="https://codedok.com/">
@@ -537,8 +546,7 @@
           <a href="/blog/" class="ios-nav-link">Blog</a>
         </div>
         <div class="ios-bar-actions">
-          <button onclick="go('s-login')" class="ios-signin">Sign in</button>
-          <button onclick="goSignUp()" class="ios-start">Start free</button>
+          <button onclick="goAppStore()" class="ios-start">Get the app</button>
         </div>
       </div>
     </nav>
@@ -566,25 +574,7 @@
           </h1>
           <p class="ios-sub ios-sub-light">For UK &amp; Irish coded vessel operators. CodedOK watches every safety cert, every expiry, every code update — so your boat stays safe today, your survey takes minutes not weekends, and your inspector walks away satisfied.</p>
           <div class="ios-cta-row">
-            <button onclick="goSignUp()" class="ios-cta-primary">Start free <span class="arrow">→</span></button>
-            <a href="https://demo.codedok.com" class="ios-demo-btn ios-demo-web ios-demo-btn-light">
-              <span class="ios-demo-ic" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-              </span>
-              <span class="ios-demo-text">
-                <span class="ios-demo-lbl">Web demo</span>
-                <span class="ios-demo-sub">Full dashboard</span>
-              </span>
-            </a>
-            <a href="https://demo-mobile.codedok.com" class="ios-demo-btn ios-demo-mob ios-demo-btn-light">
-              <span class="ios-demo-ic" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
-              </span>
-              <span class="ios-demo-text">
-                <span class="ios-demo-lbl">Mobile demo</span>
-                <span class="ios-demo-sub">Phone-sized</span>
-              </span>
-            </a>
+            <button onclick="goAppStore()" class="ios-cta-primary"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true" style="margin-right:8px;vertical-align:-3px"><path d="M16.37 12.6c-.02-2.2 1.8-3.26 1.88-3.31-1.03-1.5-2.62-1.7-3.18-1.73-1.35-.14-2.64.8-3.33.8-.69 0-1.74-.78-2.87-.76-1.47.02-2.83.86-3.59 2.18-1.53 2.66-.39 6.6 1.1 8.76.73 1.06 1.6 2.24 2.73 2.2 1.1-.04 1.51-.71 2.84-.71 1.32 0 1.7.71 2.86.69 1.18-.02 1.93-1.07 2.65-2.13.84-1.22 1.18-2.41 1.2-2.47-.03-.01-2.3-.88-2.32-3.52zM14.2 6.1c.6-.73 1.01-1.75.9-2.76-.87.04-1.92.58-2.54 1.31-.56.65-1.05 1.69-.92 2.68.97.08 1.96-.49 2.56-1.23z"/></svg>Get the iPhone app</button>
           </div>
           <div class="ios-trust-row ios-trust-row-light">
             <span><span class="ios-check">✓</span> Free to start</span>
@@ -740,7 +730,7 @@
           <h3>The 2025 Code is loaded. Your record is mapped against it.</h3>
           <p>Auto-loads the new schedule per vessel. Runs a gap analysis. Drafts your 11-section SMS. Renewal reminders at 90, 60, 30 and 7 days. Surveyor sign-off in the app.</p>
           <div class="ios-cta-row">
-            <button onclick="goSignUp()" class="ios-cta-primary ios-cta-light">Get SPV-ready in 5 min <span class="arrow">→</span></button>
+            <button onclick="goAppStore()" class="ios-cta-primary ios-cta-light">Get SPV-ready in 5 min <span class="arrow">→</span></button>
             <a href="/blog/spv-code-2025-explainer" class="ios-cta-link">Read the full explainer →</a>
           </div>
         </div>
@@ -945,7 +935,7 @@
               <li>Inspection pack PDF</li>
               <li>Offline-first PWA</li>
             </ul>
-            <button onclick="goSignUp()" class="ios-plan-btn ghost">Start free</button>
+            <button onclick="goAppStore()" class="ios-plan-btn ghost">Get the app</button>
           </div>
           <div class="ios-plan ios-plan-featured">
             <div class="ios-plan-badge">Most popular</div>
@@ -959,7 +949,7 @@
               <li>Surveyor cross-org invite</li>
               <li>Custom inspection-pack branding</li>
             </ul>
-            <button onclick="goSignUp()" class="ios-plan-btn primary">Start 14-day trial</button>
+            <button onclick="goAppStore()" class="ios-plan-btn primary">Get the app</button>
           </div>
           <div class="ios-plan">
             <div class="ios-plan-name">Team</div>
@@ -971,7 +961,7 @@
               <li>Per-member permissions</li>
               <li>Audit log &amp; action history</li>
             </ul>
-            <button onclick="goSignUp()" class="ios-plan-btn ghost">Start 14-day trial</button>
+            <button onclick="goAppStore()" class="ios-plan-btn ghost">Get the app</button>
           </div>
         </div>
       </div>
@@ -1074,27 +1064,9 @@
           Inspection-ready<br>
           <span class="ios-italic">in five minutes.</span>
         </h2>
-        <p class="ios-final-sub">Free to start. No card. Ready on the dockside.</p>
+        <p class="ios-final-sub">Free on iPhone. No card. Ready on the dockside.</p>
         <div class="ios-cta-row ios-cta-row-center">
-          <button onclick="goSignUp()" class="ios-cta-primary">Start free <span class="arrow">→</span></button>
-          <a href="https://demo.codedok.com" class="ios-demo-btn ios-demo-web ios-demo-btn-light">
-            <span class="ios-demo-ic" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            </span>
-            <span class="ios-demo-text">
-              <span class="ios-demo-lbl">Web demo</span>
-              <span class="ios-demo-sub">Open in this browser</span>
-            </span>
-          </a>
-          <a href="https://demo-mobile.codedok.com" class="ios-demo-btn ios-demo-mob ios-demo-btn-light">
-            <span class="ios-demo-ic" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
-            </span>
-            <span class="ios-demo-text">
-              <span class="ios-demo-lbl">Mobile demo</span>
-              <span class="ios-demo-sub">Installs as a phone app</span>
-            </span>
-          </a>
+          <button onclick="goAppStore()" class="ios-cta-primary"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true" style="margin-right:8px;vertical-align:-3px"><path d="M16.37 12.6c-.02-2.2 1.8-3.26 1.88-3.31-1.03-1.5-2.62-1.7-3.18-1.73-1.35-.14-2.64.8-3.33.8-.69 0-1.74-.78-2.87-.76-1.47.02-2.83.86-3.59 2.18-1.53 2.66-.39 6.6 1.1 8.76.73 1.06 1.6 2.24 2.73 2.2 1.1-.04 1.51-.71 2.84-.71 1.32 0 1.7.71 2.86.69 1.18-.02 1.93-1.07 2.65-2.13.84-1.22 1.18-2.41 1.2-2.47-.03-.01-2.3-.88-2.32-3.52zM14.2 6.1c.6-.73 1.01-1.75.9-2.76-.87.04-1.92.58-2.54 1.31-.56.65-1.05 1.69-.92 2.68.97.08 1.96-.49 2.56-1.23z"/></svg>Get the iPhone app</button>
         </div>
       </div>
     </section>
@@ -2462,6 +2434,11 @@
   window.CodedOkConfig = {
     supabaseUrl: 'https://zftoqqrqsxctehltebad.supabase.co',
     supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdG9xcXJxc3hjdGVobHRlYmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzcxODIsImV4cCI6MjA5NDE1MzE4Mn0.T-gUL06oNQ7dfMJEA2zOVShcM9cwqsV6oH9CbQgi6j8',
+    // The app is iPhone-only now. Every "Get the app" button uses these.
+    // Until Apple approves the listing, buttons go to the founding list;
+    // on launch day flip appStoreLive to true and they open the App Store.
+    appStoreUrl: 'https://apps.apple.com/app/id6836862206',
+    appStoreLive: false,
     sentryDsn: '',          // paste Sentry DSN here to enable error monitoring
     sentryEnv: 'production', // 'production' | 'preview' | 'dev'
     // ──── Google Analytics 4 ─────────────────────────────────────

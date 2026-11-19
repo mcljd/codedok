@@ -5690,3 +5690,16 @@ html.is-native .paid-only { display: none !important; }
   }
   #s-land .ios-hero-bg::after { display: none; }
 }
+
+/* Native iPhone app: pin the app to the screen. The page itself never
+   scrolls, bounces or zooms — only each screen's .scroll area moves —
+   so it feels like a native app on every device size. Status-bar and
+   home-indicator spacing come from env(safe-area-inset-*) once. */
+html.is-native, html.is-native body {
+  height: 100%; overflow: hidden; overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+html.is-native body { position: fixed; inset: 0; width: 100%; }
+html.is-native .shell.on { height: 100%; width: 100%; overflow: hidden; }
+html.is-native .scroll { overscroll-behavior: contain; }
+html.is-native .sb { height: env(safe-area-inset-top, 20px); min-height: env(safe-area-inset-top, 20px); }

@@ -38,6 +38,14 @@
   }
   window.isNativeApp = isNativeApp;
 
+  // True on the public website (codedok.com and its subdomains), which
+  // only markets the iPhone app. False inside the native app (served from
+  // "localhost") and in local development.
+  function isPublicWebsite() {
+    if (isNativeApp()) return false;
+    return /(^|\.)codedok\.com$/i.test(window.location.hostname || '');
+  }
+
   // ---------- Active vessel context ----------
   // Many screens (vessel detail, equipment, hand-off) operate on a single
   // active vessel. We keep that on window for prototype simplicity.
@@ -711,15 +719,10 @@
   }
 
   function go(id) {
-    // On the marketing host, redirect any attempt to enter an app
-    // shell (s-login, s-home, s-onboard, etc.) to app.codedok.com.
-    // The landing (s-land) is the only shell that should render on
-    // codedok.com — everything else gets bounced.
-    var host = (window.location.hostname || '').toLowerCase();
-    if ((host === 'codedok.com' || host === 'www.codedok.com') && id !== 's-land') {
-      var target = 'https://app.codedok.com/';
-      if (id === 's-login') target = 'https://app.codedok.com/';
-      window.location.href = target;
+    // The website only shows the landing (s-land). Any attempt to open
+    // an app screen there sends the visitor to the iPhone app instead.
+    if (isPublicWebsite() && id !== 's-land') {
+      goAppStore();
       return;
     }
     document.querySelectorAll('.shell').forEach(s => s.classList.remove('on'));
@@ -9940,9 +9943,7 @@ ${sectionsHtml}
     authInFlight = true;
     try {
       await window.Supa.sendPasswordReset(email);
-      const lineEl = document.getElementById('login-sent-line');
-      if (lineEl) lineEl.innerHTML = `Reset link sent to <strong style="color:white">${escapeHtml(email)}</strong>. Tap it from this device — you'll come back here and be asked to set a new password.`;
-      toggleAuthMode('sent');
+      openResetCodeSheet(email);
     } catch (err) {
       showLoginError("Couldn't send reset: " + ((err && err.message) || err));
     } finally {
@@ -9950,6 +9951,72 @@ ${sectionsHtml}
     }
   }
   window.forgotPassword = forgotPassword;
+
+  // In-app reset: the email carries a one-time code (no link), so the
+  // user never leaves the app. Code + new password in one sheet.
+  function openResetCodeSheet(email) {
+    const existing = document.getElementById('reset-code-sheet');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'reset-code-sheet';
+    modal.className = 'bdrop on';
+    modal.innerHTML = `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+        <div class="sh-pull"></div>
+        <div class="sh-head">
+          <div class="sh-title">Reset your password</div>
+          <button class="sh-x" onclick="closeResetCodeSheet()">×</button>
+        </div>
+        <div style="padding:0 20px 14px">
+          <div style="font-size:14px;color:var(--mid);margin-bottom:14px;line-height:1.55">We've emailed a code to <strong style="color:var(--text)">${escapeHtml(email)}</strong>. Enter it below with your new password.</div>
+          <div class="fg"><label class="fl">Code from the email</label><input class="fi" id="rc-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" style="letter-spacing:.2em;font-size:20px;text-align:center"></div>
+          <div class="fg"><label class="fl">New password</label><input class="fi" id="rc-new" type="password" autocomplete="new-password" placeholder="8+ characters"></div>
+          <div id="rc-error" style="display:none;font-size:13px;color:var(--red);margin-top:6px;text-align:center"></div>
+          <button class="btn btn-sea btn-full" id="rc-submit" onclick="submitResetCode()" style="margin-top:10px">Set new password</button>
+          <button class="btn btn-out btn-full" onclick="forgotPassword()" style="margin-top:8px">Send a new code</button>
+        </div>
+      </div>`;
+    modal.dataset.email = email;
+    document.body.appendChild(modal);
+    setTimeout(() => { const c = document.getElementById('rc-code'); if (c) c.focus(); }, 150);
+  }
+  window.openResetCodeSheet = openResetCodeSheet;
+
+  function closeResetCodeSheet() {
+    const m = document.getElementById('reset-code-sheet');
+    if (m) m.remove();
+  }
+  window.closeResetCodeSheet = closeResetCodeSheet;
+
+  async function submitResetCode() {
+    const modal = document.getElementById('reset-code-sheet');
+    if (!modal) return;
+    const email = modal.dataset.email;
+    const code = ((document.getElementById('rc-code') || {}).value || '').replace(/\s+/g, '');
+    const pw = (document.getElementById('rc-new') || {}).value || '';
+    const errEl = document.getElementById('rc-error');
+    const fail = (m) => { if (errEl) { errEl.textContent = m; errEl.style.display = 'block'; } };
+    if (!/^\d{6,10}$/.test(code)) return fail('Enter the code from the email.');
+    if (pw.length < 8) return fail('Use at least 8 characters for your password.');
+    const btn = document.getElementById('rc-submit');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    // verifyOtp fires PASSWORD_RECOVERY; this flag stops the old
+    // link-based handler opening a second "change password" sheet.
+    window.__cdkCodeRecovery = true;
+    try {
+      await window.Supa.resetPasswordWithCode(email, code, pw);
+      closeResetCodeSheet();
+      // Session is now saved: reload so normal sign-in routing takes over.
+      window.location.reload();
+    } catch (err) {
+      const msg = (err && err.message) || '';
+      fail(/expired|invalid|token/i.test(msg) ? 'That code is wrong or has expired. Tap "Send a new code".' : ("Couldn't reset: " + msg));
+      if (btn) { btn.disabled = false; btn.textContent = 'Set new password'; }
+    } finally {
+      setTimeout(() => { window.__cdkCodeRecovery = false; }, 2000);
+    }
+  }
+  window.submitResetCode = submitResetCode;
 
   // Change password while signed in. Tapped from Account → Change password.
   function openChangePassword() {
@@ -10232,17 +10299,21 @@ ${sectionsHtml}
   // Used by every "Start free" CTA on the landing page so taps go to
   // the right form without the user having to find the "Create one"
   // link first.
+  // The web app has been retired: the website only points people to the
+  // iPhone app. Before launch this goes to the founding list; once
+  // CodedOkConfig.appStoreLive is true it opens the App Store listing.
+  function goAppStore() {
+    track('app_store_click');
+    var cfg = window.CodedOkConfig || {};
+    window.location.href = (cfg.appStoreLive && cfg.appStoreUrl) ? cfg.appStoreUrl : '/founding?utm_source=site&utm_medium=cta';
+  }
+  window.goAppStore = goAppStore;
+
   function goSignUp() {
     track('signup_start');
-    // On the marketing surface (codedok.com), the app itself isn't
-    // available — punt the user to app.codedok.com which is where
-    // sign-up actually happens. Anywhere else, open the sign-up
-    // form inline.
-    var host = (window.location.hostname || '').toLowerCase();
-    if (host === 'codedok.com' || host === 'www.codedok.com') {
-      window.location.href = 'https://app.codedok.com/?signup=1';
-      return;
-    }
+    // On the website there is no web app any more — send people to the
+    // iPhone app instead. Inside the native app, open the sign-up form.
+    if (isPublicWebsite()) { goAppStore(); return; }
     go('s-login');
     setTimeout(() => { if (window.toggleAuthMode) toggleAuthMode('signup'); }, 30);
   }
@@ -11391,7 +11462,9 @@ ${sectionsHtml}
         || window.matchMedia('(display-mode: standalone)').matches;
       const ua = (navigator.userAgent || '').toLowerCase();
       const isIOS = /iphone|ipad|ipod/.test(ua) && !window.MSStream;
-      if (isIOS && !isStandalone) {
+      // The native iPhone app also looks like iOS + not-standalone, but it
+      // has no Safari toolbars — padding for them pushed the bars inward.
+      if (isIOS && !isStandalone && !isNativeApp()) {
         document.body.classList.add('safari-chrome');
       }
     } catch (_) {}
@@ -11444,6 +11517,7 @@ ${sectionsHtml}
         // and Supabase dropped them back with a recovery session. Show
         // the change-password modal instead of routing into the app.
         if (event === 'PASSWORD_RECOVERY') {
+          if (window.__cdkCodeRecovery) return; // in-app code reset handles it
           go('s-login');
           openChangePassword();
           return;
@@ -11493,6 +11567,19 @@ ${sectionsHtml}
     } catch (_) {}
 
     // Boot routing.
+    // The public website no longer runs the app: codedok.com only ever
+    // shows the marketing page (even for visitors with an old saved
+    // session), and the retired app./mobile./demo subdomains go home.
+    // The native iPhone app (hostname "localhost") is unaffected.
+    if (isPublicWebsite()) {
+      const h = (window.location.hostname || '').toLowerCase();
+      if (h !== 'codedok.com' && h !== 'www.codedok.com') {
+        window.location.replace('https://codedok.com/');
+        return;
+      }
+      go('s-land');
+      return;
+    }
     // ────────────────────────────────────────────────────────────
     // Demo share links — local-only, no Supabase round-trip. Both
     // share the same seeded vessel data; the only difference is the

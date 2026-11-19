@@ -3,8 +3,9 @@
   "appName": "CodedOK",
   "webDir": "app",
   "ios": {
-    "contentInset": "always",
-    "backgroundColor": "#03203D"
+    "contentInset": "never",
+    "backgroundColor": "#03203D",
+    "scrollEnabled": false
   },
   "plugins": {
     "SplashScreen": {
@@ -13,7 +14,15 @@
       "showSpinner": false
     },
     "PushNotifications": {
-      "presentationOptions": ["badge", "sound", "alert"]
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    },
+    "Keyboard": {
+      "resize": "native",
+      "resizeOnFullScreen": true
     }
   }
 }

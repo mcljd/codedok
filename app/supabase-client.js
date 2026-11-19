@@ -132,16 +132,25 @@
       return data;
     },
 
-    // Send a password-reset link to the user's email. The link returns
-    // to the app with a recovery token in the URL; the auth listener
-    // detects it and surfaces the "set new password" UI.
+    // Send a password-reset email. The email carries a one-time code
+    // ({{ .Token }} in the Supabase "Reset Password" template) which the
+    // user types into the app — no link, so it never leaves the app.
     async sendPasswordReset(email) {
       const client = await loadSupabase();
-      const { error } = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + window.location.pathname
-      });
+      const { error } = await client.auth.resetPasswordForEmail(email);
       if (error) throw error;
       return { sent: true };
+    },
+
+    // Exchange the emailed recovery code for a session, then set the new
+    // password. Returns the signed-in user.
+    async resetPasswordWithCode(email, code, newPassword) {
+      const client = await loadSupabase();
+      const { data, error } = await client.auth.verifyOtp({ email, token: code, type: 'recovery' });
+      if (error) throw error;
+      const upd = await client.auth.updateUser({ password: newPassword });
+      if (upd.error) throw upd.error;
+      return (upd.data && upd.data.user) || (data && data.user) || null;
     },
 
     async signOut() {
