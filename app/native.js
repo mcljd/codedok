@@ -162,10 +162,32 @@
 
   // ── Status bar text colour per screen ─────────────────────────────────
   // dark=true → white text (for navy screens); false → black text (light).
+  // In system dark mode every screen is dark, so the text is always white.
+  function systemDark() {
+    try { return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); } catch (_) { return false; }
+  }
   function setStatusBar(dark) {
     if (!isNative) return;
     var S = plugin('StatusBar');
-    try { if (S && S.setStyle) S.setStyle({ style: dark ? 'DARK' : 'LIGHT' }); } catch (_) {}
+    try { if (S && S.setStyle) S.setStyle({ style: (dark || systemDark()) ? 'DARK' : 'LIGHT' }); } catch (_) {}
+  }
+
+  // ── Dynamic Type ──────────────────────────────────────────────────────
+  // Follow the iPhone's Settings → Display & Brightness → Text Size. The
+  // plugin returns a multiplier (1.0 = default); capped at 1.35 so the
+  // largest settings enlarge the text without breaking the layouts.
+  async function applyDynamicType() {
+    var TZ = plugin('TextZoom');
+    if (!isNative || !TZ || typeof TZ.getPreferred !== 'function') return;
+    try {
+      var r = await TZ.getPreferred();
+      var v = Math.max(1, Math.min(1.35, (r && r.value) || 1));
+      await TZ.set({ value: v });
+    } catch (_) {}
+  }
+  if (isNative) {
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) applyDynamicType(); });
+    setTimeout(applyDynamicType, 0);
   }
 
   // ── In-app purchases (RevenueCat over StoreKit) ───────────────────────
@@ -255,7 +277,41 @@
     }
   };
 
+  // VoiceOver: give icon-only controls a spoken name (title → glyph map).
+  (function () {
+    var GLYPH = { '×': 'Close', '✕': 'Close', '✖': 'Close', 'x': 'Close', '‹': 'Back', '←': 'Back', '＋': 'Add', '+': 'Add', '⋯': 'More', '…': 'More', '›': 'Open' };
+    function label() {
+      var els = document.querySelectorAll('button:not([aria-label]), [role="button"]:not([aria-label]), .bni:not([aria-label])');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i], txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+        if (el.title) { el.setAttribute('aria-label', el.title); continue; }
+        if (GLYPH[txt]) { el.setAttribute('aria-label', GLYPH[txt]); continue; }
+        if (!txt && el.querySelector('svg') && !el.getAttribute('aria-labelledby')) el.setAttribute('aria-label', el.getAttribute('data-label') || 'Button');
+      }
+    }
+    var t = null;
+    function soon() { clearTimeout(t); t = setTimeout(label, 250); }
+    document.addEventListener('DOMContentLoaded', function () {
+      label();
+      new MutationObserver(soon).observe(document.body, { childList: true, subtree: true });
+    });
+  })();
+
   if (isNative) {
+    // Collapse the large title as a screen scrolls. Hysteresis (on at 36px,
+    // off at 6px) plus an overflow guard stop short pages flickering when
+    // the shrinking header frees up space.
+    document.addEventListener('scroll', function (e) {
+      var sc = e.target;
+      if (!sc || !sc.classList || !sc.classList.contains('scroll')) return;
+      var shell = sc.closest('.shell');
+      var head = shell && shell.querySelector('.ios-home-head');
+      if (!head) return;
+      var roomy = (sc.scrollHeight - sc.clientHeight) > 100;
+      var on = head.classList.contains('compact');
+      if (!on && roomy && sc.scrollTop > 36) head.classList.add('compact');
+      else if (on && sc.scrollTop < 6) head.classList.remove('compact');
+    }, true);
     // A light haptic tick on tab switches and primary actions — the
     // tactile feedback iOS users expect from native controls.
     document.addEventListener('click', function (e) {

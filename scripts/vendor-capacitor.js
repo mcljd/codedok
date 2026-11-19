@@ -20,6 +20,7 @@ const parts = [
   ['@capacitor/status-bar', 'dist/plugin.js'],
   ['@capacitor/splash-screen', 'dist/plugin.js'],
   ['@capacitor/keyboard', 'dist/plugin.js'],
+  ['@capacitor/text-zoom', 'dist/plugin.js'],
   ['@revenuecat/purchases-capacitor', 'dist/plugin.js'],
 ];
 

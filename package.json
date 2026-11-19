@@ -19,7 +19,8 @@
     "@capacitor/status-bar": "^6.0.2",
     "@capacitor/splash-screen": "^6.0.3",
     "@capacitor/keyboard": "^6.0.3",
-    "@revenuecat/purchases-capacitor": "9.2.2"
+    "@revenuecat/purchases-capacitor": "9.2.2",
+    "@capacitor/text-zoom": "^6.0.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.2.0"

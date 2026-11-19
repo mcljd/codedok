@@ -5795,3 +5795,60 @@ html.is-native #plans-body { padding-top: 16px !important; }
 .shell:not(#s-land) .scard-sub, .shell:not(#s-land) .vf-count { font-size: 12px !important; }
 .shell:not(#s-land) .scard-lbl { font-size: 12px !important; text-transform: none !important; letter-spacing: 0 !important; font-weight: 600; }
 .shell:not(#s-land) .ticket-vessel::after { white-space: pre; }
+
+/* ── Collapsing large titles (iOS navigation pattern) ──────────────────
+   The big title shrinks into a compact translucent bar once the screen
+   scrolls (class set by native.js). Subtitle/eyebrow fade out. */
+.ios-home-head { transition: padding .2s ease, background-color .2s ease; }
+.ios-home-head .ios-largetitle { transition: font-size .2s ease, letter-spacing .2s ease; }
+.ios-home-head > div > .ios-eyebrow, .ios-home-head .ios-sub { transition: opacity .15s ease, max-height .2s ease, margin .2s ease; max-height: 40px; }
+.ios-home-head.compact {
+  padding: 2px 18px 6px; align-items: center;
+  background: color-mix(in srgb, var(--page) 82%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 0.5px 0 var(--bdr);
+}
+.ios-home-head.compact .ios-largetitle { font-size: 20px; font-weight: 700; letter-spacing: -.2px; }
+.ios-home-head.compact > div > .ios-eyebrow, .ios-home-head.compact .ios-sub { opacity: 0; max-height: 0; margin: 0; overflow: hidden; }
+.ios-home-head.compact .ios-head-actions { padding-top: 0; }
+
+/* ══════════════════════════════════════════════════════════════════
+   DARK MODE (iPhone app) — follows the system setting, Apple semantic
+   palette: black base, #1C1C1E grouped cards, lighter tint/status
+   colours, 4.5:1+ secondary text.
+   ══════════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) {
+  html.is-native {
+    color-scheme: dark;
+    --tint: #4A98E0; --sea: #4A98E0; --seal: #4A98E0; --seap: rgba(74,152,224,.16);
+    --page: #000000; --card: #1C1C1E; --card-2: #2C2C2E; --slate: #2C2C2E;
+    --bdr: #38383A; --bdr-strong: #48484A;
+    --text: #FFFFFF; --text-2: #EBEBF5; --mid: #AEAEB2; --lt: #98989D; --lt-2: #8E8E93;
+    --green: #30D158; --grnp: rgba(48,209,88,.18);
+    --amber: #FF9F0A; --ampp: rgba(255,159,10,.18);
+    --red: #FF453A; --redp: rgba(255,69,58,.18);
+    --purp: #8E86F5; --purpp: rgba(142,134,245,.18);
+  }
+  html.is-native body, html.is-native .shell { background: var(--page); color: var(--text); }
+  html.is-native .bnav { background: color-mix(in srgb, #1C1C1E 85%, transparent); border-top-color: #38383A; }
+  html.is-native .bni { color: #98989D; }
+  html.is-native .bni.on { color: var(--tint); }
+  html.is-native .tbar, html.is-native .ios-home-head { background: var(--page); }
+  html.is-native .ios-home-head.compact { background: color-mix(in srgb, #000 78%, transparent); }
+  html.is-native .card, html.is-native .ios-group, html.is-native .ticket, html.is-native .sheet,
+  html.is-native .qa-tile, html.is-native .scard { background: var(--card); border-color: transparent; }
+  html.is-native .fi, html.is-native input, html.is-native select, html.is-native textarea { background: #2C2C2E; color: var(--text); border-color: #38383A; }
+  html.is-native .btn-out { background: #2C2C2E; color: var(--text); border-color: #38383A; }
+  html.is-native .btn-sea, html.is-native .ss-btn-primary { color: #fff; }
+  html.is-native .hero.hero-home { background: var(--card) !important; }
+  html.is-native .ss-btn-ghost { background: rgba(74,152,224,.18); color: var(--tint); }
+  html.is-native .bdrop { background: rgba(0,0,0,.62); }
+  html.is-native .cb.rd, html.is-native .ss-badge.ss-bad { color: #FF6961; }
+  html.is-native .vcover { box-shadow: none; }
+  html.is-native .ticket-ic, html.is-native .row-ic, html.is-native .ios-row-ic { filter: none; }
+  html.is-native .scan-opt, html.is-native .row, html.is-native .quick-add-tile { background: var(--card); }
+  html.is-native .row { border-color: #38383A; }
+  html.is-native .sb, html.is-native .sb-dk, html.is-native .sb-lt, html.is-native .sb-cd { background: var(--page); color: var(--text); }
+  html.is-native [style*="color:var(--sea)"], html.is-native [style*="color: var(--sea)"] { color: #4A98E0 !important; }
+  html.is-native [style*="color:var(--ink)"], html.is-native [style*="color: var(--ink)"] { color: var(--text) !important; }
+}
