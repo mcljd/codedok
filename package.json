@@ -6,7 +6,8 @@
   "scripts": {
     "add:ios": "cap add ios",
     "sync": "cap sync",
-    "open:ios": "cap open ios"
+    "open:ios": "cap open ios",
+    "vendor": "node scripts/vendor-capacitor.js"
   },
   "dependencies": {
     "@capacitor/core": "^6.2.0",
@@ -17,7 +18,8 @@
     "@capacitor/push-notifications": "^6.0.4",
     "@capacitor/status-bar": "^6.0.2",
     "@capacitor/splash-screen": "^6.0.3",
-    "@capacitor/keyboard": "^6.0.3"
+    "@capacitor/keyboard": "^6.0.3",
+    "@revenuecat/purchases-capacitor": "9.2.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.2.0"

@@ -40,3 +40,6 @@ yarn-debug.log*
 # Supabase CLI local cache
 supabase/.temp/
 supabase/.branches/
+
+# Generated at build time by scripts/vendor-capacitor.js
+app/vendor/

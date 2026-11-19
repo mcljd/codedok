@@ -718,6 +718,9 @@
     }
   }
 
+  // Screens whose top edge is navy (status-bar text must be white).
+  const DARK_TOP_SCREENS = new Set(['s-login', 's-vessel-detail']);
+
   function go(id) {
     // The website only shows the landing (s-land). Any attempt to open
     // an app screen there sends the visitor to the iPhone app instead.
@@ -726,6 +729,8 @@
       return;
     }
     document.querySelectorAll('.shell').forEach(s => s.classList.remove('on'));
+    // Status-bar text: white over navy screens, black over light ones.
+    try { if (window.CodedokNative && CodedokNative.setStatusBar) CodedokNative.setStatusBar(DARK_TOP_SCREENS.has(id)); } catch (_) {}
     const t = document.getElementById(id);
     if (t) {
       t.classList.add('on');
@@ -8912,6 +8917,10 @@ ${sectionsHtml}
     }
 
     const native = isNativeApp();
+    // iPhone app: real subscriptions through Apple (RevenueCat/StoreKit).
+    if (native && window.CodedokNative && CodedokNative.iap && CodedokNative.iap.available()) {
+      return renderPlansIAP(body, currentPlan, orgId);
+    }
     const cards = PLAN_DEFS.map((p) => {
       const isCurrent = p.id === currentPlan;
       const paid = p.id !== 'solo';
@@ -8952,6 +8961,139 @@ ${sectionsHtml}
     body.innerHTML = banner + cards;
   }
   window.renderPlans = renderPlans;
+
+  // ── In-app subscriptions (iPhone) ───────────────────────────────────
+  // Prices come from the App Store (localised, incl. any free-trial
+  // offer), never hard-coded. Apple requires: Restore Purchases, a way to
+  // manage/cancel, and the auto-renewal terms with Terms + Privacy links.
+  // iOS-style confirmation HUD that drops in from the top and fades.
+  function toast(msg) {
+    const old = document.getElementById('ios-toast');
+    if (old) old.remove();
+    const t = document.createElement('div');
+    t.id = 'ios-toast';
+    t.className = 'ios-toast';
+    t.setAttribute('role', 'status');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('on'));
+    setTimeout(() => { t.classList.remove('on'); setTimeout(() => t.remove(), 300); }, 2400);
+  }
+  window.toast = toast;
+
+  let iapPackagesCache = [];
+  const APPLE_EULA = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+
+  function planForProduct(productId) {
+    return /team/i.test(productId || '') ? 'team' : 'pro';
+  }
+  function introText(product) {
+    const ip = product && product.introPrice;
+    if (!ip) return '';
+    const unit = { DAY: 'day', WEEK: 'week', MONTH: 'month', YEAR: 'year' }[ip.periodUnit] || '';
+    const n = ip.periodNumberOfUnits || 1;
+    const span = unit ? `${n} ${unit}${n === 1 ? '' : 's'}` : '';
+    return ip.price === 0 ? `${span} free, then` : `${ip.priceString} for ${span}, then`;
+  }
+
+  async function renderPlansIAP(body, currentPlan, orgId) {
+    let pkgs = [];
+    try { pkgs = await CodedokNative.iap.packages(); }
+    catch (err) { console.warn('IAP offerings failed', err); }
+    iapPackagesCache = pkgs;
+    const paidNow = currentPlan === 'pro' || currentPlan === 'team';
+
+    const cards = pkgs.map((pkg, i) => {
+      const prod = pkg.product || {};
+      const planId = planForProduct(prod.identifier);
+      const def = PLAN_DEFS.find((d) => d.id === planId) || {};
+      const isCurrent = planId === currentPlan;
+      const perks = (def.perks || []).map((x) => `<li class="iap-perk"><span>✓</span>${escapeHtml(x)}</li>`).join('');
+      const intro = introText(prod);
+      const cta = isCurrent
+        ? `<button class="btn btn-out btn-full" disabled>Your current plan</button>`
+        : `<button class="btn btn-sea btn-full" onclick="buyPlan(${i})">${paidNow ? 'Switch to' : 'Subscribe to'} ${escapeHtml(def.label || prod.title || 'plan')}</button>`;
+      return `
+        <div class="card iap-card${def.recommended ? ' iap-rec' : ''}">
+          <div class="iap-head">
+            <div class="iap-name">${escapeHtml(def.label || prod.title || '')}${isCurrent ? ' <span class="chip chip-ok">Current</span>' : ''}</div>
+            <div class="iap-price"><b>${escapeHtml(prod.priceString || '')}</b><span>/month</span></div>
+          </div>
+          ${intro ? `<div class="iap-intro">${escapeHtml(intro)} ${escapeHtml(prod.priceString || '')}/month</div>` : ''}
+          <div class="iap-sub">${escapeHtml(def.sub || prod.description || '')}</div>
+          <ul class="iap-perks">${perks}</ul>
+          ${cta}
+        </div>`;
+    }).join('');
+
+    const empty = `<div class="card" style="padding:18px"><div style="font-weight:700;margin-bottom:4px">Subscriptions aren't available right now</div><div style="font-size:14px;color:var(--mid)">Check your connection and try again in a moment.</div></div>`;
+
+    body.innerHTML = `
+      <div class="iap-hero">
+        <div class="iap-hero-title">${paidNow ? 'You\'re on ' + escapeHtml(currentPlan === 'team' ? 'Team' : 'Pro') : 'Go further with Pro'}</div>
+        <div class="iap-hero-sub">Solo stays free for one vessel, forever. Upgrade for unlimited vessels, crew reminders and team access.</div>
+      </div>
+      ${pkgs.length ? cards : empty}
+      ${paidNow ? `<button class="btn btn-out btn-full" style="margin-top:4px" onclick="CodedokNative.iap.manage()">Manage subscription</button>` : ''}
+      <button class="iap-restore" onclick="restorePlan()">Restore purchases</button>
+      <div class="iap-legal">
+        Payment is charged to your Apple ID account at confirmation of purchase. Subscriptions renew automatically each month unless cancelled at least 24 hours before the end of the current period, and your account is charged for renewal within 24 hours before the period ends. Manage or cancel any time in your App Store account settings. Any unused portion of a free trial is forfeited when you subscribe.
+        <div style="margin-top:8px"><a href="${APPLE_EULA}">Terms of Use</a> · <a href="https://codedok.com/privacy">Privacy Policy</a></div>
+      </div>`;
+  }
+
+  // After Apple confirms, RevenueCat's webhook updates the database within
+  // a few seconds; poll briefly so the screen reflects it without a manual
+  // refresh. The entitlement already unlocks things locally meanwhile.
+  async function awaitPlanSync(expected) {
+    for (let i = 0; i < 8; i++) {
+      await new Promise((r) => setTimeout(r, 1500));
+      try {
+        const client = await window.Supa.getClient();
+        const { data: { user } } = await client.auth.getUser();
+        const me = user && (await client.from('users').select('id').eq('auth_user_id', user.id).maybeSingle()).data;
+        const memb = me && (await client.from('memberships').select('org_id').eq('user_id', me.id).eq('role', 'owner').maybeSingle()).data;
+        const org = memb && (await client.from('organizations').select('plan').eq('id', memb.org_id).maybeSingle()).data;
+        if (org && org.plan === expected) return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  async function buyPlan(i) {
+    const pkg = iapPackagesCache[i];
+    if (!pkg) return;
+    const btns = document.querySelectorAll('#plans-body .iap-card button');
+    btns.forEach((b) => { b.disabled = true; });
+    try {
+      const r = await CodedokNative.iap.buy(pkg);
+      if (r.cancelled) return;
+      if (r.plan) {
+        toast(`Welcome to ${r.plan === 'team' ? 'Team' : 'Pro'}`);
+        await awaitPlanSync(r.plan);
+      }
+      renderPlans();
+      if (typeof renderTrialBanner === 'function') renderTrialBanner();
+    } catch (err) {
+      alert("The purchase didn't go through: " + ((err && err.message) || err));
+    } finally {
+      btns.forEach((b) => { b.disabled = false; });
+    }
+  }
+  window.buyPlan = buyPlan;
+  window.renderPlansIAP = renderPlansIAP;
+
+  async function restorePlan() {
+    try {
+      const plan = await CodedokNative.iap.restore();
+      if (plan) { toast(`Restored your ${plan === 'team' ? 'Team' : 'Pro'} subscription`); await awaitPlanSync(plan); }
+      else alert('No active subscription was found for this Apple ID.');
+      renderPlans();
+    } catch (err) {
+      alert("Couldn't restore purchases: " + ((err && err.message) || err));
+    }
+  }
+  window.restorePlan = restorePlan;
 
   async function selectPlan(planId, orgId) {
     if (!planId || !orgId) return;
@@ -9778,6 +9920,9 @@ ${sectionsHtml}
       // On the native build, register this device for APNs push so expiry
       // reminders reach the phone. Fire-and-forget; no-op on web.
       try { registerNativePush(row.id); } catch (_) {}
+      // Tie Apple subscriptions to this account (Supabase auth id), so
+      // RevenueCat's webhook can find the right organisation.
+      try { if (window.CodedokNative && CodedokNative.iap) CodedokNative.iap.configure(authUser.id); } catch (_) {}
 
       // Demo-account gating. Two seeded experiences:
       //   mcljd303@icloud.com               → operator demo (skipper view)

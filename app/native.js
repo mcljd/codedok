@@ -133,7 +133,9 @@
   function initChrome() {
     if (!isNative) return;
     var Status = plugin('StatusBar');
-    try { if (Status && Status.setStyle) Status.setStyle({ style: 'DARK' }); } catch (_) {}
+    // Light screens are the default → black status-bar text. go() flips it
+    // to white on navy screens via setStatusBar().
+    try { if (Status && Status.setStyle) Status.setStyle({ style: 'LIGHT' }); } catch (_) {}
     var Splash = plugin('SplashScreen');
     try { if (Splash && Splash.hide) setTimeout(function () { Splash.hide(); }, 300); } catch (_) {}
   }
@@ -158,6 +160,77 @@
     } catch (err) { console.warn('initPush failed', err); }
   }
 
+  // ── Status bar text colour per screen ─────────────────────────────────
+  // dark=true → white text (for navy screens); false → black text (light).
+  function setStatusBar(dark) {
+    if (!isNative) return;
+    var S = plugin('StatusBar');
+    try { if (S && S.setStyle) S.setStyle({ style: dark ? 'DARK' : 'LIGHT' }); } catch (_) {}
+  }
+
+  // ── In-app purchases (RevenueCat over StoreKit) ───────────────────────
+  // Subscriptions are bought through Apple; RevenueCat validates receipts
+  // and webhooks the result to Supabase (supabase/functions/revenuecat-
+  // webhook), which sets organizations.plan. The app user id is the
+  // Supabase auth user id so purchases follow the account, not the phone.
+  var iapUser;               // undefined = not configured yet
+  function purchases() { return plugin('Purchases'); }
+  function iapAvailable() {
+    var key = (window.CodedOkConfig || {}).revenueCatAppleKey;
+    return !!(isNative && key && purchases());
+  }
+  async function iapConfigure(appUserID) {
+    var P = purchases();
+    if (!iapAvailable()) return false;
+    try {
+      if (iapUser === undefined) {
+        await P.configure({ apiKey: window.CodedOkConfig.revenueCatAppleKey, appUserID: appUserID || null });
+        iapUser = appUserID || null;
+      } else if (appUserID && appUserID !== iapUser) {
+        await P.logIn({ appUserID: appUserID });
+        iapUser = appUserID;
+      }
+      return true;
+    } catch (err) { console.warn('iapConfigure failed', err); return false; }
+  }
+  // The plan the active entitlements grant: 'team' beats 'pro'.
+  function planFromCustomerInfo(info) {
+    var active = (info && info.entitlements && info.entitlements.active) || {};
+    if (active.team) return 'team';
+    if (active.pro) return 'pro';
+    return null;
+  }
+  async function iapPackages() {
+    if (!iapAvailable()) return [];
+    var o = await purchases().getOfferings();
+    return (o && o.current && o.current.availablePackages) || [];
+  }
+  // → { plan, cancelled }   (cancelled = user backed out of Apple's sheet)
+  async function iapBuy(pkg) {
+    try {
+      var r = await purchases().purchasePackage({ aPackage: pkg });
+      haptic('success');
+      return { plan: planFromCustomerInfo(r && r.customerInfo), cancelled: false };
+    } catch (err) {
+      if (err && (err.userCancelled || /cancel/i.test(err.message || ''))) return { plan: null, cancelled: true };
+      throw err;
+    }
+  }
+  async function iapRestore() {
+    var r = await purchases().restorePurchases();
+    return planFromCustomerInfo(r && r.customerInfo);
+  }
+  async function iapCurrentPlan() {
+    if (!iapAvailable()) return null;
+    var r = await purchases().getCustomerInfo();
+    return planFromCustomerInfo(r && r.customerInfo);
+  }
+  async function iapManage() {
+    var P = purchases();
+    if (P && typeof P.showManageSubscriptions === 'function') { try { await P.showManageSubscriptions(); return; } catch (_) {} }
+    window.location.href = 'https://apps.apple.com/account/subscriptions';
+  }
+
   window.CodedokNative = {
     isNative: isNative,
     scanDocument: scanDocument,
@@ -165,10 +238,26 @@
     shareFile: shareFile,
     haptic: haptic,
     initChrome: initChrome,
-    initPush: initPush
+    initPush: initPush,
+    setStatusBar: setStatusBar,
+    iap: {
+      available: iapAvailable,
+      configure: iapConfigure,
+      packages: iapPackages,
+      buy: iapBuy,
+      restore: iapRestore,
+      currentPlan: iapCurrentPlan,
+      manage: iapManage
+    }
   };
 
   if (isNative) {
+    // A light haptic tick on tab switches and primary actions — the
+    // tactile feedback iOS users expect from native controls.
+    document.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest && e.target.closest('.bni, .btn-sea, .ss-btn-primary, .ios-head-btn, .chip-tap, .vf-chip');
+      if (t) haptic('light');
+    }, { passive: true });
     try { initChrome(); } catch (_) {}
     try { document.documentElement.classList.add('is-native'); } catch (_) {}
     // A native app doesn't pinch-zoom, and iOS shouldn't auto-zoom into

@@ -27,6 +27,8 @@ workflows:
     scripts:
       - name: Install dependencies
         script: npm install --no-audit --no-fund
+      - name: Bundle Capacitor plugins for the app
+        script: npm run vendor
       - name: Copy the web app into the iOS project and install pods
         script: npx cap sync ios
       - name: Set up code signing (creates the certificate and profile if missing)

@@ -5703,3 +5703,49 @@ html.is-native body { position: fixed; inset: 0; width: 100%; }
 html.is-native .shell.on { height: 100%; width: 100%; overflow: hidden; }
 html.is-native .scroll { overscroll-behavior: contain; }
 html.is-native .sb { height: env(safe-area-inset-top, 20px); min-height: env(safe-area-inset-top, 20px); }
+
+/* ── In-app subscriptions (Plans screen, iPhone) ───────────────────── */
+.iap-hero { padding: 6px 2px 16px; }
+.iap-hero-title { font-family: var(--fn-display); font-size: 28px; font-weight: 700; letter-spacing: -.3px; color: var(--text); }
+.iap-hero-sub { font-size: 15px; color: var(--mid); line-height: 1.45; margin-top: 6px; }
+.iap-card { padding: 18px; border-radius: 16px; margin-bottom: 12px; border: 2px solid transparent; }
+.iap-card.iap-rec { border-color: var(--tint); }
+.iap-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.iap-name { font-size: 20px; font-weight: 700; color: var(--text); }
+.iap-price b { font-size: 20px; font-weight: 700; color: var(--text); }
+.iap-price span { font-size: 13px; color: var(--mid); margin-left: 2px; }
+.iap-intro { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--green); background: var(--grnp); padding: 4px 10px; border-radius: 999px; }
+.iap-sub { font-size: 14px; color: var(--mid); margin: 8px 0 10px; line-height: 1.45; }
+.iap-perks { list-style: none; padding: 0; margin: 0 0 16px; }
+.iap-perk { display: flex; gap: 10px; font-size: 15px; color: var(--text); padding: 5px 0; }
+.iap-perk span { color: var(--tint); font-weight: 700; }
+.iap-restore { display: block; width: 100%; margin: 14px 0 4px; background: none; border: 0; color: var(--tint); font: inherit; font-size: 16px; padding: 10px; cursor: pointer; }
+.iap-legal { font-size: 12px; color: var(--lt); line-height: 1.5; padding: 4px 4px 24px; text-align: center; }
+.iap-legal a { color: var(--tint); }
+
+/* iOS-style confirmation HUD */
+.ios-toast {
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 10px); z-index: 13000;
+  transform: translate(-50%, -140%); opacity: 0;
+  background: rgba(28,28,30,.92); color: #fff; font: 600 15px/1.3 var(--fn);
+  padding: 12px 18px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  max-width: calc(100vw - 40px); text-align: center;
+  transition: transform .35s cubic-bezier(.2,.9,.3,1.2), opacity .25s;
+}
+.ios-toast.on { transform: translate(-50%, 0); opacity: 1; }
+
+/* SF Symbols-style line icons (icons.js swaps emoji for these). The
+   container sets the colour; status tints carry through. */
+.cdk-ic { width: 56%; height: 56%; display: block; }
+.row-ic, .ios-row-ic, .ticket-ic, .scan-opt-ic, .qa-icon { color: var(--tint); }
+.row-ic.rd, .ios-row-ic.rd, .qa-icon.rd { color: var(--red); }
+.row-ic.am, .ios-row-ic.am, .qa-icon.am { color: var(--amber); }
+.row-ic.ok, .ios-row-ic.ok, .ios-row-ic.gr, .qa-icon.ok { color: var(--green); }
+.row-ic.pu, .qa-icon.pu { color: var(--purp); }
+.row-ic.dk, .vcover-emoji { color: #fff; }
+.vcover-emoji .cdk-ic { width: 58%; height: 58%; }
+.quick-add-tile > span:first-child { display: inline-flex; width: 30px; height: 30px; color: var(--tint); }
+.quick-add-tile > span:first-child .cdk-ic { width: 100%; height: 100%; }
+.dni-ic .cdk-ic, .ad-sb-ic .cdk-ic, .sv-sb-ic .cdk-ic { width: 20px; height: 20px; }
+html.is-native .web-only { display: none !important; }
+html.is-native #plans-body { padding-top: 16px !important; }

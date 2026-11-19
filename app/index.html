@@ -11,6 +11,12 @@
     var h = (location.hostname || '').toLowerCase();
     if (/\.codedok\.com$/.test(h) && h !== 'www.codedok.com') location.replace('https://codedok.com/');
   })();
+  // Inside the iPhone app only: load Capacitor's runtime + plugins so
+  // Capacitor.Plugins (camera, push, purchases…) actually exist. The
+  // file is generated at build time (scripts/vendor-capacitor.js).
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+    document.write('<script src="vendor/capacitor-native.js"><\/script>');
+  }
 </script>
 <title>CodedOK — AI-powered MCA Sport &amp; Pleasure Vessel Code 2025 compliance</title>
 <meta name="description" content="AI-powered compliance app for UK &amp; Irish coded vessels. Built for the MCA SPV Code 2025, Workboat Code Ed.3 and Irish PBL. Snap a cert, stay survey-ready.">
@@ -2165,8 +2171,10 @@
 
     <!-- Native build sells nothing in-app (App Store 3.1.1): paid tiers
          below carry .paid-only and are hidden when html.is-native. -->
-    <div class="card mx native-only" style="margin-bottom:10px;padding:16px 18px;font-size:14px;color:var(--mid);line-height:1.5">
-      Need more vessels or a team? Manage your plan any time at <strong style="color:var(--text)">codedok.com</strong>.
+    <div class="card mx native-only" style="margin-bottom:10px;padding:16px 18px">
+      <div style="font-size:16px;font-weight:600;color:var(--text)">Pro and Team</div>
+      <div style="font-size:14px;color:var(--mid);line-height:1.5;margin:4px 0 12px">Unlimited vessels, crew reminders and team access.</div>
+      <button class="btn btn-sea btn-full" onclick="go('s-plans')">See plans</button>
     </div>
 
     <!-- Pro — Featured -->
@@ -2339,7 +2347,7 @@
     <div style="width:60px"></div>
   </div>
   <div class="scroll pb24">
-    <div style="padding:18px 16px 8px">
+    <div class="web-only" style="padding:18px 16px 8px">
       <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-bottom:4px;font-family:var(--fn-display)">Pick a plan that fits</div>
       <div style="font-size:13px;color:var(--mid);line-height:1.55">Solo is free forever. Pro and Team start with a 14-day free trial — no card required to start either.</div>
     </div>
@@ -2439,6 +2447,9 @@
     // on launch day flip appStoreLive to true and they open the App Store.
     appStoreUrl: 'https://apps.apple.com/app/id6836862206',
     appStoreLive: false,
+    // RevenueCat → Project settings → API keys → "Apple App Store" public
+    // key (starts appl_). Safe to ship in the app. Empty = subscriptions off.
+    revenueCatAppleKey: '',
     sentryDsn: '',          // paste Sentry DSN here to enable error monitoring
     sentryEnv: 'production', // 'production' | 'preview' | 'dev'
     // ──── Google Analytics 4 ─────────────────────────────────────
@@ -2482,6 +2493,7 @@
 <script src="sync.js" defer></script>
 <script src="parseSurveyReport.js" defer></script>
 <script src="native.js" defer></script>
+<script src="icons.js" defer></script>
 <script src="app.js" defer></script>
 
 
