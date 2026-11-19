@@ -1,0 +1,19 @@
+{
+  "appId": "com.codedok.app",
+  "appName": "CodedOK",
+  "webDir": "app",
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#03203D"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "backgroundColor": "#03203D",
+      "showSpinner": false
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}
