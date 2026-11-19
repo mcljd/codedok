@@ -5852,3 +5852,35 @@ html.is-native #plans-body { padding-top: 16px !important; }
   html.is-native [style*="color:var(--sea)"], html.is-native [style*="color: var(--sea)"] { color: #4A98E0 !important; }
   html.is-native [style*="color:var(--ink)"], html.is-native [style*="color: var(--ink)"] { color: var(--text) !important; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   ACCESSIBILITY SETTINGS (HIG › Accessibility): Increase Contrast and
+   Reduce Transparency. Both are system settings Safari/WKWebView expose.
+   ══════════════════════════════════════════════════════════════════ */
+@media (prefers-contrast: more) {
+  :root, html.is-native {
+    --mid: #3C3C43; --lt: #48484A; --lt-2: #48484A;
+    --bdr: #8E8E93; --bdr-strong: #636366;
+  }
+  .card, .ios-group, .ticket, .row, .fi { border: 1px solid #8E8E93 !important; }
+  .cb { border: 1px solid currentColor; font-weight: 700; }
+}
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  html.is-native { --mid: #E5E5EA; --lt: #D1D1D6; --lt-2: #C7C7CC; --bdr: #8E8E93; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .bnav, .ios-home-head.compact, .bdrop, .ios-toast, .sheet {
+    -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  }
+  .bnav { background: var(--card) !important; }
+  .ios-home-head.compact { background: var(--page) !important; }
+}
+
+/* ── Sign-in legibility (HIG › Accessibility: 4.5:1 text, 11pt+ minimum) ── */
+#s-login .auth-demo-link { color: #8EC5F5 !important; font-size: 15px !important; }
+#s-login .auth-demo-link[style*="12px"] { font-size: 14px !important; }
+#s-login .auth-card label { color: rgba(255,255,255,.78) !important; font-size: 12px !important; letter-spacing: .06em !important; }
+#s-login .auth-input::placeholder { color: rgba(255,255,255,.55); }
+#s-login .auth-sub { color: rgba(255,255,255,.78) !important; }
+#s-login .auth-fineprint { color: rgba(255,255,255,.7); font-size: 12px; }
+#s-login .auth-fineprint a { color: #fff; text-decoration: underline; }
