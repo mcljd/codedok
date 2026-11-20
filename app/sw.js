@@ -4,7 +4,7 @@
 //     get the latest when online, fall back to cache when offline)
 //   - Fonts / icons / images: cache-first (rarely change, big files)
 // Bump CACHE_VERSION whenever you ship — old caches are deleted on activate.
-const CACHE_VERSION = 'codedok-v35';
+const CACHE_VERSION = 'codedok-v207';
 const SHELL = [
   './',
   './index.html',
@@ -14,14 +14,22 @@ const SHELL = [
   './parseSurveyReport.js',
   './supabase-client.js',
   './sync.js',
+  './native.js',
+  './icons.js',
   './app.js',
+  './screens.js',
+  './ios-features.js',
+  './lib/supabase-js-2.118.0.js',
+  './init-sentry.js',
   './manifest.webmanifest',
   './fonts/PlusJakartaSans-latin.woff2',
   './icons/icon-120.png',
   './icons/icon-152.png',
   './icons/icon-167.png',
   './icons/icon-180.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './icons/codedok-mark.svg',
+  './icons/mccollam.webp'
 ];
 
 self.addEventListener('install', (e) => {
@@ -36,7 +44,11 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-function isAppShell(url) {
+function isAppShell(url, req) {
+  // HTML navigations (the user typing a URL or clicking a link) always
+  // get the app-shell treatment, regardless of path shape. Covers
+  // /welcome, /something/else, /, and /index.html.
+  if (req && req.mode === 'navigate') return true;
   return /(\.html|\.css|\.js|\.json|\/)$/.test(url.pathname) && !/\.woff2?$/.test(url.pathname);
 }
 
@@ -52,8 +64,14 @@ self.addEventListener('fetch', (e) => {
   // type"). Let the browser handle these directly.
   if (url.origin !== self.location.origin) return;
 
-  if (isAppShell(url)) {
+  if (isAppShell(url, req)) {
     // Network-first for code/markup — never serve stale UI when online.
+    // If a CSS/JS asset request fails, fall back to its cached copy
+    // ONLY. Never substitute index.html — that returns HTML where the
+    // browser expects CSS/JS, the page silently renders unstyled, and
+    // the symptom looks like a deploy bug (it's not). The index.html
+    // fallback is reserved for navigation requests (clicked links,
+    // typed URLs), which is what SPA fallback actually means.
     e.respondWith(
       fetch(req).then((res) => {
         if (res && res.status === 200 && res.type === 'basic') {
@@ -61,7 +79,13 @@ self.addEventListener('fetch', (e) => {
           caches.open(CACHE_VERSION).then((c) => c.put(req, copy));
         }
         return res;
-      }).catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html')))
+      }).catch(() => caches.match(req).then((hit) => {
+        if (hit) return hit;
+        if (req.mode === 'navigate') return caches.match('./index.html');
+        // Let the browser see the real failure for css/js/json so it
+        // can retry or report a useful error.
+        return new Response('', { status: 504, statusText: 'Offline' });
+      }))
     );
     return;
   }
@@ -78,4 +102,41 @@ self.addEventListener('fetch', (e) => {
       }).catch(() => caches.match('./index.html'));
     })
   );
+});
+
+// ────────────────────────────────────────────────────────────────
+// Web push — expiry reminders fired by the send-reminders edge fn.
+// Payload shape (JSON): { title, body, url, tag }
+// ────────────────────────────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (_) {
+    data = { title: 'CodedOK', body: event.data ? event.data.text() : '' };
+  }
+  const title = data.title || 'CodedOK';
+  const opts = {
+    body: data.body || '',
+    icon: './icons/icon-180.png',
+    badge: './icons/icon-180.png',
+    tag: data.tag || 'codedok-reminder',
+    renotify: true,
+    data: { url: data.url || './' }
+  };
+  event.waitUntil(self.registration.showNotification(title, opts));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || './';
+  event.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) {
+      if (c.url.includes(self.location.origin)) {
+        await c.focus();
+        try { c.postMessage({ type: 'open', url: target }); } catch (_) {}
+        return;
+      }
+    }
+    await self.clients.openWindow(target);
+  })());
 });

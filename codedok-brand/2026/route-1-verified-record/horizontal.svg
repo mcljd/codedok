@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" role="img" aria-label="CodedOK">
+  <!-- NB: <text> uses Barlow Condensed via the web. For PDF / print
+       handoff, outline the text in Figma/Illustrator before exporting. -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#0F4C5C"/>
+  <path d="M16 33 L26 43 L46 21"
+        fill="none" stroke="#F3F5F4" stroke-width="6"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="78" y="45" font-family="'Barlow Condensed', 'Inter', sans-serif"
+        font-weight="700" font-size="38" fill="#1C252B" letter-spacing="-.4">
+    CodedOK
+  </text>
+</svg>

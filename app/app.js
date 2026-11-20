@@ -9,6 +9,43 @@
 (function () {
   'use strict';
 
+  // ---------- Demo / staff accounts ----------
+  // The single dev account used during build-out. When this email
+  // signs in, the demo seed loads (Tsunami IV etc) and the "switch
+  // view" controls (operator / surveyor / admin) become visible so
+  // we can dogfood every persona on one account.
+  //
+  // Lifted to a single constant from the four hard-coded literals
+  // it used to live as. Set via window.CodedOkConfig.demoOperatorEmail
+  // before app.js loads — Joseph's personal account is the default
+  // so the existing dev flow keeps working.
+  const DEMO_OPERATOR_EMAIL = (
+    (window.CodedOkConfig && window.CodedOkConfig.demoOperatorEmail)
+    || 'mcljd303@icloud.com'
+  ).toLowerCase();
+
+  function isDemoOperatorEmail(email) {
+    return (email || '').toLowerCase() === DEMO_OPERATOR_EMAIL;
+  }
+
+  // Running inside the native iOS/Android shell (Capacitor) rather than
+  // the web PWA. Apple's rules forbid selling digital upgrades in-app
+  // without IAP, so the native build sells nothing: paid upgrade CTAs
+  // are hidden and billing is pointed at the web. Web PWA is unaffected.
+  function isNativeApp() {
+    try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+    catch (_) { return false; }
+  }
+  window.isNativeApp = isNativeApp;
+
+  // True on the public website (codedok.com and its subdomains), which
+  // only markets the iPhone app. False inside the native app (served from
+  // "localhost") and in local development.
+  function isPublicWebsite() {
+    if (isNativeApp()) return false;
+    return /(^|\.)codedok\.com$/i.test(window.location.hostname || '');
+  }
+
   // ---------- Active vessel context ----------
   // Many screens (vessel detail, equipment, hand-off) operate on a single
   // active vessel. We keep that on window for prototype simplicity.
@@ -53,7 +90,7 @@
             <div class="fg"><label class="fl">SSR / reg.</label><input class="fi" id="ev-ssr" value="${escapeHtml(v.ssr || '')}"></div>
           </div>
           <div class="fg"><label class="fl">Home port</label><input class="fi" id="ev-port" value="${escapeHtml(v.port || '')}"></div>
-          <div class="fg"><label class="fl">Make / model</label><input class="fi" id="ev-make" value="${escapeHtml(v.make || '')}" placeholder="e.g. Redbay Stormforce"></div>
+          <div class="fg"><label class="fl">Make / model</label><input class="fi" id="ev-make" value="${escapeHtml(v.make || '')}" placeholder="e.g. Stormrider RIB"></div>
           <div class="fg"><label class="fl">Engine</label><input class="fi" id="ev-engine" value="${escapeHtml(v.engine || '')}" placeholder="e.g. Suzuki 300hp 4-stroke"></div>
           <button class="btn btn-sea btn-full" onclick="submitEditVessel('${v.id}')" style="margin-top:8px">Save changes</button>
           <button class="btn btn-out btn-full" onclick="confirmDeleteVessel('${v.id}')" style="margin-top:8px;color:var(--red);border-color:rgba(220,38,38,.3)">🗑️ Delete vessel</button>
@@ -124,6 +161,121 @@
     });
   }
 
+  // Convert a data URL (compressImage output) into a Blob suitable for
+  // multipart upload to Supabase Storage. Pure-JS, no deps.
+  function dataUrlToBlob(dataUrl) {
+    const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+    if (!m) return null;
+    const mime = m[1];
+    const bin = atob(m[2]);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  function extForMime(mime) {
+    return ({
+      'image/webp': 'webp',
+      'image/jpeg': 'jpg',
+      'image/png':  'png',
+      'image/svg+xml': 'svg',
+      'application/pdf': 'pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx'
+    })[mime] || 'bin';
+  }
+
+  // Upload a Blob (or a data URL we'll convert) to Supabase Storage and
+  // return the public URL. Used for vessel photos and surveyor logos —
+  // keeps the heavy binary out of localStorage and the row payloads.
+  //
+  // On any failure (offline, Supabase down, RLS denial) we fall back to
+  // returning the data URL itself so the user never loses their upload —
+  // the row just goes back to the legacy base64 storage path.
+  async function uploadToStorage(bucket, folder, blob) {
+    if (!window.Supa || !window.Supa.ready) return null;
+    try {
+      const client = await window.Supa.getClient();
+      const ext = extForMime(blob.type);
+      const filename = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      const path = folder + '/' + filename;
+      const { error } = await client.storage
+        .from(bucket)
+        .upload(path, blob, { upsert: false, contentType: blob.type, cacheControl: '31536000' });
+      if (error) throw error;
+      const { data } = client.storage.from(bucket).getPublicUrl(path);
+      return data && data.publicUrl ? data.publicUrl : null;
+    } catch (err) {
+      console.warn('Storage upload failed (' + bucket + '):', err && err.message);
+      return null;
+    }
+  }
+
+  // Convenience: compress a file then upload to storage, returning the
+  // resulting public URL. Falls back to the compressed data URL if
+  // Storage isn't available — the rest of the app treats either as a
+  // valid <img src>, so the UX degrades cleanly.
+  async function compressAndUpload(file, bucket, folder, compressOpts) {
+    const dataUrl = await compressImage(file, compressOpts);
+    const blob = dataUrlToBlob(dataUrl);
+    if (!blob) return dataUrl;
+    const publicUrl = await uploadToStorage(bucket, folder, blob);
+    return publicUrl || dataUrl;
+  }
+  window.compressAndUpload = compressAndUpload;
+
+  // Resize + recompress an uploaded image. Avoids 20MB phone snaps
+  // wrecking localStorage / sync payloads. Non-image files (PDF, DOC)
+  // and SVGs pass through unchanged. On decode failure we fall back
+  // to the raw data URL so the user never loses their upload.
+  // Defaults: 1600px max edge, WebP/JPEG at 0.82 quality. Pass
+  // { preserveAlpha: true } for logos / icons where transparency matters.
+  async function compressImage(file, opts) {
+    opts = opts || {};
+    const maxEdge = opts.maxEdge || 1600;
+    const quality = opts.quality || 0.82;
+    const preserveAlpha = !!opts.preserveAlpha;
+    if (!file || !file.type || !file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+      return readFileAsDataUrl(file);
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const im = new Image();
+        im.onload  = () => resolve(im);
+        im.onerror = () => reject(new Error('decode failed'));
+        im.src = url;
+      });
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (!w || !h) return readFileAsDataUrl(file);
+      if (Math.max(w, h) > maxEdge) {
+        const scale = maxEdge / Math.max(w, h);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return readFileAsDataUrl(file);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, w, h);
+      // Prefer WebP (better compression + alpha). Browsers that can't
+      // encode it return 'data:image/png' from toDataURL — fall back
+      // to JPEG (or PNG when we need transparency).
+      let out = canvas.toDataURL('image/webp', quality);
+      if (!out.startsWith('data:image/webp')) {
+        out = canvas.toDataURL(preserveAlpha ? 'image/png' : 'image/jpeg', quality);
+      }
+      return out;
+    } catch (err) {
+      console.warn('compressImage failed; storing original:', err);
+      return readFileAsDataUrl(file);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+  window.compressImage = compressImage;
+
   function fmtBytes(n) {
     if (!n && n !== 0) return '—';
     if (n < 1024) return n + ' B';
@@ -134,10 +286,10 @@
   async function handleCertFilePicked(file, categoryHint) {
     if (!file) return;
     if (file.size > MAX_FILE_BYTES) {
-      alert(`That file is ${fmtBytes(file.size)}. Please choose one under ${fmtBytes(MAX_FILE_BYTES)} for the prototype.`);
+      alert(`That file is ${fmtBytes(file.size)}. Please choose one under ${fmtBytes(MAX_FILE_BYTES)} — try saving it at a smaller size first.`);
       return;
     }
-    const data_url = await readFileAsDataUrl(file);
+    const data_url = await compressImage(file);
     pendingScan = {
       kind: 'cert',
       categoryHint: categoryHint || 'vessel',
@@ -160,10 +312,10 @@
   async function handleEquipmentFilePicked(file) {
     if (!file) return;
     if (file.size > MAX_FILE_BYTES) {
-      alert(`That file is ${fmtBytes(file.size)}. Please choose one under ${fmtBytes(MAX_FILE_BYTES)} for the prototype.`);
+      alert(`That file is ${fmtBytes(file.size)}. Please choose one under ${fmtBytes(MAX_FILE_BYTES)} — try saving it at a smaller size first.`);
       return;
     }
-    const data_url = await readFileAsDataUrl(file);
+    const data_url = await compressImage(file);
     const f = { name: file.name, type: file.type, size: file.size, data_url, added_at: new Date().toISOString() };
     if (attachContext && attachContext.mode === 'equipment') {
       Store.attachFileToEquipment(attachContext.id, f);
@@ -246,18 +398,27 @@
   // Open the stored data URL — works for PDFs and images.
   function viewAttachment(dataUrl, name) {
     if (!dataUrl) return;
+    // Security: only ever open data:/https:/blob: attachments. A crafted
+    // value (e.g. a javascript: URL, or one containing a quote to break
+    // out of the attribute) would otherwise run script in the app origin
+    // and could steal the session — this matters the moment attachments
+    // sync between org members/surveyors. Reject bad schemes and escape
+    // the URL for the double-quoted attribute context.
+    const url = String(dataUrl);
+    if (!/^(data:|https:|blob:)/i.test(url)) return;
+    const safeUrl = url.replace(/"/g, '%22').replace(/</g, '%3C').replace(/>/g, '%3E');
     const w = window.open();
     if (!w) return;
     const safe = (name || 'attachment').replace(/[<>"']/g, '');
     w.document.write(`
       <!DOCTYPE html><html><head><meta charset="utf-8"><title>${safe}</title>
-      <style>body{margin:0;background:#0a1628;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;color:white}
+      <style>body{margin:0;background:#03203D;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;color:white}
       iframe,img{max-width:100%;max-height:100vh;background:white}
-      .dl{position:fixed;top:14px;right:14px;background:#0891b2;color:white;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600}</style></head>
-      <body>${dataUrl.startsWith('data:application/pdf')
-        ? `<iframe src="${dataUrl}" style="width:100vw;height:100vh;border:none"></iframe>`
-        : `<img src="${dataUrl}" alt="${safe}">`}
-      <a class="dl" href="${dataUrl}" download="${safe}">⬇ Download</a>
+      .dl{position:fixed;top:14px;right:14px;background:#03203D;color:white;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600}</style></head>
+      <body>${url.startsWith('data:application/pdf')
+        ? `<iframe src="${safeUrl}" style="width:100vw;height:100vh;border:none"></iframe>`
+        : `<img src="${safeUrl}" alt="${safe}">`}
+      <a class="dl" href="${safeUrl}" download="${safe}">⬇ Download</a>
       </body></html>`);
     w.document.close();
   }
@@ -295,12 +456,61 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  // Escape a value for embedding as a SINGLE-QUOTED JS string argument
+  // inside a DOUBLE-QUOTED HTML onclick attribute — e.g.
+  //   `<button onclick="fn('${jsAttr(name)}')">`
+  // escapeHtml is WRONG here: it turns ' into &#39;, which the HTML
+  // parser decodes back to ' before the JS runs, prematurely closing
+  // the string (a name like O'Brien becomes a syntax error and the
+  // button silently does nothing). Correct order: JS-escape backslash
+  // and single-quote first (\' survives HTML decode intact), then
+  // HTML-escape & and the " attribute delimiter.
+  function jsAttr(s) {
+    return String(s == null ? '' : s)
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;');
+  }
+  window.jsAttr = jsAttr;
+
+  // Only allow image sources we expect (Supabase https URLs, local data:/blob:
+  // images). Anything else — javascript:, http:, quotes, brackets — is refused
+  // or percent-encoded so it can't break out of an attribute or CSS url().
+  function safeImgUrl(u) {
+    if (window.CodedokSanitize) return window.CodedokSanitize.safeUrl(u) || '';
+    const t = String(u || '').trim();
+    if (/^\/?[A-Za-z0-9_][A-Za-z0-9_\/.-]*$/.test(t) && !t.includes('..')) return t; // same-app path
+    if (!/^(https:\/\/|data:image\/|blob:)/i.test(t)) return '';
+    return t.replace(/["'<>\\()\s]/g, encodeURIComponent);
+  }
+  window.safeImgUrl = safeImgUrl;
+
   function fmtDate(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return '—';
     return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   }
+
+  // Turn a raw Supabase/Postgres/network error into something a
+  // customer can read. Never surface RLS text, JWT internals, SQL
+  // constraint names, or stack traces. The real detail still goes to
+  // console for us. Use this in customer-facing catch blocks instead
+  // of alert('...' + err.message).
+  function friendlyErr(err, fallback) {
+    const raw = ((err && err.message) || String(err || '')).toLowerCase();
+    if (/jwt|token|session|expired|not authenticated|auth/.test(raw))
+      return 'Your session timed out. Please sign in again.';
+    if (/row-level security|permission denied|not allowed|forbidden|policy/.test(raw))
+      return "You don't have permission to do that. If that seems wrong, contact hello@codedok.com.";
+    if (/duplicate|unique|already exists/.test(raw))
+      return 'That already exists.';
+    if (/network|failed to fetch|timeout|offline|send a request/.test(raw))
+      return "Couldn't reach the server. Check your connection and try again.";
+    return fallback || 'Something went wrong. Please try again, or contact hello@codedok.com if it keeps happening.';
+  }
+  window.friendlyErr = friendlyErr;
 
   function daysFmt(d) {
     if (d === Infinity) return 'No expiry';
@@ -325,54 +535,55 @@
   }
 
   // CodedOK icon mark — refined vector, scales cleanly from 22 to 1024.
-  // Two stylised cyan waves above a green compliance circle with a white tick.
-  // `tone`: 'color' (default), 'mono-light' (white on dark), 'mono-dark' (navy on light).
+  // CodedOK brand mark — Route 1 "Verified Record". Rounded card in
+  // Deep Tide with a Fog White tick. Three tones so it sits cleanly on
+  // any background: 'color' (default brand), 'mono-light' (white on
+  // dark), 'mono-dark' (Harbour Black on light).
+  //
+  // Master SVG also committed at codedok-brand/2026/route-1-verified-record/
+  // — keep the two in sync if you tweak proportions.
   function codedOkMark(size, tone) {
     size = size || 64;
     tone = tone || 'color';
 
-    let topStroke, botStroke, circleFill, tickStroke;
+    let cardFill, tickStroke;
     if (tone === 'mono-light') {
-      topStroke = '#FFFFFF';
-      botStroke = '#FFFFFF';
-      circleFill = '#FFFFFF';
-      tickStroke = '#0A1628';
+      cardFill   = '#F3F5F4';   // Fog White card on dark surface
+      tickStroke = '#03203D';   // Deep Tide tick
     } else if (tone === 'mono-dark') {
-      topStroke = '#0A1628';
-      botStroke = '#0A1628';
-      circleFill = '#0A1628';
+      cardFill   = '#03203D';   // Harbour Black card on light surface
       tickStroke = '#FFFFFF';
     } else {
-      topStroke = '#0891B2';
-      botStroke = '#0891B2';
-      circleFill = '#16A34A';
-      tickStroke = '#FFFFFF';
+      cardFill   = '#03203D';   // Deep Tide card
+      tickStroke = '#F3F5F4';   // Fog White tick
     }
 
-    // ViewBox 64×64 means strokes/curves scale linearly with the requested size.
     return `
       <svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M6 22 C 11 14, 17 14, 22 22 S 33 30, 38 22 S 49 14, 58 22"
-              stroke="${topStroke}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M6 34 C 11 26, 17 26, 22 34 S 33 42, 38 34 S 49 26, 58 34"
-              stroke="${botStroke}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
-        <circle cx="47" cy="49" r="13" fill="${circleFill}"/>
-        <path d="M41 49 L45.5 53.5 L53 44.5"
-              stroke="${tickStroke}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="6" y="6" width="52" height="52" rx="12" fill="${cardFill}"/>
+        <path d="M18 33 L28 43 L46 22"
+              stroke="${tickStroke}" stroke-width="6"
+              stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
   }
   window.codedOkMark = codedOkMark;
 
   // Generic surveyor brand block — uses the surveyor's uploaded logo from
   // user.surveyor.logo if set, otherwise an initials placeholder. Replaces
-  // the old hardcoded McCollam Marine wordmark.
+  // the old hardcoded Anchor Marine wordmark.
   function surveyorMark(size) {
     size = size || 28;
     const me = (window.Store && Store.getCurrentUser()) || {};
     const logo = me.surveyor && me.surveyor.logo;
     const company = (me.surveyor && me.surveyor.company) || me.name || 'Your business';
     if (logo) {
-      return `<img class="sv-brand-logo" alt="${escapeHtml(company)} logo" src="${logo}" style="width:${size}px;height:${size}px;border-radius:6px;object-fit:contain;background:white;padding:2px;flex-shrink:0">`;
+      // Height-locked with auto width so wordmark-style logos render
+      // at their natural aspect rather than getting squashed into a
+      // tiny square. Capped so a freakishly wide logo doesn't break
+      // the header layout. onerror drops to the initials placeholder
+      // if the image URL is broken.
+      const fallback = (me.initials || company.split(/\s+/).map((p) => p[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || 'S').replace(/'/g, "&#39;");
+      return `<img class="sv-brand-logo" alt="${escapeHtml(company)} logo" src="${escapeHtml(safeImgUrl(logo))}" style="height:${size}px;width:auto;max-width:${size * 5}px;border-radius:6px;object-fit:contain;background:white;padding:3px 6px;flex-shrink:0;display:block" onerror="this.outerHTML='<div class=\\'sv-brand-placeholder\\' style=&quot;width:${size}px;height:${size}px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-size:${Math.max(10, Math.round(size * 0.4))}px;font-weight:700;flex-shrink:0;border:1px solid rgba(255,255,255,.12)&quot;>${fallback}</div>'">`;
     }
     const initials = me.initials || company.split(/\s+/).map((p) => p[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || 'S';
     return `<div class="sv-brand-placeholder" style="width:${size}px;height:${size}px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-size:${Math.max(10, Math.round(size * 0.4))}px;font-weight:700;flex-shrink:0;border:1px solid rgba(255,255,255,.12)">${escapeHtml(initials)}</div>`;
@@ -388,13 +599,14 @@
   }
   function surveyorTagline() {
     const me = (window.Store && Store.getCurrentUser()) || {};
+    if (me.surveyor && me.surveyor.tagline) return me.surveyor.tagline;
     if (me.surveyor && me.surveyor.qualifications && me.surveyor.qualifications.length > 0) return me.surveyor.qualifications[0];
     if (me.surveyor && me.surveyor.regions && me.surveyor.regions.length > 0) return me.surveyor.regions[0];
     return 'Marine surveyor';
   }
 
   function scoreColor(score) {
-    if (score >= 90) return '#16a34a';
+    if (score >= 90) return '#4F7A52';
     if (score >= 70) return '#d97706';
     return '#dc2626';
   }
@@ -469,19 +681,112 @@
 
   // ---------- Navigation ----------
 
+  // Screens that still contain hardcoded demo/mockup markup and have
+  // no real-data renderer wired into go(). Shown to a real operator
+  // they'd display fake vessels. Each maps to a short label for the
+  // placeholder. The notification bell (s-notif) gets a real
+  // empty-state instead of "coming soon".
+  const MOCKUP_SCREENS = {
+    's-gap':             'AI gap analysis',
+    's-surveys':         'Survey history',
+    's-inspection-pack': 'Inspection pack',
+    's-jur-dash':        'Legal readiness',
+    's-ie-licence':      'Irish PBL licence',
+    's-deficiencies':    'Deficiency log',
+    's-export-pack':     'Export packs'
+  };
+
+  function guardMockupScreen(id, shell) {
+    if (!shell) return;
+    // Screens with a real, data-driven renderer (screens.js) — for everyone.
+    if (window.CodedokScreens && CodedokScreens.has(id)) { CodedokScreens.render(id); return; }
+    const session = loadSession();
+    const isDemo = session && session.mode === 'demo';
+    if (isDemo) return;   // demo sessions keep the sales mockup
+
+    const sc = shell.querySelector('.scroll');
+    if (!sc) return;
+
+    if (id === 's-notif') {
+      // Real empty-state for the notification bell. Once a live
+      // notifications feed exists this can render from it.
+      sc.innerHTML = `
+        <div style="padding:48px 24px;text-align:center">
+          <div style="font-size:44px;margin-bottom:14px">🔔</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">You're all caught up</div>
+          <div style="font-size:14px;color:var(--mid);line-height:1.55;max-width:320px;margin:0 auto">We'll alert you here — and by push if you enable it — before any certificate or service is due. Nothing needs your attention right now.</div>
+          <button class="btn btn-sea" style="margin-top:22px;min-height:48px;padding:0 22px" onclick="goHome()">Back to home</button>
+        </div>`;
+      return;
+    }
+
+    if (MOCKUP_SCREENS[id]) {
+      const label = MOCKUP_SCREENS[id];
+      sc.innerHTML = `
+        <div style="padding:48px 24px;text-align:center">
+          <div style="font-size:44px;margin-bottom:14px">🛠️</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">${escapeHtml(label)} — in progress</div>
+          <div style="font-size:14px;color:var(--mid);line-height:1.55;max-width:340px;margin:0 auto">This is landing during your trial. In the meantime everything you need lives in <b>Records</b> and the <b>Compliance calendar</b>. Tell us if this is a feature you'd want first.</div>
+          <button class="btn btn-sea" style="margin-top:22px;min-height:48px;padding:0 22px" onclick="goHome()">Back to home</button>
+        </div>`;
+    }
+  }
+
+  // Screens whose top edge is navy (status-bar text must be white).
+  const DARK_TOP_SCREENS = new Set(['s-login', 's-vessel-detail']);
+
+  // Back navigation (iOS-style): return to wherever you came from.
+  const TAB_ROOTS = new Set(['s-home', 's-vessels', 's-certs', 's-tools', 's-account', 's-login', 's-land']);
+  const navStack = [];
+  let navBackInFlight = false;
+  function goBack() {
+    const target = navStack.pop();
+    if (target && document.getElementById(target)) { navBackInFlight = true; go(target); }
+    else goHome();
+  }
+  window.goBack = goBack;
+  window.canGoBack = () => navStack.length > 0;
+
   function go(id) {
+    // The website only shows the landing (s-land). Any attempt to open
+    // an app screen there sends the visitor to the iPhone app instead.
+    if (isPublicWebsite() && id !== 's-land') {
+      goAppStore();
+      return;
+    }
+    // Navigation history for goBack() / swipe-back. Tab roots start a fresh stack.
+    const prev = document.querySelector('.shell.on');
+    if (TAB_ROOTS.has(id)) navStack.length = 0;
+    else if (prev && prev.id !== id && !navBackInFlight) { navStack.push(prev.id); if (navStack.length > 30) navStack.shift(); }
+    navBackInFlight = false;
     document.querySelectorAll('.shell').forEach(s => s.classList.remove('on'));
+    // Status-bar text: white over navy screens, black over light ones.
+    try { if (window.CodedokNative && CodedokNative.setStatusBar) CodedokNative.setStatusBar(DARK_TOP_SCREENS.has(id)); } catch (_) {}
     const t = document.getElementById(id);
     if (t) {
       t.classList.add('on');
       const sc = t.querySelector('.scroll');
       if (sc) sc.scrollTop = 0;
     }
+    // Trial-safety guard: several screens still ship static mockup
+    // content (Tsunami IV / Lagavulin demo data) and have no
+    // real-data renderer. For a REAL (non-demo) operator those would
+    // display another skipper's fake fleet — confusing and
+    // embarrassing. Swap that content for a clean "in progress"
+    // placeholder. Demo sessions keep the mockup (it's a sales demo).
+    guardMockupScreen(id, t);
+    // Toggle a body-scoped class so layout rules can break out of
+    // the default 393px phone-frame shell without depending on the
+    // CSS :has() selector (which fails in older browsers).
+    document.body.classList.toggle('shell-fullbleed', id === 's-land');
+    setDnavActive(id);
     if (id === 's-home')               renderHome();
     if (id === 's-vessels')            renderVesselsList();
     if (id === 's-vessel-detail')      renderVesselDetail();
     if (id === 's-certs')              renderRecords();
     if (id === 's-tools')              renderTools();
+    if (id === 's-calendar')           renderCalendar();
+    if (id === 's-support')            renderSupportConsole();
     if (id === 's-equipment-list')     renderEquipmentList();
     if (id === 's-equipment-detail')   renderEquipmentDetail();
     if (id === 's-equipment-add')      resetEquipmentAddForm();
@@ -499,12 +804,47 @@
     if (id === 's-invoice-view')       renderInvoiceView();
     if (id === 's-admin-home')         renderAdminHome();
     if (id === 's-admin-review')       renderAdminReview();
+    if (id === 's-my-quals')           renderMyQuals();
+    if (id === 's-crew-home')          renderCrewHome();
+    if (id === 's-plans')              renderPlans();
+    if (id === 's-land')               { maybeAutoShowQrOnLanding(); }
+    // Smart-banner removed from marketing landing (was covering the hero copy
+    // on mobile). The post-signin home banner is the only Add-to-Home-Screen
+    // nudge now. Strip any stale banner that v74 may have left in the DOM.
+    { const sb = document.getElementById('landing-smart-banner'); if (sb) sb.remove(); }
+    if (id === 's-home' || id === 's-crew-home' || id === 's-surveyor-home' || id === 's-admin-home') {
+      maybeShowWelcomeToast();
+    }
   }
   window.go = go;
+
+  // Highlight the matching item on the persistent desktop rail (#dnav).
+  // Sub-screens (vessel detail, calendar, scan, equipment…) map back to
+  // their top-level section so the rail always shows where you are.
+  const DNAV_SECTIONS = {
+    home:    ['s-home'],
+    vessels: ['s-vessels', 's-vessel-detail', 's-onboard', 's-onboard-jur'],
+    records: ['s-certs', 's-records', 's-scan', 's-scan-confirm',
+              's-equipment-list', 's-equipment-detail', 's-equipment-add'],
+    tools:   ['s-tools', 's-calendar', 's-gap', 's-surveys', 's-deficiencies',
+              's-jur-dash', 's-ie-licence', 's-inspection-pack', 's-export-pack',
+              's-sms', 's-sms-builder', 's-handoff', 's-my-quals'],
+    account: ['s-account', 's-notif', 's-plans', 's-support']
+  };
+  function setDnavActive(id) {
+    let active = '';
+    for (const k in DNAV_SECTIONS) {
+      if (DNAV_SECTIONS[k].indexOf(id) >= 0) { active = k; break; }
+    }
+    document.querySelectorAll('#dnav .dni').forEach((b) => {
+      b.classList.toggle('on', b.getAttribute('data-nav') === active);
+    });
+  }
 
   function selectJur(el, type) {
     document.querySelectorAll('.jur-opt').forEach((o) => o.classList.remove('on'));
     el.classList.add('on');
+    window.__onboardJur = type;   // remembered so finishOnboarding can save it
     const uk = document.getElementById('jur-info-uk');
     const ie = document.getElementById('jur-info-ie');
     const iee = document.getElementById('ie-exemption-panel');
@@ -513,6 +853,23 @@
     if (iee) iee.style.display = (type === 'ie' || type === 'both') ? 'block' : 'none';
   }
   window.selectJur = selectJur;
+
+  // Finish onboarding: persist the jurisdiction choice onto the vessel
+  // just created (was previously discarded — "Continue" only called
+  // goHome()), then land the user on home with a friendly confirmation.
+  function finishOnboarding() {
+    const type = window.__onboardJur || 'uk';
+    const map = { uk: ['UK'], ie: ['IE'], both: ['UK', 'IE'] };
+    const jurisdictions = map[type] || ['UK'];
+    const vessels = Store.snapshot().vessels || [];
+    const last = vessels[vessels.length - 1];
+    if (last && Store.updateVessel) {
+      Store.updateVessel(last.id, { jurisdictions });
+    }
+    window.__onboardJur = null;
+    goHome();
+  }
+  window.finishOnboarding = finishOnboarding;
 
   function selectIEClass(el) {
     el.closest('.card').querySelectorAll('.row').forEach((r) => (r.style.background = ''));
@@ -527,6 +884,12 @@
     screen.querySelectorAll('.tc').forEach(t => t.classList.remove('on'));
     const target = document.getElementById(tabId);
     if (target) target.classList.add('on');
+    // Scroll the tapped tab into view inside the horizontally-scrolling
+    // .tabbar. On phones the Records screen has five tabs (Urgent,
+    // Vessel, Equipment, Crew, Insurance) which don't all fit — the
+    // Insurance tab was sitting off-screen right with no scroll
+    // indicator, and users didn't know it existed.
+    try { btn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch (_) {}
   }
   window.switchTab = switchTab;
 
@@ -1022,8 +1385,8 @@
     if (greeting) {
       const firstName = (s.user && s.user.name) ? s.user.name.split(' ')[0] : '';
       greeting.innerHTML = `
-        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:3px;font-weight:500">Good ${part}${firstName ? ', ' + escapeHtml(firstName) : ''}</div>
-        <div class="h-display" style="font-size:24px">Your boats</div>
+        <div class="ios-eyebrow">Good ${part}${firstName ? ', ' + escapeHtml(firstName) : ''}</div>
+        <div class="ios-largetitle">Home</div>
       `;
     }
     const av = document.getElementById('home-avatar');
@@ -1040,54 +1403,45 @@
       statusEl.className = 'hero hero-home';
       statusEl.style.cssText = 'padding:18px 16px 16px';
       if (isFirstTime) {
-        const firstName = (s.user && s.user.name) ? s.user.name.split(' ')[0] : 'there';
-        statusEl.innerHTML = `
-          <div class="hero-stars" aria-hidden="true"></div>
-          <div style="position:relative;z-index:1;padding:6px 2px 2px">
-            <div style="font-size:13px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Welcome to CodedOK</div>
-            <div style="font-size:22px;font-weight:800;color:white;letter-spacing:-.4px;line-height:1.15;margin-bottom:8px">Hi ${escapeHtml(firstName)} — let's set your boat up in 90 seconds.</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.55">Add one vessel. We'll suggest the certificates and gear you need based on your MCA category, and remind you before anything expires.</div>
-          </div>`;
+        // The onboarding card below is the single welcome; this slot
+        // used to repeat it (and rendered white-on-white).
+        statusEl.style.display = 'none';
+        statusEl.innerHTML = '';
       } else {
-        const fleetScore = Store.complianceScore();
+        statusEl.style.display = '';
+        // ── Simple, plain-language status for novice users. ──
+        // No percentage ring, no "items adrift" jargon. One big
+        // traffic-light badge + a sentence anyone understands, then
+        // two large buttons for the only two things most people do:
+        // add a certificate, or look at what's coming up.
         const counts = Store.urgencyCounts();
-        const ready = counts.overdue === 0;
-        const ringColor = scoreColor(fleetScore);
-        const badgeHtml = ready
-          ? `<span class="insp-pill rdy">✓ Ready for survey</span>`
-          : `<span class="insp-pill notready pulse-rd">⚠ ${counts.overdue} urgent item${counts.overdue === 1 ? '' : 's'}</span>`;
-        const headlineText = ready
-          ? 'On course'
-          : counts.overdue === 1 ? 'One item adrift' : `${counts.overdue} items adrift`;
-        const subText = ready
-          ? 'All certificates and gear current — keep an eye on the horizon.'
-          : `Tackle the urgent items first, then we'll line up the rest for survey day.`;
+        let state, badgeIcon, headline, sub;
+        if (counts.overdue > 0) {
+          state = 'bad'; badgeIcon = '!';
+          headline = counts.overdue === 1 ? '1 thing is overdue' : `${counts.overdue} things are overdue`;
+          sub = 'These have run out and need sorting. Tap below to see them.';
+        } else if (counts.due30 > 0) {
+          state = 'warn'; badgeIcon = '⏳';
+          headline = counts.due30 === 1 ? '1 thing due soon' : `${counts.due30} things due soon`;
+          sub = 'Nothing overdue — just a few renewals coming up in the next month.';
+        } else {
+          state = 'good'; badgeIcon = '✓';
+          headline = "You're all set";
+          sub = 'Every certificate and service is up to date. Nothing to do right now.';
+        }
         statusEl.innerHTML = `
           <div class="hero-stars" aria-hidden="true"></div>
-          <div class="hero-top-row">
-            <div class="hero-ring-wrap">
-              ${ringSvg(fleetScore, ringColor, 124)}
-              <div class="hero-ring-num">
-                <span class="hero-ring-pct">${fleetScore}</span><span class="hero-ring-percent">%</span>
-              </div>
-            </div>
-            <div class="hero-summary">
-              <div class="hero-label">Fleet compliance</div>
-              <div class="hero-headline">${escapeHtml(headlineText)}</div>
-              <div class="hero-sub">${subText}</div>
-              ${badgeHtml}
+          <div class="ss-status">
+            <div class="ss-badge ss-${state}">${badgeIcon}</div>
+            <div class="ss-text">
+              <div class="ss-headline">${escapeHtml(headline)}</div>
+              <div class="ss-sub">${escapeHtml(sub)}</div>
             </div>
           </div>
-          <div class="home-tile-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px">
-            <div class="tile tile-sm"><div class="tile-num rd">${counts.overdue}</div><div class="tile-lbl">Overdue</div></div>
-            <div class="tile tile-sm"><div class="tile-num am">${counts.due30}</div><div class="tile-lbl">Due 30d</div></div>
-            <div class="tile tile-sm"><div class="tile-num ok">${counts.valid}</div><div class="tile-lbl">Valid</div></div>
-          </div>
-          <button class="hero-cta" onclick="exportFleetInspectionPack()">
-            <span class="hero-cta-ic">📄</span>
-            <span class="hero-cta-lbl">Inspection pack</span>
-            <span class="hero-cta-arrow">→</span>
-          </button>`;
+          <div class="ss-actions">
+            <button class="ss-btn ss-btn-primary" onclick="scanCertWithAI()">Add a certificate</button>
+            <button class="ss-btn ss-btn-ghost" onclick="go('s-calendar')">What's coming up</button>
+          </div>`;
       }
     }
 
@@ -1146,22 +1500,36 @@
     }
     banner.innerHTML = bannerHtml;
 
-    // ---- iOS PWA install nudge ----
-    // Only show when running in iOS Safari (not standalone). Encourages
-    // Add-to-Home-Screen so the user gets full screen + a real app icon.
-    // Dismissable; remembers via localStorage so it doesn't nag.
+    // ---- PWA install + reminders nudge ----
+    // Replaces the iOS-only banner with a cross-platform card:
+    //   - Android / desktop Chrome: real Install button via beforeinstallprompt.
+    //   - iOS Safari: manual "Share → Add to Home Screen" tip.
+    //   - Hides automatically once installed, dismissed, or already standalone.
+    // Also shows an "Enable reminders" button when push is supported and the
+    // user hasn't subscribed yet (handled by ensurePushUi).
     (function () {
       const old = document.getElementById('home-pwa-install');
       if (old) old.remove();
       const dismissed = localStorage.getItem('codedok-pwa-installed-dismissed');
-      if (dismissed === '1') return;
+      const isStandalone = (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
+      if (isStandalone || dismissed === '1') {
+        // Skip the install card entirely once installed/dismissed, but the
+        // reminders card still needs a host on home — render it on its own.
+        ensurePushUi();
+        return;
+      }
       const ua = navigator.userAgent || '';
       const isIOS = /iPhone|iPad|iPod/.test(ua);
-      const isStandalone = (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
-      if (!isIOS || isStandalone) return;
+      const canPrompt = !!window.__codedokInstallEvent;
       const homeEl = document.getElementById('s-home');
       const scroll = homeEl && homeEl.querySelector('.scroll');
-      if (!scroll) return;
+      if (!scroll) { ensurePushUi(); return; }
+      const tip = isIOS
+        ? `Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>. Removes Safari's bars, works fully offline, real app icon.`
+        : `One tap to install. Removes the address bar, works offline, real app icon.`;
+      const cta = canPrompt
+        ? `<button class="btn btn-sea" onclick="installPwa()" style="height:36px;padding:0 14px;font-weight:700;font-size:12px">Install</button>`
+        : ``;
       const banner = document.createElement('div');
       banner.id = 'home-pwa-install';
       banner.innerHTML = `
@@ -1170,13 +1538,14 @@
             <div style="font-size:22px;flex-shrink:0">📲</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:700;color:var(--text)">Add CodedOK to your home screen</div>
-              <div style="font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5">Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>. Removes Safari's bars, works fully offline, real app icon.</div>
+              <div style="font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5">${tip}</div>
             </div>
+            ${cta}
             <button onclick="dismissPwaInstall()" aria-label="Dismiss" style="background:none;border:none;color:var(--lt);font-size:18px;cursor:pointer;padding:4px 6px">×</button>
           </div>
         </div>`;
-      // Insert before existing children so it appears at the very top
       scroll.insertBefore(banner, scroll.firstChild);
+      ensurePushUi();
     })();
 
     // ---- First-time onboarding flow ----
@@ -1185,7 +1554,10 @@
     // is the first 30 seconds for a fresh user — must read as obvious.
     const onbHostId = 'home-onboarding';
     let onbEl = document.getElementById(onbHostId);
-    const sectionLabels = document.querySelectorAll('#s-home .scroll > .slbl');
+    // Labels now live inside the .home-dash columns (desktop dashboard),
+    // so match any .slbl within #s-home rather than only direct
+    // scroll children.
+    const sectionLabels = document.querySelectorAll('#s-home .slbl');
     const homeActionsHost = document.getElementById('home-actions');
     const homeSmsHost = document.getElementById('home-sms-card');
     const homeVesselsHost = document.getElementById('home-vessels');
@@ -1196,23 +1568,19 @@
         const scroll = document.querySelector('#s-home .scroll');
         if (scroll) scroll.insertBefore(onbEl, scroll.firstChild);
       }
+      // Simpler first-run: one obvious action. The old three-step
+      // card stack pushed users through a 90-second wizard before
+      // showing any value. New flow: photo of any certificate gets
+      // you a usable record — vessel info is inferred or added
+      // after. The "set up manually" link is kept as an escape
+      // hatch for the cautious / vessel-without-paperwork case.
       onbEl.innerHTML = `
-        <div style="padding:16px">
-          <div class="card" style="padding:18px;border-radius:16px;border-left:4px solid var(--sea)">
-            <div style="font-size:11px;font-weight:700;color:var(--sea);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Step 1 of 3</div>
-            <div style="font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.3px;margin-bottom:6px">Add your boat</div>
-            <div style="font-size:14px;color:var(--mid);line-height:1.55;margin-bottom:14px">Name, length, persons, MCA category. About 60 seconds. We'll auto-suggest every certificate and piece of gear you need.</div>
-            <button class="btn btn-sea btn-full" onclick="go('s-onboard')" style="height:50px;font-weight:700">+ Add your first vessel →</button>
-          </div>
-          <div class="card" style="padding:18px;border-radius:16px;margin-top:12px;opacity:.55">
-            <div style="font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Step 2 of 3</div>
-            <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">Upload your last survey report</div>
-            <div style="font-size:13px;color:var(--mid);line-height:1.55">Drop one PDF — CodedOK extracts every cert and piece of gear automatically. <strong>You'll do this after adding the vessel.</strong></div>
-          </div>
-          <div class="card" style="padding:18px;border-radius:16px;margin-top:12px;opacity:.55">
-            <div style="font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Step 3 of 3</div>
-            <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">One tap before survey day</div>
-            <div style="font-size:13px;color:var(--mid);line-height:1.55">Tap the Inspection pack button. Get a signed PDF your surveyor opens on their iPad. Done.</div>
+        <div style="padding:24px 16px 8px">
+          <div class="card" style="padding:28px 22px;border-radius:16px;text-align:center">
+            <div style="font-size:24px;font-weight:700;color:var(--text);letter-spacing:-.3px;line-height:1.2;margin-bottom:8px">Add your first certificate</div>
+            <div style="font-size:15px;color:var(--mid);line-height:1.5;margin-bottom:22px;max-width:300px;margin-left:auto;margin-right:auto">Take a photo of any certificate. CodedOK reads it, files it, and reminds you before it runs out.</div>
+            <button class="btn btn-sea btn-full" onclick="scanCertWithAI()" style="min-height:52px;font-size:17px">Scan a certificate</button>
+            <button onclick="go('s-onboard')" style="background:none;border:0;color:var(--tint);font-family:var(--fn);font-size:16px;cursor:pointer;min-height:44px;margin-top:8px;width:100%">Add a boat manually</button>
           </div>
         </div>`;
       sectionLabels.forEach((el) => { el.style.display = 'none'; });
@@ -1227,6 +1595,58 @@
       if (homeVesselsHost) homeVesselsHost.style.display = '';
     }
 
+    // Floating "+ Add" FAB — always one tap from home to add a cert.
+    // Hidden during first-run (the big welcome button is the action)
+    // and replaced cleanly when the user navigates elsewhere via the
+    // standard go() flow which doesn't re-render this. The button
+    // triggers the same camera input the in-app "Add certificate"
+    // button uses, so the downstream flow is unchanged.
+    (function () {
+      const existing = document.getElementById('home-quick-add-fab');
+      if (existing) existing.remove();
+      // Retired: the status hero's "Add a certificate" button already covers
+      // this, and the floating button overlapped the "My boats" row. Kept
+      // as a no-op so any stale FAB from a previous render is still removed.
+      return;
+      const fab = document.createElement('button');
+      fab.id = 'home-quick-add-fab';
+      fab.type = 'button';
+      fab.setAttribute('aria-label', 'Add certificate');
+      fab.onclick = () => {
+        try { scanCertWithAI(); } catch (_) {}
+      };
+      fab.style.cssText = [
+        'position:fixed',
+        'right:18px',
+        'bottom:calc(80px + env(safe-area-inset-bottom, 0px))',
+        'width:60px',
+        'height:60px',
+        'border-radius:50%',
+        'background:linear-gradient(135deg,#639CC5 0%,#4F88B3 100%)',
+        'color:#03203D',
+        'border:0',
+        'cursor:pointer',
+        'box-shadow:0 14px 36px rgba(99,156,197,.45),0 0 0 1px rgba(255,255,255,.10)',
+        'z-index:48',
+        'display:flex',
+        'align-items:center',
+        'justify-content:center',
+        'font-size:32px',
+        'font-weight:700',
+        'line-height:1',
+        'transition:transform 200ms cubic-bezier(.22,1,.36,1),box-shadow 200ms ease',
+        'font-family:var(--fn)',
+      ].join(';');
+      fab.innerHTML = '<span style="margin-top:-4px">+</span>';
+      fab.onmouseenter = () => { fab.style.transform = 'translateY(-2px) scale(1.04)'; };
+      fab.onmouseleave = () => { fab.style.transform = ''; };
+      // Append to the s-home shell so it auto-disappears when the user
+      // navigates away (other shells become display:none, but a body-
+      // attached element wouldn't — keeping it home-scoped is safer).
+      const homeShell = document.getElementById('s-home');
+      if (homeShell) homeShell.appendChild(fab);
+    })();
+
     const actionsEl = document.getElementById('home-actions');
     if (actionsEl) {
       const items = Store.topActions(3);
@@ -1237,30 +1657,32 @@
             <div style="flex:1"><div class="qa-title">All caught up</div><div class="qa-sub">No items due in the next 60 days</div></div>
           </div>`;
       } else {
-        actionsEl.innerHTML = items.map((it) => {
+        actionsEl.innerHTML = '<div class="ios-group">' + items.map((it) => {
           const a = actionLine(it); if (!a) return '';
-          // Speed-dial: overdue items get a one-tap "Get a quote" button
-          // that drops the operator into a pre-filled job request to the
-          // preferred surveyor (McCollam). Closes the loop the app was
-          // built to close — see action without leaving CodedOK.
-          const isOverdue = (it.days != null && it.days < 0);
+          // Self-service fleet management: tapping an item takes the
+          // operator straight to the right boat (or crew) to sort it
+          // themselves — renew the cert, log the service, upload the
+          // paperwork. No surveyor-marketplace detour.
           const child = it.cert || it.equipment || it.crewCert;
           const vesselId = child && child.vessel_id;
-          const itemLabel = child ? (child.name || child.label || '') : '';
-          const quoteBtn = isOverdue
-            ? `<button class="btn btn-sm btn-sea" style="height:36px;padding:0 12px;font-size:12px;font-weight:700;flex-shrink:0" onclick="event.stopPropagation(); quickQuoteForItem('${vesselId || ''}','${escapeHtml(itemLabel).replace(/'/g, '&#39;')}')">📞 Get a quote</button>`
-            : '';
+          const setV = vesselId ? `setActiveVessel('${vesselId}');` : '';
+          const openAction = it.crewCert
+            ? "go('s-crew')"
+            : `${setV}go('s-vessel-detail')`;
+          const pill = a.sev === 'rd'
+            ? '<span class="ios-pill red">Overdue</span>'
+            : '<span class="ios-pill amber">Due soon</span>';
           return `
-            <div class="qa-tile" onclick="${it.cert ? "go('s-vessel-detail')" : it.equipment ? "go('s-equipment-list')" : "go('s-crew')"}">
-              <div class="qa-icon ${a.sev}">${a.icon}</div>
-              <div style="flex:1;min-width:0">
-                <div class="qa-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.title}</div>
-                <div class="qa-sub">${a.sub}</div>
+            <div class="ios-row" onclick="${openAction}">
+              <div class="ios-row-ic ${a.sev}">${escapeHtml(a.icon)}</div>
+              <div class="ios-row-tx">
+                <div class="ios-row-tt">${a.title}</div>
+                <div class="ios-row-ss">${a.sub}</div>
               </div>
-              ${quoteBtn}
-              ${quoteBtn ? '' : '<span class="chev">›</span>'}
+              ${pill}
+              <span class="ios-chev">›</span>
             </div>`;
-        }).join('');
+        }).join('') + '</div>';
       }
     }
 
@@ -1339,15 +1761,17 @@
         line = 'MCA-aligned in 11 guided sections · submit to CodedOK for AI polish';
         cta  = 'Build your SMS →';
       }
+      // Deliberately plain: one row, no icon tile, no second CTA line.
+      // It sits under the "needs doing" list and must not compete with it.
       smsCardEl.innerHTML = `
-        <div class="card" style="padding:14px;border-radius:14px;cursor:pointer;border-left:4px solid ${color}" onclick="go('s-sms')">
-          <div style="display:flex;align-items:center;gap:14px">
-            <div style="width:48px;height:48px;border-radius:13px;background:${color === 'var(--green)' ? 'var(--grnp)' : color === 'var(--sea)' ? 'var(--seap)' : color === 'var(--amber)' ? 'var(--ampp)' : 'var(--purpp)'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${icon}</div>
+        <div class="card" style="padding:14px 16px;border-radius:14px;cursor:pointer" onclick="go('s-sms')">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:4px;align-self:stretch;border-radius:2px;background:${color};flex-shrink:0"></div>
             <div style="flex:1;min-width:0">
               <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.25">Safety Management System</div>
               <div style="font-size:13px;color:var(--mid);margin-top:3px;line-height:1.4">${escapeHtml(line)}</div>
-              <div style="font-size:13px;font-weight:700;color:var(--sea);margin-top:8px">${cta}</div>
             </div>
+            <div style="font-size:13px;font-weight:700;color:var(--sea);flex-shrink:0;white-space:nowrap">${cta.replace(/\s*→$/, '')}</div>
             <span class="chev" style="flex-shrink:0">›</span>
           </div>
         </div>`;
@@ -1359,11 +1783,8 @@
       vesselsEl.className = '';
       vesselsEl.style.cssText = 'padding:0 16px;display:flex;flex-direction:column;gap:10px';
       if (s.vessels.length === 0) {
-        vesselsEl.innerHTML = `
-          <div class="qa-tile" onclick="go('s-onboard')">
-            <div class="qa-icon bl">+</div>
-            <div style="flex:1"><div class="qa-title">Add a vessel</div><div class="qa-sub">Start tracking compliance for any MCA-coded boat</div></div>
-          </div>`;
+        // First run: the welcome card already offers "Add a boat manually".
+        vesselsEl.innerHTML = '';
       } else {
         vesselsEl.innerHTML = s.vessels.map((v) => vesselCoverHtml(v, { compact: true })).join('');
       }
@@ -1372,11 +1793,21 @@
 
   function vesselCoverHtml(v, opts) {
     opts = opts || {};
-    const score = Store.complianceScore(v.id);
     const counts = Store.urgencyCounts(v.id);
-    const ready = counts.overdue === 0;
-    const total = Store.vesselCerts(v.id).length + Store.vesselEquipment(v.id).length;
-    const ringColor = scoreColor(score);
+    // Traffic-light status — one glance tells a novice if this boat
+    // needs attention. No percentage ring, no four-number grid.
+    let state, badgeIcon, statusText;
+    if (counts.overdue > 0) {
+      state = 'bad'; badgeIcon = '!';
+      statusText = `${counts.overdue} overdue — needs sorting`;
+    } else if (counts.due30 > 0) {
+      state = 'warn'; badgeIcon = '⏳';
+      statusText = `${counts.due30} due soon`;
+    } else {
+      state = 'good'; badgeIcon = '✓';
+      statusText = 'Ready for survey';
+    }
+    const statusColor = state === 'bad' ? 'var(--red)' : state === 'warn' ? 'var(--amber)' : 'var(--green)';
     return `
       <div class="vcover" onclick="setActiveVessel('${v.id}'); go('s-vessel-detail')">
         <div class="vc-pattern"></div>
@@ -1390,27 +1821,16 @@
               <div class="vcover-meta">${escapeHtml(v.type || '')}${v.port ? ' · ' + escapeHtml(v.port) : ''}</div>
               <div style="margin-top:4px;display:flex;gap:5px;align-items:center">
                 <span class="cat-pill">${escapeHtml(v.category || '')}</span>
-                ${v.ssr ? `<span class="cat-pill" style="background:rgba(255,255,255,.04)">SSR ${escapeHtml(v.ssr)}</span>` : ''}
               </div>
             </div>
           </div>
-          <div style="position:relative;width:54px;height:54px;flex-shrink:0">
-            ${ringSvg(score, ringColor, 54, true)}
-            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:white;letter-spacing:-.4px">${score}</div>
-          </div>
+          <div class="ss-badge ss-${state}" style="width:44px;height:44px;font-size:22px">${badgeIcon}</div>
         </div>
         <div class="vcover-body">
-          <div class="vcover-stats">
-            <div class="vcover-stat ${counts.overdue ? 'rd' : 'ok'}"><div class="num">${counts.overdue}</div><div class="lbl">Overdue</div></div>
-            <div class="vcover-stat ${counts.due30 ? 'am' : 'ok'}"><div class="num">${counts.due30}</div><div class="lbl">Due soon</div></div>
-            <div class="vcover-stat ok"><div class="num">${counts.valid}</div><div class="lbl">Valid</div></div>
-            <div class="vcover-stat bl"><div class="num">${total}</div><div class="lbl">Tracked</div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <span style="font-size:14px;font-weight:700;color:${statusColor}">${escapeHtml(statusText)}</span>
+            <span style="font-size:12px;color:var(--lt)">Open →</span>
           </div>
-          ${opts.compact ? '' : `
-            <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between">
-              ${ready ? '<span class="insp-pill rdy">✓ Ready for survey</span>' : `<span class="insp-pill notready">⚠ Not ready</span>`}
-              <span style="font-size:11px;color:var(--lt)">Tap to open →</span>
-            </div>`}
         </div>
       </div>`;
   }
@@ -1431,17 +1851,60 @@
     scroll.querySelectorAll('[data-dyn="vessel-card"]').forEach((n) => n.remove());
 
     const s = Store.snapshot();
-    const html = s.vessels.length === 0
+    // Apply per-vessel scoping. Owners get all vessels; scoped team
+    // members get only the boats they were granted in the invite.
+    // Authoritative enforcement lives in Supabase RLS — this is the
+    // client-side belt-and-braces so a scoped user doesn't see ghost
+    // entries cached in localStorage from a previous session.
+    const scoped = filterByVesselScope(s.vessels);
+
+    // Bucket every scoped vessel by its worst-status urgency so the
+    // filter chips and their count badges reflect the same data set.
+    const buckets = { all: [], overdue: [], duesoon: [], compliant: [] };
+    scoped.forEach((v) => {
+      buckets.all.push(v);
+      const c = Store.urgencyCounts(v.id);
+      if      (c.overdue > 0) buckets.overdue.push(v);
+      else if (c.due30   > 0) buckets.duesoon.push(v);
+      else                    buckets.compliant.push(v);
+    });
+
+    // Sync the count badges on the filter chips.
+    const setCount = (id, n) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = n > 0 ? String(n) : '';
+    };
+    setCount('vf-count-all',       buckets.all.length);
+    setCount('vf-count-overdue',   buckets.overdue.length);
+    setCount('vf-count-duesoon',   buckets.duesoon.length);
+    setCount('vf-count-compliant', buckets.compliant.length);
+
+    // Read the current filter (default 'all'), pick the bucket, mark
+    // the corresponding chip active.
+    const filter = window.__vesselsFilter || 'all';
+    document.querySelectorAll('.vf-chip').forEach((btn) => {
+      btn.classList.toggle('on', btn.dataset.vf === filter);
+    });
+    const visible = buckets[filter] || buckets.all;
+
+    const html = scoped.length === 0
       ? `<div class="card mx empty" data-dyn="vessel-card" style="margin-bottom:12px">
            <div class="empty-art">⛵</div>
            <div class="empty-h">No vessels yet</div>
            <div class="empty-sub">Add your first vessel to start tracking compliance.</div>
            <button class="btn btn-sea btn-sm" onclick="go('s-onboard')">+ Add vessel</button>
          </div>`
-      : s.vessels.map((v) => `
-          <div data-dyn="vessel-card" style="padding:0 16px;margin-bottom:12px">
-            ${vesselCoverHtml(v, { compact: false })}
-          </div>`).join('');
+      : visible.length === 0
+        ? `<div class="card mx empty" data-dyn="vessel-card" style="margin-bottom:12px">
+             <div class="empty-art">${filter === 'overdue' ? '✓' : filter === 'duesoon' ? '🌊' : filter === 'compliant' ? '🎯' : '⛵'}</div>
+             <div class="empty-h">${filter === 'overdue' ? 'No overdue vessels' : filter === 'duesoon' ? 'Nothing due in the next 30 days' : filter === 'compliant' ? 'No fully-compliant vessels yet' : 'No vessels'}</div>
+             <div class="empty-sub">${filter === 'overdue' ? 'Everything you\'ve added is on top of things — good work.' : filter === 'duesoon' ? 'The calm before the survey window opens up.' : filter === 'compliant' ? 'A vessel needs zero overdue AND zero due-in-30 items to land here.' : ''}</div>
+             <button class="btn btn-out btn-sm" onclick="setVesselsFilter('all')">Show all vessels</button>
+           </div>`
+        : visible.map((v) => `
+            <div data-dyn="vessel-card" style="padding:0 16px;margin-bottom:12px">
+              ${vesselCoverHtml(v, { compact: false })}
+            </div>`).join('');
 
     const tmp = document.createElement('div');
     tmp.innerHTML = html;
@@ -1450,7 +1913,207 @@
     scroll.insertBefore(frag, scroll.firstChild);
   }
 
+  // Filter setter — flips the module-scoped filter and re-renders.
+  // Persisted on window so it survives the shell-switching flow
+  // (each go('s-vessels') runs renderVesselsList fresh and reads it).
+  function setVesselsFilter(f) {
+    window.__vesselsFilter = f;
+    renderVesselsList();
+  }
+  window.setVesselsFilter = setVesselsFilter;
+
   // ---------- Tools hub ----------
+
+  // ─────────────────────────────────────────────────────────────
+  // Compliance calendar. Opens on the current month (system clock),
+  // pages through months with the header arrows, and marks every
+  // day that has an expiring cert / equipment service / crew ticket
+  // with a coloured dot. Below the grid: the list of deadlines for
+  // the viewed month, grouped and sorted by date.
+  //
+  // Data sources — everything the app tracks with a date:
+  //   Store.snapshot().certs          → cert.expires_at
+  //   Store.snapshot().equipment      → equipment.next_service_at
+  //   Store.snapshot().crewCerts      → crewCert.expires_at
+  //   Store.snapshot().inspections    → inspection.due_at (annual survey)
+  // ─────────────────────────────────────────────────────────────
+  let calendarViewYear  = null;
+  let calendarViewMonth = null;  // 0-indexed to match Date
+
+  function calendarEvents() {
+    const s = Store.snapshot();
+    const vessels = s.vessels || [];
+    const people  = s.crew    || [];
+    const vName = (id) => (vessels.find((v) => v.id === id) || {}).name || '';
+    const pName = (id) => (people.find((p) => p.id === id) || {}).name || '';
+    const events = [];
+    (s.certs || []).forEach((c) => {
+      if (!c.expires_at) return;
+      events.push({
+        id: c.id, name: c.name || 'Certificate', icon: c.icon || '📋',
+        date: c.expires_at, subtitle: vName(c.vessel_id), kind: 'cert'
+      });
+    });
+    (s.equipment || []).forEach((e) => {
+      if (!e.next_service_at) return;
+      events.push({
+        id: e.id, name: (e.name || 'Equipment') + ' service', icon: e.icon || '🔧',
+        date: e.next_service_at, subtitle: vName(e.vessel_id), kind: 'equipment'
+      });
+    });
+    (s.crewCerts || []).forEach((cc) => {
+      if (!cc.expires_at) return;
+      events.push({
+        id: cc.id, name: cc.name || 'Crew qualification', icon: '🎓',
+        date: cc.expires_at, subtitle: pName(cc.person_id), kind: 'crew'
+      });
+    });
+    return events;
+  }
+
+  function calendarStatusForDate(dateStr) {
+    // Returns 'rd' (overdue), 'am' (due soon ≤30 days), 'ok' (valid future),
+    // or null (no event on this date).
+    const d = Store.daysUntil(dateStr);
+    if (d === Infinity) return null;
+    if (d < 0)   return 'rd';
+    if (d <= 30) return 'am';
+    return 'ok';
+  }
+
+  function renderCalendar() {
+    const body = document.getElementById('calendar-body');
+    if (!body) return;
+    const now = new Date();
+    if (calendarViewYear === null || calendarViewMonth === null) {
+      calendarViewYear  = now.getFullYear();
+      calendarViewMonth = now.getMonth();
+    }
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const monthLabel = monthNames[calendarViewMonth] + ' ' + calendarViewYear;
+
+    // Grid — Monday-first week. getDay(): 0=Sun..6=Sat; convert.
+    const firstOfMonth = new Date(calendarViewYear, calendarViewMonth, 1);
+    const jsDow = firstOfMonth.getDay();       // 0=Sun … 6=Sat
+    const leadingBlanks = (jsDow + 6) % 7;     // Mon=0, Tue=1, … Sun=6
+    const daysInMonth = new Date(calendarViewYear, calendarViewMonth + 1, 0).getDate();
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const isSameMonthAsToday = (calendarViewYear === now.getFullYear() && calendarViewMonth === now.getMonth());
+
+    // Events indexed by day-of-month for this view.
+    const evs = calendarEvents();
+    const byDay = new Map();  // day (1..31) → [event…]
+    evs.forEach((ev) => {
+      const d = new Date(ev.date);
+      if (d.getFullYear() !== calendarViewYear || d.getMonth() !== calendarViewMonth) return;
+      const day = d.getDate();
+      if (!byDay.has(day)) byDay.set(day, []);
+      byDay.get(day).push(ev);
+    });
+
+    // Build the day cells. Prev-month trailing days fill leading blanks
+    // so the grid always starts on a Monday.
+    const prevMonthDays = new Date(calendarViewYear, calendarViewMonth, 0).getDate();
+    const cells = [];
+    for (let i = leadingBlanks - 1; i >= 0; i--) {
+      cells.push(`<div class="cal-day other-mo">${prevMonthDays - i}</div>`);
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isToday = isSameMonthAsToday && d === now.getDate();
+      const dayEvs = byDay.get(d) || [];
+      // Highest-severity status colours the dot (rd > am > ok).
+      let status = null;
+      dayEvs.forEach((ev) => {
+        const s = calendarStatusForDate(ev.date);
+        if (s === 'rd') status = 'rd';
+        else if (s === 'am' && status !== 'rd') status = 'am';
+        else if (s === 'ok' && !status) status = 'ok';
+      });
+      const cls = ['cal-day', 'cur-mo'];
+      if (isToday) cls.push('today');
+      if (status === 'rd') cls.push('has-rd');
+      else if (status === 'am') cls.push('has-ev');
+      else if (status === 'ok') cls.push('has-ok');
+      cells.push(`<div class="${cls.join(' ')}">${d}</div>`);
+    }
+    // Trailing days from the next month to complete the last week.
+    const total = leadingBlanks + daysInMonth;
+    const trailing = (7 - (total % 7)) % 7;
+    for (let d = 1; d <= trailing; d++) {
+      cells.push(`<div class="cal-day other-mo">${d}</div>`);
+    }
+
+    // Deadlines list for the viewed month, sorted by date, with a
+    // friendly "X days" chip. Overdue / soon / ok colour matches the
+    // dot colour on the grid.
+    const monthEvents = evs
+      .filter((ev) => {
+        const dt = new Date(ev.date);
+        return dt.getFullYear() === calendarViewYear && dt.getMonth() === calendarViewMonth;
+      })
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const eventRows = monthEvents.length === 0
+      ? `<div style="padding:18px 20px;color:var(--mid);font-size:14px;text-align:center;background:var(--card);border-radius:12px">Nothing due this month. Great — plan a fishing trip.</div>`
+      : monthEvents.map((ev) => {
+          const status = calendarStatusForDate(ev.date);
+          const chipCls = status === 'rd' ? 'chip chip-rd' : status === 'am' ? 'chip chip-am' : 'chip chip-ok';
+          const daysN = Store.daysUntil(ev.date);
+          const chipText = daysN < 0 ? Math.abs(daysN) + 'd late'
+                        : daysN === 0 ? 'Today'
+                        : daysN + 'd';
+          const dateN = new Date(ev.date).getDate();
+          const iconCls = status === 'rd' ? 'rd' : status === 'am' ? 'am' : 'ok';
+          return `<div class="row"><div class="row-ic ${iconCls}">${ev.icon}</div><div class="row-body"><div class="row-name">${escapeHtml(ev.name)}</div><div class="row-sub">${escapeHtml(ev.subtitle)} · ${monthNames[calendarViewMonth].slice(0,3)} ${dateN}</div></div><span class="${chipCls}">${chipText}</span></div>`;
+        }).join('');
+
+    body.innerHTML = `
+      <div style="padding:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <button class="cal-nav" onclick="calendarShift(-1)" aria-label="Previous month" title="Previous month">‹</button>
+          <div style="font-size:18px;font-weight:700;color:var(--text);text-align:center;flex:1">${monthLabel}</div>
+          <button class="cal-nav" onclick="calendarShift(1)" aria-label="Next month" title="Next month">›</button>
+        </div>
+        <div style="display:flex;justify-content:center;margin-bottom:14px">
+          <button class="btn btn-out btn-sm" onclick="calendarToToday()">Today</button>
+        </div>
+        <div class="cal-grid" style="gap:4px">
+          <div class="cal-day hd">Mon</div><div class="cal-day hd">Tue</div><div class="cal-day hd">Wed</div><div class="cal-day hd">Thu</div><div class="cal-day hd">Fri</div><div class="cal-day hd">Sat</div><div class="cal-day hd">Sun</div>
+          ${cells.join('')}
+        </div>
+      </div>
+      <div class="slbl">${monthLabel} deadlines</div>
+      <div class="card mx">${eventRows}</div>
+      <div class="spacer"></div>`;
+  }
+  window.renderCalendar = renderCalendar;
+
+  function calendarShift(delta) {
+    if (calendarViewYear === null) {
+      const now = new Date();
+      calendarViewYear = now.getFullYear();
+      calendarViewMonth = now.getMonth();
+    }
+    calendarViewMonth += delta;
+    if (calendarViewMonth < 0)   { calendarViewMonth = 11; calendarViewYear--; }
+    if (calendarViewMonth > 11)  { calendarViewMonth = 0;  calendarViewYear++; }
+    renderCalendar();
+    // Scroll the calendar body to the top so month labels/events are
+    // in the same place on every page change.
+    const s = document.getElementById('calendar-scroll');
+    if (s) s.scrollTop = 0;
+  }
+  window.calendarShift = calendarShift;
+
+  function calendarToToday() {
+    const now = new Date();
+    calendarViewYear  = now.getFullYear();
+    calendarViewMonth = now.getMonth();
+    renderCalendar();
+    const s = document.getElementById('calendar-scroll');
+    if (s) s.scrollTop = 0;
+  }
+  window.calendarToToday = calendarToToday;
 
   function renderTools() {
     const wrap = document.getElementById('tools-scroll');
@@ -1472,9 +2135,9 @@
     const critDef = def.filter((d) => d.status === 'open' && d.severity === 'critical').length;
 
     const smsStatusPill = smsState === 'active'
-      ? '<span style="background:rgba(22,163,74,.18);color:#bbf7d0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● Live</span>'
+      ? '<span style="background:rgba(79,122,82,.18);color:#bbf7d0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● Live</span>'
       : smsState === 'draft'
-      ? '<span style="background:rgba(8,145,178,.22);color:#67e8f9;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● In progress</span>'
+      ? '<span style="background:rgba(3,32,61,.22);color:#9CC3E0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">● In progress</span>'
       : '<span style="background:rgba(124,58,237,.22);color:#c4b5fd;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.02em">Featured</span>';
 
     wrap.innerHTML = `
@@ -1485,21 +2148,30 @@
             <div style="margin-bottom:14px">${smsStatusPill}</div>
             <div style="font-size:22px;font-weight:800;color:white;letter-spacing:-.5px;margin-bottom:6px;line-height:1.15">Safety Management System</div>
             <div style="font-size:14px;color:rgba(255,255,255,.65);line-height:1.5;margin-bottom:18px;max-width:300px">${escapeHtml(smsSub)}</div>
-            <button class="btn btn-sea btn-sm" style="height:42px;font-size:14px;padding:0 18px;font-weight:700">${smsState === 'active' ? 'Open SMS →' : smsState === 'draft' ? 'Resume building →' : 'Start building →'}</button>
+            <button class="btn btn-sea btn-sm" style="font-size:14px;padding:0 18px;font-weight:700">${smsState === 'active' ? 'Open SMS →' : smsState === 'draft' ? 'Resume building →' : 'Start building →'}</button>
           </div>
         </div>
       </div>
 
-      <div class="h-section">Compliance tools</div>
-      <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+      <div class="h-section">Plan ahead</div>
+      <div class="tool-list">
         <div class="qa-tile" onclick="go('s-calendar')">
           <div class="qa-icon bl">📆</div>
           <div style="flex:1"><div class="qa-title">Compliance calendar</div><div class="qa-sub">Every deadline by month</div></div>
           <span class="chev">›</span>
         </div>
+        <div class="qa-tile" onclick="go('s-surveys')">
+          <div class="qa-icon bl">🔍</div>
+          <div style="flex:1"><div class="qa-title">Surveys</div><div class="qa-sub">Next survey due and history</div></div>
+          <span class="chev">›</span>
+        </div>
+      </div>
+
+      <div class="h-section">Check &amp; fix</div>
+      <div class="tool-list">
         <div class="qa-tile" onclick="go('s-gap')">
           <div class="qa-icon pu">🤖</div>
-          <div style="flex:1"><div class="qa-title">AI gap analysis</div><div class="qa-sub">Check vessel against full MCA Code</div></div>
+          <div style="flex:1"><div class="qa-title">Gap check</div><div class="qa-sub">What your boat still needs for its Code</div></div>
           <span class="chev">›</span>
         </div>
         <div class="qa-tile" onclick="go('s-deficiencies')">
@@ -1507,42 +2179,27 @@
           <div style="flex:1"><div class="qa-title">Deficiency log</div><div class="qa-sub">${openDef} open${critDef ? ' · ' + critDef + ' critical' : ''}</div></div>
           <span class="chev">›</span>
         </div>
-        <div class="qa-tile" onclick="go('s-jur-dash')">
-          <div class="qa-icon bl">🌍</div>
-          <div style="flex:1"><div class="qa-title">Legal readiness</div><div class="qa-sub">UK &amp; Ireland jurisdiction status</div></div>
-          <span class="chev">›</span>
-        </div>
       </div>
 
-      <div class="h-section">Surveys &amp; export</div>
-      <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
-        <div class="qa-tile" onclick="go('s-surveys')">
-          <div class="qa-icon bl">🔍</div>
-          <div style="flex:1"><div class="qa-title">Surveys</div><div class="qa-sub">Book, history, upcoming</div></div>
-          <span class="chev">›</span>
-        </div>
-        <div class="qa-tile" onclick="exportFleetInspectionPack()">
+      <div class="h-section">Share with a surveyor</div>
+      <div class="tool-list">
+        <div class="qa-tile" onclick="go('s-inspection-pack')">
           <div class="qa-icon ok">📄</div>
-          <div style="flex:1"><div class="qa-title">Inspection pack PDF</div><div class="qa-sub">One-tap, surveyor-ready</div></div>
-          <span class="chev">›</span>
-        </div>
-        <div class="qa-tile" onclick="go('s-export-pack')">
-          <div class="qa-icon bl">📦</div>
-          <div style="flex:1"><div class="qa-title">Export packs</div><div class="qa-sub">UK, Ireland, or combined</div></div>
-          <span class="chev">›</span>
-        </div>
-      </div>
-
-      <div class="h-section">Team &amp; sharing</div>
-      <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
-        <div class="qa-tile" onclick="go('s-crew')">
-          <div class="qa-icon pu">👥</div>
-          <div style="flex:1"><div class="qa-title">Manage crew</div><div class="qa-sub">All crew across vessels</div></div>
+          <div style="flex:1"><div class="qa-title">Inspection pack</div><div class="qa-sub">Readiness check and a surveyor-ready PDF</div></div>
           <span class="chev">›</span>
         </div>
         <div class="qa-tile" onclick="go('s-handoff')">
           <div class="qa-icon bl">🔗</div>
           <div style="flex:1"><div class="qa-title">Skipper hand-off QR</div><div class="qa-sub">Time-limited read-only access</div></div>
+          <span class="chev">›</span>
+        </div>
+      </div>
+
+      <div class="h-section">Your team</div>
+      <div class="tool-list">
+        <div class="qa-tile" onclick="go('s-crew')">
+          <div class="qa-icon pu">👥</div>
+          <div style="flex:1"><div class="qa-title">Manage crew</div><div class="qa-sub">All crew across vessels</div></div>
           <span class="chev">›</span>
         </div>
       </div>
@@ -1560,6 +2217,14 @@
       : days < 0
         ? `<span class="cb rd"><span class="cb-num">${Math.abs(days)}</span><span class="cb-lbl">days late</span></span>`
         : `<span class="cb ${days <= 30 ? 'rd' : days <= 60 ? 'am' : 'ok'}"><span class="cb-num">${days}</span><span class="cb-lbl">days left</span></span>`;
+    // Vessel chip — crew may be assigned to multiple vessels; show the
+    // first one as context. Only when the fleet has >1 vessel.
+    const fleetSize = (Store.snapshot().vessels || []).length;
+    const firstVesselId = person && person.vessel_ids && person.vessel_ids[0];
+    const vessel = firstVesselId ? Store.getVessel(firstVesselId) : null;
+    const vesselChip = (fleetSize > 1 && vessel)
+      ? `<span class="ticket-vessel">${escapeHtml(vessel.name)}${(person && person.vessel_ids && person.vessel_ids.length > 1) ? ' +' + (person.vessel_ids.length - 1) : ''}</span>`
+      : '';
     const subParts = [];
     if (person) subParts.push(escapeHtml(person.role) + ' · ' + escapeHtml(person.name));
     if (cc.issuer) subParts.push(escapeHtml(cc.issuer));
@@ -1571,7 +2236,7 @@
           <div class="ticket-ic">🎓</div>
           <div class="ticket-text">
             <div class="ticket-name">${escapeHtml(cc.name)}</div>
-            <div class="ticket-sub">${subParts.join(' · ')}</div>
+            <div class="ticket-sub">${vesselChip}${subParts.join(' · ')}</div>
           </div>
           <div class="ticket-end">${cb}</div>
         </div>
@@ -1603,14 +2268,14 @@
         html += emptyState('✅', 'All caught up', 'No overdue or imminent expiries across the fleet.');
       }
       if (overdueCount > 0) {
-        html += `<div class="h-section" style="color:var(--red)">🚨 Overdue · ${overdueCount}</div>`;
+        html += `<div class="h-section" style="color:var(--red)">Overdue · ${overdueCount}</div>`;
         html += `<div style="padding:0 16px">`;
         overdueCerts.forEach((c) => { html += ticketHtml(c, 'cert'); });
         overdueEquip.forEach((e) => { html += ticketHtml(e, 'equipment'); });
         html += `</div>`;
       }
       if (due30Count > 0) {
-        html += `<div class="h-section" style="color:var(--amber)">⏰ Due within 30 days · ${due30Count}</div>`;
+        html += `<div class="h-section" style="color:var(--amber)">Due soon · ${due30Count}</div>`;
         html += `<div style="padding:0 16px">`;
         due30Certs.forEach((c) => { html += ticketHtml(c, 'cert'); });
         due30Equip.forEach((e) => { html += ticketHtml(e, 'equipment'); });
@@ -1636,19 +2301,32 @@
       let html = '<div style="padding:14px 16px 4px">';
       if (list.length === 0) html += emptyState('🦺', 'No equipment logged', 'Liferaft, lifejackets, EPIRB, fire extinguishers — log each with its service date.');
       else list.forEach((e) => { html += ticketHtml(e, 'equipment'); });
-      html += `<div style="padding:6px 0 14px"><button class="btn btn-sea btn-full" onclick="openCertManual('equipment')">+ Add equipment</button></div></div><div class="spacer"></div>`;
+      // Route to the dedicated s-equipment-add shell — same form used
+      // from the Vessel detail screen — so adding equipment feels
+      // identical wherever you enter it from. openEquipmentAdd()
+      // remembers this entry point ('s-records') so save routes back
+      // here, not to the vessel-scoped equipment list.
+      html += `<div style="padding:6px 0 14px"><button class="btn btn-sea btn-full" onclick="openEquipmentAdd('s-records')">+ Add equipment</button></div></div><div class="spacer"></div>`;
       return html;
     }
 
     if (tabId === 'cr-crew') {
       let html = '<div style="padding:14px 16px 4px">';
       if (allCrewCerts.length === 0) {
-        html += emptyState('🎓', 'No crew certs yet', 'Add crew members and their qualifications from the Crew tab.');
+        html += emptyState('🎓', 'No crew qualifications yet', 'Add a crew member first, then attach their tickets, ENG1, and training records.');
       } else {
         const ordered = allCrewCerts.slice().sort((a, b) => Store.daysUntil(a.expires_at) - Store.daysUntil(b.expires_at));
         ordered.forEach((cc) => { html += crewCertHtml(cc, personById(cc.person_id)); });
       }
-      html += `<div style="padding:6px 0 14px"><button class="btn btn-sea btn-full" onclick="go('s-crew')">Manage crew →</button></div></div><div class="spacer"></div>`;
+      // Two-button footer — same primary action treatment as
+      // Equipment. Both call the unified modals so Records-entry
+      // feels identical to Vessel-entry.
+      html += `
+        <div style="padding:6px 0 14px;display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-sea btn-full" onclick="openAddCrewCertModal('s-records')">+ Add qualification</button>
+          <button class="btn btn-out btn-full" onclick="openAddCrewMemberModal('s-records')">+ Add crew member</button>
+        </div>
+      </div><div class="spacer"></div>`;
       return html;
     }
 
@@ -1679,9 +2357,8 @@
       + s.equipment.filter((e) => { const d = Store.daysUntil(e.next_service_at); return d >= 0 && d <= 30; }).length
       + s.crewCerts.filter((cc) => { const d = Store.daysUntil(cc.expires_at); return d >= 0 && d <= 30; }).length;
     const totalUrgent = overdueCnt + due30Cnt;
-    const urgentTab = screen.querySelector('.tab.on') ? screen.querySelector('.tabbar .tab') : null;
     const tabs = screen.querySelectorAll('.tabbar .tab');
-    if (tabs[0]) tabs[0].textContent = `Urgent (${totalUrgent})`;
+    if (tabs[0]) tabs[0].textContent = totalUrgent > 0 ? `To do (${totalUrgent})` : 'To do';
   }
 
   // ---------- Vessel detail ----------
@@ -1692,10 +2369,16 @@
     if (!v) return;
     activeVesselId = v.id;
 
-    // Hero header
+    // Hero header. Use the stable id rather than a style-attribute
+    // selector — once we set a backgroundImage on first render with a
+    // photo, the original `background:var(--ink)` string disappears
+    // from the style attribute and the old selector would silently
+    // fail to find the element. That meant subsequent vessel taps
+    // didn't refresh the hero (you'd see Tsunami's hero while looking
+    // at Lagavulin's detail).
     const screen = document.getElementById('s-vessel-detail');
     if (!screen) return;
-    const header = screen.querySelector('div[style*="background:var(--ink)"]');
+    const header = document.getElementById('vd-hero');
     if (header) {
       const ready = Store.isInspectionReady(v.id);
       const score = Store.complianceScore(v.id);
@@ -1706,10 +2389,27 @@
       header.classList.add('hero');
       header.style.borderRadius = '0';
       header.style.padding = '12px 18px 18px';
+      // If the operator has uploaded a vessel photo, use it as the
+      // hero background. Dark gradient overlay keeps the title +
+      // chips legible regardless of the photo's tone.
+      if (v.photo && safeImgUrl(v.photo)) {
+        header.style.backgroundImage = `linear-gradient(rgba(8,16,32,.55), rgba(8,16,32,.92) 92%), url("${safeImgUrl(v.photo)}")`;
+        header.style.backgroundSize = 'cover';
+        header.style.backgroundPosition = 'center';
+        header.style.backgroundRepeat = 'no-repeat';
+        header.style.minHeight = '220px';
+      } else {
+        header.style.backgroundImage = '';
+        header.style.backgroundColor = 'var(--ink)';
+        header.style.minHeight = '';
+      }
       header.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <button class="back" onclick="go('s-vessels')" style="color:rgba(255,255,255,.6)">‹ Vessels</button>
-          <button onclick="openEditVessel('${v.id}')" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--fn)">✎ Edit</button>
+          <button class="back" onclick="go('s-vessels')" style="color:rgba(255,255,255,.75)">‹ Vessels</button>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button onclick="openInviteSurveyorModal('${v.id}')" title="Invite your surveyor" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:white;font-size:14px;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer;font-family:var(--fn);height:36px;display:inline-flex;align-items:center;gap:5px">Invite surveyor</button>
+            <button onclick="openEditVessel('${v.id}')" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:white;font-size:14px;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer;font-family:var(--fn);height:36px">Edit</button>
+          </div>
         </div>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:relative;z-index:1">
           <div style="min-width:0;flex:1">
@@ -1732,8 +2432,7 @@
           <div style="position:relative;width:64px;height:64px;flex-shrink:0">
             ${ringSvg(score, scoreColor(score), 64, true)}
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-              <div style="font-size:16px;font-weight:800;color:white;letter-spacing:-.4px;line-height:1">${score}<span style="font-size:9px;font-weight:600;color:rgba(255,255,255,.6)">%</span></div>
-              <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.07em;margin-top:2px">SCORE</div>
+              <div style="font-size:20px;font-weight:700;color:white;letter-spacing:-.4px;line-height:1" aria-label="Compliance score ${score} percent">${score}<span style="font-size:12px;font-weight:600;color:rgba(255,255,255,.7)">%</span></div>
             </div>
           </div>
         </div>`;
@@ -1807,15 +2506,24 @@
           ? `<span class="cb ${days <= 30 ? 'rd' : 'am'}"><span class="cb-num">${days}</span><span class="cb-lbl">days left</span></span>`
           : `<span class="cb ok"><span class="cb-num">✓</span><span class="cb-lbl">Valid</span></span>`;
 
+    // Vessel context — Records aggregates across the whole fleet,
+    // so every row needs to say which boat it belongs to. Only show
+    // when the org has more than one vessel (otherwise it's noise).
+    const fleetSize = (Store.snapshot().vessels || []).length;
+    const vessel = item.vessel_id ? Store.getVessel(item.vessel_id) : null;
+    const vesselChip = (fleetSize > 1 && vessel)
+      ? `<span class="ticket-vessel">${escapeHtml(vessel.name)}</span>`
+      : '';
+
     const subParts = [];
+    // List rows answer one question — "what is it, and is it OK?".
+    // Issuer, reference number etc. live in the detail sheet.
+    // The pill already says late / days left, so the date is just the date.
     if (kind === 'cert') {
-      if (item.issuer) subParts.push(escapeHtml(item.issuer));
-      if (item.number) subParts.push(escapeHtml(item.number));
-      if (expIso) subParts.push('Expires ' + fmtDate(expIso));
+      if (expIso) subParts.push(fmtDate(expIso));
     } else {
       if (item.qty > 1) subParts.push('×' + item.qty);
-      if (item.make || item.model) subParts.push(escapeHtml(`${item.make || ''} ${item.model || ''}`.trim()));
-      if (expIso) subParts.push('Service ' + fmtDate(expIso));
+      if (expIso) subParts.push(fmtDate(expIso));
     }
     const hasFile = !!(item.file && item.file.data_url);
     const clip = hasFile ? '<span title="File attached" style="font-size:11px;color:var(--sea);margin-left:4px">📎</span>' : '';
@@ -1831,10 +2539,10 @@
       <div class="ticket" ${clickAttr}>
         <div class="ticket-stripe ${stripe}"></div>
         <div class="ticket-body">
-          <div class="ticket-ic">${item.icon || (kind === 'cert' ? '📋' : '🔧')}</div>
+          <div class="ticket-ic">${escapeHtml(item.icon || (kind === 'cert' ? '📋' : '🔧'))}</div>
           <div class="ticket-text">
             <div class="ticket-name">${escapeHtml(item.name)}${clip}${issuedBy}</div>
-            <div class="ticket-sub">${subParts.join(' · ')}</div>
+            <div class="ticket-sub">${vesselChip}${subParts.join(' · ')}</div>
           </div>
           <div class="ticket-end">${cb}</div>
         </div>
@@ -1864,7 +2572,9 @@
         const certs = Store.snapshot().crewCerts.filter((cc) => cc.person_id === p.id);
         const otherVessels = (p.vessel_ids || []).filter((id) => id !== vesselId).map((id) => Store.getVessel(id)).filter(Boolean);
         html += `
-          <div class="crewc">
+          <div class="swipe-row">
+          <button class="swipe-act" aria-label="Remove ${escapeHtml(p.name)} from this vessel" onclick="event.stopPropagation();unassignCrew('${p.id}','${vesselId}')">Remove</button>
+          <div class="crewc swipe-fg">
             <div class="crewc-head">
               <div class="crewc-av" style="background:var(--${p.avatar_color || 'sea'})">${escapeHtml(p.initials)}</div>
               <div style="flex:1;min-width:0">
@@ -1881,6 +2591,7 @@
                 return `<div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:var(--mid)">${escapeHtml(cc.name)}</span><span class="chip ${cls}">${label}</span></div>`;
               }).join('') || '<div style="font-size:12px;color:var(--lt)">No certificates on file</div>'}
             </div>
+          </div>
           </div>`;
       });
     }
@@ -1925,21 +2636,224 @@
   window.assignCrew = assignCrew;
 
   function unassignCrew(crewId, vesselId) {
+    // Guard against a fat-finger tap on the "Remove" chip. The chip
+    // is only 30px tall and sits next to the crew card body, so it's
+    // easy to hit by accident. Confirm-before-remove costs one extra
+    // tap on purpose and saves the "who unassigned Ken?!" call.
+    const person = (Store.snapshot().crew || []).find((p) => p.id === crewId);
+    const vessel = Store.getVessel(vesselId);
+    const pName = person && person.name ? person.name : 'this crew member';
+    const vName = vessel && vessel.name ? vessel.name : 'this vessel';
+    if (!confirm('Take ' + pName + ' off ' + vName + '?\n\nYou can add them back later from the Crew tab.')) return;
     Store.removeCrewFromVessel(crewId, vesselId);
     renderVesselDetail();
   }
   window.unassignCrew = unassignCrew;
 
+  // Legacy entry point — routes through the new modal so any lingering
+  // call sites still work. Prompts have been replaced with a proper
+  // modal (openAddCrewMemberModal) so the flow feels like every other
+  // add in the app.
   function addCrewMember() {
-    const name = prompt('Crew member name:');
-    if (!name) return;
-    const role = prompt('Role (e.g. Skipper, Deck crew, Mate):', 'Deck crew') || 'Crew';
-    const colors = ['sea', 'purp', 'amber', 'green'];
-    const c = Store.addCrew({ name, role, vessel_ids: [activeVesselId], avatar_color: colors[Math.floor(Math.random() * colors.length)] });
-    renderVesselDetail();
-    return c;
+    openAddCrewMemberModal();
   }
   window.addCrewMember = addCrewMember;
+
+  // ─────────────────────────────────────────────────────────────
+  // Crew member — proper modal. Reachable from:
+  //   · Vessel detail → Crew tab → "+ Add crew"
+  //   · Records → Crew certs tab → "+ Add crew"
+  // Same form regardless of entry point; save returns to wherever
+  // the caller passed in (openAddCrewMemberModal(returnTo)).
+  // ─────────────────────────────────────────────────────────────
+  function openAddCrewMemberModal(returnTo) {
+    const old = document.getElementById('crew-add-modal');
+    if (old) old.remove();
+    const vessels = (Store.snapshot().vessels || []);
+    if (!vessels.length) { alert('Add a vessel first — crew are scoped per boat.'); return; }
+    window.__crewAddReturnTo = returnTo || null;
+
+    const modal = document.createElement('div');
+    modal.id = 'crew-add-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto';
+    modal.innerHTML = `
+      <div class="card" style="max-width:460px;width:100%;padding:22px;border-radius:18px;background:var(--card,#fff);max-height:92vh;overflow-y:auto">
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:var(--fn-display);letter-spacing:-.3px">Add crew member</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">A person on the crew list. Their qualifications (RYA tickets, ENG1, first aid) get added separately once they're on file.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Name</label>
+        <input class="fi" id="crew-add-name" placeholder="e.g. Sarah Doherty" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Role</label>
+        <select class="fs" id="crew-add-role" style="width:100%;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+          <option>Skipper</option>
+          <option selected>Deck crew</option>
+          <option>Mate</option>
+          <option>Engineer</option>
+          <option>Instructor</option>
+          <option>Other</option>
+        </select>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Vessels they work on</label>
+        <div style="display:flex;flex-direction:column;gap:4px;padding:8px 10px;border:1px solid var(--bdr);border-radius:10px;margin-bottom:18px;max-height:220px;overflow-y:auto">
+          ${vessels.map((v) => `
+            <label style="display:flex;align-items:center;gap:10px;padding:6px 4px;cursor:pointer">
+              <input type="checkbox" class="crew-add-vessel" value="${escapeHtml(v.id)}"${v.id === activeVesselId || vessels.length === 1 ? ' checked' : ''} style="accent-color:var(--sea)">
+              <span style="font-size:13px;color:var(--text)">${escapeHtml(v.name)}</span>
+            </label>`).join('')}
+        </div>
+
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-out" style="flex:1;height:46px" onclick="closeAddCrewMemberModal()">Cancel</button>
+          <button class="btn btn-sea" style="flex:2;height:46px;font-weight:700" onclick="submitAddCrewMemberModal()">Add crew member</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    setTimeout(() => {
+      const n = document.getElementById('crew-add-name');
+      if (n) n.focus();
+    }, 50);
+  }
+  window.openAddCrewMemberModal = openAddCrewMemberModal;
+
+  function closeAddCrewMemberModal() {
+    const m = document.getElementById('crew-add-modal');
+    if (m) m.remove();
+  }
+  window.closeAddCrewMemberModal = closeAddCrewMemberModal;
+
+  function submitAddCrewMemberModal() {
+    const name = ((document.getElementById('crew-add-name') || {}).value || '').trim();
+    const role = (document.getElementById('crew-add-role') || {}).value || 'Crew';
+    const vesselIds = Array.from(document.querySelectorAll('.crew-add-vessel:checked')).map((el) => el.value);
+    if (!name) { alert("What's their name? Type it in the box above."); return; }
+    if (!vesselIds.length) { alert('Tick at least one boat above so we know which vessel they crew on.'); return; }
+    const colors = ['sea', 'purp', 'amber', 'green'];
+    Store.addCrew({
+      name, role,
+      vessel_ids: vesselIds,
+      avatar_color: colors[Math.floor(Math.random() * colors.length)]
+    });
+    closeAddCrewMemberModal();
+    const back = window.__crewAddReturnTo || null;
+    window.__crewAddReturnTo = null;
+    if (back) { go(back); return; }
+    // No explicit return path — refresh the current screen.
+    if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
+  }
+  window.submitAddCrewMemberModal = submitAddCrewMemberModal;
+
+  // ─────────────────────────────────────────────────────────────
+  // Crew qualification — proper modal. Same principle as above:
+  // one form, reachable from Records or Vessel, same fields.
+  // ─────────────────────────────────────────────────────────────
+  function openAddCrewCertModal(returnTo) {
+    const old = document.getElementById('crew-cert-modal');
+    if (old) old.remove();
+    const crew = (Store.snapshot().crew || []);
+    if (!crew.length) {
+      // No people on file — nudge to add a person first, then loop
+      // back here so the two-step flow feels intentional not broken.
+      if (confirm('You need a crew member before you can add their qualifications. Add one now?')) {
+        openAddCrewMemberModal(returnTo);
+      }
+      return;
+    }
+    window.__crewCertReturnTo = returnTo || null;
+
+    const modal = document.createElement('div');
+    modal.id = 'crew-cert-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto';
+    modal.innerHTML = `
+      <div class="card" style="max-width:480px;width:100%;padding:22px;border-radius:18px;background:var(--card,#fff);max-height:92vh;overflow-y:auto">
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:var(--fn-display);letter-spacing:-.3px">Add crew qualification</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">Attach a ticket, medical, or training record to a crew member.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Crew member</label>
+        <select class="fs" id="cc-add-person" style="width:100%;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+          ${crew.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} — ${escapeHtml(p.role || 'Crew')}</option>`).join('')}
+        </select>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Qualification</label>
+        <select class="fs" id="cc-add-name" style="width:100%;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+          <optgroup label="Deck (Workboat Code Table A5.1)">
+            <option>STCW Master (Workboat &lt;500GT, unlimited)</option>
+            <option>STCW Master (Code Vessels &lt;200GT, unlimited)</option>
+            <option>STCW Master (Code Vessels &lt;200GT, ≤150nm)</option>
+            <option>RYA/MCA Yachtmaster Ocean CoC</option>
+            <option>RYA/MCA Yachtmaster Offshore CoC/Service</option>
+            <option>RYA/MCA Yachtmaster Coastal CoC/Service</option>
+            <option>MCA Boatmasters' Licence</option>
+            <option>RYA/MCA Powerboat Advanced CoC</option>
+            <option>RYA/MCA Powerboat Level 2</option>
+            <option>RYA/MCA Day Skipper Theory &amp; Practical</option>
+            <option>Certificate of Competency (Competent Authority)</option>
+            <option>Local Authority Licence</option>
+          </optgroup>
+          <optgroup label="Engineering (Table A5.2)">
+            <option>Approved Engine Course (Part 1)</option>
+            <option>Marine Engine Operators Licence (MEOL)</option>
+            <option>Senior Marine Engine Operators Licence (SMEOL)</option>
+            <option>STCW C/Eng (Y4)</option>
+            <option>Small Vessel Second Engineer CoC</option>
+            <option>STCW III/2 Small Vessel Chief Engineer</option>
+          </optgroup>
+          <optgroup label="Mandatory Training (Table A5.3)">
+            <option>RYA Basic Sea Survival / STCW PST</option>
+            <option>First Aid at Sea / SeaFish Basic First Aid</option>
+            <option>STCW Fire Fighting &amp; Fire Prevention</option>
+            <option>Radar &amp; Meteorology (MCA-approved)</option>
+            <option>Stability Training</option>
+            <option>Electronic Chart Systems (ECDIS)</option>
+            <option>Navigation Equipment Training</option>
+            <option>Catering Training (MIN 698)</option>
+          </optgroup>
+          <optgroup label="Medical">
+            <option>ENG1 Seafarer Medical</option>
+            <option>ML5 Medical Fitness Certificate</option>
+          </optgroup>
+        </select>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Issuer / awarding body</label>
+        <input class="fi" id="cc-add-issuer" placeholder="e.g. RYA, MCA, SeaFish" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Certificate number <span style="color:var(--lt);font-weight:400">(optional)</span></label>
+        <input class="fi" id="cc-add-number" placeholder="e.g. RYA-YM-2024-11234" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Expiry date <span style="color:var(--lt);font-weight:400">(leave blank if none)</span></label>
+        <input class="fi" id="cc-add-expires" type="date" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:18px">
+
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-out" style="flex:1;height:46px" onclick="closeAddCrewCertModal()">Cancel</button>
+          <button class="btn btn-sea" style="flex:2;height:46px;font-weight:700" onclick="submitAddCrewCertModal()">Save qualification</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  window.openAddCrewCertModal = openAddCrewCertModal;
+
+  function closeAddCrewCertModal() {
+    const m = document.getElementById('crew-cert-modal');
+    if (m) m.remove();
+  }
+  window.closeAddCrewCertModal = closeAddCrewCertModal;
+
+  function submitAddCrewCertModal() {
+    const person_id = (document.getElementById('cc-add-person') || {}).value || '';
+    const name = (document.getElementById('cc-add-name') || {}).value || '';
+    const issuer = ((document.getElementById('cc-add-issuer') || {}).value || '').trim();
+    const number = ((document.getElementById('cc-add-number') || {}).value || '').trim();
+    const expires_at = (document.getElementById('cc-add-expires') || {}).value || null;
+    if (!person_id) { alert('Choose whose qualification this is from the first dropdown.'); return; }
+    if (!name) { alert('Pick which qualification it is from the second dropdown.'); return; }
+    Store.addCrewCert({ person_id, name, issuer, number, expires_at });
+    closeAddCrewCertModal();
+    const back = window.__crewCertReturnTo || null;
+    window.__crewCertReturnTo = null;
+    if (back) { go(back); return; }
+    if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
+  }
+  window.submitAddCrewCertModal = submitAddCrewCertModal;
 
   function countByDays(arr) {
     const out = { overdue: 0, due30: 0, due60: 0, valid: 0 };
@@ -1996,13 +2910,13 @@
           <div class="empty-art">🦺</div>
           <div class="empty-h">No equipment logged</div>
           <div class="empty-sub">Add equipment to track service intervals and surface what's missing for your category.</div>
-          <button class="btn btn-sea btn-sm" onclick="go('s-equipment-add')">+ Add equipment</button>
+          <button class="btn btn-sea btn-sm" onclick="openEquipmentAdd('s-equipment-list')">+ Add equipment</button>
         </div>`;
     } else {
       equipment.forEach((e) => { html += ticketHtml(e, 'equipment'); });
       html += `
         <div style="padding:6px 0 14px">
-          <button class="btn btn-sea btn-full" onclick="go('s-equipment-add')">+ Add equipment</button>
+          <button class="btn btn-sea btn-full" onclick="openEquipmentAdd('s-equipment-list')">+ Add equipment</button>
         </div>`;
     }
     html += '<div class="spacer"></div></div>';
@@ -2077,7 +2991,7 @@
       <div class="slbl">Service certificate</div>
       <div style="padding:0 16px">
         ${e.file ? `
-          <div class="qa-tile" style="cursor:pointer" onclick="viewAttachment('${e.file.data_url}','${escapeHtml(e.file.name).replace(/'/g, '&#39;')}')">
+          <div class="qa-tile" style="cursor:pointer" onclick="viewAttachment('${e.file.data_url}','${jsAttr(e.file.name)}')">
             <div class="qa-icon bl">📎</div>
             <div style="flex:1;min-width:0">
               <div class="qa-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(e.file.name)}</div>
@@ -2147,7 +3061,7 @@
     else if (/(insurance|pli|p&i|hull)/.test(guessFromName)) { defaultName = 'Public Liability Insurance'; defaultKind = 'pli';      defaultCategory = 'insurance'; defaultIcon = '🛡️'; }
     else if (/(life.?raft)/.test(guessFromName))        { defaultName = 'Life raft service';          defaultKind = 'liferaft';   defaultCategory = 'equipment'; defaultIcon = '🛟'; }
     else if (/(flare|pyro|solas)/.test(guessFromName))  { defaultName = 'SOLAS A pyrotechnics';       defaultKind = 'pyrotechnics';defaultCategory = 'equipment'; defaultIcon = '🧨'; }
-    else if (/(fire)/.test(guessFromName))              { defaultName = 'Fire extinguisher service'; defaultKind = 'fire_ext';   defaultCategory = 'equipment'; defaultIcon = '🧯'; }
+    else if (/(fire)/.test(guessFromName))              { defaultName = 'Fire extinguisher service'; defaultKind = 'fire_ext_portable'; defaultCategory = 'equipment'; defaultIcon = '🧯'; }
     else if (/(life.?jacket)/.test(guessFromName))      { defaultName = 'Lifejackets';                defaultKind = 'lifejacket'; defaultCategory = 'equipment'; defaultIcon = '🦺'; }
     else if (/(vhf|radio)/.test(guessFromName))         { defaultName = 'Ship Radio Licence (VHF)';  defaultKind = 'radio';      defaultCategory = 'vessel';   defaultIcon = '📡'; }
     else if (/(stab)/.test(guessFromName))              { defaultName = 'Stability information book';defaultKind = 'stability';  defaultCategory = 'vessel'; }
@@ -2164,9 +3078,9 @@
             <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(f.name)}</div>
             <div style="font-size:11px;color:var(--lt);margin-top:2px">${escapeHtml(f.type || 'unknown')} · ${fmtBytes(f.size)}</div>
           </div>
-          <button class="btn btn-xs btn-out" onclick="viewAttachment('${f.data_url}','${escapeHtml(f.name).replace(/'/g, '&#39;')}')">View</button>
+          <button class="btn btn-xs btn-out" onclick="viewAttachment('${f.data_url}','${jsAttr(f.name)}')">View</button>
         </div>
-        <div style="background:var(--grnp);border:1px solid rgba(22,163,74,.2);border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:center;margin-top:10px">
+        <div style="background:var(--grnp);border:1px solid rgba(79,122,82,.2);border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:center;margin-top:10px">
           <span style="font-size:14px">📎</span>
           <div style="font-size:11px;color:var(--mid);line-height:1.5">File attached. We've taken a guess at the details from the filename — review and correct anything wrong.</div>
         </div>
@@ -2183,40 +3097,63 @@
 
       <!-- Form -->
       <div class="card mx" style="margin-top:12px">
-        <div class="fg"><label class="fl">Document type</label>
-          <input class="fi" id="sc-name" value="${escapeHtml(defaultName)}">
+        <div class="fg"><label class="fl">What is this document?</label>
+          <input class="fi" id="sc-name" list="sc-name-suggest" value="${escapeHtml(defaultName)}" placeholder="e.g. Coding Certificate">
+          <datalist id="sc-name-suggest">
+            <option>MCA Coding Certificate</option>
+            <option>Public Liability Insurance</option>
+            <option>Hull &amp; Machinery Insurance</option>
+            <option>Ship Radio Licence (VHF)</option>
+            <option>EPIRB registration</option>
+            <option>Liferaft service</option>
+            <option>Fire extinguisher service</option>
+            <option>Lifejackets</option>
+            <option>Flares / pyrotechnics</option>
+            <option>Stability Information Book</option>
+            <option>ENG1 / ML5 Medical</option>
+            <option>Skipper certificate</option>
+            <option>First aid at sea</option>
+            <option>Sea survival</option>
+          </datalist>
+          <div class="fl-help">Start typing — pick from the list or write your own.</div>
         </div>
         <div class="divider"></div>
-        <div class="fg"><label class="fl">Vessel</label>
+        <div class="fg"><label class="fl">Which boat?</label>
           <select class="fs" id="sc-vessel">
             ${Store.snapshot().vessels.map((vv) => `<option value="${vv.id}" ${vv.id === (v && v.id) ? 'selected' : ''}>${escapeHtml(vv.name)}</option>`).join('')}
           </select>
         </div>
         <div class="divider"></div>
-        <div class="fg"><label class="fl">Category</label>
+        <div class="fg"><label class="fl">What kind?</label>
           <select class="fs" id="sc-category">
             <option value="vessel" ${defaultCategory === 'vessel' ? 'selected' : ''}>Vessel certificate</option>
-            <option value="equipment" ${defaultCategory === 'equipment' ? 'selected' : ''}>Equipment</option>
+            <option value="equipment" ${defaultCategory === 'equipment' ? 'selected' : ''}>Safety equipment</option>
             <option value="insurance" ${defaultCategory === 'insurance' ? 'selected' : ''}>Insurance</option>
             <option value="crew" ${defaultCategory === 'crew' ? 'selected' : ''}>Crew qualification</option>
           </select>
         </div>
         <div class="divider"></div>
-        <div class="fg"><label class="fl">Issuer / authority</label>
-          <input class="fi" id="sc-issuer" placeholder="e.g. YDSA / Pantaenius / Survitec">
-        </div>
-        <div class="divider"></div>
-        <div class="fg"><label class="fl">Certificate number</label>
-          <input class="fi" id="sc-number" placeholder="Optional">
-        </div>
-        <div class="divider"></div>
-        <div class="fg"><label class="fl">Issue date</label>
-          <input class="fi" id="sc-issued" type="date" value="${today}">
-        </div>
-        <div class="divider"></div>
         <div class="fg"><label class="fl">Expiry date</label>
           <input class="fi" id="sc-expires" type="date">
+          <div class="fl-help">This is what we remind you about. Leave blank if it never expires.</div>
         </div>
+        <div class="divider"></div>
+        <details>
+          <summary style="cursor:pointer;font-size:14px;font-weight:600;color:var(--sea);padding:8px 0;list-style:none">▸ Add issuer, number, issue date (optional)</summary>
+          <div style="padding-top:6px">
+            <div class="fg"><label class="fl">Issuer / authority</label>
+              <input class="fi" id="sc-issuer" placeholder="e.g. MCA, insurer, YDSA">
+            </div>
+            <div class="divider"></div>
+            <div class="fg"><label class="fl">Certificate number</label>
+              <input class="fi" id="sc-number" placeholder="Optional">
+            </div>
+            <div class="divider"></div>
+            <div class="fg"><label class="fl">Issue date</label>
+              <input class="fi" id="sc-issued" type="date">
+            </div>
+          </div>
+        </details>
       </div>
 
       <div style="padding:16px 16px 0;display:flex;flex-direction:column;gap:10px">
@@ -2229,11 +3166,17 @@
   function saveScanCert(defaultIcon, defaultKind) {
     if (!pendingScan) return;
     const name = (document.getElementById('sc-name') || {}).value || 'Certificate';
-    const vesselId = (document.getElementById('sc-vessel') || {}).value;
+    let vesselId = (document.getElementById('sc-vessel') || {}).value;
+    // Cold start: no boat yet (the vessel dropdown was empty). Set one
+    // up automatically rather than dead-ending with "pick a vessel
+    // first" — matches the AI-extract path. The user names it after.
+    let autoCreatedVessel = false;
     if (!vesselId) {
-      alert('Pick a vessel first.');
-      return;
+      const starter = Store.addVessel({ name: 'My boat' });
+      vesselId = starter && starter.id;
+      autoCreatedVessel = !!vesselId;
     }
+    if (!vesselId) { alert('Add a boat first, then add this document to it.'); return; }
     const category = (document.getElementById('sc-category') || {}).value || 'vessel';
     const issuer = (document.getElementById('sc-issuer') || {}).value || '';
     const number = (document.getElementById('sc-number') || {}).value || '';
@@ -2270,9 +3213,22 @@
     }
     pendingScan = null;
     activeVesselId = vesselId;
+    if (autoCreatedVessel) {
+      alert('Saved.\n\nWe set up a boat to keep it under — let\'s give it its proper name.');
+    }
     go('s-vessel-detail');
   }
   window.saveScanCert = saveScanCert;
+
+  // When the user picks a doc type from the grouped dropdown, mirror
+  // it into the custom-name field so they can still edit the wording
+  // (e.g. add "— renewal" or a specific model) before saving.
+  function pickDocType(v) {
+    if (!v || v === '__custom__') return;
+    const el = document.getElementById('sc-name');
+    if (el) el.value = v;
+  }
+  window.pickDocType = pickDocType;
 
   function cancelScanConfirm() {
     pendingScan = null;
@@ -2327,7 +3283,7 @@
           </div>
 
           ${f ? `
-            <div style="background:var(--seap);border:1px solid rgba(8,145,178,.2);border-radius:12px;padding:12px 14px;margin-bottom:14px">
+            <div style="background:var(--seap);border:1px solid rgba(3,32,61,.2);border-radius:12px;padding:12px 14px;margin-bottom:14px">
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
                 <span style="font-size:18px">📎</span>
                 <div style="flex:1;min-width:0">
@@ -2336,7 +3292,7 @@
                 </div>
               </div>
               <div style="display:flex;gap:8px">
-                <button class="btn btn-xs btn-sea" style="flex:1" onclick="viewAttachment('${f.data_url}','${escapeHtml(f.name).replace(/'/g, '&#39;')}')">👁 View</button>
+                <button class="btn btn-xs btn-sea" style="flex:1" onclick="viewAttachment('${f.data_url}','${jsAttr(f.name)}')">👁 View</button>
                 <button class="btn btn-xs btn-out" style="flex:1" onclick="attachToExistingCert('${c.id}')">↻ Replace</button>
                 <button class="btn btn-xs btn-out" style="flex:1;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="removeCertFile('${c.id}')">✕ Remove</button>
               </div>
@@ -2399,20 +3355,47 @@
   // ---------- Equipment add ----------
 
   function resetEquipmentAddForm() {
-    ['eq-add-name','eq-add-make','eq-add-model','eq-add-serial','eq-add-qty','eq-add-last','eq-add-next','eq-add-notes']
+    ['eq-add-name','eq-add-make','eq-add-model','eq-add-serial','eq-add-qty','eq-add-last','eq-add-next','eq-add-notes',
+     // Sub-field date inputs — reset so we don't leak yesterday's expiry into today's entry.
+     'eq-sub-liferaft-hru-exp','eq-sub-lj-light-exp','eq-sub-sart-battery-exp']
       .forEach((id) => { const el = document.getElementById(id); if (el) el.value = id === 'eq-add-qty' ? '1' : ''; });
     const sel = document.getElementById('eq-add-kind'); if (sel) sel.selectedIndex = 0;
+    // Sub-field selects — reset to their first option so the new form
+    // opens in a known state.
+    ['eq-sub-liferaft-type','eq-sub-liferaft-hru','eq-sub-lj-type','eq-sub-lj-lights',
+     'eq-sub-sart-type','eq-sub-pyro-pack','eq-sub-pyro-type','eq-sub-fe-type']
+      .forEach((id) => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
+    // Populate the Vessel picker with the operator's fleet. Preselects
+    // activeVesselId if one is set (form entered from the Vessel
+    // detail screen); otherwise defaults to the first vessel so
+    // Records-entry has a sensible starting point.
+    const vesselPicker = document.getElementById('eq-add-vessel');
+    if (vesselPicker) {
+      const vessels = (Store.snapshot().vessels || []);
+      const preselect = activeVesselId || (vessels[0] && vessels[0].id);
+      vesselPicker.innerHTML = vessels.length
+        ? vessels.map((v) => `<option value="${escapeHtml(v.id)}"${v.id === preselect ? ' selected' : ''}>${escapeHtml(v.name)}</option>`).join('')
+        : '<option value="">— no vessels yet —</option>';
+    }
+    // Toggle the sub-fields so the initial kind (Liferaft) shows its own.
+    updateEquipmentSubFields();
     pendingEquipmentFile = null;
     const note = document.getElementById('eq-file-note');
     if (note) note.innerHTML = '';
   }
 
   function saveNewEquipment() {
-    if (!activeVesselId) {
+    // Prefer the on-form vessel picker (works from any entry point).
+    // Fall back to activeVesselId for the old flow, then to first
+    // vessel in the store. If nothing exists, prompt to add a vessel.
+    const pickerVal = (document.getElementById('eq-add-vessel') || {}).value || '';
+    let targetVesselId = pickerVal || activeVesselId;
+    if (!targetVesselId) {
       const v = Store.snapshot().vessels[0];
-      if (v) activeVesselId = v.id;
+      if (v) targetVesselId = v.id;
     }
-    if (!activeVesselId) { alert('Pick a vessel first'); return; }
+    if (!targetVesselId) { alert('Add a vessel first — equipment is scoped per boat.'); return; }
+    activeVesselId = targetVesselId;
 
     const kind = (document.getElementById('eq-add-kind') || {}).value || 'other';
     const name = (document.getElementById('eq-add-name') || {}).value || '';
@@ -2424,11 +3407,68 @@
     const next = (document.getElementById('eq-add-next') || {}).value || null;
     const notes = (document.getElementById('eq-add-notes') || {}).value || '';
 
-    const iconMap = { liferaft:'🛟', lifejacket:'🦺', epirb:'📡', plb:'📡', vhf_fixed:'📻', vhf_handheld:'📻', pyro_solas_a:'🧨', pyro_inshore:'🧨', fire_ext:'🧯', fire_blanket:'🧯', first_aid_c:'🩹', anchor:'⚓', bilge_pump:'💧', nav_lights:'💡', other:'🔧' };
-    const nameMap = { liferaft:'Liferaft', lifejacket:'Lifejackets', epirb:'EPIRB', plb:'PLB', vhf_fixed:'VHF DSC fixed', vhf_handheld:'VHF handheld', pyro_solas_a:'SOLAS A pyro pack', pyro_inshore:'Inshore pyro pack', fire_ext:'Fire extinguisher', fire_blanket:'Fire blanket', first_aid_c:'First aid kit Cat C', anchor:'Anchor & cable', bilge_pump:'Bilge pump', nav_lights:'Nav lights', other:'Equipment' };
+    // Icons and default names per kind. Kept in sync with the option
+    // list in index.html (#eq-add-kind) — new kinds added there must
+    // land here too, otherwise the record falls back to a wrench icon
+    // and 'Equipment' as the name.
+    const iconMap = {
+      liferaft:'🛟', lifejacket:'🦺', lifebuoy:'🛟',
+      epirb:'📡', sart:'📡', plb:'📡',
+      vhf_fixed:'📻', vhf_handheld:'📻', mf_radio:'📻', navtex:'📻',
+      pyrotechnics:'🧨',
+      fire_ext_portable:'🧯', fire_ext_fixed:'🧯', fire_blanket:'🧯',
+      first_aid_c:'🩹',
+      // Legacy kinds retained so existing records still render with
+      // an icon (users may have historic entries under these keys).
+      pyro_solas_a:'🧨', pyro_inshore:'🧨',
+      fire_ext:'🧯', anchor:'⚓', bilge_pump:'💧', nav_lights:'💡',
+      other:'🔧'
+    };
+    const nameMap = {
+      liferaft:'Liferaft', lifejacket:'Lifejackets', lifebuoy:'Life buoy',
+      epirb:'EPIRB', sart:'SART', plb:'PLB',
+      vhf_fixed:'VHF DSC fixed', vhf_handheld:'VHF handheld DSC', mf_radio:'MF radio', navtex:'Navtex',
+      pyrotechnics:'Pyrotechnics',
+      fire_ext_portable:'Fire extinguisher (portable)', fire_ext_fixed:'Fixed fire extinguisher', fire_blanket:'Fire blanket',
+      first_aid_c:'First aid kit Cat C',
+      pyro_solas_a:'SOLAS A pyro pack', pyro_inshore:'Inshore pyro pack',
+      fire_ext:'Fire extinguisher', anchor:'Anchor & cable', bilge_pump:'Bilge pump', nav_lights:'Nav lights',
+      other:'Equipment'
+    };
+
+    // Collect sub-fields shown for this kind. Each block in the form
+    // has data-shows-for="<kind list>" — if it matched this kind, its
+    // value goes into a `subtype` object on the record so surveyors
+    // can see (e.g.) that a pyrotechnics entry is specifically the
+    // parachute type, or that a liferaft has an HRU fitted.
+    const subtype = {};
+    function stash(id, key) {
+      const el = document.getElementById(id);
+      if (el && el.value) subtype[key] = el.value;
+    }
+    if (kind === 'liferaft') {
+      stash('eq-sub-liferaft-type', 'raft_type');
+      stash('eq-sub-liferaft-hru', 'hru');
+      stash('eq-sub-liferaft-hru-exp', 'hru_expires_at');
+    } else if (kind === 'lifejacket') {
+      stash('eq-sub-lj-type', 'jacket_type');
+      stash('eq-sub-lj-lights', 'lights_fitted');
+      stash('eq-sub-lj-light-exp', 'light_battery_expires_at');
+    } else if (kind === 'lifebuoy') {
+      stash('eq-sub-lj-lights', 'lights_fitted');
+      stash('eq-sub-lj-light-exp', 'light_battery_expires_at');
+    } else if (kind === 'sart') {
+      stash('eq-sub-sart-type', 'sart_type');
+      stash('eq-sub-sart-battery-exp', 'battery_expires_at');
+    } else if (kind === 'pyrotechnics') {
+      stash('eq-sub-pyro-pack', 'pack_level');
+      stash('eq-sub-pyro-type', 'flare_type');
+    } else if (kind === 'fire_ext_portable' || kind === 'fire_ext_fixed') {
+      stash('eq-sub-fe-type', 'extinguisher_type');
+    }
 
     Store.addEquipment({
-      vessel_id: activeVesselId,
+      vessel_id: targetVesselId,
       kind,
       name: name || nameMap[kind] || 'Equipment',
       icon: iconMap[kind] || '🔧',
@@ -2437,12 +3477,64 @@
       last_service_at: last,
       next_service_at: next,
       notes,
-      file: pendingEquipmentFile
+      file: pendingEquipmentFile,
+      subtype: Object.keys(subtype).length ? subtype : null
     });
     pendingEquipmentFile = null;
-    go('s-equipment-list');
+    // Return to wherever the user came from — Vessel detail's
+    // equipment list, or the Records screen's equipment tab. Falls
+    // back to s-equipment-list for backwards compatibility.
+    const back = window.__equipmentAddReturnTo || 's-equipment-list';
+    window.__equipmentAddReturnTo = null;
+    go(back);
   }
   window.saveNewEquipment = saveNewEquipment;
+
+  // Entry helper for the Add Equipment form. Both the Vessel detail
+  // and Records screens call this so the flow is identical from both
+  // sides. The `returnTo` shell id is what we route to after save.
+  function openEquipmentAdd(returnTo) {
+    window.__equipmentAddReturnTo = returnTo || null;
+    go('s-equipment-add');
+  }
+  window.openEquipmentAdd = openEquipmentAdd;
+
+  // Show/hide the per-kind sub-fields in the Add Equipment form
+  // (index.html, id="s-equipment-add"). Each sub-field row is tagged
+  // data-shows-for="<space-separated kind list>". This runs on kind
+  // change and once on entry so the initial default kind renders its
+  // own fields.
+  function updateEquipmentSubFields() {
+    const sel = document.getElementById('eq-add-kind');
+    if (!sel) return;
+    const kind = sel.value;
+    document.querySelectorAll('[data-shows-for]').forEach((el) => {
+      const kinds = (el.getAttribute('data-shows-for') || '').split(/\s+/);
+      el.style.display = kinds.includes(kind) ? '' : 'none';
+    });
+    // Auto-fill the Friendly name from a sensible default for the
+    // chosen kind. Only writes when the name is empty OR still matches
+    // a previous default — so a user who typed their own custom name
+    // (e.g. "Liferaft — port aft locker") never loses it when they
+    // reopen the picker to double-check the kind.
+    const nameEl = document.getElementById('eq-add-name');
+    if (nameEl) {
+      const defaults = {
+        liferaft:'Liferaft', lifejacket:'Lifejacket', lifebuoy:'Life buoy',
+        epirb:'EPIRB', sart:'SART', plb:'PLB',
+        vhf_fixed:'VHF DSC fixed radio', vhf_handheld:'VHF handheld DSC radio',
+        mf_radio:'MF radio', navtex:'Navtex',
+        pyrotechnics:'Pyrotechnics',
+        fire_ext_portable:'Fire extinguisher', fire_ext_fixed:'Fixed fire extinguisher',
+        fire_blanket:'Fire blanket', first_aid_c:'First aid kit (Cat C)'
+      };
+      const allDefaults = new Set(Object.values(defaults));
+      if (!nameEl.value.trim() || allDefaults.has(nameEl.value.trim())) {
+        nameEl.value = defaults[kind] || '';
+      }
+    }
+  }
+  window.updateEquipmentSubFields = updateEquipmentSubFields;
 
   // ---------- Hand-off QR ----------
 
@@ -2472,7 +3564,7 @@
               <div style="flex:1;min-width:0">
                 <div style="font-size:13px;font-weight:700;color:var(--text)">Token: ${escapeHtml(h.token)}</div>
                 <div style="font-size:11px;color:var(--lt);margin-top:2px">Expires ${fmtDate(h.expires_at)} · ${escapeHtml(h.id)}</div>
-                <div style="font-size:11px;color:var(--sea);margin-top:4px;word-break:break-all">codedok.app/ho/${escapeHtml(h.token)}</div>
+                <div style="font-size:11px;color:var(--sea);margin-top:4px;word-break:break-all">codedok.com/ho/${escapeHtml(h.token)}</div>
               </div>
             </div>
           </div>`).join('')}
@@ -2537,7 +3629,7 @@
           const v = (h1 ^ (x * 2654435761) ^ (y * 40503) ^ h2) >>> 0;
           on = (v & 1) === 1;
         }
-        if (on) svg += `<rect x="${(x*cell).toFixed(2)}" y="${(y*cell).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" fill="#0a1628"/>`;
+        if (on) svg += `<rect x="${(x*cell).toFixed(2)}" y="${(y*cell).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" fill="#03203D"/>`;
       }
     }
     svg += '</svg>';
@@ -2633,6 +3725,57 @@
         </div>
       </div>` : '';
 
+    // Today card — the most pressing action right now, surfaced above
+    // every tab so a surveyor opening the app sees what needs them.
+    // Priorities, top to bottom: quote pending in inbox → mark complete
+    // → chase old unpaid invoice → renew expiring own-issued cert →
+    // all clear.
+    const todayCard = (() => {
+      const pendingQuote = inbox.length;
+      const activeJobs = Store.jobsForSurveyor(me.id).filter((j) => j.status === 'in_progress' || j.status === 'accepted');
+      const myInvoices = Store.invoicesForSurveyor(me.id);
+      const overdueInvoices = myInvoices.filter((iv) => {
+        if (iv.status !== 'sent' && iv.status !== 'overdue') return false;
+        return iv.due_at && Store.daysUntil(iv.due_at) < 0;
+      });
+
+      let icon, title, sub, target, edge;
+      if (pendingQuote > 0) {
+        icon = '📥'; edge = 'var(--sea)';
+        title = `${pendingQuote} request${pendingQuote === 1 ? '' : 's'} waiting for a quote`;
+        sub = 'Open inbox and respond';
+        target = `setSurveyorTab('inbox')`;
+      } else if (activeJobs.length > 0) {
+        icon = '🛠️'; edge = 'var(--or)';
+        title = `${activeJobs.length} job${activeJobs.length === 1 ? '' : 's'} in progress`;
+        sub = 'Mark complete when the work is done';
+        target = `setSurveyorTab('jobs')`;
+      } else if (overdueInvoices.length > 0) {
+        const due = overdueInvoices.reduce((s, iv) => s + (iv.total || 0), 0);
+        icon = '💷'; edge = '#ef4444';
+        title = `£${due.toLocaleString()} in overdue invoices`;
+        sub = `${overdueInvoices.length} client${overdueInvoices.length === 1 ? '' : 's'} to chase`;
+        target = `setSurveyorTab('earnings')`;
+      } else {
+        icon = '🌤️'; edge = 'var(--gn)';
+        title = 'All clear';
+        sub = 'Nothing needs you right now.';
+        target = `setSurveyorTab('vessels')`;
+      }
+      return `
+        <div style="padding:14px 16px 0">
+          <div class="card" onclick="${target}" style="padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid ${edge}">
+            <div style="font-size:26px;flex-shrink:0">${icon}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Today</div>
+              <div style="font-size:14px;font-weight:700;color:var(--text);line-height:1.3">${escapeHtml(title)}</div>
+              <div style="font-size:11px;color:var(--mid);margin-top:2px">${escapeHtml(sub)}</div>
+            </div>
+            <span class="chev">›</span>
+          </div>
+        </div>`;
+    })();
+
     // Tab content
     let tabHtml = '';
     if (surveyorTab === 'vessels')   tabHtml = renderSurveyorVesselsTab(me);
@@ -2640,7 +3783,7 @@
     else if (surveyorTab === 'jobs')    tabHtml = renderSurveyorJobsTab(me);
     else if (surveyorTab === 'earnings') tabHtml = renderSurveyorEarningsTab(me);
     else if (surveyorTab === 'account')  tabHtml = renderSurveyorAccountTab(me);
-    wrap.innerHTML = desktopBanner + tabHtml;
+    wrap.innerHTML = todayCard + desktopBanner + tabHtml;
   }
 
   function renderSurveyorVesselsTab(me) {
@@ -2744,14 +3887,86 @@
     return html;
   }
 
+  // Suggest the next workday at least `minOffset` days out, skipping
+  // weekends. Used by the port-cluster scheduler so visits land on
+  // weekdays (operators are mostly available then) and far enough
+  // ahead to give the operator notice.
+  function suggestVisitDate(weeksOut) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 7 * (weeksOut + 1));
+    // Bias toward Tue/Wed/Thu for inspections.
+    const targetDay = 2; // Tuesday
+    const diff = (targetDay - d.getDay() + 7) % 7;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Cluster the surveyor's unscheduled work by port. Surveyors do a
+  // lot of driving between marinas; grouping by port lets them
+  // batch nearby visits into one trip. Only shown when there's
+  // genuine opportunity to cluster (≥2 jobs at one port).
+  function renderSurveyorPortClusters(me) {
+    const open = Store.jobsForSurveyor(me.id).filter((j) =>
+      j.status === 'requested' || j.status === 'quoted' || j.status === 'paid'
+    );
+    if (open.length < 2) return '';
+
+    const byPort = new Map();
+    open.forEach((j) => {
+      const v = Store.getVessel(j.vessel_id);
+      const port = (v && v.port) ? v.port.trim() : '';
+      if (!port) return;
+      if (!byPort.has(port)) byPort.set(port, []);
+      byPort.get(port).push({ job: j, vessel: v });
+    });
+
+    const clusters = Array.from(byPort.entries())
+      .filter(([_, items]) => items.length >= 2)
+      .sort((a, b) => b[1].length - a[1].length);
+    if (!clusters.length) return '';
+
+    const cards = clusters.map(([port, items], idx) => {
+      const date = suggestVisitDate(idx);
+      const vesselsList = [...new Set(items.map((it) => it.vessel ? it.vessel.name : null).filter(Boolean))].join(' · ');
+      const chips = items.map((it) => `
+        <button class="chip chip-bl" style="cursor:pointer;border:none;font-family:var(--fn)" onclick="event.stopPropagation();openSurveyorJob('${it.job.id}')">${escapeHtml(jobTypeLabel(it.job.type))}</button>
+      `).join(' ');
+      return `
+        <div class="card" style="padding:14px;border-left:4px solid var(--gn)">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">
+            <div style="min-width:0">
+              <div style="font-size:10px;font-weight:700;color:var(--gn);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Cluster · ${items.length} jobs</div>
+              <div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.2px">${escapeHtml(port)}</div>
+              <div style="font-size:11px;color:var(--mid);margin-top:2px">${escapeHtml(vesselsList)}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:10px;color:var(--lt);font-weight:600;text-transform:uppercase;letter-spacing:.08em">Suggested visit</div>
+              <div style="font-size:13px;font-weight:700;color:var(--sea)">${fmtDate(date)}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">${chips}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="padding:14px 16px 6px">
+        <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Drive smart · cluster visits</div>
+        <div style="font-size:11px;color:var(--mid);line-height:1.5;margin-bottom:10px">Group nearby jobs into a single trip. Tap a job to quote the suggested day.</div>
+      </div>
+      <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px;margin-bottom:14px">${cards}</div>`;
+  }
+
   function renderSurveyorJobsTab(me) {
     const all = Store.jobsForSurveyor(me.id);
     const active = all.filter((j) => ['quoted', 'paid', 'in_progress'].includes(j.status));
     const completed = all.filter((j) => j.status === 'completed');
     const declined = all.filter((j) => j.status === 'declined');
 
+    const clustersHtml = renderSurveyorPortClusters(me);
+
     if (all.length === 0) {
-      return `
+      return clustersHtml + `
         <div class="empty">
           <div class="empty-art">🛠️</div>
           <div class="empty-h">No jobs yet</div>
@@ -2782,7 +3997,7 @@
         </div>`;
     }
 
-    let html = '<div style="padding:14px 16px">';
+    let html = clustersHtml + '<div style="padding:14px 16px">';
     if (active.length) {
       html += `<div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Active · ${active.length}</div>`;
       active.forEach((j) => html += jobRow(j));
@@ -2841,7 +4056,7 @@
     const brandCard = logo
       ? `<div class="card" style="padding:14px;display:flex;align-items:center;gap:14px">
            <div style="width:64px;height:64px;border-radius:12px;background:white;border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-             <img alt="${escapeHtml(company)} logo" src="${logo}" style="max-width:100%;max-height:100%;object-fit:contain;padding:4px">
+             <img alt="${escapeHtml(company)} logo" src="${escapeHtml(safeImgUrl(logo))}" style="max-width:100%;max-height:100%;object-fit:contain;padding:4px">
            </div>
            <div style="flex:1;min-width:0">
              <div style="font-size:14px;font-weight:700;color:var(--text)">Your company logo</div>
@@ -2972,19 +4187,21 @@
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!file || !pendingVesselPhotoId) return;
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Vessel photo must be under 2 MB.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      Store.setVesselPhoto(pendingVesselPhotoId, reader.result);
+    const vesselId = pendingVesselPhotoId;
+    // No file-size cap any more — compressImage will reduce any size
+    // down to a 1600px-edge WebP/JPEG, then we upload to Supabase
+    // Storage and store only the resulting URL. Falls back to inline
+    // base64 if Storage isn't available (offline / unauthenticated).
+    compressAndUpload(file, 'vessel-photos', vesselId, { maxEdge: 1600, quality: 0.82 }).then((url) => {
+      Store.setVesselPhoto(vesselId, url);
       pendingVesselPhotoId = null;
       renderHome();
       if (document.getElementById('s-vessels').classList.contains('on')) renderVesselsList();
       if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
-    };
-    reader.readAsDataURL(file);
+    }).catch((err) => {
+      console.error('vessel photo upload failed', err);
+      alert('Could not process that image. Try a different one.');
+    });
   }
 
   function dismissPwaInstall() {
@@ -2993,6 +4210,766 @@
     if (el) el.remove();
   }
   window.dismissPwaInstall = dismissPwaInstall;
+
+  // ─────────────────────────────────────────────────────────────
+  // PWA install via beforeinstallprompt (Android / Chrome / Edge).
+  // The event is captured once, then replayed on user click. iOS
+  // Safari never fires this — those users see the manual tip in
+  // the banner instead.
+  // ─────────────────────────────────────────────────────────────
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window.__codedokInstallEvent = e;
+    // Re-render the home banner so the Install button appears.
+    if (typeof renderHome === 'function' && document.getElementById('s-home')) {
+      try { renderHome(); } catch (_) {}
+    }
+    // Reveal the hero install CTA on the landing now that we can fire
+    // the native prompt.
+    if (typeof updateHeroInstallBtn === 'function') {
+      try { updateHeroInstallBtn(); } catch (_) {}
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    window.__codedokInstallEvent = null;
+    try { localStorage.setItem('codedok-pwa-installed-dismissed', '1'); } catch (_) {}
+    const el = document.getElementById('home-pwa-install');
+    if (el) el.remove();
+    const heroBtn = document.getElementById('hero-install-btn');
+    if (heroBtn) heroBtn.style.display = 'none';
+  });
+
+  async function installPwa() {
+    const ev = window.__codedokInstallEvent;
+    if (!ev) return;
+    try {
+      ev.prompt();
+      const { outcome } = await ev.userChoice;
+      if (outcome === 'accepted') {
+        const el = document.getElementById('home-pwa-install');
+        if (el) el.remove();
+        const land = document.getElementById('landing-smart-banner');
+        if (land) land.remove();
+      }
+    } catch (err) {
+      console.warn('installPwa failed:', err);
+    } finally {
+      window.__codedokInstallEvent = null;
+    }
+  }
+  window.installPwa = installPwa;
+
+  // ─────────────────────────────────────────────────────────────
+  // Universal "Add to Home Screen" CTA — wired to the hero button
+  // on the landing. Real one-tap install on Chromium (Android +
+  // desktop Chrome/Edge) via the captured beforeinstallprompt
+  // event. On iOS Safari, Apple blocks programmatic install, so
+  // we show a guided modal explaining Share → Add to Home Screen.
+  // Hidden entirely on already-installed PWAs and on browsers that
+  // don't expose the install event after a fair wait.
+  // ─────────────────────────────────────────────────────────────
+  function isStandaloneInstall() {
+    return window.navigator.standalone === true
+      || window.matchMedia('(display-mode: standalone)').matches;
+  }
+
+  function updateHeroInstallBtn() {
+    const btn = document.getElementById('hero-install-btn');
+    if (!btn) return;
+    if (isStandaloneInstall()) { btn.style.display = 'none'; return; }
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPhone|iPad|iPod/.test(ua) && !/CriOS|FxiOS/.test(ua);
+    const canPrompt = !!window.__codedokInstallEvent;
+    // Show on: iOS Safari (instructions path), or any browser where
+    // we've captured the install event. Hide elsewhere (e.g. Firefox
+    // desktop without install support) so we don't promise something
+    // we can't deliver.
+    btn.style.display = (canPrompt || isIOS) ? '' : 'none';
+  }
+  window.updateHeroInstallBtn = updateHeroInstallBtn;
+
+  function openIosInstallModal() {
+    closeIosInstallModal();
+    const overlay = document.createElement('div');
+    overlay.id = 'ios-install-modal';
+    overlay.className = 'qr-modal-overlay';
+    overlay.innerHTML = `
+      <div class="qr-modal-card" role="dialog" aria-labelledby="ios-install-title" style="max-width:340px">
+        <button class="qr-close" type="button" aria-label="Close" onclick="closeIosInstallModal()">×</button>
+        <div style="font-size:40px;margin-bottom:4px">📲</div>
+        <h3 id="ios-install-title">Two taps to install</h3>
+        <p style="margin-bottom:18px">iOS only lets you add apps from the Share menu. Here's the path:</p>
+        <ol style="text-align:left;margin:0 0 6px;padding:0 0 0 22px;font-size:14px;color:#475569;line-height:1.7">
+          <li>Tap <strong style="color:#03203D">Share</strong>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin:0 2px;color:#03203D"><path d="M12 3v12M7 8l5-5 5 5M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>
+            in the Safari toolbar
+          </li>
+          <li>Scroll down and tap <strong style="color:#03203D">Add to Home Screen</strong></li>
+          <li>Tap <strong style="color:#03203D">Add</strong> in the top-right</li>
+        </ol>
+        <p style="font-size:12px;color:#94a3b8;margin:18px 0 0">CodedOK will open like a native app — full-screen, offline-ready, works at sea.</p>
+      </div>
+    `;
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeIosInstallModal(); });
+    document.body.appendChild(overlay);
+  }
+  window.openIosInstallModal = openIosInstallModal;
+
+  function closeIosInstallModal() {
+    const el = document.getElementById('ios-install-modal');
+    if (el) el.remove();
+  }
+  window.closeIosInstallModal = closeIosInstallModal;
+
+  async function installFromCta() {
+    if (typeof window.codedokTrack === 'function') window.codedokTrack('install_click');
+    if (isStandaloneInstall()) {
+      const b = document.getElementById('hero-install-btn');
+      if (b) b.style.display = 'none';
+      return;
+    }
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPhone|iPad|iPod/.test(ua) && !/CriOS|FxiOS/.test(ua);
+    if (isIOS) {
+      openIosInstallModal();
+      return;
+    }
+    // Chromium path: fire the captured install event.
+    if (window.__codedokInstallEvent && typeof installPwa === 'function') {
+      await installPwa();
+      updateHeroInstallBtn();
+      return;
+    }
+    // Fallback: no install event available — open the QR popup so
+    // the user can install on their phone instead. Better than a
+    // dead button.
+    if (typeof openQrPopup === 'function') openQrPopup();
+  }
+  window.installFromCta = installFromCta;
+
+  function dismissLandingSmartBanner() {
+    try { localStorage.setItem('codedok-pwa-installed-dismissed', '1'); } catch (_) {}
+    const el = document.getElementById('landing-smart-banner');
+    if (el) el.remove();
+  }
+  window.dismissLandingSmartBanner = dismissLandingSmartBanner;
+
+  function ensureLandingSmartBanner() {
+    const old = document.getElementById('landing-smart-banner');
+    if (old) old.remove();
+    const ua = navigator.userAgent || '';
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+    if (!isMobile) return;
+    const isStandalone = window.navigator.standalone === true
+      || window.matchMedia('(display-mode: standalone)').matches;
+    if (isStandalone) return;
+    let dismissed = '0';
+    try { dismissed = localStorage.getItem('codedok-pwa-installed-dismissed') || '0'; } catch (_) {}
+    if (dismissed === '1') return;
+    const isIOS = /iPhone|iPad|iPod/.test(ua);
+    const canPrompt = !!window.__codedokInstallEvent;
+    const cta = canPrompt
+      ? `<button onclick="installPwa()" style="background:#03203D;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer">Install</button>`
+      : (isIOS
+          ? `<span style="color:#cbd5e1;font-size:12px;line-height:1.4">Tap <strong style="color:#fff">Share</strong> → <strong style="color:#fff">Add to Home Screen</strong></span>`
+          : ``);
+    const banner = document.createElement('div');
+    banner.id = 'landing-smart-banner';
+    banner.style.cssText = [
+      'position:fixed',
+      'left:12px',
+      'right:12px',
+      'bottom:calc(12px + env(safe-area-inset-bottom, 0px))',
+      'z-index:9999',
+      'background:rgba(3,32,61,0.97)',
+      'color:#fff',
+      'border-radius:14px',
+      'box-shadow:0 10px 30px rgba(0,0,0,0.25)',
+      'padding:12px 14px',
+      'display:flex',
+      'align-items:center',
+      'gap:12px',
+      'font-family:inherit',
+    ].join(';');
+    banner.innerHTML = `
+      <div style="font-size:22px;flex-shrink:0">📲</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:800">Use CodedOK as an app</div>
+        <div style="font-size:11px;color:#cbd5e1;margin-top:2px;line-height:1.4">Works offline, on-the-water ready.</div>
+      </div>
+      ${cta}
+      <button onclick="dismissLandingSmartBanner()" aria-label="Dismiss" style="background:none;border:0;color:#cbd5e1;font-size:22px;cursor:pointer;padding:2px 6px;line-height:1">×</button>
+    `;
+    document.body.appendChild(banner);
+  }
+  window.ensureLandingSmartBanner = ensureLandingSmartBanner;
+
+  // ─────────────────────────────────────────────────────────────
+  // Desktop "Open on phone" QR popup.
+  // Mobile devices and PWA standalone installs see nothing.
+  // The FAB stays visible for the whole session; clicking opens
+  // a modal with a scannable QR for https://codedok.com. We also
+  // auto-show the modal once per session on the landing page so
+  // first-time desktop visitors notice the mobile path.
+  // ─────────────────────────────────────────────────────────────
+  function isQrEligible() {
+    if (!window.matchMedia('(min-width: 520px)').matches) return false;
+    const ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod|Android/i.test(ua)) return false;
+    const standalone = window.navigator.standalone === true
+      || window.matchMedia('(display-mode: standalone)').matches;
+    if (standalone) return false;
+    return true;
+  }
+
+  function ensureDesktopQrFab() {
+    if (!isQrEligible()) {
+      const f = document.getElementById('qr-fab');
+      if (f) f.remove();
+      return;
+    }
+    if (document.getElementById('qr-fab')) return;
+    const btn = document.createElement('button');
+    btn.id = 'qr-fab';
+    btn.className = 'qr-fab';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Open CodedOK on your phone');
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <path d="M14 14h3v3M21 14v3M14 21h7"/>
+      </svg>
+      Open on phone
+    `;
+    btn.onclick = openQrPopup;
+    document.body.appendChild(btn);
+  }
+  window.ensureDesktopQrFab = ensureDesktopQrFab;
+
+  function openQrPopup() {
+    closeQrPopup();
+    const url = 'https://codedok.com';
+    const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=8&data=' + encodeURIComponent(url);
+    const overlay = document.createElement('div');
+    overlay.id = 'qr-modal';
+    overlay.className = 'qr-modal-overlay';
+    overlay.innerHTML = `
+      <div class="qr-modal-card" role="dialog" aria-labelledby="qr-modal-title">
+        <button class="qr-close" type="button" aria-label="Close" onclick="closeQrPopup()">×</button>
+        <h3 id="qr-modal-title">Open CodedOK on your phone</h3>
+        <p>CodedOK is built for boats — use the QR below to open this app on your phone and add it to your home screen.</p>
+        <img src="${escapeHtml(qrSrc)}" alt="QR code for ${escapeHtml(url)}" width="220" height="220">
+        <span class="qr-url">${escapeHtml(url)}</span>
+      </div>
+    `;
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeQrPopup(); });
+    document.body.appendChild(overlay);
+  }
+  window.openQrPopup = openQrPopup;
+
+  function closeQrPopup() {
+    const el = document.getElementById('qr-modal');
+    if (el) el.remove();
+  }
+  window.closeQrPopup = closeQrPopup;
+
+  function maybeAutoShowQrOnLanding() {
+    if (!isQrEligible()) return;
+    let shown = '0';
+    try { shown = sessionStorage.getItem('codedok-qr-shown') || '0'; } catch (_) {}
+    if (shown === '1') return;
+    try { sessionStorage.setItem('codedok-qr-shown', '1'); } catch (_) {}
+    // No longer auto-opens: a modal 1.2s after arrival covered the animated
+    // hero and interrupted the first impression. The persistent "Open on
+    // phone" button (ensureDesktopQrFab) still opens it on demand.
+  }
+  window.maybeAutoShowQrOnLanding = maybeAutoShowQrOnLanding;
+
+  // ─────────────────────────────────────────────────────────────
+  // Welcome toast — fired once after sign-up, when the user
+  // actually lands inside the app (any of the home shells).
+  // ─────────────────────────────────────────────────────────────
+  function maybeShowWelcomeToast() {
+    let pending = '0';
+    try { pending = sessionStorage.getItem('codedok-welcome-pending') || '0'; } catch (_) {}
+    if (pending !== '1') return;
+    try { sessionStorage.removeItem('codedok-welcome-pending'); } catch (_) {}
+    if (document.getElementById('welcome-toast')) return;
+    const toast = document.createElement('div');
+    toast.id = 'welcome-toast';
+    toast.style.cssText = [
+      'position:fixed',
+      'top:calc(20px + env(safe-area-inset-top, 0px))',
+      'left:50%',
+      'transform:translateX(-50%) translateY(-20px)',
+      'z-index:9997',
+      'background:#03203D',
+      'color:#fff',
+      'border-radius:14px',
+      'padding:12px 18px',
+      'font-family:inherit',
+      'font-size:14px',
+      'font-weight:600',
+      'box-shadow:0 12px 30px rgba(0,0,0,.25)',
+      'display:flex',
+      'align-items:center',
+      'gap:10px',
+      'opacity:0',
+      'transition:opacity 240ms ease, transform 240ms ease',
+      'max-width:calc(100vw - 32px)',
+    ].join(';');
+    toast.innerHTML = `<span style="font-size:18px">👋</span><span>Welcome to CodedOK — you're in. Verify your email when convenient.</span>`;
+    document.body.appendChild(toast);
+    // Animate in.
+    requestAnimationFrame(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(-20px)';
+      setTimeout(() => toast.remove(), 280);
+    }, 5000);
+  }
+  window.maybeShowWelcomeToast = maybeShowWelcomeToast;
+
+  // ─────────────────────────────────────────────────────────────
+  // REVIEW MODE — click-anywhere-to-comment for stakeholder feedback.
+  // Activated by ?review on any URL. Joe (or anyone) gets a floating
+  // "+ Add comment" toolbar; clicking it puts the page into a one-
+  // shot capture state where the next click on the page records the
+  // element they clicked + a typed comment. Comments persist in
+  // localStorage so they can leave and come back. Send button opens
+  // an email to hello@codedok.com with every comment compiled.
+  //
+  // Joseph shares: https://codedok.com/?review
+  // Joe doesn't need an account, doesn't install anything, doesn't
+  // need to learn the site.
+  // ─────────────────────────────────────────────────────────────
+  (function initReviewMode() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('review')) return;
+
+    const KEY = 'codedok-review-comments';
+    let comments = [];
+    try { comments = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (_) {}
+    let captureNext = false;
+
+    // Persistent UI elements
+    const banner = document.createElement('div');
+    banner.id = 'rev-banner';
+    banner.style.cssText = [
+      'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:99999',
+      'background:linear-gradient(90deg,#639CC5 0%,#4F88B3 100%)',
+      'color:#03203D',
+      'padding:10px 18px',
+      'font-family:Inter,-apple-system,sans-serif',
+      'font-size:13px', 'font-weight:600',
+      'display:flex', 'align-items:center', 'justify-content:space-between',
+      'gap:14px',
+      'box-shadow:0 4px 16px rgba(0,0,0,.20)',
+    ].join(';');
+    banner.innerHTML = `
+      <div><strong>Review mode.</strong> Tap "+ Add comment" then click anywhere on the page to leave feedback.</div>
+      <button id="rev-exit" style="background:rgba(5,6,20,.15);color:#03203D;border:0;padding:6px 12px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">Exit</button>
+    `;
+    document.body.appendChild(banner);
+    // Push body content down so banner doesn't cover content
+    document.body.style.paddingTop = banner.offsetHeight + 'px';
+
+    const fab = document.createElement('div');
+    fab.id = 'rev-fab';
+    fab.style.cssText = [
+      'position:fixed',
+      'right:18px',
+      'bottom:calc(18px + env(safe-area-inset-bottom, 0px))',
+      'z-index:99999',
+      'display:flex', 'flex-direction:column', 'gap:8px', 'align-items:flex-end',
+    ].join(';');
+    document.body.appendChild(fab);
+
+    function renderFab() {
+      fab.innerHTML = `
+        <button id="rev-add" style="background:#03203D;color:#fff;border:0;padding:14px 18px;border-radius:999px;font-family:Inter,sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 14px 36px rgba(0,0,0,.30);display:inline-flex;align-items:center;gap:8px">
+          <span style="font-size:18px;line-height:1">+</span> Add comment
+        </button>
+        ${comments.length ? `
+          <button id="rev-summary" style="background:#fff;color:#03203D;border:1px solid rgba(15,23,42,.10);padding:10px 14px;border-radius:999px;font-family:Inter,sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.15)">📋 ${comments.length} comment${comments.length === 1 ? '' : 's'} · Send →</button>
+        ` : ''}
+      `;
+      const addBtn = document.getElementById('rev-add');
+      if (addBtn) addBtn.onclick = enterCapture;
+      const sumBtn = document.getElementById('rev-summary');
+      if (sumBtn) sumBtn.onclick = openSummary;
+    }
+    renderFab();
+
+    document.getElementById('rev-exit').onclick = () => {
+      // Strip ?review and reload — back to normal browsing
+      const url = new URL(window.location.href);
+      url.searchParams.delete('review');
+      window.location.href = url.toString();
+    };
+
+    // ── Capture next click ──────────────────────────────────────
+    function enterCapture() {
+      captureNext = true;
+      banner.querySelector('div').innerHTML = '<strong>Click anywhere on the page</strong> to attach a comment to that spot.';
+      document.body.style.cursor = 'crosshair';
+    }
+    function exitCapture() {
+      captureNext = false;
+      banner.querySelector('div').innerHTML = '<strong>Review mode.</strong> Tap "+ Add comment" then click anywhere on the page to leave feedback.';
+      document.body.style.cursor = '';
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!captureNext) return;
+      if (e.target.closest('#rev-banner') || e.target.closest('#rev-fab') || e.target.closest('#rev-popover') || e.target.closest('#rev-summary-modal')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.target;
+      openPopover(target, e.clientX, e.clientY);
+      exitCapture();
+    }, true);
+
+    // ── Comment popover ─────────────────────────────────────────
+    function openPopover(targetEl, x, y) {
+      closePopover();
+      // Highlight target briefly
+      const rect = targetEl.getBoundingClientRect();
+      const ring = document.createElement('div');
+      ring.id = 'rev-ring';
+      ring.style.cssText = [
+        'position:fixed',
+        'left:' + (rect.left - 4) + 'px',
+        'top:' + (rect.top - 4) + 'px',
+        'width:' + (rect.width + 8) + 'px',
+        'height:' + (rect.height + 8) + 'px',
+        'border:2px solid #639CC5',
+        'border-radius:6px',
+        'pointer-events:none',
+        'z-index:99998',
+        'box-shadow:0 0 0 4px rgba(99,156,197,.20)',
+      ].join(';');
+      document.body.appendChild(ring);
+
+      const snippet = (targetEl.innerText || targetEl.alt || targetEl.value || targetEl.tagName).toString().trim().slice(0, 120);
+      const pop = document.createElement('div');
+      pop.id = 'rev-popover';
+      pop.style.cssText = [
+        'position:fixed',
+        'left:' + Math.min(Math.max(20, x - 160), window.innerWidth - 340) + 'px',
+        'top:' + Math.min(y + 16, window.innerHeight - 240) + 'px',
+        'width:320px',
+        'background:#fff',
+        'color:#03203D',
+        'border-radius:14px',
+        'padding:16px',
+        'box-shadow:0 24px 60px rgba(0,0,0,.30),0 0 0 1px rgba(0,0,0,.08)',
+        'z-index:99999',
+        'font-family:Inter,-apple-system,sans-serif',
+      ].join(';');
+      pop.innerHTML = `
+        <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;margin-bottom:6px">Commenting on</div>
+        <div style="font-size:13px;color:#03203D;background:#f1f5f9;padding:8px 10px;border-radius:8px;margin-bottom:12px;max-height:60px;overflow:hidden">"${snippet.replace(/"/g, '&quot;') || '(element)'}"</div>
+        <textarea id="rev-text" placeholder="What needs to change here?" style="width:100%;min-height:90px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;box-sizing:border-box"></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+          <button id="rev-cancel" style="background:#f1f5f9;color:#03203D;border:0;padding:9px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+          <button id="rev-save" style="background:#03203D;color:#fff;border:0;padding:9px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Save comment</button>
+        </div>
+      `;
+      document.body.appendChild(pop);
+      setTimeout(() => { const t = document.getElementById('rev-text'); if (t) t.focus(); }, 50);
+
+      document.getElementById('rev-cancel').onclick = closePopover;
+      document.getElementById('rev-save').onclick = () => {
+        const txt = document.getElementById('rev-text').value.trim();
+        if (!txt) { closePopover(); return; }
+        comments.push({
+          ts: new Date().toISOString(),
+          url: window.location.href,
+          path: window.location.pathname + window.location.search + window.location.hash,
+          snippet: snippet,
+          tag: targetEl.tagName.toLowerCase(),
+          comment: txt,
+        });
+        try { localStorage.setItem(KEY, JSON.stringify(comments)); } catch (_) {}
+        closePopover();
+        renderFab();
+        flashSaved();
+      };
+    }
+    function closePopover() {
+      const p = document.getElementById('rev-popover');
+      if (p) p.remove();
+      const r = document.getElementById('rev-ring');
+      if (r) r.remove();
+    }
+    function flashSaved() {
+      const toast = document.createElement('div');
+      toast.style.cssText = [
+        'position:fixed', 'bottom:90px', 'left:50%', 'transform:translateX(-50%)',
+        'background:#10b981', 'color:#fff', 'padding:10px 18px',
+        'border-radius:999px', 'font-family:Inter,sans-serif',
+        'font-size:13px', 'font-weight:700', 'z-index:99999',
+        'box-shadow:0 12px 30px rgba(16,185,129,.40)',
+      ].join(';');
+      toast.textContent = '✓ Comment saved';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 1800);
+    }
+
+    // ── Summary modal + send ────────────────────────────────────
+    function openSummary() {
+      const modal = document.createElement('div');
+      modal.id = 'rev-summary-modal';
+      modal.style.cssText = [
+        'position:fixed', 'inset:0', 'background:rgba(10,15,26,.70)',
+        'z-index:100000', 'display:flex', 'align-items:center',
+        'justify-content:center', 'padding:20px',
+        'font-family:Inter,-apple-system,sans-serif',
+      ].join(';');
+      modal.innerHTML = `
+        <div style="background:#fff;color:#03203D;border-radius:18px;max-width:560px;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.40)">
+          <div style="padding:22px 24px 14px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.3px">Your ${comments.length} comment${comments.length === 1 ? '' : 's'}</div>
+              <div style="font-size:13px;color:#64748b;margin-top:2px">Click "Send to Joseph" — opens your email app.</div>
+            </div>
+            <button id="rev-close-summary" style="background:#f1f5f9;border:0;color:#64748b;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;font-family:inherit">×</button>
+          </div>
+          <div style="overflow-y:auto;padding:14px 24px;flex:1">
+            ${comments.length === 0 ? '<div style="color:#64748b;padding:24px 0;text-align:center">No comments yet.</div>' : comments.map((c, i) => `
+              <div style="padding:14px 0;border-bottom:1px solid #f1f5f9">
+                <div style="font-size:11px;color:#64748b;letter-spacing:.04em;text-transform:uppercase;font-weight:600">#${i + 1} · ${c.path.length > 36 ? c.path.slice(0, 33) + '…' : c.path}</div>
+                <div style="font-size:13px;color:#475569;background:#f8fafc;padding:6px 10px;border-radius:6px;margin:6px 0">"${(c.snippet || '').replace(/"/g, '&quot;').slice(0, 100)}"</div>
+                <div style="font-size:14px;color:#03203D;line-height:1.5">${(c.comment || '').replace(/</g, '&lt;')}</div>
+                <button data-rev-del="${i}" style="background:none;border:0;color:#94a3b8;font-size:12px;cursor:pointer;margin-top:4px;padding:0;font-family:inherit">Delete</button>
+              </div>
+            `).join('')}
+          </div>
+          <div style="padding:16px 24px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;background:#fafbfc">
+            <button id="rev-clear-all" style="background:none;border:0;color:#94a3b8;font-size:13px;cursor:pointer;font-family:inherit;padding:10px 14px">Clear all</button>
+            <button id="rev-copy" style="background:#f1f5f9;color:#03203D;border:0;padding:11px 16px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">📋 Copy all</button>
+            <button id="rev-send" style="background:linear-gradient(135deg,#639CC5,#4F88B3);color:#03203D;border:0;padding:11px 18px;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Send to Joseph →</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      document.getElementById('rev-close-summary').onclick = () => modal.remove();
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+      modal.querySelectorAll('[data-rev-del]').forEach((btn) => {
+        btn.onclick = () => {
+          const i = Number(btn.getAttribute('data-rev-del'));
+          comments.splice(i, 1);
+          try { localStorage.setItem(KEY, JSON.stringify(comments)); } catch (_) {}
+          modal.remove(); renderFab();
+          if (comments.length > 0) openSummary();
+        };
+      });
+      document.getElementById('rev-clear-all').onclick = () => {
+        if (!confirm('Delete all comments?')) return;
+        comments = [];
+        try { localStorage.removeItem(KEY); } catch (_) {}
+        modal.remove(); renderFab();
+      };
+      document.getElementById('rev-copy').onclick = () => {
+        const txt = compileForEmail();
+        try {
+          navigator.clipboard.writeText(txt);
+          const btn = document.getElementById('rev-copy');
+          const o = btn.textContent;
+          btn.textContent = '✓ Copied';
+          setTimeout(() => { btn.textContent = o; }, 1400);
+        } catch (_) {
+          prompt('Copy the feedback below:', txt);
+        }
+      };
+      document.getElementById('rev-send').onclick = () => {
+        const subject = encodeURIComponent('CodedOK site feedback (' + comments.length + ' comment' + (comments.length === 1 ? '' : 's') + ')');
+        const body = encodeURIComponent(compileForEmail());
+        window.location.href = 'mailto:hello@codedok.com?subject=' + subject + '&body=' + body;
+      };
+    }
+
+    function compileForEmail() {
+      const lines = ['CodedOK site feedback', '======================', ''];
+      comments.forEach((c, i) => {
+        lines.push(`[${i + 1}] ${c.path}`);
+        if (c.snippet) lines.push(`    Element: "${c.snippet}"`);
+        lines.push(`    ${c.comment.replace(/\n/g, '\n    ')}`);
+        lines.push('');
+      });
+      lines.push('---');
+      lines.push('Sent from codedok.com/?review');
+      return lines.join('\n');
+    }
+  })();
+
+  // ─────────────────────────────────────────────────────────────
+  // Web push reminders — opt-in flow.
+  // VAPID public key is safe to ship in the client.
+  // ─────────────────────────────────────────────────────────────
+  const VAPID_PUBLIC_KEY = 'BA5CbWe6UMDIBFjr_ZNtN-PzhEJPAdWOpLOWxJAfTk7FjB-bj0369e0WRldZWnQGKg_BfhNUUU8D3Te6BzKP6us';
+
+  function pushSupported() {
+    return 'serviceWorker' in navigator
+      && 'PushManager' in window
+      && 'Notification' in window;
+  }
+
+  // Standard helper for VAPID base64url → Uint8Array.
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  async function ensurePushUi() {
+    const host = document.querySelector('#s-home .scroll');
+    if (!host) return;
+    let card = document.getElementById('home-push-card');
+    if (card) card.remove();
+
+    if (!pushSupported()) return;
+    if (Notification.permission === 'denied') return;
+    if (localStorage.getItem('codedok-push-dismissed') === '1') return;
+
+    // Demo mode has no real user_id to attach a subscription to — skip.
+    const session = (function () { try { return JSON.parse(localStorage.getItem('codedok-session') || 'null'); } catch (_) { return null; } })();
+    if (!session || session.mode === 'demo') return;
+    if (!window.Supa || !window.Supa.ready) {
+      // Supabase still loading — try again in a moment.
+      setTimeout(ensurePushUi, 1500);
+      return;
+    }
+
+    // Already subscribed on this device?
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) return;
+    } catch (_) {}
+
+    card = document.createElement('div');
+    card.id = 'home-push-card';
+    card.innerHTML = `
+      <div style="padding:14px 16px 0">
+        <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:12px;border-left:4px solid var(--sea)">
+          <div style="font-size:22px;flex-shrink:0">🔔</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--text)">Turn on expiry reminders</div>
+            <div style="font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5">A nudge 30 days and 7 days before any certificate, equipment service or crew qualification expires.</div>
+          </div>
+          <button class="btn btn-sea" onclick="enablePushReminders()" style="height:36px;padding:0 14px;font-weight:700;font-size:12px">Enable</button>
+          <button onclick="dismissPushCard()" aria-label="Dismiss" style="background:none;border:none;color:var(--lt);font-size:18px;cursor:pointer;padding:4px 6px">×</button>
+        </div>
+      </div>`;
+    const installCard = document.getElementById('home-pwa-install');
+    if (installCard && installCard.nextSibling) {
+      installCard.parentNode.insertBefore(card, installCard.nextSibling);
+    } else {
+      host.insertBefore(card, host.firstChild);
+    }
+  }
+  window.ensurePushUi = ensurePushUi;
+
+  // Native push registration (iOS/Android). On the Capacitor build the web
+  // PushManager/VAPID flow doesn't apply — instead we register with APNs and
+  // store the device token server-side so send-reminders can target it.
+  // No-op on web. Idempotent: the token's row id is derived from the token,
+  // so re-registering on each sign-in just refreshes last_seen_at.
+  async function registerNativePush(userId) {
+    const N = window.CodedokNative;
+    if (!N || !N.isNative || typeof N.initPush !== 'function' || !userId) return;
+    await N.initPush(async (token) => {
+      if (!token) return;
+      try {
+        const client = await window.Supa.getClient();
+        let h = 0;
+        for (let i = 0; i < token.length; i++) h = (h * 31 + token.charCodeAt(i)) >>> 0;
+        const env = (window.CodedokConfig && window.CodedokConfig.apnsEnv) || 'prod';
+        const row = {
+          id: 'dt_' + h.toString(36),
+          user_id: userId,
+          platform: 'ios',
+          token: token,
+          environment: env === 'sandbox' ? 'sandbox' : 'prod',
+          last_seen_at: new Date().toISOString()
+        };
+        await client.from('device_push_tokens').upsert(row, { onConflict: 'token' });
+      } catch (err) { console.warn('register native push token failed', err); }
+    });
+  }
+  window.registerNativePush = registerNativePush;
+
+  function dismissPushCard() {
+    try { localStorage.setItem('codedok-push-dismissed', '1'); } catch (_) {}
+    const el = document.getElementById('home-push-card');
+    if (el) el.remove();
+  }
+  window.dismissPushCard = dismissPushCard;
+
+  async function enablePushReminders() {
+    if (!pushSupported()) { alert('This browser doesn’t support push notifications.'); return; }
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        if (perm === 'denied') alert('Notifications are blocked. Enable them in browser settings, then come back.');
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) throw new Error('Not signed in');
+
+      // Map auth user → public users row.
+      const { data: profile, error: profErr } = await client
+        .from('users').select('id').eq('auth_user_id', user.id).maybeSingle();
+      if (profErr) throw profErr;
+      if (!profile) throw new Error('No user profile row yet');
+
+      const json = sub.toJSON();
+      const row = {
+        id: 'ps_' + Math.random().toString(36).slice(2, 12),
+        user_id: profile.id,
+        endpoint: sub.endpoint,
+        p256dh: json.keys && json.keys.p256dh,
+        auth: json.keys && json.keys.auth,
+        user_agent: navigator.userAgent || null
+      };
+      const { error: insErr } = await client
+        .from('push_subscriptions')
+        .upsert(row, { onConflict: 'endpoint' });
+      if (insErr) throw insErr;
+
+      const el = document.getElementById('home-push-card');
+      if (el) el.remove();
+      try { localStorage.setItem('codedok-push-dismissed', '1'); } catch (_) {}
+      // Confirm with a local notification.
+      reg.showNotification('Reminders on', {
+        body: 'We’ll nudge you 30 and 7 days before anything expires.',
+        icon: './icons/icon-180.png',
+        tag: 'codedok-welcome'
+      });
+    } catch (err) {
+      console.error('enablePushReminders failed:', err);
+      alert(friendlyErr(err, "Couldn't enable reminders. Please try again."));
+    }
+  }
+  window.enablePushReminders = enablePushReminders;
 
   // ---------- Speed-dial: quick quote from an overdue item ----------
   // One-tap path from an overdue cert/equipment line to a job request
@@ -3062,7 +5039,7 @@
     if (!q) {
       out.innerHTML = `
         <div style="padding:32px 24px;text-align:center;color:var(--lt);font-size:13px;line-height:1.55">
-          Try "Tsunami", "liferaft", "MMSI", "McCollam" — searches every vessel, certificate, equipment item, deficiency and surveyor.
+          Try "Tsunami", "liferaft", "MMSI", "Anchor" — searches every vessel, certificate, equipment item, deficiency and surveyor.
         </div>`;
       return;
     }
@@ -3117,7 +5094,7 @@
         const id = 'sr-' + g + '-' + i;
         html += `
           <div id="${id}" class="search-row" style="padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;border-bottom:1px solid var(--bdr);background:var(--card)">
-            <div style="width:44px;height:44px;border-radius:11px;background:var(--slate);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${m.icon}</div>
+            <div style="width:44px;height:44px;border-radius:11px;background:var(--slate);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${escapeHtml(m.icon)}</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(m.label)}</div>
               <div style="font-size:13px;color:var(--mid);margin-top:2px">${escapeHtml(m.sub)}</div>
@@ -3176,7 +5153,7 @@
             <div style="font-size:30px;flex-shrink:0;width:48px;text-align:center">4️⃣</div>
             <div>
               <div style="font-size:16px;font-weight:700;color:var(--text)">Stuck? Tap the surveyor</div>
-              <div style="font-size:14px;color:var(--mid);margin-top:3px;line-height:1.55">Book McCollam Marine right in the app for a quote, survey, or signed SMS. Pay through the app — no chasing invoices.</div>
+              <div style="font-size:14px;color:var(--mid);margin-top:3px;line-height:1.55">Invite your surveyor from Account. They can see your records and sign off your inspections in the app.</div>
             </div>
           </div>
           <button class="btn btn-sea btn-full" onclick="closeHelp()" style="margin-top:14px">Got it</button>
@@ -3201,16 +5178,120 @@
 
   let pendingCertVesselId = null;
 
+  // ---------- AI permission ----------
+  // Certificate reading and SMS drafting send the user's photo/answers to
+  // a third-party AI service (Anthropic). The user must be told and must
+  // agree first (Apple guideline 5.1.2 / UK GDPR). Saying no is fine:
+  // everything has a manual route. Stored per device; changeable in
+  // Account → Privacy & data.
+  const AI_CONSENT_KEY = 'codedok-ai-consent';
+  function hasAiConsent() { try { return localStorage.getItem(AI_CONSENT_KEY) === 'granted'; } catch (_) { return false; } }
+  function setAiConsent(on) { try { localStorage.setItem(AI_CONSENT_KEY, on ? 'granted' : 'declined'); } catch (_) {} }
+  window.hasAiConsent = hasAiConsent;
+
+  // Resolves true if the user has allowed AI (asks if they haven't yet).
+  function ensureAiConsent(purpose) {
+    if (hasAiConsent()) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const old = document.getElementById('ai-consent-sheet');
+      if (old) old.remove();
+      const what = purpose === 'sms' ? 'your answers' : 'the photo or file you choose';
+      const does = purpose === 'sms' ? 'draft your Safety Management System' : 'read the certificate and fill in the details';
+      const m = document.createElement('div');
+      m.id = 'ai-consent-sheet';
+      m.className = 'bdrop on';
+      m.innerHTML = `
+        <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+          <div class="sh-pull"></div>
+          <div class="sh-head"><div class="sh-title">Use AI for this?</div></div>
+          <div style="padding:0 20px 14px">
+            <div style="font-size:15px;color:var(--text);line-height:1.5;margin-bottom:10px">CodedOK sends ${what} to an AI service (Anthropic's Claude) to ${does}.</div>
+            <div style="font-size:14px;color:var(--mid);line-height:1.5;margin-bottom:16px">It may include personal details, such as names on a certificate. It's used only to give you the result and, under Anthropic's business terms, isn't used to train its models. You can change this any time in Account → Privacy &amp; data.</div>
+            <button class="btn btn-sea btn-full" id="ai-allow" style="min-height:50px;font-size:17px">Allow</button>
+            <button class="btn btn-out btn-full" id="ai-deny" style="margin-top:8px;min-height:50px">Not now — enter it myself</button>
+            <div style="text-align:center;margin-top:8px"><a href="#" id="ai-policy" style="font-size:14px;color:var(--tint)">Read the privacy policy</a></div>
+          </div>
+        </div>`;
+      document.body.appendChild(m);
+      const done = (v) => { m.remove(); resolve(v); };
+      m.querySelector('#ai-allow').onclick = () => { setAiConsent(true); done(true); };
+      m.querySelector('#ai-deny').onclick = () => { setAiConsent(false); done(false); };
+      m.querySelector('#ai-policy').onclick = (e) => { e.preventDefault(); done(false); go('s-privacy'); };
+    });
+  }
+  window.ensureAiConsent = ensureAiConsent;
+
+  // Account → Privacy & data
+  function openPrivacySheet() {
+    const old = document.getElementById('privacy-sheet');
+    if (old) old.remove();
+    const m = document.createElement('div');
+    m.id = 'privacy-sheet';
+    m.className = 'bdrop on';
+    m.onclick = (e) => { if (e.target === m) m.remove(); };
+    m.innerHTML = `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+        <div class="sh-pull"></div>
+        <div class="sh-head"><div class="sh-title">Privacy &amp; data</div><button class="sh-x" onclick="document.getElementById('privacy-sheet').remove()">×</button></div>
+        <div style="padding:0 20px 14px">
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;cursor:pointer">
+            <span><span style="display:block;font-size:16px;font-weight:600;color:var(--text)">AI features</span>
+            <span style="display:block;font-size:14px;color:var(--mid);margin-top:2px;line-height:1.4">Let CodedOK send certificate photos and your answers to Anthropic's Claude to read certificates and draft your SMS.</span></span>
+            <input type="checkbox" id="priv-ai" ${hasAiConsent() ? 'checked' : ''} style="width:51px;height:31px;flex-shrink:0;accent-color:var(--tint)">
+          </label>
+          <button class="btn btn-out btn-full" style="margin-top:10px" onclick="document.getElementById('privacy-sheet').remove();go('s-privacy')">Read the privacy policy</button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+    m.querySelector('#priv-ai').onchange = (e) => setAiConsent(e.target.checked);
+  }
+  window.openPrivacySheet = openPrivacySheet;
+
   // Open the iOS camera by default — used by the operator's "Snap a cert"
   // button on vessel detail. Accepts image, PDF or DOCX.
-  function pickCertPhoto(vesselId) {
+  async function pickCertPhoto(vesselId) {
+    // AI reads the photo, so ask permission first; "no" goes manual.
+    if (!(await ensureAiConsent('cert'))) { pendingCertVesselId = vesselId || null; openCertManual(); return; }
+    // On the native iOS/Android build, use the real document scanner
+    // (VisionKit on iOS): auto edge-detection, de-skew and glare
+    // reduction give a far cleaner image for the AI to read. Falls back
+    // to the web camera input everywhere else, or if the scanner can't
+    // run.
+    const N = window.CodedokNative;
+    if (N && N.isNative && typeof N.scanDocument === 'function') {
+      try {
+        const file = await N.scanDocument();
+        if (file === 'cancelled') return;        // user backed out
+        if (file instanceof File) {
+          try { N.haptic && N.haptic('success'); } catch (_) {}
+          pendingCertVesselId = vesselId || null;
+          await processCertFile(file);
+          return;
+        }
+      } catch (err) { console.warn('native scan failed, using web picker', err); }
+    }
     openCertPicker(vesselId, { camera: true });
   }
   window.pickCertPhoto = pickCertPhoto;
 
+  // Public wrappers used by the s-scan "Add a record" buttons. Routes
+  // straight into the real Claude-vision extract-cert path, NOT the
+  // legacy regex-on-filename fallback that the s-scan buttons used
+  // to point at. Active vessel is passed through so the extracted
+  // cert is filed against the right boat.
+  function scanCertWithAI() {
+    pickCertPhoto(activeVesselId || null);
+  }
+  function uploadCertWithAI() {
+    pickCertDocument(activeVesselId || null);
+  }
+  window.scanCertWithAI = scanCertWithAI;
+  window.uploadCertWithAI = uploadCertWithAI;
+
   // Open a file picker for PDF / DOCX / image. Used by the surveyor's
   // "Upload certificate" flow — most surveyor docs come as PDFs.
-  function pickCertDocument(vesselId) {
+  async function pickCertDocument(vesselId) {
+    if (!(await ensureAiConsent('cert'))) { pendingCertVesselId = vesselId || null; openCertManual(); return; }
     openCertPicker(vesselId, { camera: false });
   }
   window.pickCertDocument = pickCertDocument;
@@ -3239,13 +5320,31 @@
   async function handleCertPhotoUpload(e) {
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
+    await processCertFile(file);
+  }
+  window.handleCertPhotoUpload = handleCertPhotoUpload;
+
+  // Shared cert-ingest pipeline: validate → AI extraction → review modal,
+  // with a manual-form fallback that never loses the file. Fed by both the
+  // web file inputs (handleCertPhotoUpload) and the native document
+  // scanner (pickCertPhoto below), so both paths behave identically.
+  async function processCertFile(file) {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       alert('That file is too big (over 10 MB). Try compressing it or saving as a smaller PDF.');
       return;
     }
     if (!window.Supa || !window.Supa.ready) {
-      alert("CodedOK isn't connected to the cloud yet. Reload, sign in, and try again.");
+      // Offline / not signed in yet — don't throw the photo away. Keep
+      // it and let them type the details; it saves locally and syncs
+      // once they're back online.
+      await fallbackToManualCert(file, "You're offline just now, so we can't auto-read it. Your photo is saved — pop the details in and it'll sync later.");
+      return;
+    }
+
+    // Safety net: never send a file to the AI without permission.
+    if (!hasAiConsent()) {
+      await fallbackToManualCert(file, '');
       return;
     }
 
@@ -3263,10 +5362,30 @@
     } catch (err) {
       hideCertSpinner();
       console.error('cert extract failed', err);
-      alert("Couldn't read that certificate: " + (err.message || err) + "\n\nYou can still add it manually under + Add cert.");
+      // Never lose the photo. Drop straight into the manual form with
+      // the file already attached so all they do is fill in the fields.
+      await fallbackToManualCert(file, "We couldn't read that one automatically — no bother. Your photo's saved; just fill in the details and save.");
     }
   }
-  window.handleCertPhotoUpload = handleCertPhotoUpload;
+  window.processCertFile = processCertFile;
+
+  // Shared fallback for the AI cert path: keep the photo the user just
+  // took, stash it as a pending manual scan, and route to the manual
+  // form so nothing is lost when extraction can't run.
+  async function fallbackToManualCert(file, message) {
+    let stashed = null;
+    try {
+      const data_url = await compressImage(file);
+      stashed = { name: file.name, type: file.type, size: file.size, data_url, added_at: new Date().toISOString() };
+    } catch (_) { stashed = null; }
+    pendingScan = stashed
+      ? { kind: 'cert', categoryHint: 'vessel', file: stashed }
+      : { kind: 'cert', categoryHint: 'vessel', manual: true, file: null };
+    // Pre-select the boat the AI path was targeting, if any.
+    if (pendingCertVesselId) activeVesselId = pendingCertVesselId;
+    if (message) alert(message);
+    go('s-scan-confirm');
+  }
 
   function readFileAsBase64(file) {
     return new Promise((resolve, reject) => {
@@ -3286,7 +5405,7 @@
       <div class="sheet" style="padding:36px 24px;text-align:center">
         <div style="font-size:36px;margin-bottom:10px">📷</div>
         <div style="font-size:15px;font-weight:700">${escapeHtml(label)}</div>
-        <div style="font-size:12px;color:var(--mid);margin-top:6px">Claude vision extracting fields — usually 3-6 seconds.</div>
+        <div style="font-size:12px;color:var(--mid);margin-top:6px">Reading the certificate — usually 3-6 seconds.</div>
       </div>`;
     document.body.appendChild(el);
   }
@@ -3298,6 +5417,15 @@
   function openCertReviewModal(ex, vesselId) {
     const existing = document.getElementById('cert-review-sheet');
     if (existing) existing.remove();
+    // Stash the AI's raw extraction so saveExtractedCert can compute
+    // a diff against whatever the user types over the top. This is
+    // the override audit trail Patricia flagged as missing: when a
+    // saved cert turns out wrong later, we can answer "did the AI
+    // hallucinate or did the operator change it?".
+    window.__pendingCertExtraction = {
+      raw: Object.assign({}, ex || {}),
+      receivedAt: new Date().toISOString()
+    };
     const modal = document.createElement('div');
     modal.id = 'cert-review-sheet';
     modal.className = 'bdrop on';
@@ -3356,11 +5484,34 @@
     const issuer = (document.getElementById('cer-issuer') || {}).value || '';
     const number = (document.getElementById('cer-number') || {}).value || '';
     if (!name) { alert('Type / name is required.'); return; }
+    let autoCreatedVessel = false;
     if (!vesselId) {
       const v = (Store.snapshot().vessels || [])[0];
       vesselId = v && v.id;
     }
+    // Cold start: a brand-new user snapping their very first certificate
+    // has no boat yet. Rather than dead-end them with "add a vessel
+    // first", set up a starter boat automatically so the photo actually
+    // saves. We nudge them to name it right after.
+    if (!vesselId) {
+      const starter = Store.addVessel({ name: 'My boat' });
+      vesselId = starter && starter.id;
+      autoCreatedVessel = !!vesselId;
+    }
     if (!vesselId) { alert('No vessel to add this to. Add a vessel first.'); return; }
+
+    // Build the override audit trail. We compare each saved field
+    // against the AI's raw extraction; any field that differs is
+    // recorded as an override with both values + timestamp.
+    const pending = window.__pendingCertExtraction || null;
+    const audit = pending ? buildExtractionAudit(pending, {
+      name, issuer, number,
+      issued_at: (document.getElementById('cer-issued') || {}).value || null,
+      expires_at: (document.getElementById('cer-expires') || {}).value || null,
+      next_service_at: (document.getElementById('cer-next') || {}).value || null,
+      make: (document.getElementById('cer-make') || {}).value || '',
+      model: (document.getElementById('cer-model') || {}).value || ''
+    }) : null;
 
     if (kind === 'equipment') {
       const next_service_at = (document.getElementById('cer-next') || {}).value || null;
@@ -3369,7 +5520,8 @@
       Store.addEquipment({
         vessel_id: vesselId, name, kind: typeHint || 'other',
         make, model, serial: number, next_service_at,
-        icon: iconForType(typeHint)
+        icon: iconForType(typeHint),
+        extraction: audit
       });
     } else {
       const issued_at = (document.getElementById('cer-issued') || {}).value || null;
@@ -3378,14 +5530,58 @@
         vessel_id: vesselId, name, kind: typeHint || 'other',
         issuer, number, issued_at, expires_at,
         category: certCategoryForType(typeHint),
-        icon: iconForType(typeHint)
+        icon: iconForType(typeHint),
+        extraction: audit
       });
     }
 
+    window.__pendingCertExtraction = null;
     closeCertReview();
-    alert(`${kind === 'equipment' ? 'Equipment' : 'Certificate'} added.`);
+    const overrideMsg = audit && audit.overrides.length
+      ? `\n\n(You corrected ${audit.overrides.length} field${audit.overrides.length === 1 ? '' : 's'} the AI got wrong — both versions are saved in the audit log.)`
+      : '';
+    if (autoCreatedVessel) {
+      // First cert on a fresh account created a placeholder boat.
+      // Take them straight to it so they can pop the real name in.
+      alert(`${kind === 'equipment' ? 'Equipment' : 'Certificate'} saved.\n\nWe set up a boat to keep it under — let's give it its proper name.`);
+      setActiveVessel(vesselId);
+      go('s-vessel-detail');
+      if (typeof renderVesselDetail === 'function') renderVesselDetail();
+      renderHome();
+      return;
+    }
+    alert(`${kind === 'equipment' ? 'Equipment' : 'Certificate'} added.${overrideMsg}`);
     renderHome();
     if (document.getElementById('s-vessel-detail').classList.contains('on')) renderVesselDetail();
+  }
+
+  // Compare the AI's raw extraction to what the user actually saved.
+  // Returns { raw, saved, overrides, confidence, receivedAt }. The
+  // `overrides` array lists every field where the human disagreed
+  // with the AI — that's the answer to "did the AI hallucinate or
+  // did the operator override?". Empty overrides = clean AI read.
+  function buildExtractionAudit(pending, savedFields) {
+    const raw = pending.raw || {};
+    const overrides = [];
+    const compareKeys = ['name', 'issuer', 'number', 'issued_at', 'expires_at', 'next_service_at', 'make', 'model'];
+    compareKeys.forEach((key) => {
+      const rawVal = (raw[key] == null ? '' : String(raw[key])).trim();
+      const userVal = (savedFields[key] == null ? '' : String(savedFields[key])).trim();
+      // Empty-to-empty doesn't count as a change. Empty-to-something
+      // means the AI missed a field and the user filled it in;
+      // something-to-empty means the user blanked the AI's guess.
+      if (rawVal !== userVal) {
+        overrides.push({ field: key, ai: rawVal, human: userVal });
+      }
+    });
+    return {
+      raw,
+      saved: savedFields,
+      overrides,
+      confidence: raw.confidence || 'unknown',
+      receivedAt: pending.receivedAt,
+      savedAt: new Date().toISOString()
+    };
   }
   window.saveExtractedCert = saveExtractedCert;
 
@@ -3673,16 +5869,17 @@
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > 1024 * 1024) {
-      alert('Logo must be under 1 MB. Try a smaller PNG or SVG.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      Store.setSurveyorLogo(reader.result);
+    const me = (window.Store && Store.getCurrentUser()) || {};
+    const folder = me.id || 'anon';
+    // Logos compress to 800px max edge with alpha preserved, then upload
+    // to Storage. Falls back to inline base64 if Storage is unavailable.
+    compressAndUpload(file, 'surveyor-logos', folder, { maxEdge: 800, quality: 0.92, preserveAlpha: true }).then((url) => {
+      Store.setSurveyorLogo(url);
       renderSurveyorHome();
-    };
-    reader.readAsDataURL(file);
+    }).catch((err) => {
+      console.error('surveyor logo upload failed', err);
+      alert('Could not process that logo. Try a different image.');
+    });
   }
   window.handleSurveyorLogoUpload = handleSurveyorLogoUpload;
 
@@ -3704,9 +5901,9 @@
     const sms = j.sms_doc_id ? Store.snapshot().sms_documents.find((d) => d.id === j.sms_doc_id) : null;
 
     const statusBadge = ({
-      requested: '<span class="insp-pill" style="background:rgba(8,145,178,.15);color:var(--sea);border:1px solid rgba(8,145,178,.3)">📥 New request</span>',
+      requested: '<span class="insp-pill" style="background:rgba(3,32,61,.15);color:var(--sea);border:1px solid rgba(3,32,61,.3)">📥 New request</span>',
       quoted:    '<span class="insp-pill" style="background:rgba(217,119,6,.15);color:var(--amber);border:1px solid rgba(217,119,6,.3)">⏳ Quote sent</span>',
-      paid:      '<span class="insp-pill" style="background:rgba(8,145,178,.15);color:var(--sea);border:1px solid rgba(8,145,178,.3)">💷 Paid · ready to do work</span>',
+      paid:      '<span class="insp-pill" style="background:rgba(3,32,61,.15);color:var(--sea);border:1px solid rgba(3,32,61,.3)">💷 Paid · ready to do work</span>',
       in_progress:'<span class="insp-pill" style="background:rgba(217,119,6,.15);color:var(--amber);border:1px solid rgba(217,119,6,.3)">🛠️ In progress</span>',
       completed: '<span class="insp-pill rdy">✓ Completed</span>',
       declined:  '<span class="insp-pill notready">✕ Declined</span>'
@@ -3758,7 +5955,7 @@
       ${sms ? `
         <div class="h-section">Submitted SMS</div>
         <div style="padding:0 16px">
-          <div class="qa-tile" onclick="alert('In production this opens the SMS preview side-by-side. For prototype: download or print from operator side.')">
+          <div class="qa-tile" onclick="go('s-sms')">
             <div class="qa-icon bl">📋</div>
             <div style="flex:1"><div class="qa-title">${escapeHtml(sms.title || 'Safety Management System')}</div><div class="qa-sub">v${sms.version || 1} · ${escapeHtml(sms.status)}</div></div>
             <span class="chev">›</span>
@@ -3768,7 +5965,7 @@
       ${j.delivery && j.delivery.file ? `
         <div class="h-section">Delivered ${fmtDate(j.delivery.delivered_at)}</div>
         <div style="padding:0 16px">
-          <div class="qa-tile" style="cursor:pointer;border:2px solid var(--green);background:var(--grnp)" onclick="viewAttachment('${j.delivery.file.data_url}','${escapeHtml(j.delivery.file.name).replace(/'/g, '&#39;')}')">
+          <div class="qa-tile" style="cursor:pointer;border:2px solid var(--green);background:var(--grnp)" onclick="viewAttachment('${j.delivery.file.data_url}','${jsAttr(j.delivery.file.name)}')">
             <div class="qa-icon ok">📎</div>
             <div style="flex:1;min-width:0">
               <div class="qa-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(j.delivery.file.name)}</div>
@@ -3848,7 +6045,7 @@
         </div>
 
         <div style="padding:0 20px 14px">
-          <div style="background:var(--seap);border:1px solid rgba(8,145,178,.2);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:14px">
+          <div style="background:var(--seap);border:1px solid rgba(3,32,61,.2);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:14px">
             📎 Upload your signed PDF — it lands directly on the operator's vessel record. ${defaultDocType === 'coding_cert' ? 'A new MCA Coding Certificate will be created with this file attached.' : defaultDocType === 'sms_signed' ? 'The operator\'s SMS will be marked Signed with your version replacing the draft.' : 'The file will be attached to this job.'}
           </div>
 
@@ -4136,11 +6333,11 @@
 
       ${inv.status === 'sent' ? `
         <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
-          <button class="btn btn-sea btn-full" onclick="payInvoiceFlow('${inv.id}')">💷 Pay £${inv.total} now</button>
-          <button class="btn btn-out btn-full" onclick="alert('Decline flow — would notify the surveyor')">Decline this quote</button>
+          <button class="btn btn-sea btn-full" onclick="payInvoiceFlow('${inv.id}')">✓ Accept £${inv.total} quote</button>
+          <button class="btn btn-out btn-full" onclick="declineQuoteFlow('${inv.id}')">Decline this quote</button>
         </div>
         <div style="padding:0 16px">
-          <div style="background:var(--seap);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--mid);line-height:1.6">🔒 Paid securely via CodedOK Pay (Stripe). Funds are held until the surveyor delivers the work — they're released to the surveyor on completion.</div>
+          <div style="background:var(--ampp);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--mid);line-height:1.6">ℹ️ Card payments go live later. During the trial, accepting a quote just records it and notifies the surveyor — no money changes hands.</div>
         </div>` : `
         <div style="padding:14px 16px">
           <div class="card" style="padding:14px 16px;text-align:center">
@@ -4165,12 +6362,20 @@
       ],
       onConfirm: () => {
         Store.payInvoice(invoiceId, 'stripe');
-        alert('Paid. The surveyor gets a notification and starts work.');
+        alert('Quote accepted — the surveyor is notified. No card is charged during the trial.');
         go('s-home');
       }
     });
   }
   window.payInvoiceFlow = payInvoiceFlow;
+
+  function declineQuoteFlow(invoiceId) {
+    if (!confirm('Decline this quote? The surveyor will see it was declined.')) return;
+    Store.declineInvoice(invoiceId);
+    alert('Quote declined.');
+    go('s-home');
+  }
+  window.declineQuoteFlow = declineQuoteFlow;
 
   function invoiceRow(inv) {
     const v = Store.getVessel(inv.vessel_id);
@@ -4298,19 +6503,112 @@
   }
   window.surveyorStartInspection = surveyorStartInspection;
 
+  // Surveyor deficiency capture. Used to be two chained prompt()
+  // dialogs (title + severity) — that fails the basic test of
+  // a survey-grade record. Real surveyors raising a finding on
+  // the dock need: title, severity, Code reference, category,
+  // notes, and ideally a photo. This modal collects all of those.
   function surveyorRaiseDeficiency() {
     const v = Store.getVessel(activeVesselId);
     if (!v) return;
-    const title = prompt('Deficiency title:');
-    if (!title) return;
-    const sev = prompt('Severity — critical / major / minor:', 'major');
-    Store.addDeficiency({ vessel_id: v.id, title, severity: (sev || 'major').toLowerCase(), source: 'surveyor' });
-    renderSurveyorVessel();
-    // Incident -> SMS loop. If this vessel has an active SMS, prompt the
-    // operator (next time they open the app) to update the SMS so the
-    // same issue can't recur.
-    maybePromptSmsUpdate(v.id, title);
+    const old = document.getElementById('deficiency-modal');
+    if (old) old.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'deficiency-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto';
+    modal.innerHTML = `
+      <div class="card" style="max-width:480px;width:100%;padding:22px;border-radius:18px;background:var(--card,#fff);max-height:92vh;overflow-y:auto">
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:var(--fn-display);letter-spacing:-.3px">Raise a deficiency</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">Against <strong>${escapeHtml(v.name)}</strong> · ${escapeHtml(v.category || '')}</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Title</label>
+        <input class="fi" id="def-title" placeholder="e.g. Liferaft service overdue" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Severity</label>
+            <select class="fi" id="def-severity" style="width:100%;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
+              <option value="critical">Critical — fail survey</option>
+              <option value="major" selected>Major — fix before issue</option>
+              <option value="minor">Minor — observation</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Category</label>
+            <select class="fi" id="def-category" style="width:100%;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
+              <option value="documentation">Documentation</option>
+              <option value="equipment">Equipment</option>
+              <option value="stability">Stability</option>
+              <option value="construction">Construction</option>
+              <option value="sms">Safety Management System</option>
+              <option value="manning">Manning / qualifications</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Code reference <span style="color:var(--lt);font-weight:500;letter-spacing:0;text-transform:none">(optional)</span></label>
+        <input class="fi" id="def-coderef" placeholder="e.g. SPV Code 2025 §5.2.1 or Workboat Ed.3 Annex L" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Notes</label>
+        <textarea class="fi" id="def-notes" rows="3" placeholder="What did you observe? What corrective action is required? By when?" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;line-height:1.5;resize:vertical;margin-bottom:14px"></textarea>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Photo evidence <span style="color:var(--lt);font-weight:500;letter-spacing:0;text-transform:none">(optional)</span></label>
+        <input type="file" id="def-photo" accept="image/*" capture="environment" style="width:100%;padding:10px 12px;border:1px dashed var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--mid);font-family:var(--fn);font-size:13px;margin-bottom:18px">
+
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-out" style="flex:1;height:46px" onclick="document.getElementById('deficiency-modal').remove()">Cancel</button>
+          <button class="btn btn-sea" style="flex:2;height:46px;font-weight:700" onclick="submitDeficiencyModal('${v.id}')">Raise deficiency</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    setTimeout(() => {
+      const t = document.getElementById('def-title');
+      if (t) t.focus();
+    }, 50);
   }
+
+  async function submitDeficiencyModal(vesselId) {
+    const title    = ((document.getElementById('def-title') || {}).value || '').trim();
+    const severity = (document.getElementById('def-severity') || {}).value || 'major';
+    const category = (document.getElementById('def-category') || {}).value || 'other';
+    const coderef  = ((document.getElementById('def-coderef') || {}).value || '').trim();
+    const notes    = ((document.getElementById('def-notes') || {}).value || '').trim();
+    const photoEl  = document.getElementById('def-photo');
+    const photoFile = photoEl && photoEl.files && photoEl.files[0];
+
+    if (!title) { alert('A title is required.'); return; }
+
+    let photo = null;
+    if (photoFile) {
+      try {
+        const buf = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = reject;
+          r.readAsDataURL(photoFile);
+        });
+        photo = { name: photoFile.name, type: photoFile.type, size: photoFile.size, data_url: buf };
+      } catch (_) { /* photo failure doesn't block the deficiency */ }
+    }
+
+    Store.addDeficiency({
+      vessel_id: vesselId,
+      title,
+      severity,
+      source: 'surveyor',
+      category,
+      code_ref: coderef || null,
+      notes: notes || null,
+      photo
+    });
+
+    document.getElementById('deficiency-modal').remove();
+    renderSurveyorVessel();
+    maybePromptSmsUpdate(vesselId, title);
+  }
+  window.submitDeficiencyModal = submitDeficiencyModal;
   window.surveyorRaiseDeficiency = surveyorRaiseDeficiency;
 
   // Suggest an SMS update after an incident or deficiency is logged. The
@@ -4358,7 +6656,8 @@
     function progressCount() {
       return Object.values(state).filter((v) => v).length;
     }
-    document.getElementById('sv-insp-progress').textContent = `${progressCount()}/${totalChecks}`;
+    const _progEl = document.getElementById('sv-insp-progress');
+    if (_progEl) _progEl.textContent = `${progressCount()}/${totalChecks}`;
 
     function checkRow(prefix, idx, label, sub) {
       const key = `${prefix}-${idx}`;
@@ -4411,13 +6710,197 @@
   }
   window.setCheck = setCheck;
 
+  // Inspection sign-off. Used to be a single prompt() with no
+  // signature, no hash, no audit. Now opens a signature-canvas
+  // modal: the surveyor draws their name, we hash the inspection
+  // document body, and both go into the record + audit log. The
+  // print-pack footer already carries the same hash so a swapped
+  // page becomes detectable.
   function completeInspectionFlow() {
-    const summary = prompt('Summary of inspection:', 'Annual renewal — passed') || '';
-    Store.completeInspection(activeInspectionId, summary);
-    alert('Inspection signed and saved.');
-    go('s-surveyor-vessel');
+    const old = document.getElementById('inspection-sign-modal');
+    if (old) old.remove();
+
+    const insp = (Store.snapshot().inspections || []).find((i) => i.id === activeInspectionId);
+    const v = insp ? Store.getVessel(insp.vessel_id) : null;
+    const me = (Store.getCurrentUser && Store.getCurrentUser()) || {};
+
+    const modal = document.createElement('div');
+    modal.id = 'inspection-sign-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto';
+    modal.innerHTML = `
+      <div class="card" style="max-width:520px;width:100%;padding:24px;border-radius:18px;background:var(--card,#fff);max-height:94vh;overflow-y:auto">
+        <div style="font-size:19px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:var(--fn-display);letter-spacing:-.3px">Sign &amp; complete inspection</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">${v ? escapeHtml(v.name) + ' · ' : ''}This signature is captured into the inspection record alongside a SHA-256 hash of the document body. Both appear in the audit log and on the inspection pack PDF.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Summary</label>
+        <textarea class="fi" id="insp-summary" rows="2" placeholder="e.g. Annual renewal — passed with one minor observation" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;line-height:1.5;resize:vertical;margin-bottom:14px">Annual renewal — passed</textarea>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Signed by</label>
+            <input class="fi" id="insp-signed-name" value="${escapeHtml(me.name || '')}" placeholder="Full name" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Role</label>
+            <input class="fi" id="insp-signed-role" value="MCA-recognised surveyor" placeholder="e.g. Certifying Authority surveyor" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
+          </div>
+        </div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Signature</label>
+        <div style="position:relative;border:1.5px solid var(--bdr);border-radius:10px;background:#fff;padding:0;overflow:hidden;margin-bottom:6px">
+          <canvas id="insp-sig-canvas" width="600" height="180" style="display:block;width:100%;height:180px;touch-action:none;cursor:crosshair"></canvas>
+          <div id="insp-sig-placeholder" style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px">Sign here with your finger or mouse</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+          <button type="button" onclick="clearInspectionSignature()" style="background:none;border:0;color:var(--sea);font-family:var(--fn);font-size:12px;font-weight:600;cursor:pointer;padding:4px 0">↻ Clear signature</button>
+          <span id="insp-sig-status" style="font-size:11px;color:var(--mid)">Not yet signed</span>
+        </div>
+
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-out" style="flex:1;height:46px" onclick="document.getElementById('inspection-sign-modal').remove()">Cancel</button>
+          <button class="btn btn-sea" style="flex:2;height:46px;font-weight:700" onclick="submitInspectionSignature()">Sign &amp; complete</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    setTimeout(() => wireSignatureCanvas('insp-sig-canvas', 'insp-sig-placeholder', 'insp-sig-status'), 30);
   }
   window.completeInspectionFlow = completeInspectionFlow;
+
+  // Wire a canvas element for finger / mouse signing. Tracks pointer
+  // events, draws strokes, updates the status pill, and hides the
+  // placeholder text once the user touches the surface.
+  function wireSignatureCanvas(canvasId, placeholderId, statusId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    // Use the canvas's CSS size as the drawing surface, then upscale
+    // the backing store for retina sharpness.
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = '#03203D';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    const placeholder = placeholderId ? document.getElementById(placeholderId) : null;
+    const status = statusId ? document.getElementById(statusId) : null;
+    let drawing = false;
+    let touched = false;
+
+    function pt(e) {
+      const r = canvas.getBoundingClientRect();
+      const x = (e.clientX != null ? e.clientX : (e.touches && e.touches[0].clientX)) - r.left;
+      const y = (e.clientY != null ? e.clientY : (e.touches && e.touches[0].clientY)) - r.top;
+      return { x, y };
+    }
+    function start(e) {
+      e.preventDefault();
+      drawing = true;
+      if (!touched) {
+        touched = true;
+        if (placeholder) placeholder.style.display = 'none';
+        if (status) { status.textContent = 'Signed ✓'; status.style.color = 'var(--green)'; }
+      }
+      const p = pt(e);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+    }
+    function move(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const p = pt(e);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+    }
+    function end(e) {
+      if (!drawing) return;
+      e && e.preventDefault();
+      drawing = false;
+    }
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    canvas.addEventListener('mouseup', end);
+    canvas.addEventListener('mouseleave', end);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', end);
+    canvas.dataset.touched = '0';
+    // Expose a small reflection so other helpers can check state.
+    canvas.__touched = () => touched;
+  }
+
+  function clearInspectionSignature() {
+    const canvas = document.getElementById('insp-sig-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    canvas.__touched = () => false;
+    const placeholder = document.getElementById('insp-sig-placeholder');
+    if (placeholder) placeholder.style.display = '';
+    const status = document.getElementById('insp-sig-status');
+    if (status) { status.textContent = 'Not yet signed'; status.style.color = ''; }
+  }
+  window.clearInspectionSignature = clearInspectionSignature;
+
+  async function submitInspectionSignature() {
+    const canvas = document.getElementById('insp-sig-canvas');
+    if (!canvas || !canvas.__touched || !canvas.__touched()) {
+      alert('Please draw your signature before completing.');
+      return;
+    }
+    const summary = ((document.getElementById('insp-summary') || {}).value || '').trim();
+    const signedName = ((document.getElementById('insp-signed-name') || {}).value || '').trim();
+    const signedRole = ((document.getElementById('insp-signed-role') || {}).value || '').trim();
+    if (!signedName) { alert('Enter your full name.'); return; }
+
+    const signatureDataUrl = canvas.toDataURL('image/png');
+
+    // Compute the document body hash so the audit log carries a
+    // tamper-evident fingerprint. Identical to the print-pack
+    // footer hash strategy.
+    let documentHash = null;
+    try {
+      const insp = (Store.snapshot().inspections || []).find((i) => i.id === activeInspectionId);
+      const v = insp ? Store.getVessel(insp.vessel_id) : null;
+      const body = [
+        v ? v.name : '',
+        v ? v.category : '',
+        insp ? insp.id : '',
+        summary,
+        signedName,
+        signedRole,
+        new Date().toISOString()
+      ].join('|');
+      if (window.crypto && window.crypto.subtle) {
+        const enc = new TextEncoder().encode(body);
+        const buf = await window.crypto.subtle.digest('SHA-256', enc);
+        documentHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+      }
+    } catch (_) { /* hash failure shouldn't block the sign-off */ }
+
+    const me = (Store.getCurrentUser && Store.getCurrentUser()) || {};
+    Store.completeInspection(activeInspectionId, {
+      summary,
+      signature_data_url: signatureDataUrl,
+      signed_by_user_id: me.id || null,
+      signed_by_name: signedName,
+      signed_by_role: signedRole,
+      document_hash: documentHash
+    });
+
+    document.getElementById('inspection-sign-modal').remove();
+    alert('Inspection signed and saved.\n\nDocument hash: ' + (documentHash || 'unavailable') + '\n\nThis hash appears in the audit log and on the inspection pack PDF — any change to the body would produce a different hash.');
+    go('s-surveyor-vessel');
+  }
+  window.submitInspectionSignature = submitInspectionSignature;
 
   // ---------- SMS hub & builder (full SMS document) ----------
 
@@ -4471,11 +6954,10 @@
       <div data-dyn="sms" style="padding:14px 16px 6px">
         <div class="hero" style="padding:18px">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;position:relative;z-index:1">
-            <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.07em">Premium · MCA-aligned</div>
-            <span style="background:var(--purp);color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px">£10 to generate · review billed by surveyor</span>
+            <div style="font-size:12px;font-weight:600;color:var(--seal)">MCA-aligned</div>
           </div>
           <div class="h-display" style="font-size:22px;margin-bottom:4px">Safety Management System</div>
-          <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.6;position:relative;z-index:1">A guided, 11-section SMS builder based on the Sport or Pleasure Vessel Code 2025 (Appendix 7) and Workboat Code Ed 3. Build it free, pay £10 to unlock Word + PDF, then send it to your surveyor for sign-off.</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.6;position:relative;z-index:1">A guided, 11-section SMS builder based on the Sport or Pleasure Vessel Code 2025 (Appendix 7) and Workboat Code Ed 3. Build it, export Word + PDF, then send it to your surveyor for sign-off.</div>
         </div>
       </div>
 
@@ -4503,12 +6985,12 @@
       })()}
 
       <div data-dyn="sms" style="padding:0 16px 6px">
-        <div class="card" onclick="openSmsAiWizard()" style="padding:16px;cursor:pointer;border-left:4px solid var(--purp);background:linear-gradient(135deg, rgba(124,58,237,.06), rgba(8,145,178,.06))">
+        <div class="card" onclick="openSmsAiWizard()" style="padding:16px;cursor:pointer;border-left:4px solid var(--purp);background:linear-gradient(135deg, rgba(124,58,237,.06), rgba(3,32,61,.06))">
           <div style="display:flex;align-items:center;gap:14px">
             <div style="font-size:28px">✨</div>
             <div style="flex:1;min-width:0">
-              <div style="font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px">Generate with AI — £10 one-off</div>
-              <div style="font-size:12px;color:var(--mid);margin-top:3px;line-height:1.55">Answer 6 questions about your operation. We generate a tailored 11-section SMS, you edit and sign. McCollam Marine reviews if you want.</div>
+              <div style="font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px">Generate with AI</div>
+              <div style="font-size:13px;color:var(--mid);margin-top:3px;line-height:1.5">Answer 6 questions about your operation. We draft a tailored 11-section SMS; you edit and sign it, then your surveyor can review.</div>
             </div>
             <span class="chev">›</span>
           </div>
@@ -4653,7 +7135,7 @@
                     </div>
                     ${acked
                       ? `<button class="btn btn-sm btn-out" style="height:32px;padding:0 12px;font-size:12px" onclick="revokeCrewAck('${d.id}','${c.id}')">Revoke</button>`
-                      : `<button class="btn btn-sm btn-sea" style="height:32px;padding:0 12px;font-size:12px" onclick="signCrewAck('${d.id}','${c.id}','${escapeHtml(c.name).replace(/'/g, '&#39;')}')">Sign</button>`}
+                      : `<button class="btn btn-sm btn-sea" style="height:32px;padding:0 12px;font-size:12px" onclick="signCrewAck('${d.id}','${c.id}','${jsAttr(c.name)}')">Sign</button>`}
                   </div>`;
               }).join('')}
           </div>
@@ -4679,7 +7161,7 @@
             })() : ''}
           </div>
 
-          <button class="btn btn-out btn-full" onclick="downloadSmsAsWord('${escapeHtml(d.title || 'SMS').replace(/'/g, '&#39;')}', '${(d.body || '').replace(/'/g, '&#39;').replace(/\n/g, ' ')}')">📥 Download Word + PDF</button>
+          <button class="btn btn-out btn-full" onclick="downloadSmsAsWord('${jsAttr(d.title || 'SMS')}', '${jsAttr((d.body || '').replace(/\n/g, ' '))}')">📥 Download Word + PDF</button>
         </div>
       </div>`;
   }
@@ -4757,7 +7239,7 @@
     host.innerHTML = `
       <div style="min-height:100vh;background:var(--page);font-family:var(--fn);padding:24px 16px 60px">
         <div style="max-width:760px;margin:0 auto">
-          <div style="background:var(--ink);color:white;border-radius:18px;padding:28px 24px;margin-bottom:18px;background-image:radial-gradient(circle at 80% 0%, rgba(8,145,178,.22), transparent 60%)">
+          <div style="background:var(--ink);color:white;border-radius:18px;padding:28px 24px;margin-bottom:18px;background-image:radial-gradient(circle at 80% 0%, rgba(3,32,61,.22), transparent 60%)">
             <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Safety Management System · read-only</div>
             <div style="font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.15">${escapeHtml(v ? v.name : (doc.title || 'SMS'))}</div>
             <div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:6px">v${doc.version}${doc.signed_at ? ' · signed ' + fmtDate(doc.signed_at) : ''}${v && v.category ? ' · ' + escapeHtml(v.category) : ''}</div>
@@ -4765,7 +7247,7 @@
           </div>
 
           ${surveyorName ? `
-            <div style="background:var(--grnp);border:1px solid rgba(22,163,74,.2);border-radius:12px;padding:14px 18px;margin-bottom:18px;font-size:13px;color:var(--green);font-weight:700">✓ Signed by ${escapeHtml(surveyorName)} on ${fmtDate(doc.signed_at)}</div>` : ''}
+            <div style="background:var(--grnp);border:1px solid rgba(79,122,82,.2);border-radius:12px;padding:14px 18px;margin-bottom:18px;font-size:13px;color:var(--green);font-weight:700">✓ Signed by ${escapeHtml(surveyorName)} on ${fmtDate(doc.signed_at)}</div>` : ''}
 
           ${sectionsHtml}
 
@@ -4870,7 +7352,10 @@
   let smsAiInputs = null;
   let smsAiStep = 0;
 
-  function openSmsAiWizard() {
+  async function openSmsAiWizard() {
+    // Answers go to the AI service, so ask permission first. Declining
+    // leaves the normal manual SMS builder one tap away.
+    if (!(await ensureAiConsent('sms'))) return;
     smsAiStep = 0;
     smsAiInputs = {
       vessel_id: (Store.getVessel(activeVesselId) || (Store.snapshot().vessels[0] || {})).id || null,
@@ -4928,7 +7413,7 @@
     } else if (s.kind === 'options') {
       body = `<div style="display:flex;flex-direction:column;gap:8px">
         ${s.opts.map((o) => `
-          <button onclick="smsAiSelect('${s.key}', '${escapeHtml(o).replace(/'/g, '&#39;')}')" class="qa-tile" style="text-align:left;width:100%;border:${smsAiInputs[s.key] === o ? '2px solid var(--sea)' : '1px solid var(--bdr)'}">
+          <button onclick="smsAiSelect('${s.key}', '${jsAttr(o)}')" class="qa-tile" style="text-align:left;width:100%;border:${smsAiInputs[s.key] === o ? '2px solid var(--sea)' : '1px solid var(--bdr)'}">
             <div style="flex:1"><div class="qa-title" style="font-size:13px">${escapeHtml(o)}</div></div>
             ${smsAiInputs[s.key] === o ? '<div style="color:var(--sea);font-weight:700">✓</div>' : ''}
           </button>`).join('')}
@@ -4991,19 +7476,16 @@
       <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
         <div class="sh-pull"></div>
         <div class="sh-head">
-          <div class="sh-title">Generate SMS — pay £10</div>
+          <div class="sh-title">Generate your SMS</div>
           <button class="sh-x" onclick="closeSmsAiWizard()">×</button>
         </div>
         <div style="padding:0 20px 14px">
           <div style="background:var(--slate);border-radius:12px;padding:14px 16px;margin-bottom:14px">
-            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:var(--mid)">Tailored 11-section SMS for ${escapeHtml(v ? v.name : 'your vessel')}</span><span style="font-weight:600;color:var(--text)">£10</span></div>
-            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;color:var(--lt)"><span>Unlimited edits + Word/PDF export</span><span>included</span></div>
-            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;color:var(--lt)"><span>Surveyor review &amp; sign-off</span><span>billed separately</span></div>
-            <div style="height:1px;background:var(--bdr);margin:8px 0"></div>
-            <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800"><span>Total today</span><span>£10</span></div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:var(--mid)">Tailored 11-section SMS for ${escapeHtml(v ? v.name : 'your vessel')}</span><span style="font-weight:600;color:var(--green)">Free</span></div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:var(--mid)"><span>Unlimited edits + Word/PDF export</span><span>included</span></div>
           </div>
-          <div style="font-size:11px;color:var(--mid);line-height:1.55;margin-bottom:12px">Mock checkout — production uses Stripe. You'll receive a generated draft you can review, edit, and send to McCollam Marine (or any approved surveyor) for sign-off.</div>
-          <button class="btn btn-sea btn-full" onclick="runSmsGeneration()">💷 Pay £10 &amp; generate now</button>
+          <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:12px">You'll get a draft you can review, edit, and send to your surveyor for sign-off.</div>
+          <button class="btn btn-sea btn-full" onclick="runSmsGeneration()">✨ Generate my SMS draft</button>
           <button class="btn btn-out btn-full" style="margin-top:8px" onclick="smsAiBack()">‹ Back</button>
         </div>
       </div>`;
@@ -5025,7 +7507,7 @@
     // Try the real Claude API via the Supabase edge function first. Falls
     // back to the local template substitution if the function isn't
     // deployed or any error occurs — so the app keeps working in dev.
-    if (window.Supa && window.Supa.ready) {
+    if (window.Supa && window.Supa.ready && hasAiConsent()) {
       try {
         const v = Store.getVessel(smsAiInputs.vessel_id) || {};
         const payload = {
@@ -5229,7 +7711,7 @@
           </div>
           <span class="chip chip-bl">${pct}% done</span>
         </div>
-        <div style="display:inline-flex;align-items:center;gap:6px;background:var(--seap);border:1px solid rgba(8,145,178,.2);color:var(--sea);font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;margin-bottom:10px">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:var(--seap);border:1px solid rgba(3,32,61,.2);color:var(--sea);font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;margin-bottom:10px">
           <span>📖</span><span>Satisfies ${escapeHtml(sec.ref)}</span>
         </div>
         <div style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:12px">${escapeHtml(sec.blurb)}</div>
@@ -5347,7 +7829,7 @@
 
     wrap.innerHTML = `
       <div style="padding:24px 20px;text-align:center">
-        <div style="width:72px;height:72px;margin:0 auto 14px;border-radius:50%;background:linear-gradient(135deg,var(--grnp) 0%,rgba(22,163,74,.05) 100%);display:flex;align-items:center;justify-content:center;font-size:36px">✓</div>
+        <div style="width:72px;height:72px;margin:0 auto 14px;border-radius:50%;background:linear-gradient(135deg,var(--grnp) 0%,rgba(79,122,82,.05) 100%);display:flex;align-items:center;justify-content:center;font-size:36px">✓</div>
         <div class="h-display" style="font-size:22px;color:var(--text);margin-bottom:6px">Your SMS is ready</div>
         <div style="font-size:13px;color:var(--lt);line-height:1.6;max-width:280px;margin:0 auto">${escapeHtml(v ? v.name : 'Your vessel')} · 11 sections completed · MCA-aligned</div>
       </div>
@@ -5382,7 +7864,7 @@
           </div>
         </div>` : `
         <div style="padding:0 16px 6px">
-          <div style="background:var(--grnp);border:1px solid rgba(22,163,74,.2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="background:var(--grnp);border:1px solid rgba(79,122,82,.2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px">
             <span style="font-size:18px">✓</span>
             <div style="font-size:12px;color:var(--mid);line-height:1.5">SMS unlocked. Download below or send to a surveyor for review and sign-off.</div>
           </div>
@@ -5438,7 +7920,7 @@
       <div style="border-top:1px solid var(--bdr);margin:6px 0 10px"></div>
       <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Or invite by email</div>
       <div style="display:flex;gap:8px">
-        <input class="fi" id="invite-surveyor-email" type="email" placeholder="surveyor@example.com" style="flex:1;height:42px">
+        <input class="fi" id="invite-surveyor-email" type="email" placeholder="surveyor@example.com" style="flex:1">
         <button class="btn btn-sm btn-sea" onclick="inviteSurveyorByEmail('${docId}','${vesselId}')">Invite</button>
       </div>`;
     return html;
@@ -5481,14 +7963,237 @@
   }
   window.sendSmsToSurveyor = sendSmsToSurveyor;
 
-  function inviteSurveyorByEmail(docId, vesselId) {
-    const email = (document.getElementById('invite-surveyor-email') || {}).value || '';
+  // Real surveyor invite. Writes an `invitations` row in Supabase, then
+  // surfaces the resulting URL for the operator to share by any channel.
+  // The surveyor accepts by opening the link signed in with the invited
+  // email — see acceptPendingInvitation() in the boot path.
+  async function inviteSurveyorByEmail(docId, vesselId) {
+    const input = document.getElementById('invite-surveyor-email');
+    const email = (input && input.value || '').trim();
     if (!email.includes('@')) { alert('Please enter a valid email.'); return; }
-    alert(`Invite sent to ${email}. Once they accept, your SMS will be in their Inbox.`);
-    // For prototype: also create the job against McCollam (the only seeded surveyor) so the demo flows.
-    sendSmsToSurveyor(docId, vesselId, 'u_sv1');
+    if (!window.Supa || !window.Supa.ready) {
+      alert('Sign in to send a real invite — Supabase is not configured on this device.');
+      return;
+    }
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user }, error: authErr } = await client.auth.getUser();
+      if (authErr || !user) throw new Error('Sign in before sending invites.');
+      const me = await client.from('users').select('id').eq('auth_user_id', user.id).maybeSingle();
+      if (me.error || !me.data) throw new Error('User profile missing — sign out and back in.');
+
+      const id = 'inv_' + Math.random().toString(36).slice(2, 12);
+      const row = {
+        id,
+        vessel_id: vesselId,
+        invited_email: email,
+        invited_by_user_id: me.data.id
+        // token + scopes + expires_at populated by DB defaults
+      };
+      const ins = await client.from('invitations').insert(row).select('token').single();
+      if (ins.error) throw new Error(ins.error.message);
+
+      const base = window.location.origin + window.location.pathname;
+      const url  = base + '#invite=' + ins.data.token + (docId ? '&doc=' + encodeURIComponent(docId) : '');
+
+      showInvitationShare(email, url);
+    } catch (err) {
+      console.error('inviteSurveyorByEmail failed', err);
+      alert(friendlyErr(err, 'Could not create the invite. Please try again.'));
+    }
   }
   window.inviteSurveyorByEmail = inviteSurveyorByEmail;
+
+  // ─────────────────────────────────────────────────────────────
+  // Standalone surveyor-invite modal. The old inviteSurveyorByEmail
+  // only existed inside the SMS draft picker, which meant the only
+  // way to invite a surveyor was to first draft a Safety Management
+  // System document and tap "Share with surveyor". The marketing
+  // promises surveyor cross-org invite as a top-line feature; this
+  // modal surfaces it from Home, Vessel detail, and Account.
+  // ─────────────────────────────────────────────────────────────
+  function openInviteSurveyorModal(vesselId) {
+    const old = document.getElementById('invite-surveyor-modal');
+    if (old) old.remove();
+
+    const vessels = (Store.snapshot().vessels || []);
+    const preselect = vesselId || activeVesselId || (vessels[0] && vessels[0].id);
+
+    if (!vessels.length) {
+      alert('Add a vessel first — invitations are scoped to a specific boat so the surveyor only sees what you choose to share.');
+      go('s-onboard');
+      return;
+    }
+
+    const vesselOpts = vessels.map((v) => {
+      const sel = v.id === preselect ? ' selected' : '';
+      return `<option value="${escapeHtml(v.id)}"${sel}>${escapeHtml(v.name)}</option>`;
+    }).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'invite-surveyor-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = `
+      <div class="card" style="max-width:440px;width:100%;padding:22px;border-radius:18px;background:var(--card,#fff);max-height:92vh;overflow-y:auto">
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;font-family:var(--fn-display);letter-spacing:-.3px">Invite your surveyor</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">They'll get a private link to view this boat's record and sign off inspections in the app. Surveyor seats are free and scoped to the vessel you pick — they only see what you choose to share.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Vessel</label>
+        <select class="fi" id="invite-modal-vessel" style="width:100%;height:44px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+          ${vesselOpts}
+        </select>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Surveyor's email</label>
+        <input class="fi" id="invite-modal-email" type="email" placeholder="surveyor@example.com" style="width:100%;height:44px;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:18px">
+
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-out" style="flex:1;height:46px" onclick="closeInviteSurveyorModal()">Cancel</button>
+          <button class="btn btn-sea" style="flex:2;height:46px;font-weight:700" onclick="submitInviteSurveyorModal()">Send invite →</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    setTimeout(() => {
+      const em = document.getElementById('invite-modal-email');
+      if (em) em.focus();
+    }, 50);
+  }
+  window.openInviteSurveyorModal = openInviteSurveyorModal;
+
+  function closeInviteSurveyorModal() {
+    const m = document.getElementById('invite-surveyor-modal');
+    if (m) m.remove();
+  }
+  window.closeInviteSurveyorModal = closeInviteSurveyorModal;
+
+  async function submitInviteSurveyorModal() {
+    const emailEl  = document.getElementById('invite-modal-email');
+    const vesselEl = document.getElementById('invite-modal-vessel');
+    const email    = (emailEl && emailEl.value || '').trim();
+    const vesselId = vesselEl && vesselEl.value;
+    if (!email.includes('@')) { alert('Please enter a valid email address.'); return; }
+    if (!vesselId)            { alert('Pick a vessel.'); return; }
+    if (!window.Supa || !window.Supa.ready) {
+      alert('Sign in first — surveyor invites need a real account.');
+      return;
+    }
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user }, error: authErr } = await client.auth.getUser();
+      if (authErr || !user) throw new Error('Sign in before sending invites.');
+      const me = await client.from('users').select('id').eq('auth_user_id', user.id).maybeSingle();
+      if (me.error || !me.data) throw new Error('User profile missing — sign out and back in.');
+
+      const id = 'inv_' + Math.random().toString(36).slice(2, 12);
+      const row = {
+        id,
+        vessel_id: vesselId,
+        invited_email: email,
+        invited_by_user_id: me.data.id
+      };
+      const ins = await client.from('invitations').insert(row).select('token').single();
+      if (ins.error) throw new Error(ins.error.message);
+
+      const base = window.location.origin + window.location.pathname;
+      const url  = base + '#invite=' + ins.data.token;
+      closeInviteSurveyorModal();
+      showInvitationShare(email, url);
+    } catch (err) {
+      console.error('submitInviteSurveyorModal failed', err);
+      alert(friendlyErr(err, 'Could not create the invite. Please try again.'));
+    }
+  }
+  window.submitInviteSurveyorModal = submitInviteSurveyorModal;
+
+  function showInvitationShare(email, url) {
+    const old = document.getElementById('invite-share-modal');
+    if (old) old.remove();
+    const modal = document.createElement('div');
+    modal.id = 'invite-share-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = `
+      <div class="card" style="max-width:420px;width:100%;padding:20px;border-radius:16px;background:var(--card,#fff)">
+        <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px;letter-spacing:-.2px">Invite ready</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:14px">Send this link to <strong>${escapeHtml(email)}</strong>. They'll sign in with that email, accept, and gain surveyor access. The link expires in 14 days.</div>
+        <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;font-family:monospace;font-size:11px;color:var(--text);word-break:break-all;margin-bottom:14px" id="invite-url-text">${escapeHtml(url)}</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sea" style="flex:1font-weight:700" onclick="copyInviteUrl()">Copy link</button>
+          <button class="btn btn-out" style="flex:1" onclick="document.getElementById('invite-share-modal').remove()">Done</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    window.__inviteUrl = url;
+  }
+
+  async function copyInviteUrl() {
+    const url = window.__inviteUrl;
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      const btn = document.querySelector('#invite-share-modal .btn-sea');
+      if (btn) { const t = btn.textContent; btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = t; }, 1500); }
+    } catch (_) {
+      // Clipboard API blocked — fall back to manual select.
+      const el = document.getElementById('invite-url-text');
+      if (el) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+  }
+  window.copyInviteUrl = copyInviteUrl;
+
+  // ─────────────────────────────────────────────────────────────
+  // Accept-invitation boot handler. If the URL hash carries
+  // #invite=TOKEN, stash it; once the user is authenticated (or
+  // signs in/up), call the SECURITY DEFINER RPC and surface the
+  // result. The RPC enforces that the auth email matches the
+  // invited email — wrong account just shows a clear error.
+  // ─────────────────────────────────────────────────────────────
+  function readInviteTokenFromUrl() {
+    const hash = window.location.hash || '';
+    const m = hash.match(/[?#&]invite=([0-9a-f-]{8,})/i);
+    return m ? m[1] : null;
+  }
+
+  function stashPendingInviteFromUrl() {
+    const token = readInviteTokenFromUrl();
+    if (!token) return;
+    try { localStorage.setItem('codedok-pending-invite', token); } catch (_) {}
+  }
+
+  async function acceptPendingInvitation() {
+    let token = null;
+    try { token = localStorage.getItem('codedok-pending-invite'); } catch (_) {}
+    if (!token) return false;
+    if (!window.Supa || !window.Supa.ready) return false;
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) return false;
+      const { data, error } = await client.rpc('accept_invitation', { p_token: token });
+      if (error) throw new Error(error.message);
+      try { localStorage.removeItem('codedok-pending-invite'); } catch (_) {}
+      let msg = 'Invitation accepted.';
+      if (data && data.kind === 'surveyor' && data.vessel_id) {
+        const v = Store.getVessel(data.vessel_id);
+        msg = 'Surveyor access granted for ' + (v ? v.name : 'the vessel') + '.';
+      } else if (data && data.kind === 'team') {
+        msg = 'You\'ve joined the team. Pull down to refresh and you\'ll see their vessels.';
+      }
+      alert(msg);
+      if (window.location.hash) history.replaceState(null, '', window.location.pathname);
+      return true;
+    } catch (err) {
+      console.error('accept_invitation failed', err);
+      try { localStorage.removeItem('codedok-pending-invite'); } catch (_) {}
+      alert("Couldn't accept invitation: " + (err && err.message ? err.message : err));
+      return false;
+    }
+  }
+  window.acceptPendingInvitation = acceptPendingInvitation;
   window.downloadSmsAsWordFromDraft = function () {
     const draft = loadSmsDraft();
     if (!draft) return;
@@ -5507,7 +8212,7 @@
     const draft = loadSmsDraft();
     if (!draft) return;
     showCheckoutSheet({
-      title: 'McCollam Marine — SMS Review',
+      title: 'Anchor Marine — SMS Review',
       price: '£195.00',
       lineItems: [
         ['SMS technical review (annotated)', '£165.00'],
@@ -5524,8 +8229,8 @@
           d.last_reviewed_at = null;
         }
         // Persist by saving via a no-op mutation
-        Store.addSmsDocument({ vessel_id: draft.vessel_id, type: 'review_request', title: 'Review request sent', body: 'Sent to McCollam Marine', status: 'review', built_by_codedok: false, version: 1 });
-        alert('Sent to McCollam Marine. They\'ll be in touch within 1 working day with confirmation and ETA.');
+        Store.addSmsDocument({ vessel_id: draft.vessel_id, type: 'review_request', title: 'Review request sent', body: 'Sent to Anchor Marine', status: 'review', built_by_codedok: false, version: 1 });
+        alert('Sent to Anchor Marine. They\'ll be in touch within 1 working day with confirmation and ETA.');
         clearSmsDraft();
         go('s-sms');
       }
@@ -5560,12 +8265,12 @@
               <span>${escapeHtml(opts.price)}</span>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 12px;background:var(--seap);border-radius:10px">
-            <span style="font-size:14px">🔒</span>
-            <div style="font-size:11px;color:var(--mid);line-height:1.5">Mock checkout for prototype. Production will use Stripe Checkout — secure card entry, instant receipt, McCollam Marine paid out after sign-off delivered.</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 12px;background:var(--ampp);border-radius:10px">
+            <span style="font-size:14px">ℹ️</span>
+            <div style="font-size:11px;color:var(--mid);line-height:1.5">Card payments aren't switched on yet. Accepting records the quote so you can see the flow — <b>no money changes hands.</b></div>
           </div>
           <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
-            <button class="btn btn-sea btn-full" id="checkout-confirm">Pay ${escapeHtml(opts.price)} (mock)</button>
+            <button class="btn btn-sea btn-full" id="checkout-confirm">Accept quote — no charge</button>
             <button class="btn btn-out btn-full" onclick="document.getElementById('checkout-sheet').remove()">Cancel</button>
           </div>
         </div>
@@ -5636,19 +8341,19 @@
 <![endif]-->
 <style>
 @page { size: A4; margin: 25mm 22mm; }
-body { font-family: 'Times New Roman', Cambria, Georgia, serif; font-size: 11pt; line-height: 1.5; color: #0f172a; }
-h1 { font-size: 22pt; font-weight: 700; color: #0a1628; margin: 0 0 6pt 0; letter-spacing: -.5pt; }
-h2 { font-size: 14pt; font-weight: 700; color: #0a1628; margin: 18pt 0 6pt 0; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; page-break-after: avoid; }
+body { font-family: 'Times New Roman', Cambria, Georgia, serif; font-size: 11pt; line-height: 1.5; color: #03203D; }
+h1 { font-size: 22pt; font-weight: 700; color: #03203D; margin: 0 0 6pt 0; letter-spacing: -.5pt; }
+h2 { font-size: 14pt; font-weight: 700; color: #03203D; margin: 18pt 0 6pt 0; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; page-break-after: avoid; }
 h3 { font-size: 11pt; font-weight: 700; color: #1e3454; margin: 12pt 0 4pt 0; page-break-after: avoid; }
 .cover { text-align: center; padding: 60pt 0 40pt; }
-.cover-title { font-size: 30pt; font-weight: 700; color: #0a1628; letter-spacing: -1pt; margin-bottom: 10pt; }
+.cover-title { font-size: 30pt; font-weight: 700; color: #03203D; letter-spacing: -1pt; margin-bottom: 10pt; }
 .cover-vessel { font-size: 18pt; color: #1e3454; font-style: italic; margin-bottom: 30pt; }
 .cover-meta { font-size: 11pt; color: #475569; }
 .foot { font-size: 9pt; color: #94a3b8; text-align: center; margin-top: 30pt; padding-top: 12pt; border-top: 1pt solid #cbd5e1; }
 .signoff { margin-top: 24pt; padding: 14pt; border: 1pt solid #cbd5e1; }
 .signoff-row { display: flex; gap: 24pt; margin-top: 18pt; }
 .signoff-cell { flex: 1; }
-.signoff-line { border-bottom: 1pt solid #0a1628; height: 24pt; }
+.signoff-line { border-bottom: 1pt solid #03203D; height: 24pt; }
 </style>
 </head>
 <body>
@@ -5659,11 +8364,11 @@ h3 { font-size: 11pt; font-weight: 700; color: #1e3454; margin: 12pt 0 4pt 0; pa
   <div class="cover-meta">
     ${v ? `${escapeHtml(v.category || '')} · ${escapeHtml(v.type || '')}<br>SSR ${escapeHtml(v.ssr || '—')} · ${escapeHtml(v.port || '')}<br><br>` : ''}
     Issue date: ${escapeHtml(today)}<br>
-    Generated by CodedOK · codedok.app
+    Generated by CodedOK · codedok.com
   </div>
 </div>
 
-<p style="font-size:10pt;color:#475569;font-style:italic;border-left:3pt solid #0891b2;padding:6pt 12pt;margin:18pt 0">
+<p style="font-size:10pt;color:#475569;font-style:italic;border-left:3pt solid #03203D;padding:6pt 12pt;margin:18pt 0">
 This Safety Management System is built on the requirements of the Sport or Pleasure Vessel Code 2025 (Appendix 7) and the Workboat Code Edition 3 (Appendix on Safety Management). It is the responsibility of the vessel owner/operator to ensure the SMS is implemented, maintained, and reviewed.
 </p>
 
@@ -5712,6 +8417,11 @@ ${sectionsHtml}
     a.click();
     setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
   }
+  // Exposed on window because it's invoked directly from an inline
+  // onclick (the "Download Word + PDF" button on a delivered SMS
+  // doc). onclick handlers run in global scope, so a function that
+  // only lives inside this IIFE would throw "not defined".
+  window.downloadSmsAsWord = downloadSmsAsWord;
 
   function renderSmsPrintDoc(draft) {
     if (!window.Codes) return;
@@ -5724,9 +8434,9 @@ ${sectionsHtml}
       <div class="pp-head">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#0891b2" stroke-width="2.2" stroke-linecap="round"/>
-            <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#0891b2" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
-            <circle cx="20" cy="18" r="5" fill="#16a34a"/>
+            <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#03203D" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#03203D" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
+            <circle cx="20" cy="18" r="5" fill="#4F7A52"/>
             <path d="M17.5,18 L19.2,19.8 L23,15.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           </svg>
           <span style="font-size:12px;color:#94a3b8;font-weight:600;letter-spacing:.05em">CODEDOK</span>
@@ -5756,14 +8466,14 @@ ${sectionsHtml}
         <h2>Approval &amp; Sign-off</h2>
         <p style="font-size:11px">I confirm that this Safety Management System has been prepared in accordance with the relevant Code, and that I will implement it on board ${escapeHtml(v ? v.name : 'the vessel')}.</p>
         <table style="margin-top:14px"><tr>
-          <td style="width:50%;border-bottom:1px solid #0a1628;height:30px"></td>
-          <td style="width:50%;border-bottom:1px solid #0a1628;height:30px"></td>
+          <td style="width:50%;border-bottom:1px solid #03203D;height:30px"></td>
+          <td style="width:50%;border-bottom:1px solid #03203D;height:30px"></td>
         </tr><tr>
           <td><div style="font-size:9px;color:#475569">Signed (Owner/Operator)</div></td>
           <td><div style="font-size:9px;color:#475569">Date</div></td>
         </tr></table>
       </div>
-      <div class="pp-foot">Generated by CodedOK · codedok.app · ${escapeHtml(today)}</div>`;
+      <div class="pp-foot">Generated by CodedOK · codedok.com · ${escapeHtml(today)}</div>`;
     target.innerHTML = html;
   }
 
@@ -5772,10 +8482,1012 @@ ${sectionsHtml}
   function renderAccount() {
     // Lightweight live update for the trial banner.
     const s = Store.snapshot();
-    if (!s.user || !s.user.trialEndsAt) return;
-    const days = Store.daysUntil(s.user.trialEndsAt);
-    const bar = document.querySelector('#s-account [style*="width:35%"]');
-    if (bar) bar.style.width = Math.max(5, Math.min(100, Math.round((14 - days) / 14 * 100))) + '%';
+    // Profile header (Apple ID-style card at the top of Account).
+    try {
+      const me = Store.getCurrentUser() || {};
+      const sess = loadSession() || {};
+      const name = me.name || (me.business_name) || 'Your account';
+      const mail = me.email || sess.email || '';
+      const initials = (me.initials || name.split(/\s+/).map((p) => p[0]).join('').slice(0, 2) || '·').toUpperCase();
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set('acct-av', initials); set('acct-name', name);
+      set('acct-mail', [mail, me.business_name && me.business_name !== name ? me.business_name : ''].filter(Boolean).join(' · '));
+    } catch (_) {}
+    if (s.user && s.user.trialEndsAt) {
+      const days = Store.daysUntil(s.user.trialEndsAt);
+      const bar = document.querySelector('#s-account [style*="width:35%"]');
+      if (bar) bar.style.width = Math.max(5, Math.min(100, Math.round((14 - days) / 14 * 100))) + '%';
+    }
+
+    // "Switch view" toggles between operator / surveyor / admin. Only the
+    // dedicated demo account has more than one role to switch into; hide
+    // the section entirely for real users to avoid dead-end taps.
+    const session = loadSession();
+    const isDemoAccount = session && session.email
+      && isDemoOperatorEmail(session.email);
+    const switchLabel = document.getElementById('account-switch-view-label');
+    const switchCard  = document.getElementById('account-switch-view-card');
+    if (switchLabel) switchLabel.style.display = isDemoAccount ? '' : 'none';
+    if (switchCard)  switchCard.style.display  = isDemoAccount ? '' : 'none';
+
+    const demoLabel = document.getElementById('account-demo-label');
+    const demoCard  = document.getElementById('account-demo-card');
+    if (demoLabel) demoLabel.style.display = isDemoAccount ? '' : 'none';
+    if (demoCard)  demoCard.style.display  = isDemoAccount ? '' : 'none';
+
+    // My Qualifications — show for any signed-in (non-demo) user.
+    const qualsLabel = document.getElementById('account-quals-label');
+    const qualsCard  = document.getElementById('account-quals-card');
+    const realSession = session && session.mode === 'live';
+    if (qualsLabel) qualsLabel.style.display = realSession ? '' : 'none';
+    if (qualsCard)  qualsCard.style.display  = realSession ? '' : 'none';
+
+    renderAccountTeam();
+    renderTrialBanner();
+    applyPermissionGates();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Team management — list members + invite UI in Account.
+  // Only operators (the org owner role) get this section.
+  // ─────────────────────────────────────────────────────────────
+  async function renderAccountTeam() {
+    const label = document.getElementById('account-team-label');
+    const card  = document.getElementById('account-team-card');
+    const list  = document.getElementById('account-team-list');
+    if (!label || !card || !list) return;
+
+    const me = window.Store ? Store.getCurrentUser() : null;
+    if (!me || me.kind !== 'operator') {
+      label.style.display = 'none';
+      card.style.display  = 'none';
+      return;
+    }
+    label.style.display = '';
+    card.style.display  = '';
+
+    list.innerHTML = `<div class="row" style="opacity:.6"><div class="row-body"><div class="row-sub">Loading team…</div></div></div>`;
+
+    if (!window.Supa || !window.Supa.ready) { list.innerHTML = ''; return; }
+    try {
+      const client = await window.Supa.getClient();
+      // org_id from any of the user's memberships where they're an owner.
+      const memb = await client.from('memberships')
+        .select('org_id, role, permissions, user_id')
+        .order('role', { ascending: true });
+      if (memb.error) throw memb.error;
+      const rows = memb.data || [];
+      if (!rows.length) { list.innerHTML = `<div class="row" style="opacity:.7"><div class="row-body"><div class="row-sub">No team members yet — add your first vessel to create the org.</div></div></div>`; return; }
+
+      const userIds = [...new Set(rows.map((r) => r.user_id))];
+      const users = await client.from('users').select('id, name, email, kind').in('id', userIds);
+      const byId = new Map((users.data || []).map((u) => [u.id, u]));
+
+      list.innerHTML = rows.map((r) => {
+        const u = byId.get(r.user_id) || { name: 'Unknown', email: '' };
+        const isOwner = r.role === 'owner';
+        const isMe = u.id === me.id;
+        const perms = (r.permissions || []).filter((p) => p !== 'view_all');
+        const permsText = isOwner ? 'Full access' : (perms.length ? perms.map(prettyPerm).join(', ') : 'View only');
+        return `
+          <div class="row">
+            <div class="row-ic ${isOwner ? 'gn' : 'bl'}">${escapeHtml(u.name ? u.name[0].toUpperCase() : '?')}</div>
+            <div class="row-body">
+              <div class="row-name">${escapeHtml(u.name || u.email)}${isMe ? ' <span style="color:var(--lt);font-size:11px;font-weight:500">(you)</span>' : ''}</div>
+              <div class="row-sub">${escapeHtml(permsText)}</div>
+            </div>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      console.warn('renderAccountTeam failed', err);
+      list.innerHTML = `<div class="row" style="opacity:.7"><div class="row-body"><div class="row-sub">Could not load team list.</div></div></div>`;
+    }
+  }
+
+  function prettyPerm(p) {
+    return ({
+      manage_vessels: 'Vessels',
+      manage_crew:    'Crew',
+      manage_certs:   'Certs & equipment',
+      manage_sms:     'SMS docs',
+      manage_team:    'Team admin'
+    })[p] || p;
+  }
+
+  // Access-level presets. Owner is implicit (the inviter); the modal
+  // only offers the levels that can be assigned to invitees.
+  const TEAM_ROLE_PRESETS = {
+    admin:  { label: 'Admin',  blurb: 'Full access except managing payment.', perms: ['manage_vessels','manage_certs','manage_crew','manage_sms','manage_team'] },
+    mate:   { label: 'Mate',   blurb: 'Senior crew — can manage vessels, certs and crew.', perms: ['manage_vessels','manage_certs','manage_crew'] },
+    crew:   { label: 'Crew',   blurb: 'Day-to-day crew — can update their own qualifications.', perms: [] },
+    viewer: { label: 'Viewer', blurb: 'Read-only — sees vessels and status but can\'t edit anything.', perms: [] }
+  };
+
+  function openInviteTeamMember() {
+    const old = document.getElementById('team-invite-modal');
+    if (old) old.remove();
+    const modal = document.createElement('div');
+    modal.id = 'team-invite-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = `
+      <div class="card" style="max-width:460px;width:100%;padding:20px;border-radius:16px;background:var(--card,#fff);max-height:92vh;overflow:auto">
+        <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px;letter-spacing:-.2px">Invite a team member</div>
+        <div style="font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:14px">Send a link they can open on their phone. They'll sign up with the email below and join your org at the level you choose.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Email</label>
+        <input class="fi" id="team-invite-email" type="email" placeholder="crew@example.com" style="width:100%;margin-bottom:14px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Access level</label>
+        <div id="team-invite-role-picker" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+          ${Object.entries(TEAM_ROLE_PRESETS).map(([id, p], idx) => `
+            <button type="button" class="role-pick${idx === 1 ? ' on' : ''}" data-role="${id}" onclick="pickTeamRole('${id}')"
+              style="background:${idx === 1 ? 'rgba(3,32,61,.15)' : 'var(--bg2)'};border:2px solid ${idx === 1 ? 'var(--sea)' : 'var(--bdr)'};color:var(--text);padding:10px;border-radius:10px;font-family:var(--fn);font-size:12px;font-weight:700;cursor:pointer;text-align:left">
+              ${escapeHtml(p.label)}
+              <div style="font-size:10px;font-weight:500;color:var(--mid);margin-top:2px;line-height:1.4">${escapeHtml(p.blurb)}</div>
+            </button>`).join('')}
+        </div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Which vessels can they access?</label>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px" id="team-invite-vessels">
+          ${(function () {
+            const vessels = (Store.snapshot().vessels || []);
+            if (!vessels.length) return '<div style="font-size:12px;color:var(--mid);padding:8px 10px;border:1px dashed var(--bdr);border-radius:10px">Add a vessel first.</div>';
+            return `
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bdr);border-radius:10px;cursor:pointer;background:rgba(3,32,61,.04)">
+                <input type="checkbox" class="team-vessel-all" id="team-vessel-all" checked onchange="toggleAllVesselScopes(this.checked)" style="accent-color:var(--sea)">
+                <span style="font-size:13px;color:var(--text);font-weight:600">All vessels (current and future)</span>
+              </label>
+              <div style="display:flex;flex-direction:column;gap:4px;padding:4px 4px 4px 22px;border-left:2px solid var(--bdr);margin-left:6px">
+                ${vessels.map((v) => `
+                  <label style="display:flex;align-items:center;gap:10px;padding:6px 10px;cursor:pointer">
+                    <input type="checkbox" class="team-vessel" value="${escapeHtml(v.id)}" checked style="accent-color:var(--sea)">
+                    <span style="font-size:12px;color:var(--mid)">${escapeHtml(v.name)}</span>
+                  </label>`).join('')}
+              </div>`;
+          })()}
+        </div>
+        <div style="font-size:11px;color:var(--mid);line-height:1.5;margin-bottom:14px;padding:0 4px">Scope this member to specific boats. Crew assigned to one RIB can't see crew medicals on another.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Fine-tune permissions <span style="color:var(--mid);font-weight:500;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px" id="team-invite-perms">
+          ${[
+            ['manage_vessels','Vessels — add, edit, delete'],
+            ['manage_certs','Certificates & equipment'],
+            ['manage_crew','Crew records & qualifications'],
+            ['manage_sms','SMS documents & reviews'],
+            ['manage_team','Team admin (invite / remove others)']
+          ].map(([id, label]) => `
+            <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bdr);border-radius:10px;cursor:pointer">
+              <input type="checkbox" class="team-perm" value="${id}" style="accent-color:var(--sea)">
+              <span style="font-size:13px;color:var(--text)">${escapeHtml(label)}</span>
+            </label>`).join('')}
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sea" style="flex:1font-weight:700" onclick="submitTeamInvite()">Create invite</button>
+          <button class="btn btn-out" style="flex:1" onclick="document.getElementById('team-invite-modal').remove()">Cancel</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    pickTeamRole('mate');
+  }
+
+  // Toggle helper for the "All vessels" master checkbox in the team
+  // invite modal. When ticked, individual vessel rows become irrelevant
+  // (the membership grants org-wide access). When unticked, each
+  // vessel row controls one grant.
+  function toggleAllVesselScopes(allOn) {
+    document.querySelectorAll('.team-vessel').forEach((cb) => {
+      cb.disabled = allOn;
+      if (allOn) cb.checked = true;
+    });
+  }
+  window.toggleAllVesselScopes = toggleAllVesselScopes;
+  window.openInviteTeamMember = openInviteTeamMember;
+
+  function pickTeamRole(role) {
+    const preset = TEAM_ROLE_PRESETS[role];
+    if (!preset) return;
+    document.querySelectorAll('#team-invite-role-picker .role-pick').forEach((btn) => {
+      const active = btn.dataset.role === role;
+      btn.classList.toggle('on', active);
+      btn.style.background  = active ? 'rgba(3,32,61,.15)' : 'var(--bg2)';
+      btn.style.borderColor = active ? 'var(--sea)' : 'var(--bdr)';
+    });
+    document.querySelectorAll('#team-invite-perms .team-perm').forEach((cb) => {
+      cb.checked = preset.perms.includes(cb.value);
+    });
+    window.__pendingInviteRole = role;
+  }
+  window.pickTeamRole = pickTeamRole;
+
+  async function submitTeamInvite() {
+    const email = ((document.getElementById('team-invite-email') || {}).value || '').trim();
+    if (!email.includes('@')) { alert("That doesn't look like an email address — try again with something like joe@example.com."); return; }
+    const perms = Array.from(document.querySelectorAll('.team-perm:checked')).map((el) => el.value);
+
+    // Per-vessel scoping. If "All vessels" is ticked we record an
+    // org-wide grant (vessel:all). Otherwise we record one
+    // `vessel:<id>` entry per ticked boat. Encoded inside the
+    // existing permissions[] array so it survives without a Supabase
+    // schema migration — the eventual proper column is a future
+    // refactor.
+    const allOn = (document.getElementById('team-vessel-all') || {}).checked;
+    const vesselScopes = allOn
+      ? ['vessel:all']
+      : Array.from(document.querySelectorAll('.team-vessel:checked')).map((el) => 'vessel:' + el.value);
+    if (!vesselScopes.length) {
+      alert('Pick at least one vessel — or tick "All vessels" to grant org-wide access.');
+      return;
+    }
+
+    // Everyone can at least view; add manage_* on top of that, plus
+    // the vessel-scope entries.
+    const permissions = ['view_all'].concat(perms).concat(vesselScopes);
+
+    if (!window.Supa || !window.Supa.ready) { alert('Cloud sync not configured.'); return; }
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) throw new Error('Sign in first.');
+      const me = await client.from('users').select('id').eq('auth_user_id', user.id).maybeSingle();
+      if (me.error || !me.data) throw new Error('User profile missing.');
+      // Pick the org the operator owns.
+      const memb = await client.from('memberships').select('org_id').eq('user_id', me.data.id).eq('role', 'owner').maybeSingle();
+      if (memb.error || !memb.data) throw new Error('You need to add a vessel first — that creates your org.');
+
+      const id = 'inv_' + Math.random().toString(36).slice(2, 12);
+      const ins = await client.from('invitations').insert({
+        id,
+        kind: 'team',
+        org_id: memb.data.org_id,
+        invited_email: email,
+        invited_by_user_id: me.data.id,
+        permissions
+      }).select('token').single();
+      if (ins.error) throw ins.error;
+
+      document.getElementById('team-invite-modal').remove();
+      const base = window.location.origin + window.location.pathname;
+      const url  = base + '#invite=' + ins.data.token;
+      showInvitationShare(email, url);
+    } catch (err) {
+      console.error('submitTeamInvite failed', err);
+      alert(friendlyErr(err, 'Could not create the invite. Please try again.'));
+    }
+  }
+  window.submitTeamInvite = submitTeamInvite;
+
+  // ─────────────────────────────────────────────────────────────
+  // My Qualifications — every signed-in user can view their own
+  // crew_certs. RLS scopes the query to the user's own crew row.
+  // ─────────────────────────────────────────────────────────────
+  async function renderMyQuals() {
+    const body = document.getElementById('my-quals-body');
+    if (!body) return;
+    body.innerHTML = `<div style="opacity:.6;font-size:13px;color:var(--mid)">Loading…</div>`;
+
+    if (!window.Supa || !window.Supa.ready) {
+      body.innerHTML = `<div class="card" style="padding:16px"><div style="font-size:13px;color:var(--mid);line-height:1.5">Cloud sync isn't configured — sign in to see your qualifications.</div></div>`;
+      return;
+    }
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) {
+        body.innerHTML = `<div class="card" style="padding:16px"><div style="font-size:13px;color:var(--mid);line-height:1.5">Sign in to see your qualifications.</div></div>`;
+        return;
+      }
+      const me = await client.from('users').select('id, name').eq('auth_user_id', user.id).maybeSingle();
+      if (!me.data) throw new Error('User profile missing.');
+
+      let crewRow = (await client.from('crew')
+        .select('id, name, role, vessel_ids')
+        .eq('user_id', me.data.id)
+        .maybeSingle()).data;
+
+      // No crew record yet — lazy-create one tied to whichever org this
+      // user owns (solo skipper) or belongs to (team member). Makes "My
+      // qualifications" Just Work for solo users without needing an
+      // operator to add them.
+      if (!crewRow) {
+        const myOrg = await client.from('memberships')
+          .select('org_id, role')
+          .eq('user_id', me.data.id)
+          .order('role', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (myOrg.data && myOrg.data.org_id) {
+          const personId = 'p_' + Math.random().toString(36).slice(2, 12);
+          const ins = await client.from('crew').insert({
+            id: personId,
+            org_id: myOrg.data.org_id,
+            user_id: me.data.id,
+            name: me.data.name || (user.email || '').split('@')[0],
+            email: user.email,
+            role: 'Skipper',
+            vessel_ids: []
+          }).select('id, name, role, vessel_ids').single();
+          if (!ins.error) crewRow = ins.data;
+        }
+        if (!crewRow) {
+          body.innerHTML = `
+            <div class="card" style="padding:18px">
+              <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">Add a vessel first</div>
+              <div style="font-size:13px;color:var(--mid);line-height:1.55">Your qualifications live on the same account as your vessels. Add at least one vessel to set things up, then come back here.</div>
+              <button class="btn btn-sea" style="margin-top:14px;font-weight:700" onclick="go('s-onboard')">+ Add a vessel</button>
+            </div>`;
+          return;
+        }
+      }
+
+      const certs = await client.from('crew_certs').select('id, name, issuer, number, expires_at, file_url').eq('person_id', crewRow.id).order('expires_at', { ascending: true, nullsFirst: false });
+      const list = certs.data || [];
+
+      const header = `
+        <div style="padding:0 0 14px">
+          <div style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.3px">${escapeHtml(crewRow.name || me.data.name || 'Crew member')}</div>
+          <div style="font-size:13px;color:var(--mid);margin-top:2px">${escapeHtml(crewRow.role || 'Crew')} · ${list.length} qualification${list.length === 1 ? '' : 's'}</div>
+        </div>`;
+
+      const rows = list.length ? list.map((c) => {
+        const days = c.expires_at ? Store.daysUntil(c.expires_at) : Infinity;
+        const expired = days < 0;
+        const due30 = days >= 0 && days <= 30;
+        const colour = expired ? '#ef4444' : (due30 ? '#f59e0b' : 'var(--gn)');
+        const sub = c.expires_at
+          ? (expired ? `Expired ${Math.abs(days)}d ago` : days === Infinity ? '' : `Expires in ${days}d · ${fmtDate(c.expires_at)}`)
+          : 'No expiry';
+        return `
+          <div class="row" style="border-left:4px solid ${colour}">
+            <div class="row-ic ${expired ? 'rd' : (due30 ? 'or' : 'gn')}">🎓</div>
+            <div class="row-body">
+              <div class="row-name">${escapeHtml(c.name)}</div>
+              <div class="row-sub">${escapeHtml(sub)}${c.issuer ? ' · ' + escapeHtml(c.issuer) : ''}</div>
+            </div>
+            ${(c.file_url && /^(https?:|data:|blob:)/i.test(String(c.file_url))) ? `<a class="chev" href="${escapeHtml(c.file_url)}" target="_blank" rel="noopener" style="text-decoration:none">›</a>` : '<span class="chev"></span>'}
+          </div>`;
+      }).join('') : `<div class="row"><div class="row-body"><div class="row-sub" style="color:var(--mid)">No qualifications on file yet. Add your first below or ask your operator to add it.</div></div></div>`;
+
+      // Add a tail row that opens the add-qualification form. RLS allows
+      // crew members to insert crew_certs against their own crew row.
+      const addRow = `
+        <div class="row" onclick="openAddMyQual('${crewRow.id}')">
+          <div class="row-ic bl">＋</div>
+          <div class="row-body">
+            <div class="row-name" style="color:var(--sea)">Add a qualification</div>
+            <div class="row-sub">RYA ticket, ENG1 medical, first aid, anything else</div>
+          </div>
+          <span class="chev">›</span>
+        </div>`;
+
+      body.innerHTML = header + `<div class="card mx" style="margin:0">${rows}${addRow}</div>`;
+    } catch (err) {
+      console.warn('renderMyQuals failed', err);
+      body.innerHTML = `<div class="card" style="padding:16px"><div style="font-size:13px;color:#fca5a5;line-height:1.5">Could not load qualifications: ${escapeHtml(err && err.message || String(err))}</div></div>`;
+    }
+  }
+
+  // Add-qualification modal — crew member self-adds a crew_cert. RLS
+  // on crew_certs allows insert when person_id refers to a crew row
+  // linked to the current user.
+  function openAddMyQual(crewRowId) {
+    if (!crewRowId) return;
+    const old = document.getElementById('add-my-qual-modal');
+    if (old) old.remove();
+    const modal = document.createElement('div');
+    modal.id = 'add-my-qual-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(8,16,32,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = `
+      <div class="card" style="max-width:440px;width:100%;padding:20px;border-radius:16px;background:var(--card,#fff);max-height:92vh;overflow:auto">
+        <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px;letter-spacing:-.2px">Add a qualification</div>
+        <div style="font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:14px">Name + (optional) issuer, number, expiry. You can upload the certificate file too — it stays private.</div>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Name</label>
+        <input class="fi" id="myqual-name" type="text" placeholder="RYA Day Skipper (Commercial)" style="width:100%;margin-bottom:10px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Issuer</label>
+        <input class="fi" id="myqual-issuer" type="text" placeholder="RYA / NHS Approved Doctor / etc." style="width:100%;margin-bottom:10px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Certificate number</label>
+        <input class="fi" id="myqual-number" type="text" placeholder="optional" style="width:100%;margin-bottom:10px">
+
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Expires</label>
+        <input class="fi" id="myqual-expires" type="date" style="width:100%;margin-bottom:14px">
+
+        <div id="myqual-err" style="display:none;font-size:12px;color:#fca5a5;margin-bottom:10px;line-height:1.5"></div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sea" style="flex:1font-weight:700" onclick="submitAddMyQual('${crewRowId}')">Save</button>
+          <button class="btn btn-out" style="flex:1" onclick="document.getElementById('add-my-qual-modal').remove()">Cancel</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  window.openAddMyQual = openAddMyQual;
+
+  async function submitAddMyQual(crewRowId) {
+    const name    = ((document.getElementById('myqual-name') || {}).value || '').trim();
+    const issuer  = ((document.getElementById('myqual-issuer') || {}).value || '').trim();
+    const number  = ((document.getElementById('myqual-number') || {}).value || '').trim();
+    const expires = ((document.getElementById('myqual-expires') || {}).value || '').trim();
+    const errEl = document.getElementById('myqual-err');
+    function fail(msg) { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } }
+    if (!name) return fail('Name is required.');
+    if (!window.Supa || !window.Supa.ready) return fail('Cloud sync is not available — try again when online.');
+    try {
+      const client = await window.Supa.getClient();
+      const row = {
+        id: 'cc_' + Math.random().toString(36).slice(2, 12),
+        person_id: crewRowId,
+        name,
+        issuer: issuer || null,
+        number: number || null,
+        expires_at: expires || null
+      };
+      const { error } = await client.from('crew_certs').insert(row);
+      if (error) throw error;
+      document.getElementById('add-my-qual-modal').remove();
+      renderMyQuals();
+    } catch (err) {
+      fail(friendlyErr(err, 'Could not save. Please try again.'));
+    }
+  }
+  window.submitAddMyQual = submitAddMyQual;
+
+  // ─────────────────────────────────────────────────────────────
+  // Plans — pick a tier. Free of charge for now (no Stripe). The
+  // chosen plan persists to organizations.plan; UI gates can read
+  // it later when paid features are switched on.
+  // ─────────────────────────────────────────────────────────────
+  // Canonical pricing. Must stay in lockstep with the landing /#pricing
+  // tiles and the in-Account plan tiles. Solo is free forever; Pro and
+  // Team start with a 14-day free trial. Until Stripe is wired the
+  // upgrade CTAs are disabled / informational only.
+  const PLAN_DEFS = [
+    {
+      id: 'solo', label: 'Solo', price: 'Free',
+      priceSub: 'forever',
+      sub: 'For owner-operators running one vessel.',
+      perks: [
+        'One vessel · all compliance tracking',
+        'AI cert scanner',
+        'Renewal reminders (30 + 7 days)',
+        'Inspection-pack PDF',
+        'Surveyor cross-org invite'
+      ]
+    },
+    {
+      id: 'pro', label: 'Pro', price: '£19',
+      priceSub: '/month · 14-day trial',
+      sub: 'For charter operations with multiple vessels.',
+      perks: [
+        'Everything in Solo',
+        'Unlimited vessels',
+        'Survey-report PDF importer',
+        'Custom inspection-pack branding',
+        'Email reminders to crew'
+      ],
+      recommended: true
+    },
+    {
+      id: 'team', label: 'Team', price: '£49',
+      priceSub: '/month · 14-day trial',
+      sub: 'For charter fleets with multiple skippers.',
+      perks: [
+        'Everything in Pro',
+        'Unlimited team members',
+        'Per-member permissions',
+        'Audit log & action history',
+        'Priority support'
+      ]
+    }
+  ];
+
+  async function renderPlans() {
+    const body = document.getElementById('plans-body');
+    if (!body) return;
+    body.innerHTML = `<div style="opacity:.6;font-size:13px;color:var(--mid);padding:12px 0">Loading…</div>`;
+
+    let currentPlan = 'trial';
+    let orgId = null;
+    if (window.Supa && window.Supa.ready) {
+      try {
+        const client = await window.Supa.getClient();
+        const { data: { user } } = await client.auth.getUser();
+        if (user) {
+          const me = await client.from('users').select('id').eq('auth_user_id', user.id).maybeSingle();
+          if (me.data) {
+            const memb = await client.from('memberships').select('org_id').eq('user_id', me.data.id).eq('role','owner').maybeSingle();
+            if (memb.data) {
+              orgId = memb.data.org_id;
+              const org = await client.from('organizations').select('plan').eq('id', orgId).maybeSingle();
+              if (org.data && org.data.plan) currentPlan = org.data.plan;
+            }
+          }
+        }
+      } catch (err) { console.warn('renderPlans lookup failed', err); }
+    }
+
+    if (!orgId) {
+      body.innerHTML = `
+        <div class="card" style="padding:18px;margin-top:12px">
+          <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Add a vessel first</div>
+          <div style="font-size:13px;color:var(--mid);line-height:1.55">Your organisation is set up when you add your first vessel — once that's done you can pick a plan here.</div>
+          <button class="btn btn-sea" style="margin-top:14px;font-weight:700" onclick="go('s-onboard')">+ Add a vessel</button>
+        </div>`;
+      return;
+    }
+
+    const native = isNativeApp();
+    // iPhone app: real subscriptions through Apple (RevenueCat/StoreKit).
+    if (native && window.CodedokNative && CodedokNative.iap && CodedokNative.iap.available()) {
+      return renderPlansIAP(body, currentPlan, orgId);
+    }
+    const cards = PLAN_DEFS.map((p) => {
+      const isCurrent = p.id === currentPlan;
+      const paid = p.id !== 'solo';
+      const edge = isCurrent ? 'var(--green)' : (p.recommended ? 'var(--sea)' : 'var(--bdr)');
+      const tag = isCurrent
+        ? '<span class="chip chip-ok" style="margin-left:8px">Current</span>'
+        : (p.recommended ? '<span class="chip chip-bl" style="margin-left:8px">Recommended</span>' : '');
+      // Native build: never render an in-app purchase button for paid
+      // tiers — point the operator to manage billing on the web instead.
+      const cta = isCurrent
+        ? `<button class="btn btn-out btn-full" style="height:46px;font-weight:700" disabled>You're on this plan</button>`
+        : (native && paid
+            ? `<div style="font-size:12px;color:var(--mid);line-height:1.5;text-align:center;padding:12px 0 2px">Manage your plan at <strong style="color:var(--sea)">codedok.com</strong></div>`
+            : `<button class="btn btn-sea btn-full" style="height:46px;font-weight:700" onclick="selectPlan('${p.id}','${orgId}')">Switch to ${escapeHtml(p.label)}</button>`);
+      const perks = p.perks.map((x) => `<li style="font-size:13px;color:var(--text);line-height:1.55;margin:4px 0;display:flex;gap:8px"><span style="color:var(--green);font-weight:700">✓</span><span>${escapeHtml(x)}</span></li>`).join('');
+      return `
+        <div class="card" style="padding:18px;border:2px solid ${edge};border-radius:16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.2px">${escapeHtml(p.label)}${tag}</div>
+            <div style="text-align:right;font-family:var(--fn-display)">
+              <div style="font-size:20px;font-weight:700;color:var(--sea)">${escapeHtml(p.price)}</div>
+              <div style="font-size:11px;font-weight:500;color:var(--mid)">${escapeHtml(p.priceSub || '')}</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:12px">${escapeHtml(p.sub)}</div>
+          <ul style="list-style:none;padding:0;margin:0 0 14px">${perks}</ul>
+          ${cta}
+        </div>`;
+    }).join('');
+
+    const banner = native
+      ? `<div style="background:rgba(3,32,61,.06);border:1px solid rgba(3,32,61,.15);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:var(--mid);line-height:1.55">
+          <strong style="color:var(--sea)">Everything you need is free.</strong> Need multiple vessels or a team? Manage your plan any time at <strong style="color:var(--sea)">codedok.com</strong>.
+        </div>`
+      : `<div style="background:rgba(3,32,61,.06);border:1px solid rgba(3,32,61,.15);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:var(--mid);line-height:1.55">
+          <strong style="color:var(--sea)">Solo is free forever.</strong> Pro and Team paid upgrades launch alongside Stripe checkout — pick the plan you'll want and we'll email you the day it's live.
+        </div>`;
+    body.innerHTML = banner + cards;
+  }
+  window.renderPlans = renderPlans;
+
+  // ── In-app subscriptions (iPhone) ───────────────────────────────────
+  // Prices come from the App Store (localised, incl. any free-trial
+  // offer), never hard-coded. Apple requires: Restore Purchases, a way to
+  // manage/cancel, and the auto-renewal terms with Terms + Privacy links.
+  // iOS-style confirmation HUD that drops in from the top and fades.
+  function toast(msg) {
+    const old = document.getElementById('ios-toast');
+    if (old) old.remove();
+    const t = document.createElement('div');
+    t.id = 'ios-toast';
+    t.className = 'ios-toast';
+    t.setAttribute('role', 'status');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('on'));
+    setTimeout(() => { t.classList.remove('on'); setTimeout(() => t.remove(), 300); }, 2400);
+  }
+  window.toast = toast;
+
+  let iapPackagesCache = [];
+  const APPLE_EULA = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+
+  function planForProduct(productId) {
+    return /team/i.test(productId || '') ? 'team' : 'pro';
+  }
+  function introText(product) {
+    const ip = product && product.introPrice;
+    if (!ip) return '';
+    const unit = { DAY: 'day', WEEK: 'week', MONTH: 'month', YEAR: 'year' }[ip.periodUnit] || '';
+    const n = ip.periodNumberOfUnits || 1;
+    const span = unit ? `${n} ${unit}${n === 1 ? '' : 's'}` : '';
+    return ip.price === 0 ? `${span} free, then` : `${ip.priceString} for ${span}, then`;
+  }
+
+  async function renderPlansIAP(body, currentPlan, orgId) {
+    let pkgs = [];
+    try { pkgs = await CodedokNative.iap.packages(); }
+    catch (err) { console.warn('IAP offerings failed', err); }
+    iapPackagesCache = pkgs;
+    const paidNow = currentPlan === 'pro' || currentPlan === 'team';
+
+    const cards = pkgs.map((pkg, i) => {
+      const prod = pkg.product || {};
+      const planId = planForProduct(prod.identifier);
+      const def = PLAN_DEFS.find((d) => d.id === planId) || {};
+      const isCurrent = planId === currentPlan;
+      const perks = (def.perks || []).map((x) => `<li class="iap-perk"><span>✓</span>${escapeHtml(x)}</li>`).join('');
+      const intro = introText(prod);
+      const cta = isCurrent
+        ? `<button class="btn btn-out btn-full" disabled>Your current plan</button>`
+        : `<button class="btn btn-sea btn-full" onclick="buyPlan(${i})">${paidNow ? 'Switch to' : 'Subscribe to'} ${escapeHtml(def.label || prod.title || 'plan')}</button>`;
+      return `
+        <div class="card iap-card${def.recommended ? ' iap-rec' : ''}">
+          <div class="iap-head">
+            <div class="iap-name">${escapeHtml(def.label || prod.title || '')}${isCurrent ? ' <span class="chip chip-ok">Current</span>' : ''}</div>
+            <div class="iap-price"><b>${escapeHtml(prod.priceString || '')}</b><span>/month</span></div>
+          </div>
+          ${intro ? `<div class="iap-intro">${escapeHtml(intro)} ${escapeHtml(prod.priceString || '')}/month</div>` : ''}
+          <div class="iap-sub">${escapeHtml(def.sub || prod.description || '')}</div>
+          <ul class="iap-perks">${perks}</ul>
+          ${cta}
+        </div>`;
+    }).join('');
+
+    const empty = `<div class="card" style="padding:18px"><div style="font-weight:700;margin-bottom:4px">Subscriptions aren't available right now</div><div style="font-size:14px;color:var(--mid)">Check your connection and try again in a moment.</div></div>`;
+
+    body.innerHTML = `
+      <div class="iap-hero">
+        <div class="iap-hero-title">${paidNow ? 'You\'re on ' + escapeHtml(currentPlan === 'team' ? 'Team' : 'Pro') : 'Go further with Pro'}</div>
+        <div class="iap-hero-sub">Solo stays free for one vessel, forever. Upgrade for unlimited vessels, crew reminders and team access.</div>
+      </div>
+      ${pkgs.length ? cards : empty}
+      ${paidNow ? `<button class="btn btn-out btn-full" style="margin-top:4px" onclick="CodedokNative.iap.manage()">Manage subscription</button>` : ''}
+      <button class="iap-restore" onclick="restorePlan()">Restore purchases</button>
+      <div class="iap-legal">
+        Payment is charged to your Apple ID account at confirmation of purchase. Subscriptions renew automatically each month unless cancelled at least 24 hours before the end of the current period, and your account is charged for renewal within 24 hours before the period ends. Manage or cancel any time in your App Store account settings. Any unused portion of a free trial is forfeited when you subscribe.
+        <div style="margin-top:8px"><a href="${APPLE_EULA}">Terms of Use</a> · <a href="https://codedok.com/privacy">Privacy Policy</a></div>
+      </div>`;
+  }
+
+  // After Apple confirms, RevenueCat's webhook updates the database within
+  // a few seconds; poll briefly so the screen reflects it without a manual
+  // refresh. The entitlement already unlocks things locally meanwhile.
+  async function awaitPlanSync(expected) {
+    for (let i = 0; i < 8; i++) {
+      await new Promise((r) => setTimeout(r, 1500));
+      try {
+        const client = await window.Supa.getClient();
+        const { data: { user } } = await client.auth.getUser();
+        const me = user && (await client.from('users').select('id').eq('auth_user_id', user.id).maybeSingle()).data;
+        const memb = me && (await client.from('memberships').select('org_id').eq('user_id', me.id).eq('role', 'owner').maybeSingle()).data;
+        const org = memb && (await client.from('organizations').select('plan').eq('id', memb.org_id).maybeSingle()).data;
+        if (org && org.plan === expected) return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  async function buyPlan(i) {
+    const pkg = iapPackagesCache[i];
+    if (!pkg) return;
+    const btns = document.querySelectorAll('#plans-body .iap-card button');
+    btns.forEach((b) => { b.disabled = true; });
+    try {
+      const r = await CodedokNative.iap.buy(pkg);
+      if (r.cancelled) return;
+      if (r.plan) {
+        toast(`Welcome to ${r.plan === 'team' ? 'Team' : 'Pro'}`);
+        await awaitPlanSync(r.plan);
+      }
+      renderPlans();
+      if (typeof renderTrialBanner === 'function') renderTrialBanner();
+    } catch (err) {
+      alert("The purchase didn't go through: " + ((err && err.message) || err));
+    } finally {
+      btns.forEach((b) => { b.disabled = false; });
+    }
+  }
+  window.buyPlan = buyPlan;
+  window.renderPlansIAP = renderPlansIAP;
+
+  async function restorePlan() {
+    try {
+      const plan = await CodedokNative.iap.restore();
+      if (plan) { toast(`Restored your ${plan === 'team' ? 'Team' : 'Pro'} subscription`); await awaitPlanSync(plan); }
+      else alert('No active subscription was found for this Apple ID.');
+      renderPlans();
+    } catch (err) {
+      alert("Couldn't restore purchases: " + ((err && err.message) || err));
+    }
+  }
+  window.restorePlan = restorePlan;
+
+  async function selectPlan(planId, orgId) {
+    if (!planId || !orgId) return;
+    if (!window.Supa || !window.Supa.ready) { alert('Cloud sync not available right now.'); return; }
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client
+        .from('organizations')
+        .update({ plan: planId, plan_changed_at: new Date().toISOString() })
+        .eq('id', orgId);
+      if (error) throw error;
+      // Re-render to flip the "Current" pill, and refresh the trial banner.
+      renderPlans();
+      if (typeof renderTrialBanner === 'function') renderTrialBanner();
+    } catch (err) {
+      console.error('selectPlan failed', err);
+      alert(friendlyErr(err, 'Could not switch plan. Please try again.'));
+    }
+  }
+  window.selectPlan = selectPlan;
+
+  // ─────────────────────────────────────────────────────────────
+  // Crew home — separate, stripped-down screen for crew members.
+  // Their assigned vessel(s), their personal certs, and the install
+  // / reminders nudges. No fleet-level controls.
+  // ─────────────────────────────────────────────────────────────
+  async function renderCrewHome() {
+    const scroll = document.getElementById('crew-home-scroll');
+    if (!scroll) return;
+    const greetEl = document.getElementById('crew-greeting');
+    const subEl   = document.getElementById('crew-greeting-sub');
+    const avEl    = document.getElementById('crew-avatar');
+    const qualsEl = document.getElementById('crew-stat-quals');
+    const dueEl   = document.getElementById('crew-stat-due');
+    const overEl  = document.getElementById('crew-stat-overdue');
+
+    // Loading state.
+    scroll.innerHTML = `<div style="padding:18px;opacity:.6;font-size:13px;color:var(--mid)">Loading your dashboard…</div>`;
+    if (qualsEl) qualsEl.textContent = '—';
+    if (dueEl)   dueEl.textContent   = '—';
+    if (overEl)  overEl.textContent  = '—';
+
+    if (!window.Supa || !window.Supa.ready) {
+      scroll.innerHTML = `<div style="padding:18px"><div class="card" style="padding:16px"><div style="font-size:13px;color:var(--mid);line-height:1.55">Cloud sync isn't configured.</div></div></div>`;
+      return;
+    }
+
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) { go('s-login'); return; }
+
+      const me = await client.from('users').select('id, name, email').eq('auth_user_id', user.id).maybeSingle();
+      if (!me.data) throw new Error('User profile missing.');
+      const myName = me.data.name || (user.email || '').split('@')[0];
+      const initials = myName.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'CR';
+      const hour = new Date().getHours();
+      const tod = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
+      if (greetEl) greetEl.textContent = `${tod}, ${myName.split(' ')[0]}`;
+      if (avEl) avEl.textContent = initials;
+
+      // Crew row + org for context.
+      const crewRow = await client.from('crew')
+        .select('id, name, role, org_id, vessel_ids')
+        .eq('user_id', me.data.id)
+        .maybeSingle();
+
+      let orgName = '';
+      let vesselsList = [];
+      let certs = [];
+
+      if (crewRow.data) {
+        if (subEl) subEl.textContent = `Crew · ${crewRow.data.role || 'team member'}`;
+        const org = await client.from('organizations').select('name').eq('id', crewRow.data.org_id).maybeSingle();
+        orgName = (org.data && org.data.name) || '';
+
+        const vesselIds = crewRow.data.vessel_ids || [];
+        if (vesselIds.length) {
+          const v = await client.from('vessels').select('id, name, type, port, category').in('id', vesselIds);
+          vesselsList = v.data || [];
+        }
+
+        const c = await client.from('crew_certs')
+          .select('id, name, expires_at')
+          .eq('person_id', crewRow.data.id);
+        certs = c.data || [];
+      } else {
+        if (subEl) subEl.textContent = 'Crew · welcome aboard';
+        // Still show their memberships' org name if any.
+        const memb = await client.from('memberships').select('org_id').eq('user_id', me.data.id).maybeSingle();
+        if (memb.data) {
+          const org = await client.from('organizations').select('name').eq('id', memb.data.org_id).maybeSingle();
+          orgName = (org.data && org.data.name) || '';
+        }
+      }
+
+      // Stat tiles.
+      let overdue = 0, due30 = 0;
+      certs.forEach((c) => {
+        if (!c.expires_at) return;
+        const d = Store.daysUntil(c.expires_at);
+        if (d < 0) overdue++;
+        else if (d <= 30) due30++;
+      });
+      if (qualsEl) qualsEl.textContent = String(certs.length);
+      if (dueEl)   dueEl.textContent   = String(due30);
+      if (overEl)  overEl.textContent  = String(overdue);
+
+      // Body.
+      const noCrewLink = !crewRow.data;
+      const vesselCards = vesselsList.length ? vesselsList.map((v) => `
+        <div class="row">
+          <div class="row-ic bl">⛵</div>
+          <div class="row-body">
+            <div class="row-name">${escapeHtml(v.name)}</div>
+            <div class="row-sub">${escapeHtml([v.type, v.category, v.port].filter(Boolean).join(' · '))}</div>
+          </div>
+        </div>`).join('') : '';
+
+      const qualPreview = certs.slice(0, 4).sort((a, b) => {
+        const da = a.expires_at ? Store.daysUntil(a.expires_at) : 9999;
+        const db = b.expires_at ? Store.daysUntil(b.expires_at) : 9999;
+        return da - db;
+      }).map((c) => {
+        const d = c.expires_at ? Store.daysUntil(c.expires_at) : Infinity;
+        const exp = d < 0, due = !exp && d <= 30;
+        const colour = exp ? 'rd' : (due ? 'or' : 'gn');
+        const sub = c.expires_at
+          ? (exp ? `Expired ${Math.abs(d)}d ago` : `${d}d left`)
+          : 'No expiry';
+        return `
+          <div class="row" onclick="go('s-my-quals')">
+            <div class="row-ic ${colour}">🎓</div>
+            <div class="row-body"><div class="row-name">${escapeHtml(c.name)}</div><div class="row-sub">${escapeHtml(sub)}</div></div>
+            <span class="chev">›</span>
+          </div>`;
+      }).join('');
+
+      scroll.innerHTML = `
+        <div style="padding:16px 16px 0">
+          ${orgName ? `<div style="font-size:12px;color:var(--lt);margin-bottom:8px">Crew at <strong style="color:var(--text)">${escapeHtml(orgName)}</strong></div>` : ''}
+
+          ${noCrewLink ? `
+            <div class="card" style="padding:16px;margin-bottom:14px;border-left:4px solid var(--or)">
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Waiting on your operator</div>
+              <div style="font-size:12px;color:var(--mid);line-height:1.55">Ask them to add you to a vessel's crew list using <strong>${escapeHtml(user.email || '')}</strong> — your qualifications will appear here automatically.</div>
+            </div>` : ''}
+
+          ${vesselCards ? `
+            <div class="slbl" style="padding:6px 4px 6px">My vessels</div>
+            <div class="card" style="margin-bottom:14px">${vesselCards}</div>` : ''}
+
+          <div class="slbl" style="padding:6px 4px 6px">My qualifications</div>
+          <div class="card" style="margin-bottom:14px">
+            ${qualPreview || `<div class="row"><div class="row-body"><div class="row-sub" style="color:var(--mid)">No qualifications on file yet.</div></div></div>`}
+            <div class="row" onclick="go('s-my-quals')">
+              <div class="row-ic bl">📋</div>
+              <div class="row-body"><div class="row-name" style="color:var(--sea)">See all qualifications</div></div>
+              <span class="chev">›</span>
+            </div>
+          </div>
+        </div>`;
+
+      // Re-render the install + reminders banners under the home content.
+      ensurePushUi();
+    } catch (err) {
+      console.warn('renderCrewHome failed', err);
+      scroll.innerHTML = `<div style="padding:18px"><div class="card" style="padding:16px"><div style="font-size:13px;color:#fca5a5;line-height:1.55">Could not load your dashboard: ${escapeHtml((err && err.message) || String(err))}</div></div></div>`;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Permission gate. Returns true if the signed-in user has the
+  // permission on their current org. Falls back to true for the
+  // demo seed (where the active user is always u_jm = owner).
+  // Permissions live on memberships.permissions.
+  // ─────────────────────────────────────────────────────────────
+  function canI(perm) {
+    if (!window.Store) return true;
+    const me = Store.getCurrentUser();
+    if (!me) return false;
+    // Demo / single-user paths: if there's exactly one membership and
+    // it's owned by me, all perms allowed regardless of array contents.
+    const memb = (Store.snapshot().memberships || []).find((m) => m.user_id === me.id);
+    if (!memb) return true; // No org yet — nothing to gate.
+    if (memb.role === 'owner') return true;
+    const perms = memb.permissions || [];
+    return perms.includes(perm) || perms.includes('view_all') && /^view/.test(perm);
+  }
+
+  // Per-vessel scoping check. Returns true if the current user has
+  // access to a specific vessel — either via vessel:all (org-wide)
+  // or via vessel:<id> (per-vessel scope). Owners always pass.
+  // Used by every list / detail render that surfaces vessel data.
+  function canSeeVessel(vesselId) {
+    if (!window.Store) return true;
+    const me = Store.getCurrentUser();
+    if (!me) return false;
+    const memb = (Store.snapshot().memberships || []).find((m) => m.user_id === me.id);
+    if (!memb) return true;
+    if (memb.role === 'owner') return true;
+    const perms = memb.permissions || [];
+    if (perms.includes('vessel:all')) return true;
+    return perms.includes('vessel:' + vesselId);
+  }
+  window.canSeeVessel = canSeeVessel;
+
+  // Filter a list of vessels (or vessel-bearing records) down to what
+  // the current user is allowed to see. Used by renderHome,
+  // renderVessels, certificate listings, etc. Owners get everything;
+  // scoped team members get just their grants.
+  function filterByVesselScope(items, vesselIdGetter) {
+    const get = vesselIdGetter || ((x) => x && x.id);
+    return (items || []).filter((it) => canSeeVessel(get(it)));
+  }
+  window.filterByVesselScope = filterByVesselScope;
+  window.canI = canI;
+
+  function applyPermissionGates() {
+    // Hide team-invite for users without manage_team.
+    const teamCard = document.getElementById('account-team-card');
+    if (teamCard) {
+      const inviteRow = teamCard.querySelector('.row[onclick*="openInviteTeamMember"]');
+      if (inviteRow) inviteRow.style.display = canI('manage_team') ? '' : 'none';
+    }
+    // Tag the body so CSS rules can hide owner-only affordances.
+    document.body.classList.toggle('perm-manage-vessels', canI('manage_vessels'));
+    document.body.classList.toggle('perm-manage-team', canI('manage_team'));
+    document.body.classList.toggle('perm-manage-certs', canI('manage_certs'));
+  }
+  window.applyPermissionGates = applyPermissionGates;
+
+  // ─────────────────────────────────────────────────────────────
+  // Trial countdown banner — shows on Account screen.
+  // ─────────────────────────────────────────────────────────────
+  async function renderTrialBanner() {
+    const host = document.getElementById('s-account');
+    if (!host) return;
+    let banner = document.getElementById('account-trial-banner');
+    if (banner) banner.remove();
+
+    if (!window.Supa || !window.Supa.ready) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) return;
+      const me = await client.from('users').select('id, kind').eq('auth_user_id', user.id).maybeSingle();
+      if (!me.data || me.data.kind !== 'operator') return;
+      const memb = await client.from('memberships').select('org_id').eq('user_id', me.data.id).eq('role','owner').maybeSingle();
+      if (!memb.data) return;
+      const org = await client.from('organizations').select('plan, trial_ends_at').eq('id', memb.data.org_id).maybeSingle();
+      if (!org.data) return;
+
+      const plan = org.data.plan || 'trial';
+      const endsRaw = org.data.trial_ends_at;
+      // Update the Plan-row subtitle on Account to mirror the current plan.
+      const planSummaryEl = document.getElementById('account-plan-summary');
+      if (planSummaryEl) {
+        const PLAN_LABELS = { trial: 'Free trial', solo: 'Solo skipper', pro: 'Pro', team: 'Team', expired: 'Trial expired' };
+        const label = PLAN_LABELS[plan] || plan;
+        planSummaryEl.textContent = (plan === 'trial')
+          ? `${label} · tap to pick a plan`
+          : `${label} · all features unlocked`;
+      }
+      if (plan !== 'trial') return; // Already on a paid plan — no banner.
+      if (!endsRaw) return;
+      const days = Store.daysUntil(endsRaw);
+      const expired = days < 0;
+      const colour = expired ? 'var(--red)' : (days <= 3 ? 'var(--amber)' : 'var(--sea)');
+      const msg = expired
+        ? 'Trial ended. Pick a plan to keep going — it\'s still free for now.'
+        : `Trial: ${days} day${days === 1 ? '' : 's'} left. Everything stays free until ${fmtDate(endsRaw)}.`;
+
+      banner = document.createElement('div');
+      banner.id = 'account-trial-banner';
+      banner.innerHTML = `
+        <div style="padding:14px 16px 0">
+          <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid ${colour}" onclick="go('s-plans')">
+            <div style="font-size:22px;flex-shrink:0">${expired ? '⏰' : '🎁'}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(msg)}</div>
+              <div style="font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5">Tap to pick a plan — still free during rollout.</div>
+            </div>
+            <span class="chev">›</span>
+          </div>
+        </div>`;
+      const scroll = host.querySelector('.scroll');
+      if (scroll) scroll.insertBefore(banner, scroll.firstChild);
+    } catch (err) {
+      console.warn('renderTrialBanner failed', err);
+    }
   }
 
   // ---------- Onboarding jurisdiction screen — wire codes-driven cert preview ----------
@@ -5803,7 +9515,7 @@ ${sectionsHtml}
     }
 
     preview.innerHTML = `
-      <div style="background:var(--seap);border:1px solid rgba(8,145,178,.2);border-radius:12px;padding:14px 16px">
+      <div style="background:var(--seap);border:1px solid rgba(3,32,61,.2);border-radius:12px;padding:14px 16px">
         <div style="font-size:12px;font-weight:700;color:var(--sea);margin-bottom:6px">📋 Based on your category — ${escapeHtml(lastVessel.category)}</div>
         <div style="font-size:11px;color:var(--mid);line-height:1.6;margin-bottom:8px">CodedOK will track these on your behalf:</div>
         <div style="font-size:11px;color:var(--mid);line-height:1.7">
@@ -5816,43 +9528,105 @@ ${sectionsHtml}
   // ---------- Onboarding save ----------
 
   function saveOnboardVessel() {
-    const name = (document.getElementById('onb-name') || {}).value;
+    const nameEl = document.getElementById('onb-name');
+    const name = (nameEl || {}).value;
     const type = (document.getElementById('onb-type') || {}).value;
     const cat = (document.getElementById('onb-cat') || {}).value;
     const ssr = (document.getElementById('onb-ssr') || {}).value;
     const port = (document.getElementById('onb-port') || {}).value;
+    const crew = parseInt((document.getElementById('onb-crew') || {}).value || '0', 10) || 0;
+    const jurPick = (document.getElementById('onb-jur') || {}).value || 'uk';
+    const jurMap = { uk: ['UK'], ie: ['IE'], both: ['UK', 'IE'] };
 
-    if (!name || !name.trim()) { go('s-onboard-jur'); return; }
+    // Name is the ONE required field. Show a friendly inline error and
+    // keep them here — the old code silently advanced with no vessel
+    // created, which left the user on step 2 with nothing saved.
+    const err = document.getElementById('onb-name-err');
+    if (!name || !name.trim()) {
+      if (err) err.style.display = 'block';
+      if (nameEl) { nameEl.style.borderColor = 'var(--red)'; nameEl.focus(); }
+      return;
+    }
+    if (err) err.style.display = 'none';
+    if (nameEl) nameEl.style.borderColor = '';
+
     const catShort = (cat || '').match(/Category \d/);
     Store.addVessel({
       name: name.trim(),
       type: (type || '').replace(/\s*\(.*\)/, ''),
-      category: catShort ? catShort[0].replace('Category', 'Cat') : 'Cat 2',
+      category: catShort ? catShort[0].replace('Category', 'Cat') : 'Cat 5',
       ssr: (ssr || '').trim(),
       port: (port || '').trim(),
+      persons: crew || undefined,
+      jurisdictions: jurMap[jurPick] || ['UK'],
       icon: '⛵'
     });
-    go('s-onboard-jur');
+    // One-screen onboarding: the old "Step 2 — where do you operate?"
+    // wall of jargon (SPV Code / Workboat Code / MSO / PBL) with three
+    // fields that were never saved is gone. Jurisdiction is captured as
+    // a plain optional picker above (defaults to UK), so we land the
+    // user straight on home with their boat ready.
+    goHome();
   }
   window.saveOnboardVessel = saveOnboardVessel;
 
   // ---------- Inspection pack PDF ----------
 
-  function exportInspectionPack() {
+  async function exportInspectionPack() {
     const v = Store.getVessel(activeVesselId) || Store.snapshot().vessels[0];
     if (!v) return;
     renderPrintPack(v.id);
+    await stampPrintPack();
     setTimeout(() => window.print(), 80);
   }
   window.exportInspectionPack = exportInspectionPack;
 
-  function exportFleetInspectionPack() {
+  async function exportFleetInspectionPack() {
     const vessels = Store.snapshot().vessels;
     if (vessels.length === 0) return;
     renderPrintPack(null);
+    await stampPrintPack();
     setTimeout(() => window.print(), 80);
   }
   window.exportFleetInspectionPack = exportFleetInspectionPack;
+
+  // ─────────────────────────────────────────────────────────────
+  // Stamp the about-to-print inspection pack with a generation
+  // timestamp + SHA-256 hash of the document body. The hash is
+  // written into the CSS custom property `--pp-stamp`, which the
+  // @page bottom-left running footer in print.css reads via
+  // `content: var(--pp-stamp)`. Result: every page of the PDF
+  // carries the same stamp; swapping a single page out of a
+  // printed pack becomes detectable by anyone re-hashing the body
+  // and comparing.
+  //
+  // Patricia's note from the surveyor walkthrough: without this,
+  // the inspection PDF "wouldn't survive a contested MAIB enquiry"
+  // because there's no way to prove a page wasn't swapped.
+  // ─────────────────────────────────────────────────────────────
+  async function stampPrintPack() {
+    const target = document.getElementById('print-pack');
+    if (!target) return;
+    const now = new Date();
+    const ts = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+    let shortHash = 'pending';
+    try {
+      const body = target.innerText || target.textContent || '';
+      const enc = new TextEncoder().encode(body);
+      if (window.crypto && window.crypto.subtle) {
+        const buf = await window.crypto.subtle.digest('SHA-256', enc);
+        const hex = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+        shortHash = hex.slice(0, 16);
+      }
+    } catch (_) { /* hash failure shouldn't block the print */ }
+    const stamp = `Generated ${ts} · CodedOK · doc ${shortHash}`;
+    // CSS @page paint reads the property at print time. Quote-wrap
+    // because content: needs a string literal.
+    target.style.setProperty('--pp-stamp', `"${stamp}"`);
+    // Also persist the hash on the document for audit-log lookup.
+    target.setAttribute('data-pp-hash', shortHash);
+    target.setAttribute('data-pp-generated', ts);
+  }
 
   function renderPrintPack(vesselId) {
     const target = document.getElementById('print-pack');
@@ -5870,9 +9644,9 @@ ${sectionsHtml}
           <div>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#0891b2" stroke-width="2.2" stroke-linecap="round"/>
-                <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#0891b2" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
-                <circle cx="20" cy="18" r="5" fill="#16a34a"/>
+                <path d="M3,9 Q7,4 11,9 Q15,14 19,9" stroke="#03203D" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M3,14 Q7,9 11,14 Q15,19 19,14" stroke="#03203D" stroke-width="2.2" stroke-linecap="round" opacity="0.4"/>
+                <circle cx="20" cy="18" r="5" fill="#4F7A52"/>
                 <path d="M17.5,18 L19.2,19.8 L23,15.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
               </svg>
               <span style="font-size:12px;color:#94a3b8;font-weight:600;letter-spacing:.05em">CODEDOK</span>
@@ -5881,8 +9655,8 @@ ${sectionsHtml}
             <div class="pp-meta">Generated ${escapeHtml(today)}${issuedBySurveyor && surveyor ? ' by ' + escapeHtml(surveyor.surveyor && surveyor.surveyor.company ? surveyor.surveyor.company : surveyor.name) : ' · ' + escapeHtml(operator.name || '')}</div>
           </div>
           ${issuedBySurveyor ? `
-            <div style="text-align:right;border-left:2px solid #0a1628;padding-left:14px">
-              <div style="font-family:'Times New Roman',serif;font-size:18px;font-weight:700;color:#0a1628;letter-spacing:.5px">McCollam Marine</div>
+            <div style="text-align:right;border-left:2px solid #03203D;padding-left:14px">
+              <div style="font-family:'Times New Roman',serif;font-size:18px;font-weight:700;color:#03203D;letter-spacing:.5px">Anchor Marine</div>
               <div style="font-family:'Times New Roman',serif;font-size:9px;color:#475569;letter-spacing:.15em;text-transform:uppercase;margin-top:2px">Naval Architects · Marine Surveyors</div>
               <div style="font-size:11px;color:#94a3b8;margin-top:6px">${escapeHtml((surveyor.surveyor && surveyor.surveyor.regions || []).join(' · '))}</div>
               ${surveyor.surveyor && surveyor.surveyor.phone ? `<div style="font-size:11px;color:#475569;margin-top:2px">${escapeHtml(surveyor.surveyor.phone)}</div>` : ''}
@@ -5946,7 +9720,7 @@ ${sectionsHtml}
               const days = Store.daysUntil(c.expires_at);
               const cls = days === Infinity ? 'pp-status-ok' : days < 0 ? 'pp-status-bad' : days <= 30 ? 'pp-status-warn' : 'pp-status-ok';
               const label = days === Infinity ? 'No expiry' : days < 0 ? 'EXPIRED' : days <= 30 ? `${days}d` : 'Valid';
-              const fileMark = c.file ? '<span style="color:#0891b2;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
+              const fileMark = c.file ? '<span style="color:#03203D;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
               return `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.issuer || '—')}</td><td>${escapeHtml(c.number || '—')}</td><td>${fmtDate(c.expires_at)}</td><td><span class="${cls}">${label}</span></td><td>${fileMark}</td></tr>`;
             }).join('')}
           </table>
@@ -5960,7 +9734,7 @@ ${sectionsHtml}
               const days = Store.daysUntil(e.next_service_at);
               const cls = e.next_service_at == null ? 'pp-status-ok' : days < 0 ? 'pp-status-bad' : days <= 30 ? 'pp-status-warn' : 'pp-status-ok';
               const label = e.next_service_at == null ? '—' : days < 0 ? 'OVERDUE' : days <= 30 ? `${days}d` : 'OK';
-              const fileMark = e.file ? '<span style="color:#0891b2;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
+              const fileMark = e.file ? '<span style="color:#03203D;font-weight:700">📎 Attached</span>' : '<span style="color:#94a3b8">—</span>';
               return `<tr><td>${escapeHtml(e.name)}</td><td>${escapeHtml((e.make || '') + ' ' + (e.model || ''))}</td><td>${e.qty || 1}</td><td>${fmtDate(e.last_service_at)}</td><td>${fmtDate(e.next_service_at)}</td><td><span class="${cls}">${label}</span></td><td>${fileMark}</td></tr>`;
             }).join('')}
           </table>
@@ -5999,13 +9773,13 @@ ${sectionsHtml}
           <div style="display:flex;gap:32px;align-items:flex-end;margin-top:18px">
             <div style="flex:1">
               <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:24px">Surveyor signature</div>
-              <div style="border-bottom:1px solid #0a1628;height:1px;margin-bottom:6px"></div>
-              <div style="font-family:'Times New Roman',serif;font-size:13px;font-weight:700;color:#0a1628">${escapeHtml((surveyor.surveyor && surveyor.surveyor.company) || surveyor.name || '')}</div>
+              <div style="border-bottom:1px solid #03203D;height:1px;margin-bottom:6px"></div>
+              <div style="font-family:'Times New Roman',serif;font-size:13px;font-weight:700;color:#03203D">${escapeHtml((surveyor.surveyor && surveyor.surveyor.company) || surveyor.name || '')}</div>
               <div style="font-size:10px;color:#475569">${escapeHtml((surveyor.surveyor && surveyor.surveyor.qualifications || []).join(' · '))}</div>
             </div>
             <div style="flex:1">
               <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:24px">Date</div>
-              <div style="border-bottom:1px solid #0a1628;height:1px;margin-bottom:6px"></div>
+              <div style="border-bottom:1px solid #03203D;height:1px;margin-bottom:6px"></div>
               <div style="font-size:13px;font-weight:600">${escapeHtml(today)}</div>
             </div>
           </div>
@@ -6014,7 +9788,7 @@ ${sectionsHtml}
 
     html += `
       <div class="pp-foot">
-        Generated by CodedOK · codedok.app · This pack is a snapshot of the operator's record at the time of generation.
+        Generated by CodedOK · codedok.com · This pack is a snapshot of the operator's record at the time of generation.
       </div>`;
 
     target.innerHTML = html;
@@ -6023,6 +9797,14 @@ ${sectionsHtml}
   // ---------- Demo data controls ----------
 
   function resetDemoData() {
+    // Belt-and-braces: even though the Account row that calls this is
+    // hidden for real accounts, never let a live operator wipe their
+    // own data with demo fixtures.
+    const session = loadSession();
+    if (session && session.mode === 'live' && !isDemoOperatorEmail(session.email)) {
+      alert('Demo data is only available on the demo account.');
+      return;
+    }
     if (!confirm('Restore the demo data (Tsunami IV & Lagavulin)? This will wipe any vessels you added.')) return;
     Store.resetToSeed();
     const sv = document.getElementById('s-vessels');
@@ -6085,6 +9867,62 @@ ${sectionsHtml}
     badge.style.display = (session && session.mode === 'demo') ? 'block' : 'none';
   }
 
+  // Offline / sync-pending indicator. Fixed at the bottom-right above
+  // the bnav, only visible when there's something to communicate:
+  //   - Offline & writes queued / not yet pushed
+  //   - Online + actively syncing
+  // Idle (online, queue empty, last pull recent) → hidden.
+  function renderSyncBadge(detail) {
+    if (!detail) return;
+    let badge = document.getElementById('sync-badge');
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.id = 'sync-badge';
+      badge.style.cssText = 'position:fixed;right:14px;bottom:calc(70px + env(safe-area-inset-bottom));z-index:9000;display:none;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;color:white;box-shadow:0 4px 14px rgba(0,0,0,.18);font-family:var(--fn);pointer-events:none;letter-spacing:-.1px';
+      document.body.appendChild(badge);
+    }
+    const { online, inFlight, pending } = detail;
+    if (!online) {
+      badge.style.background = '#ef4444';
+      badge.textContent = pending > 0
+        ? `Offline · ${pending} change${pending === 1 ? '' : 's'} queued`
+        : 'Offline';
+      badge.style.display = 'block';
+    } else if (inFlight && pending > 0) {
+      badge.style.background = '#f59e0b';
+      badge.textContent = `Syncing ${pending}…`;
+      badge.style.display = 'block';
+    } else if (pending > 0) {
+      badge.style.background = '#f59e0b';
+      badge.textContent = `${pending} pending`;
+      badge.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+  window.addEventListener('codedok-sync', (e) => renderSyncBadge(e.detail));
+  // Surface the initial state once Sync has booted.
+  setTimeout(() => {
+    if (window.Sync && window.Sync.status) renderSyncBadge(window.Sync.status());
+  }, 1800);
+
+  // Returns true if the signed-in operator-kind user has no owner
+  // memberships — i.e. they're crew at someone else's org, not their
+  // own skipper. Used by handleSignedIn to pick the right home screen.
+  async function detectCrewOnly(client, userId) {
+    try {
+      const memb = await client.from('memberships')
+        .select('role', { count: 'exact', head: false })
+        .eq('user_id', userId);
+      if (memb.error || !memb.data) return false;
+      const rows = memb.data;
+      if (!rows.length) return false; // No memberships yet — fresh signup.
+      return !rows.some((m) => m.role === 'owner');
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Called from the Supabase auth state listener when a real user is
   // signed in (either fresh from a magic-link redirect or returning to
   // an existing session). Ensures our users table has a row for them,
@@ -6093,6 +9931,12 @@ ${sectionsHtml}
   async function handleSignedIn(authUser) {
     const client = window.Supa && window.Supa.client;
     if (!client) return;
+
+    // Show a friendly loading state for the whole round-trip. This
+    // covers the gap between submitSignIn finishing and the home
+    // screen rendering — without it the user taps "Sign in" and
+    // stares at the form for 1-2 seconds wondering if it worked.
+    setAuthLoading(true, 'Loading your workspace…');
 
     try {
       // Simple, self-healing user save:
@@ -6112,30 +9956,55 @@ ${sectionsHtml}
       if (lookup.error) throw new Error('users select: ' + lookup.error.message);
       let row = lookup.data;
 
-      // Role precedence: explicit chosen role from sign-up metadata >
-      // admin/builder email pattern > existing row's kind > default operator.
+      // Role precedence:
+      //   1. If the existing row is already 'admin' or 'support', KEEP IT.
+      //      These roles are set out-of-band (by DBA / SQL) and must never
+      //      be silently downgraded to whatever the sign-up form said.
+      //   2. Otherwise use sign-up metadata > existing row > email inference.
+      //
+      // SECURITY: the metadata whitelist below deliberately EXCLUDES
+      // 'admin' and 'support'. user_metadata.kind is attacker-controlled
+      // (anyone can call auth.signUp with options.data.kind='admin'), so
+      // allowing those here would let a self-service signup mint itself
+      // a privileged role. Privileged roles are ONLY ever assigned by
+      // the service role (SQL editor / support console). A DB trigger
+      // (migration 0020) is the real gate — this is defence in depth.
       const chosenKind = authUser.user_metadata && authUser.user_metadata.kind;
       const inferred = kindFromEmail(authUser.email);
-      const desiredKind = ['operator','surveyor','admin','builder'].includes(chosenKind)
-        ? chosenKind
-        : (row && row.kind) || inferred;
+      const privilegedExisting = row && (row.kind === 'admin' || row.kind === 'support');
+      const desiredKind = privilegedExisting
+        ? row.kind
+        : ['operator','surveyor','builder'].includes(chosenKind)
+          ? chosenKind
+          : (row && row.kind) || inferred;
 
+      const meta = authUser.user_metadata || {};
       if (!row) {
-        const initials = (authUser.email || '?').slice(0, 2).toUpperCase();
-        const name = (authUser.user_metadata && authUser.user_metadata.name) || authUser.email.split('@')[0];
+        const initials = (meta.name || authUser.email || '?').trim().split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || authUser.email.slice(0, 2).toUpperCase();
+        const name = meta.name || authUser.email.split('@')[0];
         const id = 'u_' + Math.random().toString(36).slice(2, 9);
         const newUser = {
           id, auth_user_id: authUser.id,
           email: authUser.email, name, initials, kind: desiredKind
         };
-        if (desiredKind === 'builder') newUser.builder = { slug: 'redbay', company: 'Redbay Boats' };
+        if (desiredKind === 'operator' && meta.business_name) newUser.business_name = meta.business_name;
+        if (desiredKind === 'builder') newUser.builder = { slug: 'redbay', company: 'Stormrider Marine' };
         const ins = await client.from('users').insert(newUser).select().single();
         if (ins.error) throw new Error('users insert: ' + ins.error.message);
         row = ins.data;
-      } else if (row.kind !== desiredKind && chosenKind) {
-        // Existing user signed up again with a different role — update.
-        const upd = await client.from('users').update({ kind: desiredKind }).eq('id', row.id).select().single();
-        if (!upd.error) row = upd.data;
+      } else {
+        // Returning user — patch in any of: role change, name change,
+        // business name backfill (if signup metadata is newer than the row).
+        const patch = {};
+        if (row.kind !== desiredKind && chosenKind) patch.kind = desiredKind;
+        if (meta.name && !row.name) patch.name = meta.name;
+        if (meta.business_name && !row.business_name && desiredKind === 'operator') {
+          patch.business_name = meta.business_name;
+        }
+        if (Object.keys(patch).length) {
+          const upd = await client.from('users').update(patch).eq('id', row.id).select().single();
+          if (!upd.error) row = upd.data;
+        }
       }
 
       // Bridge with the existing localStorage session.
@@ -6144,30 +10013,110 @@ ${sectionsHtml}
         user_id: row.id,
         signed_in_at: new Date().toISOString()
       });
+      // Remember that this device has signed in at least once. The
+      // soft gate uses this to skip the marketing landing for
+      // returning users — once they've made the conversion they
+      // shouldn't see the pitch on every visit, only the sign-in
+      // screen (or the app, if their session is still live).
+      try { localStorage.setItem('codedok-knows-user', '1'); } catch (_) {}
+
+      // On the native build, register this device for APNs push so expiry
+      // reminders reach the phone. Fire-and-forget; no-op on web.
+      try { registerNativePush(row.id); } catch (_) {}
+      // Tie Apple subscriptions to this account (Supabase auth id), so
+      // RevenueCat's webhook can find the right organisation.
+      try { if (window.CodedokNative && CodedokNative.iap) CodedokNative.iap.configure(authUser.id); } catch (_) {}
+
+      // Demo-account gating. Two seeded experiences:
+      //   mcljd303@icloud.com               → operator demo (skipper view)
+      //   anything matching the McCollam regex → surveyor demo, with the
+      //     seeded u_sv1 references swapped to this auth user so the
+      //     same demo data shows up as theirs. Use mcljd303+mccollam@…
+      //     so the verification email lands in the same inbox.
+      const emailLc = (authUser.email || '').toLowerCase();
+      const isDemoOperator = isDemoOperatorEmail(emailLc);
+      const isDemoSurveyor = /(?:^|\+)mccollam@|@mccollammarine\.com$/i.test(emailLc);
+      const isDemoAccount = isDemoOperator || isDemoSurveyor;
+      if (window.Store) {
+        // Always reset the session pointer first so a previous user's
+        // mode/user_id doesn't leak in. attachAuthenticatedUser below
+        // will set them correctly for this user.
+        if (Store.resetSession) Store.resetSession();
+        if (isDemoOperator) {
+          // Re-seed only if the local store doesn't already have demo
+          // fixtures, so mcljd303's edits persist across sessions.
+          if (!Store.hasDemoFixtures()) Store.applyDemoSeed();
+        } else if (isDemoSurveyor) {
+          // McCollam demo: ALWAYS re-apply the seed so a prior
+          // adoptSeededSurveyor stamping (which renamed u_sv1 to the
+          // previous McCollam user's id) doesn't corrupt the data for
+          // a new sign-in. Then re-stamp for this auth user.
+          Store.applyDemoSeed();
+          Store.adoptSeededSurveyor(row.id);
+        } else if (Store.hasDemoFixtures()) {
+          // Real (non-demo) user landing on a device that still has
+          // demo fixtures from a prior session — wipe them.
+          Store.resetToEmpty();
+        }
+        // Mirror the Supabase users row into the local Store so the rest
+        // of the app (getCurrentUser, lazy org creation on first vessel
+        // add, role-aware UI) recognises this account.
+        Store.attachAuthenticatedUser(row);
+      }
 
       // Drive the boot routing.
       renderDemoBadge();
       if (row.kind === 'admin') {
         applyDesktopAdmin();
         go('s-admin-home');
+      } else if (row.kind === 'support') {
+        // Support-team console — full user management, not the SMS
+        // review workspace. Same wide-screen layout as admin so it
+        // gets sidebar navigation on desktop.
+        applyDesktopAdmin();
+        go('s-support');
       } else if (row.kind === 'surveyor') {
         Store.setMode('surveyor');
         go('s-surveyor-home');
       } else if (row.kind === 'builder') {
         window.location.href = 'web/index.html#builder';
       } else {
+        // Operator-kind users split into two homes:
+        //   - skipper / org owner  → s-home  (full fleet management)
+        //   - crew member          → s-crew-home  (read-only + own quals)
+        // The signal is whether any membership names this user as owner.
         Store.setMode('operator');
-        go('s-home');
+        const isCrew = await detectCrewOnly(client, row.id);
+        go(isCrew ? 's-crew-home' : 's-home');
+        // First-time skippers get the 60-second tour after the home
+        // paints. Runs once per device — subsequent sign-ins skip it
+        // unless the user replays it from Account → Take the tour.
+        if (!isCrew) {
+          try { maybeShowFirstRunTutorial(); } catch (_) {}
+        }
       }
+
+      // If they arrived via a surveyor invite link, claim the grant
+      // now that auth is settled. Errors surface to the user.
+      acceptPendingInvitation();
+      // Routing is done; tear down the loading overlay. Slight delay
+      // gives the new home a moment to paint so the user doesn't see
+      // a flash of the login screen between overlay-removal and home-
+      // mount.
+      setTimeout(() => setAuthLoading(false), 120);
     } catch (err) {
+      setAuthLoading(false);
       console.error('handleSignedIn failed', err);
-      const msg = (err && err.message) || String(err);
-      const hint = /infinite recursion/.test(msg)
-        ? 'Run migration 0005_definer_helpers_idempotent.sql in the Supabase SQL editor — it patches the RLS helpers to SECURITY DEFINER without cascade-dropping policies.'
-        : /violates row-level security|permission denied|new row violates/i.test(msg)
-        ? 'Run migration 0003_insert_policies.sql in the Supabase SQL editor.'
-        : 'Check Supabase RLS policies (migrations 0002, 0003, 0005) in /supabase/migrations.';
-      alert("Couldn't finish signing you in:\n\n" + msg + "\n\n" + hint);
+      // Log full diagnostics for us, show a clean message to the user.
+      // The old behaviour leaked migration-file names into the alert
+      // ("Run migration 0005_definer_helpers_idempotent.sql…") which
+      // is fine in a dev console but reads as broken to a real skipper.
+      try {
+        if (window.Sentry && window.Sentry.captureException) {
+          window.Sentry.captureException(err, { tags: { phase: 'handleSignedIn' } });
+        }
+      } catch (_) {}
+      alert("We couldn't finish signing you in. Try again in a moment, or email hello@codedok.com if it keeps happening.");
     }
   }
 
@@ -6180,6 +10129,50 @@ ${sectionsHtml}
   // double-taps from firing two sign-ins, two reset emails, etc.
   // (Supabase rate-limits reset/verification mail at 4/hour per address.)
   let authInFlight = false;
+
+  // Visual loading state for auth round-trips. Covers two layers:
+  //   1. Disables every .auth-btn-primary and swaps its label for a
+  //      spinner + the supplied message — so the form clearly
+  //      acknowledges the tap.
+  //   2. Drops a full-screen blurred overlay with the same message
+  //      so the rest of the page can't be tapped during the gap
+  //      between auth-success and the home screen rendering.
+  // Call setAuthLoading(false) to tear it down.
+  function setAuthLoading(active, message) {
+    document.querySelectorAll('.auth-btn-primary').forEach((btn) => {
+      btn.disabled = !!active;
+      if (active) {
+        if (!btn.dataset.origLabel) btn.dataset.origLabel = btn.innerHTML;
+        btn.innerHTML = '<span class="auth-spin" aria-hidden="true"></span>' + escapeHtml(message || 'Just a moment…');
+        btn.style.opacity = '.85';
+        btn.style.cursor = 'wait';
+      } else if (btn.dataset.origLabel) {
+        btn.innerHTML = btn.dataset.origLabel;
+        delete btn.dataset.origLabel;
+        btn.style.opacity = '';
+        btn.style.cursor = '';
+      }
+    });
+
+    let overlay = document.getElementById('auth-loading-overlay');
+    if (active) {
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'auth-loading-overlay';
+        overlay.setAttribute('role', 'status');
+        overlay.setAttribute('aria-live', 'polite');
+        document.body.appendChild(overlay);
+      }
+      overlay.innerHTML = `
+        <div class="auth-loading-card">
+          <div class="auth-spin auth-spin-lg" aria-hidden="true"></div>
+          <div class="auth-loading-msg">${escapeHtml(message || 'Just a moment…')}</div>
+        </div>`;
+    } else if (overlay) {
+      overlay.remove();
+    }
+  }
+  window.setAuthLoading = setAuthLoading;
 
   // Forgot password — sends a reset link to the email currently typed
   // in the sign-in form. User clicks the link, comes back, and the
@@ -6198,9 +10191,7 @@ ${sectionsHtml}
     authInFlight = true;
     try {
       await window.Supa.sendPasswordReset(email);
-      const lineEl = document.getElementById('login-sent-line');
-      if (lineEl) lineEl.innerHTML = `Reset link sent to <strong style="color:white">${escapeHtml(email)}</strong>. Tap it from this device — you'll come back here and be asked to set a new password.`;
-      toggleAuthMode('sent');
+      openResetCodeSheet(email);
     } catch (err) {
       showLoginError("Couldn't send reset: " + ((err && err.message) || err));
     } finally {
@@ -6208,6 +10199,72 @@ ${sectionsHtml}
     }
   }
   window.forgotPassword = forgotPassword;
+
+  // In-app reset: the email carries a one-time code (no link), so the
+  // user never leaves the app. Code + new password in one sheet.
+  function openResetCodeSheet(email) {
+    const existing = document.getElementById('reset-code-sheet');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'reset-code-sheet';
+    modal.className = 'bdrop on';
+    modal.innerHTML = `
+      <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
+        <div class="sh-pull"></div>
+        <div class="sh-head">
+          <div class="sh-title">Reset your password</div>
+          <button class="sh-x" onclick="closeResetCodeSheet()">×</button>
+        </div>
+        <div style="padding:0 20px 14px">
+          <div style="font-size:14px;color:var(--mid);margin-bottom:14px;line-height:1.55">We've emailed a code to <strong style="color:var(--text)">${escapeHtml(email)}</strong>. Enter it below with your new password.</div>
+          <div class="fg"><label class="fl">Code from the email</label><input class="fi" id="rc-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" style="letter-spacing:.2em;font-size:20px;text-align:center"></div>
+          <div class="fg"><label class="fl">New password</label><input class="fi" id="rc-new" type="password" autocomplete="new-password" placeholder="8+ characters"></div>
+          <div id="rc-error" style="display:none;font-size:13px;color:var(--red);margin-top:6px;text-align:center"></div>
+          <button class="btn btn-sea btn-full" id="rc-submit" onclick="submitResetCode()" style="margin-top:10px">Set new password</button>
+          <button class="btn btn-out btn-full" onclick="forgotPassword()" style="margin-top:8px">Send a new code</button>
+        </div>
+      </div>`;
+    modal.dataset.email = email;
+    document.body.appendChild(modal);
+    setTimeout(() => { const c = document.getElementById('rc-code'); if (c) c.focus(); }, 150);
+  }
+  window.openResetCodeSheet = openResetCodeSheet;
+
+  function closeResetCodeSheet() {
+    const m = document.getElementById('reset-code-sheet');
+    if (m) m.remove();
+  }
+  window.closeResetCodeSheet = closeResetCodeSheet;
+
+  async function submitResetCode() {
+    const modal = document.getElementById('reset-code-sheet');
+    if (!modal) return;
+    const email = modal.dataset.email;
+    const code = ((document.getElementById('rc-code') || {}).value || '').replace(/\s+/g, '');
+    const pw = (document.getElementById('rc-new') || {}).value || '';
+    const errEl = document.getElementById('rc-error');
+    const fail = (m) => { if (errEl) { errEl.textContent = m; errEl.style.display = 'block'; } };
+    if (!/^\d{6,10}$/.test(code)) return fail('Enter the code from the email.');
+    if (pw.length < 8) return fail('Use at least 8 characters for your password.');
+    const btn = document.getElementById('rc-submit');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    // verifyOtp fires PASSWORD_RECOVERY; this flag stops the old
+    // link-based handler opening a second "change password" sheet.
+    window.__cdkCodeRecovery = true;
+    try {
+      await window.Supa.resetPasswordWithCode(email, code, pw);
+      closeResetCodeSheet();
+      // Session is now saved: reload so normal sign-in routing takes over.
+      window.location.reload();
+    } catch (err) {
+      const msg = (err && err.message) || '';
+      fail(/expired|invalid|token/i.test(msg) ? 'That code is wrong or has expired. Tap "Send a new code".' : ("Couldn't reset: " + msg));
+      if (btn) { btn.disabled = false; btn.textContent = 'Set new password'; }
+    } finally {
+      setTimeout(() => { window.__cdkCodeRecovery = false; }, 2000);
+    }
+  }
+  window.submitResetCode = submitResetCode;
 
   // Change password while signed in. Tapped from Account → Change password.
   function openChangePassword() {
@@ -6275,6 +10332,9 @@ ${sectionsHtml}
     const ids = ['login-step-signin', 'login-step-signup', 'login-step-sent'];
     const map = { signin: 'login-step-signin', signup: 'login-step-signup', sent: 'login-step-sent' };
     const target = map[mode] || 'login-step-signin';
+    // The heading must match the form: new users aren't "back".
+    const h1 = document.getElementById('auth-h1');
+    if (h1) h1.textContent = mode === 'signup' ? 'Create your account' : mode === 'sent' ? 'Check your email' : 'Welcome back';
     ids.forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.style.display = id === target ? '' : 'none';
@@ -6303,10 +10363,14 @@ ${sectionsHtml}
     }
 
     authInFlight = true;
+    setAuthLoading(true, 'Signing in…');
     try {
       await window.Supa.signInWithPassword(email, password);
-      // handleSignedIn() will fire via Supa.onAuthChange and route into the app.
+      // handleSignedIn() will fire via Supa.onAuthChange and route into
+      // the app — it'll keep setAuthLoading on until routing completes,
+      // so we deliberately don't turn it off here on success.
     } catch (err) {
+      setAuthLoading(false);
       const msg = (err && err.message) ? err.message : 'sign-in failed';
       if (/Email not confirmed/i.test(msg)) {
         showLoginError("Your email isn't verified yet. Check your inbox for the link we sent.");
@@ -6325,6 +10389,49 @@ ${sectionsHtml}
   }
   window.submitSignIn = submitSignIn;
 
+  // ----- Sign in with Apple (iPhone app only) -----
+  async function signInWithApple() {
+    if (authInFlight) return;
+    const N = window.CodedokNative;
+    const fail = (t) => { showLoginError(t); const se = document.getElementById('signup-error'); if (se) { se.textContent = t; se.style.display = 'block'; } };
+    if (!N || !N.apple || !N.apple.available()) return fail('Sign in with Apple is only available in the iPhone app.');
+    if (!window.Supa || !window.CodedOkConfig || !window.CodedOkConfig.supabaseUrl) return fail("Cloud sign-in isn't configured.");
+    authInFlight = true;
+    try {
+      const a = await N.apple.signIn();
+      setAuthLoading(true, 'Signing in…');
+      const data = await window.Supa.signInWithApple(a.token, a.nonce);
+      // Hand Apple's one-time code to the server so it can keep the refresh
+      // token needed to revoke access if the person later deletes their account.
+      if (a.code) {
+        try {
+          const c0 = await window.Supa.getClient();
+          c0.functions.invoke('apple-link', { body: { authorization_code: a.code } }).catch(() => {});
+        } catch (_) {}
+      }
+      // Apple only shares the name the first time, so save it straight away.
+      // Best-effort: failing to store a name must never block sign-in.
+      if (a.name && data && data.user) {
+        try {
+          const client = await window.Supa.getClient();
+          await client.auth.updateUser({ data: { name: a.name } });
+          await client.from('users').update({ name: a.name, initials: a.name.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase() }).eq('auth_user_id', data.user.id);
+        } catch (_) {}
+      }
+      // handleSignedIn() routes via Supa.onAuthChange, as for password sign-in.
+    } catch (err) {
+      setAuthLoading(false);
+      const msg = (err && err.message) ? String(err.message) : '';
+      // Cancelling Apple's sheet isn't an error worth showing.
+      if (/cancel|1001|AuthorizationError error 1000/i.test(msg) || (err && (err.code === '1001' || err.code === 1001))) return;
+      if (/provider.*not enabled|Unsupported provider/i.test(msg)) return fail('Sign in with Apple is not switched on yet. Use your email and password.');
+      fail(msg || "Couldn't sign in with Apple. Try again or use your email.");
+    } finally {
+      authInFlight = false;
+    }
+  }
+  window.signInWithApple = signInWithApple;
+
   function showLoginError(text) {
     const el = document.getElementById('login-error');
     if (!el) return;
@@ -6342,9 +10449,13 @@ ${sectionsHtml}
     document.querySelectorAll('#signup-role-picker .role-pick').forEach((btn) => {
       const isActive = btn.dataset.role === role;
       btn.classList.toggle('on', isActive);
-      btn.style.background = isActive ? 'rgba(8,145,178,.2)' : 'rgba(255,255,255,.04)';
+      btn.style.background = isActive ? 'rgba(3,32,61,.2)' : 'rgba(255,255,255,.04)';
       btn.style.borderColor = isActive ? 'var(--seal)' : 'rgba(255,255,255,.08)';
     });
+    // Surveyors don't have a business they're billing under — the field
+    // only makes sense for operators.
+    const bizWrap = document.getElementById('signup-business-wrap');
+    if (bizWrap) bizWrap.style.display = (role === 'operator') ? '' : 'none';
   }
   window.setSignupRole = setSignupRole;
 
@@ -6353,29 +10464,52 @@ ${sectionsHtml}
     if (authInFlight) return;
     const email = ((document.getElementById('signup-email') || {}).value || '').trim();
     const password = (document.getElementById('signup-password') || {}).value || '';
+    const name = ((document.getElementById('signup-name') || {}).value || '').trim();
+    const businessName = ((document.getElementById('signup-business') || {}).value || '').trim();
     const errEl = document.getElementById('signup-error');
     if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
 
+    if (!name) return showSignupError('Enter your name.');
     if (!email.includes('@')) return showSignupError('Enter a valid email.');
     if (password.length < 8) return showSignupError('Password must be at least 8 characters.');
+    // Business name is optional — solo skippers leave it blank, the org
+    // gets lazy-created and named after them on first vessel add.
 
     if (!window.Supa || !window.CodedOkConfig || !window.CodedOkConfig.supabaseUrl) {
-      return showSignupError("Cloud sign-up isn't configured. Use the demo button instead.");
+      return showSignupError("Cloud sign-up isn't configured.");
     }
 
-    // Pass the chosen role through Supabase auth user_metadata so it
-    // survives the email-verification round-trip. handleSignedIn() reads
-    // it when creating the public.users row.
+    // Pass the chosen role + display name through Supabase auth
+    // user_metadata so they survive the email-verification round-trip.
+    // handleSignedIn() reads these when creating the public.users row.
     authInFlight = true;
+    setAuthLoading(true, 'Creating your account…');
     try {
-      await window.Supa.signUpWithPassword(email, password, { kind: signupRole });
-      // If email confirmation is on, the session is null until they click the link.
-      // If it's off, they're signed in immediately — onAuthChange fires.
-      const lineEl = document.getElementById('login-sent-line');
-      const roleLabel = signupRole === 'surveyor' ? 'surveyor' : 'skipper';
-      if (lineEl) lineEl.innerHTML = `${roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1)} account created. We've sent a verification link to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email, tap the link, then come back to sign in.`;
-      toggleAuthMode('sent');
+      const meta = { kind: signupRole, name };
+      if (signupRole === 'operator' && businessName) meta.business_name = businessName;
+      const signUpData = await window.Supa.signUpWithPassword(email, password, meta);
+      setAuthLoading(false);
+      // When "Confirm email" is OFF in Supabase, signUp returns a live
+      // session and onAuthChange will fire SIGNED_IN — let it route the
+      // user into the app, and queue a welcome toast.
+      // When confirmation is ON, session is null and we fall back to the
+      // "check your inbox" interstitial so the user knows to verify.
+      if (signUpData && signUpData.session) {
+        try { sessionStorage.setItem('codedok-welcome-pending', '1'); } catch (_) {}
+        try {
+          if (typeof window.codedokTrack === 'function') {
+            window.codedokTrack('signup_complete', { role: signupRole });
+          }
+        } catch (_) {}
+        // onAuthStateChange handles routing; nothing more to do here.
+      } else {
+        const lineEl = document.getElementById('login-sent-line');
+        const roleLabel = signupRole === 'surveyor' ? 'surveyor' : 'skipper';
+        if (lineEl) lineEl.innerHTML = `${roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1)} account created. We've sent a verification link to <strong style="color:white">${escapeHtml(email)}</strong>. Open the email, tap the link, then come back to sign in.`;
+        toggleAuthMode('sent');
+      }
     } catch (err) {
+      setAuthLoading(false);
       const msg = (err && err.message) ? err.message : 'sign-up failed';
       if (/already.*registered|already.*exists|User already registered/i.test(msg)) {
         showSignupError("That email is already in use. Sign in instead.");
@@ -6423,24 +10557,109 @@ ${sectionsHtml}
     return 'operator';
   }
 
+  // Legacy entry point. The "Try the live demo →" login button was
+  // removed when we cut over to per-account real workspaces — demo
+  // data now only loads when mcljd303@icloud.com signs in. The
+  // function stays defined so the index.html self-heal sentinel
+  // (which probes for window.enterDemo) still detects a successful
+  // app.js load. Calling it just routes to the login screen.
   function enterDemo() {
-    saveSession({ mode: 'demo', signed_in_at: new Date().toISOString() });
-    // Force operator mode so the demo always lands in the operator home
-    // — otherwise a stale surveyor/admin session bounces them to the
-    // wrong screen with the wrong user.
-    if (window.Store) Store.setMode('operator');
-    document.body.classList.remove('desktop-surveyor');
-    document.body.classList.remove('desktop-admin');
-    activeVesselId = null;
-    renderDemoBadge();
-    renderHome();
-    go('s-home');
+    go('s-login');
   }
   window.enterDemo = enterDemo;
+
+  // Back-button target from the "Add your first vessel" onboarding screen.
+  // Signed-in users came from the home dashboard and should return there.
+  // Unauthenticated visitors (who tapped "Get inspection-ready" on the
+  // marketing landing page) get sent back to s-land.
+  function goBackFromOnboard() {
+    const session = loadSession();
+    go(session ? 's-home' : 's-land');
+  }
+  window.goBackFromOnboard = goBackFromOnboard;
+
+  // Smart "Home" router: operator and crew live on different home
+  // screens. Most bnav Home buttons hardcode `go('s-home')`; this
+  // helper picks the right one based on the user's membership role.
+  function goHome() {
+    const me = Store && Store.getCurrentUser();
+    const myMemb = me ? (Store.snapshot().memberships || []).filter((m) => m.user_id === me.id) : [];
+    const isCrew = myMemb.length > 0 && !myMemb.some((m) => m.role === 'owner');
+    go(isCrew ? 's-crew-home' : 's-home');
+  }
+  window.goHome = goHome;
+
+  // Send the visitor straight to the signup form on the auth screen.
+  // Used by every "Start free" CTA on the landing page so taps go to
+  // the right form without the user having to find the "Create one"
+  // link first.
+  // The web app has been retired: the website only points people to the
+  // iPhone app. Before launch this goes to the founding list; once
+  // CodedOkConfig.appStoreLive is true it opens the App Store listing.
+  function goAppStore() {
+    track('app_store_click');
+    var cfg = window.CodedOkConfig || {};
+    window.location.href = (cfg.appStoreLive && cfg.appStoreUrl) ? cfg.appStoreUrl : '/founding?utm_source=site&utm_medium=cta';
+  }
+  window.goAppStore = goAppStore;
+
+  function goSignUp() {
+    track('signup_start');
+    // On the website there is no web app any more — send people to the
+    // iPhone app instead. Inside the native app, open the sign-up form.
+    if (isPublicWebsite()) { goAppStore(); return; }
+    go('s-login');
+    setTimeout(() => { if (window.toggleAuthMode) toggleAuthMode('signup'); }, 30);
+  }
+  window.goSignUp = goSignUp;
+
+  // On app.codedok.com, auto-flip to sign-up mode if ?signup=1 is
+  // in the URL (the marketing CTA appends that param when routing
+  // here). Runs after the s-login shell renders.
+  (function maybeAutoSignup() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      if (params.has('signup')) {
+        document.addEventListener('DOMContentLoaded', function () {
+          setTimeout(function () {
+            if (typeof window.toggleAuthMode === 'function') window.toggleAuthMode('signup');
+          }, 100);
+        });
+      }
+    } catch (_) {}
+  })();
+
+  // Lightweight analytics dispatcher. Fires to Google Analytics 4 if
+  // gtag is loaded; harmless no-op otherwise. Used for the three
+  // highest-value funnel events: signup_start (CTA click), demo_open
+  // (/demo URL hit), install_click (Add to Home Screen tapped).
+  function track(eventName, params) {
+    try {
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', eventName, params || {});
+      }
+    } catch (_) {}
+  }
+  window.codedokTrack = track;
+
+  // (Removed armLandingReveal + startCounter — they drove the retired
+  // v7–v10 landing hooks [data-reveal]/[data-parallax]/[data-count-to]/
+  // #ld-stickynav/#ld-floatcta, none of which exist in the current
+  // v11 landing DOM. The handler bound a scroll listener that did a
+  // DOM query + getBoundingClientRect every frame for nothing. Gone.)
 
   function signOut() {
     if (!confirm('Sign out and return to the login screen?')) return;
     clearSession();
+    // Reset the local Store's session pointer so the next sign-in
+    // doesn't inherit the previous user's mode/user_id. Without this,
+    // signing out of McCollam (surveyor) and back in as mcljd
+    // (operator) flashed the surveyor home before handleSignedIn
+    // could correct routing.
+    if (window.Store && Store.resetSession) Store.resetSession();
+    // Strip any view-mode body classes (admin / surveyor desktop).
+    document.body.classList.remove('desktop-surveyor');
+    document.body.classList.remove('desktop-admin');
     // Best-effort Supabase sign-out — keeps the next session clean.
     if (window.Supa && window.Supa.signOut) {
       window.Supa.signOut().catch(() => {});
@@ -6450,13 +10669,1108 @@ ${sectionsHtml}
   }
   window.signOut = signOut;
 
+  // ─────────────────────────────────────────────────────────────
+  // Account deletion. UK GDPR / DPA 2018 requires a clear, in-app
+  // path to erasure. This is a two-step confirmation: a strong
+  // warning prompt, then a typed confirmation. We then call the
+  // Supabase RPC `delete_my_account` (added separately) which
+  // cascades the user's data and queues the auth row for deletion
+  // within 30 days. If that RPC isn't available we fall back to
+  // emailing privacy@codedok.com — the user is told exactly what
+  // happens next.
+  // ─────────────────────────────────────────────────────────────
+  async function deleteAccount() {
+    const warn = "Delete your CodedOK account?\n\n"
+      + "This permanently removes:\n"
+      + "  • All your vessel records and certificates\n"
+      + "  • Your Safety Management System drafts\n"
+      + "  • Your crew records and qualifications\n"
+      + "  • Any surveyor invitations you've sent\n\n"
+      + "Data is erased within 30 days. This cannot be undone.";
+    if (!confirm(warn)) return;
+
+    const typed = prompt('Type DELETE to confirm (uppercase).');
+    if (typed !== 'DELETE') {
+      if (typed !== null) alert('Cancelled — your account was NOT deleted.');
+      return;
+    }
+
+    // Try the Supabase RPC path first; fall back to mailto if the
+    // RPC isn't deployed yet or anything else goes wrong.
+    let rpcOk = false;
+    if (window.Supa && window.Supa.ready) {
+      try {
+        const client = await window.Supa.getClient();
+        const { data, error } = await client.functions.invoke('delete-account', { body: {} });
+        if (!error && data && data.ok) rpcOk = true;
+        else console.warn('delete-account failed', error || data);
+      } catch (err) {
+        console.warn('delete-account threw', err);
+      }
+    }
+
+    if (rpcOk) {
+      alert("Your account and data have been deleted.");
+      clearSession();
+      if (window.Store && Store.resetSession) Store.resetSession();
+      if (window.Supa && window.Supa.signOut) window.Supa.signOut().catch(() => {});
+      go('s-login');
+      return;
+    }
+
+    // Fallback: open the user's mail client with a pre-filled
+    // deletion request to privacy@codedok.com. Honest fallback —
+    // we tell them exactly what we're doing.
+    const subject = encodeURIComponent('Account deletion request');
+    const body = encodeURIComponent(
+      "Hi,\n\nPlease delete my CodedOK account and all associated data.\n\n"
+      + "Account email: " + ((loadSession() || {}).email || '(not signed in)') + "\n\n"
+      + "Thanks."
+    );
+    alert("We've opened your email client with a pre-filled deletion request to privacy@codedok.com. Send it and we'll confirm erasure within 30 days.");
+    window.location.href = `mailto:privacy@codedok.com?subject=${subject}&body=${body}`;
+  }
+  window.deleteAccount = deleteAccount;
+
+  // ═══════════════════════════════════════════════════════════════
+  // SUPPORT CONSOLE — kind:'support' users see this instead of the
+  // operator home. Front-end for the `admin-user-actions` Supabase
+  // edge function; the browser never touches the service role key.
+  //
+  // Actions available:
+  //   - Search a user by email
+  //   - Reset their password (support types a new one, function sets it)
+  //   - Delete their auth row + cascade user data
+  //   - View recent sign-ins across all accounts (audit stream)
+  //
+  // Every action requires the caller to still be signed in as a
+  // kind:'support' user — the edge function double-checks via the
+  // caller's JWT before touching the database.
+  // ═══════════════════════════════════════════════════════════════
+  async function renderSupportConsole() {
+    const meEl = document.getElementById('sup-me');
+    if (meEl) meEl.textContent = 'Loading your session…';
+    if (!window.Supa || !window.Supa.ready) {
+      if (meEl) meEl.textContent = 'Cloud sync not configured. Sign in with a support account.';
+      return;
+    }
+    try {
+      const client = await window.Supa.getClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) { if (meEl) meEl.textContent = 'Not signed in.'; return; }
+      const me = await client.from('users').select('id,name,email,kind').eq('auth_user_id', user.id).maybeSingle();
+      const meRow = me.data || {};
+      if (meEl) meEl.textContent = `Signed in as ${meRow.email || user.email} · role: ${meRow.kind || 'unknown'}`;
+      // If they somehow got here without support-kind, kick them.
+      if (meRow.kind !== 'support' && meRow.kind !== 'admin') {
+        if (meEl) meEl.innerHTML = '<span style="color:var(--red)">This console is for CodedOK support only. Signing you out.</span>';
+        setTimeout(() => signOut(), 1600);
+        return;
+      }
+      loadPlatformStats();
+      loadRecentSignIns();
+    } catch (err) {
+      console.error('renderSupportConsole failed', err);
+      if (meEl) meEl.textContent = 'Failed to load your session — refresh and try again.';
+    }
+  }
+  window.renderSupportConsole = renderSupportConsole;
+
+  // Platform overview — headline numbers so the admin sees the whole
+  // business at a glance the moment they land on the console.
+  async function loadPlatformStats() {
+    const box = document.getElementById('sup-stats');
+    if (!box) return;
+    box.innerHTML = '<div style="color:var(--mid);font-size:12px;padding:4px 2px">Loading overview…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'platform_stats' }
+      });
+      if (error) throw error;
+      const k = (data && data.kinds) || {};
+      const tile = (n, label, accent) => `
+        <div class="sup-stat" style="${accent ? 'border-color:' + accent + '33' : ''}">
+          <div class="sup-stat-n" style="${accent ? 'color:' + accent : ''}">${n}</div>
+          <div class="sup-stat-l">${label}</div>
+        </div>`;
+      box.innerHTML = `
+        <div class="sup-stat-grid">
+          ${tile(data.total_users || 0, 'Users')}
+          ${tile(k.operator || 0, 'Operators')}
+          ${tile(k.surveyor || 0, 'Surveyors')}
+          ${tile(data.orgs || 0, 'Organisations')}
+          ${tile(data.vessels || 0, 'Boats')}
+          ${tile(data.certs || 0, 'Certificates')}
+          ${tile(data.active_trials || 0, 'Active trials', 'var(--sea)')}
+          ${tile(data.expiring_trials || 0, 'Trials ≤14d', (data.expiring_trials ? 'var(--amber)' : ''))}
+        </div>`;
+    } catch (err) {
+      box.innerHTML = `<div style="color:var(--lt);font-size:12px;padding:4px 2px">Overview unavailable (${escapeHtml((err && err.message) || 'error')}). Redeploy admin-user-actions to enable it.</div>`;
+    }
+  }
+  window.loadPlatformStats = loadPlatformStats;
+
+  // Set an org's plan (free / trial / pro / team). Trial prompts for a
+  // length; the others apply immediately. Full billing control from the
+  // support card.
+  async function supportSetPlan(orgId, orgName, plan) {
+    if (!orgId || !plan) return;
+    let days = null;
+    if (plan === 'trial') {
+      const d = prompt(`Trial length for "${orgName}" in days:`, '90');
+      if (d == null) return;
+      days = parseInt(d, 10);
+      if (!days || days < 1) { alert('Enter a number of days, e.g. 90.'); return; }
+    } else if (!confirm(`Set "${orgName}" to the ${plan.toUpperCase()} plan?`)) {
+      return;
+    }
+    try {
+      const client = await window.Supa.getClient();
+      const body = { action: 'set_plan', org_id: orgId, plan };
+      if (days) body.days = days;
+      const { data, error } = await client.functions.invoke('admin-user-actions', { body });
+      if (error) throw error;
+      if (data && data.error) throw new Error(data.error);
+      alert(`"${orgName}" is now on the ${plan.toUpperCase()} plan${data && data.trial_ends_at ? ' until ' + data.trial_ends_at : ''}.`);
+    } catch (err) {
+      alert('Set plan failed: ' + (err.message || err));
+    }
+  }
+  window.supportSetPlan = supportSetPlan;
+
+  async function loadRecentSignIns() {
+    const box = document.getElementById('sup-recent');
+    if (!box) return;
+    box.textContent = 'Loading…';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'recent_signins', limit: 20 }
+      });
+      if (error) throw error;
+      if (!data || !data.rows || !data.rows.length) {
+        box.innerHTML = '<div style="color:var(--mid);font-size:13px">No recent sign-ins.</div>';
+        return;
+      }
+      box.innerHTML = data.rows.map((r) => `
+        <div onclick="supportOpenByEmail('${jsAttr(r.email || '')}')" style="padding:11px 6px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;gap:10px;align-items:center;cursor:pointer;border-radius:8px" onmouseover="this.style.background='var(--slate)'" onmouseout="this.style.background='transparent'">
+          <div style="min-width:0"><div style="font-weight:600;color:var(--text);font-size:13px">${escapeHtml(r.email || '—')}</div><div style="font-size:11px;color:var(--lt)">${escapeHtml(r.kind || '')}</div></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:11px;color:var(--lt);white-space:nowrap">${fmtDate(r.last_sign_in_at)}</span><span class="chev">›</span></div>
+        </div>`).join('');
+    } catch (err) {
+      console.error('recent_signins failed', err);
+      box.innerHTML = supportErrorCard('Recent sign-ins', err);
+    }
+  }
+
+  // Open a user's full support card straight from a list row (recent
+  // sign-ins, search results). Looks the account up by email and
+  // renders the card into #sup-result, then scrolls to it.
+  async function supportOpenByEmail(email) {
+    if (!email) return;
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Loading…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'find_user', email: String(email).toLowerCase().trim() }
+      });
+      if (error) throw error;
+      if (data && data.user) {
+        renderSupportUserCard(data.user);
+        try { box.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+      } else {
+        box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Couldn\'t load that account.</div>';
+      }
+    } catch (err) {
+      box.innerHTML = supportErrorCard('Open user', err);
+    }
+  }
+  window.supportOpenByEmail = supportOpenByEmail;
+
+  // Search accepts a full email OR any fragment ("joe", "@gmail").
+  // A full email that resolves to exactly one account opens the full
+  // card straight away; anything else lists matches you can click.
+  async function supportSearch() {
+    const emailEl = document.getElementById('sup-search');
+    const box = document.getElementById('sup-result');
+    if (!emailEl || !box) return;
+    const q = (emailEl.value || '').trim().toLowerCase();
+    if (!q) { alert('Type an email or part of one to search.'); return; }
+    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Searching…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      // A complete-looking email → try the exact lookup first.
+      if (q.includes('@') && /\.[a-z]{2,}$/.test(q)) {
+        const { data, error } = await client.functions.invoke('admin-user-actions', {
+          body: { action: 'find_user', email: q }
+        });
+        if (error) throw error;
+        if (data && data.user) { renderSupportUserCard(data.user); return; }
+        // No exact hit — fall through to a fuzzy list.
+      }
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'list_users', q, per_page: 50, page: 1 }
+      });
+      if (error) throw error;
+      supportRenderUserList((data && data.rows) || [], data, q);
+    } catch (err) {
+      console.error('support search failed', err);
+      box.innerHTML = supportErrorCard('Search', err);
+    }
+  }
+  window.supportSearch = supportSearch;
+
+  // Browse the whole user base, newest first, paginated.
+  async function supportBrowseUsers(page) {
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Loading users…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'list_users', per_page: 25, page: page || 1 }
+      });
+      if (error) throw error;
+      supportRenderUserList((data && data.rows) || [], data, '');
+    } catch (err) {
+      console.error('browse users failed', err);
+      box.innerHTML = supportErrorCard('Browse', err);
+    }
+  }
+  window.supportBrowseUsers = supportBrowseUsers;
+
+  // Render a clickable list of users. Each row opens the full card.
+  function supportRenderUserList(rows, meta, q) {
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    if (!rows.length) {
+      box.innerHTML = `<div class="card mx" style="padding:16px;color:var(--mid);font-size:13px">No users${q ? ' matching “' + escapeHtml(q) + '”' : ''}.</div>`;
+      return;
+    }
+    const page    = (meta && meta.page) || 1;
+    const perPage = (meta && meta.per_page) || 25;
+    const total   = (meta && meta.total) || rows.length;
+    const pages   = Math.max(1, Math.ceil(total / perPage));
+    const kindColor = (k) => (k === 'admin' || k === 'support') ? 'var(--amber)' : k === 'surveyor' ? '#6366f1' : 'var(--sea)';
+    const list = rows.map((r) => `
+      <div class="row" style="cursor:pointer" onclick="supportOpenUser('${jsAttr(r.email)}')">
+        <div class="row-body">
+          <div class="row-name" style="font-size:14px">${escapeHtml(r.name || r.email)}</div>
+          <div class="row-sub" style="font-size:12px">${escapeHtml(r.email)}${r.banned ? ' · <span style=\"color:var(--red)\">banned</span>' : ''}${!r.email_confirmed ? ' · <span style=\"color:var(--amber)\">unverified</span>' : ''}</div>
+        </div>
+        <span class="chip" style="background:transparent;color:${kindColor(r.kind)};border:1px solid currentColor;font-size:11px">${escapeHtml(r.kind || 'user')}</span>
+        <span class="chev">›</span>
+      </div>`).join('');
+    const pager = pages > 1 && !q ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid var(--bdr)">
+        <button class="btn btn-out btn-sm" ${page <= 1 ? 'disabled style="opacity:.4"' : `onclick="supportBrowseUsers(${page - 1})"`}>‹ Prev</button>
+        <span style="font-size:12px;color:var(--mid)">Page ${page} of ${pages} · ${total} users</span>
+        <button class="btn btn-out btn-sm" ${page >= pages ? 'disabled style="opacity:.4"' : `onclick="supportBrowseUsers(${page + 1})"`}>Next ›</button>
+      </div>` : `<div style="padding:10px 16px;font-size:12px;color:var(--lt);text-align:center">${total} ${q ? 'match' + (total === 1 ? '' : 'es') : 'users'}</div>`;
+    box.innerHTML = `<div class="card mx" style="padding:0;overflow:hidden">${list}${pager}</div>`;
+  }
+  window.supportRenderUserList = supportRenderUserList;
+
+  // Open the full card for one user by email (from a list row).
+  async function supportOpenUser(email) {
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Loading…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'find_user', email }
+      });
+      if (error) throw error;
+      if (!data || !data.user) { box.innerHTML = '<div class="card mx" style="padding:16px;color:var(--mid)">User not found.</div>'; return; }
+      renderSupportUserCard(data.user);
+    } catch (err) {
+      box.innerHTML = supportErrorCard('Lookup', err);
+    }
+  }
+  window.supportOpenUser = supportOpenUser;
+
+  // View the support-action audit trail. Optional targetEmail filters
+  // to actions taken against one customer (used from the user card).
+  async function supportViewAuditLog(targetEmail) {
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    box.innerHTML = '<div style="padding:14px;color:var(--mid);font-size:13px">Loading action log…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'support_audit', limit: 100, target_email: targetEmail || undefined }
+      });
+      if (error) throw error;
+      const rows = (data && data.rows) || [];
+      const heading = targetEmail
+        ? `Actions on ${escapeHtml(targetEmail)}`
+        : 'Support action log';
+      if (!rows.length) {
+        box.innerHTML = `<div class="card mx" style="padding:16px"><div style="font-weight:700;margin-bottom:6px">${heading}</div><div style="color:var(--mid);font-size:13px">No actions recorded yet. Every password reset, delete, ban and role change gets logged here with who did it.</div></div>`;
+        return;
+      }
+      // Colour + label per action type.
+      const label = (a) => ({
+        set_password: '🔑 Password reset', send_magic_link: '✉️ Magic link sent',
+        delete_user: '🗑️ Account deleted', change_email: '✏️ Email changed',
+        verify_email: '✓ Email verified', change_kind: '🔀 Role changed',
+        ban_user: '⛔ Banned', unban_user: '✅ Unbanned'
+      }[a] || a);
+      const danger = (a) => a === 'delete_user' || a === 'ban_user';
+      const list = rows.map((r) => {
+        const detail = r.details && Object.keys(r.details).length
+          ? Object.entries(r.details).map(([k, v]) => `${k}: ${escapeHtml(String(v))}`).join(' · ')
+          : '';
+        return `
+          <div class="row" style="cursor:default">
+            <div class="row-body">
+              <div class="row-name" style="font-size:13px;color:${danger(r.action) ? 'var(--red)' : 'var(--text)'}">${label(r.action)}</div>
+              <div class="row-sub" style="font-size:12px">${r.target_email ? escapeHtml(r.target_email) + ' · ' : ''}by ${escapeHtml(r.actor_email || 'unknown')}${detail ? ' · ' + detail : ''}</div>
+            </div>
+            <span style="font-size:11px;color:var(--lt);white-space:nowrap">${fmtDate(r.at) || ''}</span>
+          </div>`;
+      }).join('');
+      box.innerHTML = `
+        <div class="card mx" style="padding:0;overflow:hidden">
+          <div style="padding:14px 16px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:700;font-size:14px">${heading}</div>
+            <span style="font-size:12px;color:var(--lt)">${rows.length} entr${rows.length === 1 ? 'y' : 'ies'}</span>
+          </div>
+          ${list}
+        </div>`;
+    } catch (err) {
+      box.innerHTML = supportErrorCard('Action log', err);
+    }
+  }
+  window.supportViewAuditLog = supportViewAuditLog;
+
+  // Common error card for every support-console action. Recognises
+  // the "Failed to send a request to the Edge Function" browser
+  // message (Supabase's default when the function isn't reachable)
+  // and shows a plain-English fix — usually "the function isn't
+  // deployed yet."
+  function supportErrorCard(op, err) {
+    const msg = (err && err.message) || String(err);
+    const isFnMissing = /send a request to the Edge Function|Failed to fetch|non-2xx status code|Function not found|404/i.test(msg);
+    if (isFnMissing) {
+      return `<div class="card mx" style="padding:18px;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.25)">
+        <div style="font-weight:700;color:var(--amber);font-size:14px;margin-bottom:8px">The support edge function isn't deployed yet.</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.55">Every action on this console runs through a Supabase edge function called <code style="background:var(--slate);padding:2px 6px;border-radius:4px">admin-user-actions</code>. It looks like it hasn't been created on this project yet.<br><br><b>To deploy it:</b><br>Supabase dashboard → Edge Functions → <b>Deploy a new function</b> → name it exactly <code style="background:var(--slate);padding:2px 6px;border-radius:4px">admin-user-actions</code> → paste the TypeScript from <code style="background:var(--slate);padding:2px 6px;border-radius:4px">supabase/functions/admin-user-actions/index.ts</code> → Deploy.<br><br>Once it's live, refresh this page and try again.</div>
+        <div style="font-size:11px;color:var(--lt);margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr);font-family:monospace">${escapeHtml(msg)}</div>
+      </div>`;
+    }
+    return `<div class="card mx" style="padding:16px;color:var(--red);font-size:13px">${escapeHtml(op)} failed: ${escapeHtml(msg)}</div>`;
+  }
+  window.supportErrorCard = supportErrorCard;
+
+  function renderSupportUserCard(u) {
+    const box = document.getElementById('sup-result');
+    if (!box) return;
+    const orgs = (u.orgs || []).map((o) => `<span class="chip" style="background:var(--seap);color:var(--sea);margin-right:4px">${escapeHtml(o.name || o.id)}</span>`).join('') || '<span style="color:var(--lt)">no organisations</span>';
+    const isPriv = u.kind === 'admin' || u.kind === 'support';
+    // Verification chip: green tick, amber warning, or a button.
+    const verifiedChip = u.email_confirmed_at
+      ? '<span style="color:var(--green);font-weight:600">✓ verified</span>'
+      : `<button class="btn btn-xs" style="min-height:32px;padding:0 10px;background:rgba(217,119,6,.12);color:var(--amber);border:1px solid rgba(217,119,6,.25);border-radius:8px;cursor:pointer" onclick="supportVerifyEmail('${escapeHtml(u.auth_user_id)}')">Verify now</button>`;
+    box.innerHTML = `
+      <div class="card mx" style="padding:18px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px">
+          <div style="min-width:0;flex:1">
+            <div style="font-size:16px;font-weight:700;color:var(--text)">${escapeHtml(u.name || u.email)}</div>
+            <div style="font-size:13px;color:var(--mid);margin-top:2px">${escapeHtml(u.email)}</div>
+          </div>
+          <span class="chip" style="background:${isPriv ? 'rgba(217,119,6,.12)' : 'var(--seap)'};color:${isPriv ? 'var(--amber)' : 'var(--sea)'}">${escapeHtml(u.kind || 'user')}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:12px;margin-bottom:14px">
+          <div><div style="color:var(--lt)">Auth ID</div><div style="font-family:monospace;font-size:11px;color:var(--text);word-break:break-all">${escapeHtml(u.auth_user_id || u.id || '')}</div></div>
+          <div><div style="color:var(--lt)">Created</div><div style="color:var(--text)">${fmtDate(u.created_at) || '—'}</div></div>
+          <div><div style="color:var(--lt)">Last sign-in</div><div style="color:var(--text)">${fmtDate(u.last_sign_in_at) || 'never'}</div></div>
+          <div><div style="color:var(--lt)">Email verified</div><div style="color:var(--text)">${verifiedChip}</div></div>
+        </div>
+        <div style="font-size:12px;color:var(--lt);margin-bottom:4px">Organisations</div>
+        <div style="margin-bottom:14px">${orgs}</div>
+
+        <!-- Primary actions row -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="btn btn-sea" style="flex:1;min-width:140px;min-height:44px" onclick="supportResetPassword('${jsAttr(u.email)}','${escapeHtml(u.auth_user_id)}')">Reset password</button>
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportSendMagicLink('${jsAttr(u.email)}')">Send magic link</button>
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportChangeEmail('${jsAttr(u.email)}','${escapeHtml(u.auth_user_id)}')">Change email</button>
+        </div>
+
+        <!-- Role + status row -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          ${isPriv ? '' : `<button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportChangeKind('${jsAttr(u.email)}','${escapeHtml(u.auth_user_id)}','${escapeHtml(u.kind || 'operator')}')">Change role</button>`}
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px" onclick="supportBan('${jsAttr(u.email)}','${escapeHtml(u.auth_user_id)}',${u.banned ? true : false})">${u.banned ? 'Unban account' : 'Ban account…'}</button>
+          <button class="btn btn-out" style="flex:1;min-width:140px;min-height:44px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="supportDeleteUser('${jsAttr(u.email)}','${escapeHtml(u.auth_user_id)}')">Delete account</button>
+        </div>
+
+        <!-- Billing — full plan control per organisation. -->
+        <div style="padding-top:12px;border-top:1px solid var(--bdr);margin-top:6px">
+          <div style="font-size:11px;color:var(--lt);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Billing &amp; plan</div>
+          ${(u.orgs || []).length
+            ? (u.orgs || []).map((o) => {
+                const oid = escapeHtml(o.id); const on = jsAttr(o.name || o.id); const onh = escapeHtml(o.name || o.id);
+                return `
+                <div style="margin-bottom:10px">
+                  <div style="font-size:12px;color:var(--mid);margin-bottom:6px"><strong style="color:var(--text)">${onh}</strong></div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn btn-out btn-sm" style="flex:1;min-width:84px" onclick="supportSetPlan('${oid}','${on}','free')">Free</button>
+                    <button class="btn btn-sea btn-sm" style="flex:1;min-width:84px" onclick="supportSetPlan('${oid}','${on}','trial')">🎁 Trial…</button>
+                    <button class="btn btn-out btn-sm" style="flex:1;min-width:84px" onclick="supportSetPlan('${oid}','${on}','pro')">Pro</button>
+                    <button class="btn btn-out btn-sm" style="flex:1;min-width:84px" onclick="supportSetPlan('${oid}','${on}','team')">Team</button>
+                  </div>
+                </div>`;
+              }).join('')
+            : '<span style="color:var(--lt);font-size:12px">No organisation to manage yet.</span>'}
+        </div>
+
+        <!-- Data views -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--bdr);margin-top:6px">
+          <button class="btn btn-out" style="flex:1;min-width:130px;min-height:44px" onclick="supportLoadVessels('${escapeHtml(u.id || u.auth_user_id)}')">🛥️ Vessels</button>
+          <button class="btn btn-out" style="flex:1;min-width:130px;min-height:44px" onclick="supportLoadActivity('${escapeHtml(u.id || u.auth_user_id)}')">📋 Their activity</button>
+          <button class="btn btn-out" style="flex:1;min-width:130px;min-height:44px" onclick="supportViewAuditLog('${jsAttr(u.email)}')">🛡️ Support history</button>
+        </div>
+        <div id="sup-detail-panel" style="margin-top:14px"></div>
+      </div>`;
+  }
+
+  async function supportGrantTrial(orgId, orgName) {
+    if (!orgId) { alert('No organisation id.'); return; }
+    const daysStr = prompt(`Grant a free trial to "${orgName}".\n\nHow many days? (e.g. 30, 90, 365)`, '90');
+    if (daysStr == null) return;
+    const days = parseInt(daysStr, 10);
+    if (!days || days < 1) { alert('Enter a number of days, e.g. 90.'); return; }
+    if (!confirm(`Give "${orgName}" a ${days}-day free trial?\n\nTheir plan is set to trial and the end date extended to ${days} days from today.`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'grant_trial', org_id: orgId, days }
+      });
+      if (error) throw error;
+      if (data && data.error) throw new Error(data.error);
+      alert(`Done — "${orgName}" now has a free trial until ${(data && data.trial_ends_at) || 'the new date'}.`);
+    } catch (err) {
+      alert('Grant trial failed: ' + (err.message || err));
+    }
+  }
+  window.supportGrantTrial = supportGrantTrial;
+
+  async function supportResetPassword(email, authId) {
+    const pw = prompt(`Set new password for ${email}:\n\n(Minimum 12 characters. They'll be able to sign in immediately with this password. Deliver it to them through a secure channel — not email.)`);
+    if (!pw) return;
+    if (pw.length < 12) { alert('That\'s under 12 characters — pick something stronger.'); return; }
+    if (!confirm(`Confirm: reset ${email}'s password to the value you just typed?`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'set_password', auth_user_id: authId, password: pw }
+      });
+      if (error) throw error;
+      alert(`Password reset for ${email}.\n\nDeliver the new password by phone or in person — don't email it.`);
+    } catch (err) {
+      alert('Password reset failed: ' + (err.message || err));
+    }
+  }
+  window.supportResetPassword = supportResetPassword;
+
+  async function supportSendMagicLink(email) {
+    if (!confirm(`Send ${email} a magic sign-in link?`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'send_magic_link', email }
+      });
+      if (error) throw error;
+      alert(`Magic link sent to ${email}.`);
+    } catch (err) {
+      alert('Magic link failed: ' + (err.message || err));
+    }
+  }
+  window.supportSendMagicLink = supportSendMagicLink;
+
+  async function supportDeleteUser(email, authId) {
+    if (!confirm(`PERMANENTLY delete ${email}?\n\nThis erases the auth row and cascades every vessel, cert, crew record, and org owned by them. Cannot be undone.`)) return;
+    const typed = prompt(`Type DELETE to confirm you want to erase ${email}:`);
+    if (typed !== 'DELETE') { if (typed !== null) alert('Cancelled — user was NOT deleted.'); return; }
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'delete_user', auth_user_id: authId }
+      });
+      if (error) throw error;
+      alert(`${email} deleted.`);
+      document.getElementById('sup-result').innerHTML = '';
+    } catch (err) {
+      alert('Delete failed: ' + (err.message || err));
+    }
+  }
+  window.supportDeleteUser = supportDeleteUser;
+
+  async function supportVerifyEmail(authId) {
+    if (!confirm('Force this email address to be marked verified? Only do this if you\'ve confirmed by phone that the person is legit.')) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'verify_email', auth_user_id: authId }
+      });
+      if (error) throw error;
+      alert('Email marked verified. Refresh the user lookup to see the change.');
+    } catch (err) { alert('Verify failed: ' + (err.message || err)); }
+  }
+  window.supportVerifyEmail = supportVerifyEmail;
+
+  async function supportChangeEmail(oldEmail, authId) {
+    const newEmail = prompt(`Change ${oldEmail} to what new email?`);
+    if (!newEmail || !newEmail.includes('@')) return;
+    if (!confirm(`Confirm: change ${oldEmail} → ${newEmail}?\n\nA verification email fires to the NEW address. If it never arrives, use "Verify now" from the user card afterwards.`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'change_email', auth_user_id: authId, email: newEmail.toLowerCase().trim() }
+      });
+      if (error) throw error;
+      alert(`Email changed to ${newEmail}.`);
+    } catch (err) { alert('Change failed: ' + (err.message || err)); }
+  }
+  window.supportChangeEmail = supportChangeEmail;
+
+  async function supportChangeKind(email, authId, currentKind) {
+    const roles = ['operator', 'surveyor', 'builder', 'crew'];
+    const listed = roles.map((r, i) => `  ${i + 1}. ${r}${r === currentKind ? ' (current)' : ''}`).join('\n');
+    const pick = prompt(`Change ${email}'s role to which?\n\n${listed}\n\nType the number 1-4:`);
+    if (!pick) return;
+    const newKind = roles[parseInt(pick, 10) - 1];
+    if (!newKind) { alert('Not a valid choice.'); return; }
+    if (!confirm(`Confirm: change ${email} from ${currentKind} → ${newKind}?`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'change_kind', auth_user_id: authId, kind: newKind }
+      });
+      if (error) throw error;
+      alert(`${email} is now ${newKind}. They may need to sign out and back in to see their new home screen.`);
+    } catch (err) { alert('Change failed: ' + (err.message || err)); }
+  }
+  window.supportChangeKind = supportChangeKind;
+
+  async function supportBan(email, authId, currentlyBanned) {
+    if (currentlyBanned) {
+      if (!confirm(`Lift the ban on ${email}?`)) return;
+      try {
+        const client = await window.Supa.getClient();
+        const { error } = await client.functions.invoke('admin-user-actions', {
+          body: { action: 'ban_user', auth_user_id: authId, duration: 'none' }
+        });
+        if (error) throw error;
+        alert(`Ban lifted on ${email}.`);
+      } catch (err) { alert('Unban failed: ' + (err.message || err)); }
+      return;
+    }
+    const dur = prompt(`Ban ${email} for how long?\n\nExamples:\n  24h   — one day\n  7d    — one week\n  720h  — one month\n\nType a duration:`);
+    if (!dur) return;
+    if (!confirm(`Confirm: ban ${email} for ${dur}?\n\nThey'll be signed out and blocked from signing in for that duration.`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'ban_user', auth_user_id: authId, duration: dur }
+      });
+      if (error) throw error;
+      alert(`${email} banned for ${dur}.`);
+    } catch (err) { alert('Ban failed: ' + (err.message || err)); }
+  }
+  window.supportBan = supportBan;
+
+  async function supportLoadVessels(userId) {
+    const panel = document.getElementById('sup-detail-panel');
+    if (!panel) return;
+    panel.innerHTML = '<div style="padding:12px;color:var(--mid);font-size:13px">Loading vessels…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'user_vessels', user_id: userId }
+      });
+      if (error) throw error;
+      const rows = (data && data.rows) || [];
+      if (!rows.length) {
+        panel.innerHTML = '<div style="padding:12px;color:var(--mid);font-size:13px;background:var(--slate);border-radius:10px">No vessels on this account.</div>';
+        return;
+      }
+      panel.innerHTML = `
+        <div style="font-size:12px;color:var(--lt);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Vessels (${rows.length}) — tap Certs to fix a record</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${rows.map((v) => `
+            <div style="padding:10px 12px;background:var(--slate);border-radius:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+                <div style="min-width:0"><div style="font-weight:600;color:var(--text);font-size:13px">${escapeHtml(v.name)}</div><div style="font-size:11px;color:var(--lt)">${escapeHtml(v.type || '')} · ${escapeHtml(v.category || '')} · ${escapeHtml(v.port || '—')}</div></div>
+                <div style="display:flex;gap:6px;flex-shrink:0">
+                  <button class="btn btn-out btn-xs" style="min-height:32px" onclick="supportEditVessel('${escapeHtml(v.id)}','${jsAttr(v.name)}')">✎ Edit</button>
+                  <button class="btn btn-out btn-xs" style="min-height:32px" onclick="supportVesselCerts('${escapeHtml(v.id)}','${jsAttr(v.name)}')">📋 Certs</button>
+                </div>
+              </div>
+              <div id="sup-vcerts-${escapeHtml(v.id)}" style="margin-top:8px"></div>
+            </div>`).join('')}
+        </div>`;
+    } catch (err) {
+      panel.innerHTML = supportErrorCard('Vessels', err);
+    }
+  }
+  window.supportLoadVessels = supportLoadVessels;
+
+  // Edit a customer's vessel details (support-side fix).
+  async function supportEditVessel(vesselId, name) {
+    const which = prompt(`Edit "${name}" — which field?\n\nType one: name, category, port, ssr`, 'name');
+    if (!which) return;
+    const field = which.trim().toLowerCase();
+    if (!['name', 'category', 'port', 'ssr'].includes(field)) { alert('Type one of: name, category, port, ssr'); return; }
+    const val = prompt(`New value for ${field}:`);
+    if (val == null) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'update_vessel', vessel_id: vesselId, patch: { [field]: val } }
+      });
+      if (error) throw error;
+      alert('Saved. The change reaches their device on next sync.');
+      supportVesselCerts(vesselId, name, true); // refresh any open cert list header
+    } catch (err) { alert('Update failed: ' + (err.message || err)); }
+  }
+  window.supportEditVessel = supportEditVessel;
+
+  // Load + manage a vessel's certs inline (edit expiry, delete, add).
+  async function supportVesselCerts(vesselId, name, silent) {
+    const box = document.getElementById('sup-vcerts-' + vesselId);
+    if (!box) return;
+    if (!silent) box.innerHTML = '<div style="color:var(--mid);font-size:12px;padding:6px 0">Loading certs…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'vessel_certs', vessel_id: vesselId }
+      });
+      if (error) throw error;
+      const rows = (data && data.rows) || [];
+      const rowHtml = rows.map((c) => {
+        const exp = c.expires_at ? fmtDate(c.expires_at) : 'no expiry';
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bdr)">
+            <div style="min-width:0"><div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.name || '—')}</div><div style="font-size:11px;color:var(--lt)">Expires ${escapeHtml(exp)}${c.number ? ' · ' + escapeHtml(c.number) : ''}</div></div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <button class="btn btn-out btn-xs" style="min-height:30px" onclick="supportEditCert('${escapeHtml(c.id)}','${jsAttr(c.name || '')}','${escapeHtml(c.expires_at || '')}','${escapeHtml(vesselId)}','${jsAttr(name)}')">✎</button>
+              <button class="btn btn-out btn-xs" style="min-height:30px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="supportDeleteCert('${escapeHtml(c.id)}','${jsAttr(c.name || '')}','${escapeHtml(vesselId)}','${jsAttr(name)}')">🗑</button>
+            </div>
+          </div>`;
+      }).join('');
+      box.innerHTML = `
+        <div style="background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;margin-top:4px">
+          <div style="font-size:11px;color:var(--lt);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Certificates (${rows.length})</div>
+          ${rows.length ? rowHtml : '<div style="font-size:12px;color:var(--lt);padding:6px 0">No certificates on this boat.</div>'}
+          <button class="btn btn-sea btn-xs" style="margin-top:8px;width:100%;min-height:34px" onclick="supportAddCert('${escapeHtml(vesselId)}','${jsAttr(name)}')">+ Add certificate</button>
+        </div>`;
+    } catch (err) {
+      box.innerHTML = supportErrorCard('Certs', err);
+    }
+  }
+  window.supportVesselCerts = supportVesselCerts;
+
+  async function supportEditCert(certId, certName, currentExpiry, vesselId, vesselName) {
+    const which = prompt(`Edit "${certName}" — which field?\n\nType one: name, expiry, issuer, number`, 'expiry');
+    if (!which) return;
+    const f = which.trim().toLowerCase();
+    const map = { name: 'name', expiry: 'expires_at', issuer: 'issuer', number: 'number' };
+    if (!map[f]) { alert('Type one of: name, expiry, issuer, number'); return; }
+    const hint = f === 'expiry' ? '\n\nUse YYYY-MM-DD (e.g. 2027-03-14). Blank = no expiry.' : '';
+    const val = prompt(`New ${f} for "${certName}":${hint}`, f === 'expiry' ? (currentExpiry || '') : '');
+    if (val == null) return;
+    if (f === 'expiry' && val && !/^\d{4}-\d{2}-\d{2}$/.test(val.trim())) { alert('Date must be YYYY-MM-DD.'); return; }
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'update_cert', cert_id: certId, patch: { [map[f]]: val.trim() } }
+      });
+      if (error) throw error;
+      supportVesselCerts(vesselId, vesselName);
+    } catch (err) { alert('Update failed: ' + (err.message || err)); }
+  }
+  window.supportEditCert = supportEditCert;
+
+  async function supportDeleteCert(certId, certName, vesselId, vesselName) {
+    if (!confirm(`Delete "${certName}" from this boat? This removes it from the customer's records.`)) return;
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'delete_cert', cert_id: certId }
+      });
+      if (error) throw error;
+      supportVesselCerts(vesselId, vesselName);
+    } catch (err) { alert('Delete failed: ' + (err.message || err)); }
+  }
+  window.supportDeleteCert = supportDeleteCert;
+
+  async function supportAddCert(vesselId, vesselName) {
+    const name = prompt(`Add a certificate to "${vesselName}".\n\nCertificate name:`);
+    if (!name) return;
+    const expiry = prompt('Expiry date (YYYY-MM-DD, or blank for none):', '');
+    if (expiry == null) return;
+    if (expiry && !/^\d{4}-\d{2}-\d{2}$/.test(expiry.trim())) { alert('Date must be YYYY-MM-DD.'); return; }
+    try {
+      const client = await window.Supa.getClient();
+      const { error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'add_cert', vessel_id: vesselId, name: name.trim(), expires_at: expiry.trim() || null }
+      });
+      if (error) throw error;
+      supportVesselCerts(vesselId, vesselName);
+    } catch (err) { alert('Add failed: ' + (err.message || err)); }
+  }
+  window.supportAddCert = supportAddCert;
+
+  async function supportLoadActivity(userId) {
+    const panel = document.getElementById('sup-detail-panel');
+    if (!panel) return;
+    panel.innerHTML = '<div style="padding:12px;color:var(--mid);font-size:13px">Loading activity…</div>';
+    try {
+      const client = await window.Supa.getClient();
+      const { data, error } = await client.functions.invoke('admin-user-actions', {
+        body: { action: 'user_activity', user_id: userId }
+      });
+      if (error) throw error;
+      const rows = (data && data.rows) || [];
+      if (!rows.length) {
+        panel.innerHTML = '<div style="padding:12px;color:var(--mid);font-size:13px;background:var(--slate);border-radius:10px">No recent audit-log entries.</div>';
+        return;
+      }
+      panel.innerHTML = `
+        <div style="font-size:12px;color:var(--lt);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Recent activity (${rows.length})</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          ${rows.map((r) => `
+            <div style="padding:8px 12px;background:var(--slate);border-radius:8px;display:flex;justify-content:space-between;gap:10px;font-size:12px">
+              <div style="min-width:0;flex:1"><span style="font-weight:600;color:var(--text)">${escapeHtml(r.action)}</span>${r.target_type ? ` · <span style="color:var(--mid)">${escapeHtml(r.target_type)}</span>` : ''}</div>
+              <div style="color:var(--lt);white-space:nowrap;font-size:11px">${fmtDate(r.at) || ''}</div>
+            </div>`).join('')}
+        </div>`;
+    } catch (err) {
+      panel.innerHTML = supportErrorCard('Activity', err);
+    }
+  }
+  window.supportLoadActivity = supportLoadActivity;
+
+  // ─────────────────────────────────────────────────────────────
+  // First-run tutorial. Fires once per device after a real skipper
+  // signs in for the first time. Five slides, big skip button,
+  // starts them off with "Add your boat" so the tour ends by
+  // dropping them into the onboarding flow. Available at any time
+  // from Account → Take the tour.
+  //
+  // Storage key: codedok-tutorial-seen — set to '1' when the user
+  // finishes, dismisses, or explicitly skips. Never re-shown on
+  // that device unless replayed.
+  // ─────────────────────────────────────────────────────────────
+  // Each step optionally names a shell to navigate to and a CSS
+  // selector to spotlight. If both are set, the tour brings the
+  // user to that screen, dims everything except the target, and
+  // floats a coachmark tooltip near it. If neither is set, the
+  // tooltip renders centred over the current screen as a plain
+  // modal (welcome + finale slides).
+  const TUTORIAL_STEPS = [
+    {
+      mode: 'modal',
+      icon: '⛵',
+      title: 'Welcome aboard',
+      body: "The compliance app for UK & Irish coded vessels. I'll show you where everything lives — takes about 60 seconds.",
+      cta: 'Start tour →'
+    },
+    {
+      mode: 'coachmark',
+      goto: 's-home',
+      target: '#home-status',
+      position: 'below',
+      title: 'Your fleet, at a glance',
+      body: 'One dial tells you if every boat is inspection-ready. Green means good, orange means something needs booking, red means overdue.',
+      cta: 'Next'
+    },
+    {
+      mode: 'coachmark',
+      goto: 's-certs',
+      target: '.tabbar',
+      position: 'below',
+      title: 'Records — every document in one place',
+      body: 'Slide through the tabs to see your certs, equipment service records, crew tickets and insurance. Anything expiring soon rises to the top.',
+      cta: 'Show me the calendar'
+    },
+    {
+      mode: 'coachmark',
+      goto: 's-calendar',
+      target: '.cal-grid',
+      position: 'below',
+      title: 'Every deadline, on a calendar',
+      body: 'The red dots are overdue, amber ones are within 30 days. Tap ‹ and › to page through the months. Never miss a survey window again.',
+      cta: 'Next'
+    },
+    {
+      mode: 'coachmark',
+      goto: 's-scan',
+      target: '.scan-opt-primary',
+      position: 'below',
+      title: 'Snap a certificate',
+      body: 'Point your camera at any paper cert — we read the issuer, expiry and serial. No retyping. Same trick works with PDFs from your email.',
+      cta: 'Next'
+    },
+    {
+      mode: 'coachmark',
+      goto: 's-account',
+      target: '.row[onclick*="openInviteSurveyorModal"]',
+      position: 'below',
+      title: 'Invite your surveyor',
+      body: 'Free seat per boat. They see the record from their own login and sign off inspections inside the app. Add them once, sorted for the year.',
+      cta: 'Next'
+    },
+    {
+      mode: 'modal',
+      icon: '⚓',
+      title: "You're set",
+      body: "That's the tour. You can replay it any time from Account → Take the tour. Ready to add your first boat?",
+      cta: 'Add my first boat →'
+    }
+  ];
+  let tutorialStepIdx = 0;
+
+  function maybeShowFirstRunTutorial() {
+    try {
+      if (localStorage.getItem('codedok-tutorial-seen') === '1') return;
+    } catch (_) { return; }
+    setTimeout(() => openTutorial(), 500);
+  }
+  window.maybeShowFirstRunTutorial = maybeShowFirstRunTutorial;
+
+  function openTutorial() {
+    closeTutorial();
+    tutorialStepIdx = 0;
+
+    // Overlay + coachmark scaffolding. Overlay is a full-viewport
+    // dim, but pointer-events on it only block the underlying UI;
+    // the tooltip renders inside a container that DOES receive
+    // clicks. A spotlight ring is positioned absolutely over the
+    // target element to draw the eye.
+    const ovl = document.createElement('div');
+    ovl.id = 'tutorial-overlay';
+    ovl.setAttribute('aria-modal', 'true');
+    ovl.setAttribute('role', 'dialog');
+    ovl.innerHTML = `
+      <div id="tutorial-scrim"></div>
+      <div id="tutorial-spotlight"></div>
+      <div id="tutorial-tooltip"></div>
+    `;
+    document.body.appendChild(ovl);
+    // Re-position on window resize / scroll so the ring tracks its
+    // element even if the user rotates the iPad or the page reflows.
+    window.addEventListener('resize', repositionTutorial);
+    document.addEventListener('scroll', repositionTutorial, true);
+    // Render the first step.
+    renderTutorialStep();
+  }
+  window.openTutorial = openTutorial;
+
+  function closeTutorial() {
+    const el = document.getElementById('tutorial-overlay');
+    if (el) el.remove();
+    window.removeEventListener('resize', repositionTutorial);
+    document.removeEventListener('scroll', repositionTutorial, true);
+  }
+
+  function renderTutorialStep() {
+    const step = TUTORIAL_STEPS[tutorialStepIdx];
+    if (!step) return;
+    if (step.mode === 'coachmark' && step.goto) {
+      // Navigate first, wait for the shell + rendered content to
+      // settle, then measure the target and paint the coachmark.
+      const currentShell = document.querySelector('.shell.on');
+      const targetShellVisible = currentShell && currentShell.id === step.goto;
+      if (!targetShellVisible) {
+        go(step.goto);
+      }
+      // 220ms is enough for the shell-in fade + JS renders that fire
+      // on the go() router hook. Try immediately, then again if the
+      // target wasn't in the DOM yet.
+      setTimeout(() => paintCoachmark(step), 220);
+    } else {
+      // Modal (welcome / finale). Centre the tooltip; hide spotlight.
+      paintModal(step);
+    }
+    updateProgressDots();
+  }
+
+  function paintModal(step) {
+    const scrim = document.getElementById('tutorial-scrim');
+    const spot  = document.getElementById('tutorial-spotlight');
+    const tip   = document.getElementById('tutorial-tooltip');
+    if (!scrim || !spot || !tip) return;
+    scrim.classList.remove('has-spotlight');
+    spot.style.display = 'none';
+    tip.className = 'tutorial-tooltip tutorial-modal-mode';
+    tip.style.top = ''; tip.style.left = ''; tip.style.right = '';
+    tip.innerHTML = tooltipCardHtml(step);
+  }
+
+  // Resolve a coachmark target. Every shell lives in the DOM at
+  // once (hidden ones are display:none), so a bare
+  // document.querySelector('.tabbar') can match a HIDDEN shell whose
+  // rect is all zeros — planting the spotlight in the top-left
+  // corner. Prefer a match inside the active shell, and reject any
+  // element whose rect has no size (off-screen / hidden).
+  function resolveTutorialTarget(selector) {
+    if (!selector) return null;
+    const active = document.querySelector('.shell.on');
+    const candidates = [];
+    if (active) candidates.push(active.querySelector(selector));
+    candidates.push(document.querySelector(selector));
+    for (const el of candidates) {
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) return el;
+    }
+    return null;
+  }
+
+  function paintCoachmark(step) {
+    const scrim = document.getElementById('tutorial-scrim');
+    const spot  = document.getElementById('tutorial-spotlight');
+    const tip   = document.getElementById('tutorial-tooltip');
+    if (!scrim || !spot || !tip) return;
+    const target = resolveTutorialTarget(step.target);
+    if (!target) {
+      // Target isn't visible for this user (e.g. Records tabbar with
+      // no vessels, or the render hasn't settled). Fall back to modal.
+      paintModal(step);
+      return;
+    }
+    const r = target.getBoundingClientRect();
+    scrim.classList.add('has-spotlight');
+    // Spotlight ring — 12px padding around the element.
+    spot.style.display = 'block';
+    spot.style.top     = (r.top - 8) + 'px';
+    spot.style.left    = (r.left - 8) + 'px';
+    spot.style.width   = (r.width + 16) + 'px';
+    spot.style.height  = (r.height + 16) + 'px';
+    tip.className = 'tutorial-tooltip';
+    tip.innerHTML = tooltipCardHtml(step);
+    // Position the tooltip below (default) or above the target,
+    // centred horizontally and clamped to the viewport.
+    positionTooltipRelative(tip, r, step.position || 'below');
+  }
+
+  function positionTooltipRelative(tip, r, position) {
+    // Wait one frame so the tooltip has measurable size.
+    requestAnimationFrame(() => {
+      const tw = tip.offsetWidth  || 360;
+      const th = tip.offsetHeight || 220;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let top, left;
+      if (position === 'above') {
+        top = Math.max(16, r.top - th - 20);
+      } else {
+        top = Math.min(vh - th - 16, r.bottom + 20);
+      }
+      left = Math.max(16, Math.min(vw - tw - 16, r.left + r.width / 2 - tw / 2));
+      tip.style.top  = top + 'px';
+      tip.style.left = left + 'px';
+      tip.style.right = '';
+    });
+  }
+
+  function repositionTutorial() {
+    const step = TUTORIAL_STEPS[tutorialStepIdx];
+    if (!step || step.mode !== 'coachmark') return;
+    const target = resolveTutorialTarget(step.target);
+    const spot = document.getElementById('tutorial-spotlight');
+    const tip  = document.getElementById('tutorial-tooltip');
+    if (!target || !spot || !tip) return;
+    const r = target.getBoundingClientRect();
+    spot.style.top    = (r.top - 8) + 'px';
+    spot.style.left   = (r.left - 8) + 'px';
+    spot.style.width  = (r.width + 16) + 'px';
+    spot.style.height = (r.height + 16) + 'px';
+    positionTooltipRelative(tip, r, step.position || 'below');
+  }
+
+  function tooltipCardHtml(step) {
+    const isLast = tutorialStepIdx === TUTORIAL_STEPS.length - 1;
+    const isFirst = tutorialStepIdx === 0;
+    const iconHtml = step.icon ? `<div class="tut-icon">${step.icon}</div>` : '';
+    const back = isFirst
+      ? `<button class="tut-btn tut-btn-ghost" onclick="skipTutorial()">Skip tour</button>`
+      : `<button class="tut-btn tut-btn-ghost" onclick="tutorialPrev()">‹ Back</button>`;
+    return `
+      <div class="tut-card">
+        ${iconHtml}
+        <div class="tut-title">${escapeHtml(step.title)}</div>
+        <div class="tut-body">${escapeHtml(step.body)}</div>
+        <div class="tut-dots">${TUTORIAL_STEPS.map((_, i) => `<span class="tut-dot${i === tutorialStepIdx ? ' on' : ''}"></span>`).join('')}</div>
+        <div class="tut-actions">
+          ${back}
+          <button class="tut-btn tut-btn-primary" onclick="tutorialNext()">${escapeHtml(step.cta)}</button>
+        </div>
+      </div>`;
+  }
+
+  function updateProgressDots() {
+    // No-op — dots are baked into every render — kept for clarity.
+  }
+
+  function tutorialNext() {
+    if (tutorialStepIdx === TUTORIAL_STEPS.length - 1) {
+      finishTutorial();
+      go('s-onboard');
+      return;
+    }
+    tutorialStepIdx++;
+    renderTutorialStep();
+  }
+  window.tutorialNext = tutorialNext;
+
+  function tutorialPrev() {
+    if (tutorialStepIdx === 0) return;
+    tutorialStepIdx--;
+    renderTutorialStep();
+  }
+  window.tutorialPrev = tutorialPrev;
+
+  function skipTutorial() { finishTutorial(); }
+  window.skipTutorial = skipTutorial;
+
+  function finishTutorial() {
+    try { localStorage.setItem('codedok-tutorial-seen', '1'); } catch (_) {}
+    closeTutorial();
+  }
+  window.finishTutorial = finishTutorial;
+
   document.addEventListener('DOMContentLoaded', () => {
+    // Detect whether we're running inside Safari's browser chrome
+    // (URL bar at top, toolbar at bottom) versus installed-PWA mode.
+    // The OS-only env(safe-area-inset-*) values don't account for
+    // Safari's chrome, so we need an extra class to pad past it.
+    try {
+      const isStandalone = window.navigator.standalone === true
+        || window.matchMedia('(display-mode: standalone)').matches;
+      const ua = (navigator.userAgent || '').toLowerCase();
+      const isIOS = /iphone|ipad|ipod/.test(ua) && !window.MSStream;
+      // The native iPhone app also looks like iOS + not-standalone, but it
+      // has no Safari toolbars — padding for them pushed the bars inward.
+      if (isIOS && !isStandalone && !isNativeApp()) {
+        document.body.classList.add('safari-chrome');
+      }
+    } catch (_) {}
+
     wireFileInputs();
     // Inject the icon into the login mark
     const mark = document.getElementById('login-mark');
     if (mark) mark.innerHTML = codedOkMark(38);
 
     renderDemoBadge();
+    ensureDesktopQrFab();
+    updateHeroInstallBtn();
 
     // Real auth: when Supabase is wired, listen for sign-in / sign-out
     // events. handleSignedIn ensures a row exists in our users table,
@@ -6497,6 +11811,7 @@ ${sectionsHtml}
         // and Supabase dropped them back with a recovery session. Show
         // the change-password modal instead of routing into the app.
         if (event === 'PASSWORD_RECOVERY') {
+          if (window.__cdkCodeRecovery) return; // in-app code reset handles it
           go('s-login');
           openChangePassword();
           return;
@@ -6513,6 +11828,13 @@ ${sectionsHtml}
         }
       });
     }
+
+    // Stash any surveyor-invite token from the URL hash so we can
+    // accept it as soon as the user is authenticated. If they're
+    // already signed in, handleSignedIn will pick this up; if they
+    // need to sign in or sign up, the token survives across the auth
+    // round-trip.
+    stashPendingInviteFromUrl();
 
     // Surveyor read-only SMS view — login-free.
     // Pattern: #sms-view?t=TOKEN (or ?t=TOKEN in the query string).
@@ -6538,11 +11860,137 @@ ${sectionsHtml}
       }
     } catch (_) {}
 
-    // Boot routing
-    const session = loadSession();
+    // Boot routing.
+    // The public website no longer runs the app: codedok.com only ever
+    // shows the marketing page (even for visitors with an old saved
+    // session), and the retired app./mobile./demo subdomains go home.
+    // The native iPhone app (hostname "localhost") is unaffected.
+    if (isPublicWebsite()) {
+      const h = (window.location.hostname || '').toLowerCase();
+      if (h !== 'codedok.com' && h !== 'www.codedok.com') {
+        window.location.replace('https://codedok.com/');
+        return;
+      }
+      go('s-land');
+      return;
+    }
+    // ────────────────────────────────────────────────────────────
+    // Demo share links — local-only, no Supabase round-trip. Both
+    // share the same seeded vessel data; the only difference is the
+    // role/home they land on:
+    //
+    //   https://codedok.com/demo              → operator (skipper) demo
+    //   https://codedok.com/demo/surveyor     → surveyor demo
+    //   https://codedok.com/?demo=1           → operator (query fallback)
+    //   https://codedok.com/?demo=surveyor    → surveyor (query fallback)
+    //
+    // Sign out from inside the app dumps them back at the landing
+    // and clears the seeded fixtures (stale-demo wipe below).
+    // ────────────────────────────────────────────────────────────
+    {
+      const dpath = (window.location.pathname || '/').toLowerCase();
+      const dsearch = window.location.search || '';
+      const dhash = window.location.hash || '';
+      const surveyorPath = /^\/demo\/surveyor\/?$/.test(dpath);
+      const surveyorQuery = /[?&]demo=surveyor\b/i.test(dsearch + dhash);
+      const operatorPath = /^\/demo\/?$/.test(dpath);
+      const operatorQuery = /[?&]demo(=1)?\b(?!=surveyor)/i.test(dsearch + dhash);
+      const isSurveyorDemo = surveyorPath || surveyorQuery;
+      const isOperatorDemo = !isSurveyorDemo && (operatorPath || operatorQuery);
+      if (isSurveyorDemo || isOperatorDemo) {
+        // Fire analytics event for the demo entry — most reliable
+        // conversion signal we have (people who tried the product
+        // without signing up). Distinguishes operator vs surveyor.
+        try {
+          if (typeof window.codedokTrack === 'function') {
+            window.codedokTrack('demo_open', { role: isSurveyorDemo ? 'surveyor' : 'operator' });
+          }
+        } catch (_) {}
+        const name = isSurveyorDemo ? 'Demo surveyor' : 'Demo skipper';
+        const email = isSurveyorDemo ? 'demo+surveyor@codedok.com' : 'demo@codedok.com';
+        saveSession({ mode: 'demo', email, name });
+        if (window.Store) {
+          if (Store.hasDemoFixtures()) Store.resetToEmpty();
+          Store.applyDemoSeed();
+          Store.setMode(isSurveyorDemo ? 'surveyor' : 'operator');
+        }
+        try { renderDemoBadge(); } catch (_) {}
+        if (isSurveyorDemo) {
+          try { applyDesktopSurveyor(); } catch (_) {}
+          go('s-surveyor-home');
+        } else {
+          go('s-home');
+        }
+        return;
+      }
+    }
+    let session = loadSession();
+    // Stale `mode: 'demo'` sessions from old visits still get cleared on
+    // any non-/demo URL — visiting /welcome or / shouldn't resurrect a
+    // half-broken demo state from a previous session.
+    if (session && session.mode === 'demo') {
+      clearSession();
+      if (window.Store && Store.hasDemoFixtures()) Store.resetToEmpty();
+      session = null;
+    }
     if (!session) {
+      // ────────────────────────────────────────────────────────────
+      // Subdomain routing — see Surface map at end of file. Four
+      // hostnames each have their own role; codedok.com is now
+      // marketing-only, the actual app lives at app.codedok.com.
+      // ────────────────────────────────────────────────────────────
+      const host = (window.location.hostname || '').toLowerCase();
+      const isMarketing = host === 'codedok.com' || host === 'www.codedok.com';
+      const isDemoHost = host === 'demo.codedok.com' || host === 'demo-mobile.codedok.com';
+
+      if (isDemoHost) {
+        // Demo subdomains drop straight into the operator demo —
+        // same flow as the legacy /demo URL, just triggered by host.
+        // demo-mobile.codedok.com adds a body class so we can wrap
+        // the whole app in an iPhone frame on desktop (the mobile
+        // demo should LOOK like a phone even when viewed on a Mac).
+        saveSession({ mode: 'demo', email: 'demo@codedok.com', name: 'Demo skipper' });
+        if (window.Store) {
+          if (Store.hasDemoFixtures()) Store.resetToEmpty();
+          Store.applyDemoSeed();
+          Store.setMode('operator');
+        }
+        if (host === 'demo-mobile.codedok.com') {
+          document.body.classList.add('demo-mobile-frame');
+        } else {
+          document.body.classList.add('demo-web');
+        }
+        try { renderDemoBadge(); } catch (_) {}
+        try { if (typeof window.codedokTrack === 'function') window.codedokTrack('demo_open', { role: 'operator', host }); } catch (_) {}
+        go('s-home');
+        return;
+      }
+
+      if (isMarketing) {
+        // codedok.com is the marketing surface ONLY. Even returning
+        // users / installed PWAs see the landing — sign-in is on
+        // app.codedok.com now.
+        go('s-land');
+        return;
+      }
+
+      // app.codedok.com / mobile.codedok.com / and any non-marketing
+      // host: this is the APP surface, not marketing. Unauth visitors
+      // go straight to sign-in. We never show the landing here — the
+      // landing only exists on codedok.com now.
       go('s-login');
       return;
+    }
+    // If a non-demo user is returning to the app and the Store still
+    // carries demo fixtures from a previous session, wipe them now so
+    // the operator home doesn't flash demo data before handleSignedIn
+    // catches up. handleSignedIn re-runs the same check, so we're safe
+    // either way.
+    if (window.Store
+        && session.mode === 'live'
+        && !isDemoOperatorEmail(session.email)
+        && Store.hasDemoFixtures()) {
+      Store.resetToEmpty();
     }
     if (deepLink && deepLink.vesselId && deepLink.view === 's-surveyor-vessel') {
       Store.setMode('surveyor');
@@ -6558,7 +12006,14 @@ ${sectionsHtml}
       applyDesktopAdmin();
       go('s-admin-home');
     } else {
-      go('s-home');
+      // Operator-mode session may be a skipper (s-home) or crew at
+      // someone else's org (s-crew-home). Use local membership cache
+      // to pick the right home synchronously; handleSignedIn will
+      // re-route after the next Supabase round-trip if the cache lied.
+      const me = Store.getCurrentUser();
+      const myMemb = me ? (Store.snapshot().memberships || []).filter((m) => m.user_id === me.id) : [];
+      const isCrew = myMemb.length > 0 && !myMemb.some((m) => m.role === 'owner');
+      go(isCrew ? 's-crew-home' : 's-home');
     }
   });
 })();

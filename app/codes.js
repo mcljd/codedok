@@ -22,7 +22,7 @@
   // `kind` matches Store cert kinds; `required` true = must hold; false = recommended.
   const VESSEL_CERTS = {
     cat2: [
-      { kind: 'coding',      name: 'MCA Coding Certificate',          required: true,  validity_months: 60, renew_annual: true,  authority: 'Certifying Authority (YDSA, MECAL, etc.)' },
+      { kind: 'coding',      name: 'MCA Coding Certificate',          required: true,  validity_months: 60, renew_annual: true,  authority: 'Certifying Authority' },
       { kind: 'stability',   name: 'Stability information book',      required: true,  validity_months: null, authority: 'Naval architect / certifying authority' },
       { kind: 'radio',       name: 'Ship Radio Licence (VHF)',        required: true,  validity_months: 120, authority: 'Ofcom (UK) / ComReg (IE)' },
       { kind: 'pli',         name: 'Public Liability Insurance',      required: true,  validity_months: 12,  authority: 'Marine insurer' },
@@ -52,9 +52,95 @@
       { kind: 'pli',         name: 'Public Liability Insurance',      required: true,  validity_months: 12 }
     ]
   };
-  // Cat 0/1 inherit Cat 2 + add EPIRB cert + sea trials documents
-  VESSEL_CERTS.cat1 = VESSEL_CERTS.cat2.slice();
-  VESSEL_CERTS.cat0 = VESSEL_CERTS.cat2.slice();
+
+  // Cat 0/1 — explicit schedules, NOT slice() of cat2. The earlier
+  // shortcut (cat1 = cat2.slice()) was flagged by a surveyor
+  // walkthrough — it inherited Cat 2 verbatim without adding the
+  // items that actually distinguish a Cat 0/1 vessel (GMDSS GOC,
+  // EPIRB Beacon Registry confirmation, structural fire protection
+  // records for >15m, sea trials documents). Worded conservatively;
+  // confirm against the published SPV Code 2025 / Workboat Code Ed.3
+  // tables before launch.
+  VESSEL_CERTS.cat1 = VESSEL_CERTS.cat2.concat([
+    { kind: 'gmdss_goc',       name: 'GMDSS General Operator Certificate',     required: true,  validity_months: null, authority: 'Ofcom (UK) / ComReg (IE)', condition: 'Cat 0/1 — SRC alone insufficient' },
+    { kind: 'epirb_registry',  name: 'EPIRB UK Beacon Registry confirmation',  required: true,  validity_months: 24,   authority: 'MCA UK Beacon Registry', condition: 'Distinct from EPIRB service cert' },
+    { kind: 'fire_structural', name: 'Structural fire protection records',     required: true,  validity_months: null, authority: 'Surveyor / class society', condition: 'Vessel length ≥ 15m' },
+    { kind: 'sea_trials',      name: 'Sea trials documentation',               required: true,  validity_months: null, authority: 'Builder / certifying authority' }
+  ]);
+  VESSEL_CERTS.cat0 = VESSEL_CERTS.cat1.concat([
+    { kind: 'solas_lsa',       name: 'SOLAS LSA Life Saving Appliances cert',  required: true,  validity_months: 60,   authority: 'Class society / MCA' },
+    { kind: 'iamsar_compl',    name: 'IAMSAR compliance evidence',             required: true,  validity_months: null, authority: 'Operator declaration + drills log' }
+  ]);
+
+  // ────────────────────────────────────────────────────────────────
+  // SPV Code 2025 — Owner Declarations.
+  // Edition 1 of the Sport & Pleasure Vessel Code introduces four
+  // owner declarations the operator MUST sign annually, version-
+  // control, and produce on survey day. Previously absent from this
+  // dataset entirely (surveyor walkthrough flag). Each declaration
+  // is a separate document — they get their own cert kind so the
+  // expiry-tracking engine treats them as first-class records.
+  // ────────────────────────────────────────────────────────────────
+  const OWNER_DECLARATIONS = [
+    {
+      kind: 'decl_compliance',
+      name: 'Declaration of Compliance',
+      ref: 'SPV Code 2025 §2.4',
+      validity_months: 12,
+      required_for: ['cat0', 'cat1', 'cat2', 'cat3', 'cat4', 'cat5', 'cat6'],
+      blurb: 'Owner confirms the vessel meets the applicable Code in its current configuration.'
+    },
+    {
+      kind: 'decl_manning',
+      name: 'Manning Declaration',
+      ref: 'SPV Code 2025 §6.2',
+      validity_months: 12,
+      required_for: ['cat0', 'cat1', 'cat2', 'cat3', 'cat4', 'cat5', 'cat6'],
+      blurb: 'Persons carried (passengers + crew), minimum crew qualifications, watch-keeping arrangement.'
+    },
+    {
+      kind: 'decl_stability',
+      name: 'Stability & Loading Declaration',
+      ref: 'SPV Code 2025 §4.3',
+      validity_months: 12,
+      required_for: ['cat0', 'cat1', 'cat2', 'cat3', 'cat4', 'cat5', 'cat6'],
+      blurb: 'Operating load condition matches the stability book on file; any modifications declared.'
+    },
+    {
+      kind: 'decl_radio',
+      name: 'Radio & MMSI Declaration',
+      ref: 'SPV Code 2025 §5.7',
+      validity_months: 12,
+      required_for: ['cat0', 'cat1', 'cat2', 'cat3', 'cat4', 'cat5', 'cat6'],
+      blurb: 'Fitted radio equipment, MMSI registration current, GMDSS-qualified operator on board.'
+    }
+  ];
+
+  // Stability requirement varies with vessel length under the new
+  // SPV Code. Under 15m gets a simplified declaration route; 15m
+  // and above must hold the full Stability Information Book signed
+  // by a naval architect. The view returns the right doc per vessel.
+  function stabilityRouteFor(vessel) {
+    const len = (vessel && vessel.length) || 0;
+    if (len > 0 && len < 15) {
+      return {
+        kind: 'stability_simplified',
+        name: 'Simplified Stability Declaration (under-15m)',
+        ref: 'SPV Code 2025 §4.3.2',
+        validity_months: null,
+        authority: 'Owner declaration + initial naval architect sign-off',
+        blurb: 'Single-page declaration matched to a standard hull-form template. Replaces the full Stability Book for vessels under 15m load-line length.'
+      };
+    }
+    return {
+      kind: 'stability',
+      name: 'Stability Information Book',
+      ref: 'SPV Code 2025 §4.3.1',
+      validity_months: null,
+      authority: 'Naval architect / certifying authority',
+      blurb: 'Full stability book required for vessels at or above 15m load-line length.'
+    };
+  }
 
   // Equipment requirements — qty rules can be functions of vessel.persons / vessel.length.
   // `service_months` = max interval between services / inspections.
@@ -66,8 +152,8 @@
       { kind: 'plb',            name: 'PLB (personal locator beacon)',  icon: '📡',  qty: 1,                                    service_months: 60, mandatory: false },
       { kind: 'vhf_fixed',      name: 'VHF DSC fixed radio',            icon: '📻',  qty: 1,                                    service_months: null, mandatory: true },
       { kind: 'vhf_handheld',   name: 'VHF handheld (waterproof)',      icon: '📻',  qty: 1,                                    service_months: null, mandatory: true },
-      { kind: 'pyro_solas_a',   name: 'SOLAS A pyrotechnics pack',      icon: '🧨',  qty: 1,                                    service_months: 36, mandatory: true, note: '4 red parachute, 6 red hand, 2 orange smoke' },
-      { kind: 'fire_ext',       name: 'Fire extinguishers',             icon: '🧯',  qty: (v) => Math.max(2, Math.ceil((v.length||10) / 5)), service_months: 12, mandatory: true },
+      { kind: 'pyrotechnics',   name: 'SOLAS A pyrotechnics pack',      icon: '🧨',  qty: 1,                                    service_months: 36, mandatory: true, note: '4 red parachute, 6 red hand, 2 orange smoke' },
+      { kind: 'fire_ext_portable',       name: 'Fire extinguishers',             icon: '🧯',  qty: (v) => Math.max(2, Math.ceil((v.length||10) / 5)), service_months: 12, mandatory: true },
       { kind: 'fire_blanket',   name: 'Fire blanket (galley)',          icon: '🧯',  qty: 1,                                    service_months: null, mandatory: true },
       { kind: 'first_aid_c',    name: 'First aid kit — Cat C',          icon: '🩹',  qty: 1,                                    service_months: 12, mandatory: true, note: 'MGN 71(M)+(F) Cat C' },
       { kind: 'anchor',         name: 'Anchor + cable/warp',            icon: '⚓',  qty: 1,                                    service_months: null, mandatory: true },
@@ -84,8 +170,8 @@
       { kind: 'plb',            name: 'PLB (personal locator beacon)',  icon: '📡',  qty: 1,                                    service_months: 60, mandatory: true },
       { kind: 'vhf_fixed',      name: 'VHF DSC fixed radio',            icon: '📻',  qty: 1,                                    service_months: null, mandatory: true },
       { kind: 'vhf_handheld',   name: 'VHF handheld (waterproof)',      icon: '📻',  qty: 1,                                    service_months: null, mandatory: true },
-      { kind: 'pyro_inshore',   name: 'Inshore pyrotechnics pack',      icon: '🧨',  qty: 1,                                    service_months: 36, mandatory: true, note: '2 red parachute, 4 red hand, 2 orange smoke' },
-      { kind: 'fire_ext',       name: 'Fire extinguishers',             icon: '🧯',  qty: (v) => Math.max(2, Math.ceil((v.length||10) / 6)), service_months: 12, mandatory: true },
+      { kind: 'pyrotechnics',   name: 'Inshore pyrotechnics pack',      icon: '🧨',  qty: 1,                                    service_months: 36, mandatory: true, note: '2 red parachute, 4 red hand, 2 orange smoke' },
+      { kind: 'fire_ext_portable',       name: 'Fire extinguishers',             icon: '🧯',  qty: (v) => Math.max(2, Math.ceil((v.length||10) / 6)), service_months: 12, mandatory: true },
       { kind: 'fire_blanket',   name: 'Fire blanket',                   icon: '🧯',  qty: 1,                                    service_months: null, mandatory: true },
       { kind: 'first_aid_c',    name: 'First aid kit — Cat C',          icon: '🩹',  qty: 1,                                    service_months: 12, mandatory: true },
       { kind: 'anchor',         name: 'Anchor + cable/warp',            icon: '⚓',  qty: 1,                                    service_months: null, mandatory: true },
@@ -97,8 +183,8 @@
       { kind: 'lifejacket',     name: 'Lifejackets (100N+)',            icon: '🦺',  qty: (v) => Math.ceil((v.persons||12) * 1.1), service_months: 12, mandatory: true },
       { kind: 'liferaft',       name: 'Inshore liferaft / lifebuoy',    icon: '🛟',  qty: 'capacity for all persons',           service_months: 12, mandatory: true },
       { kind: 'vhf_handheld',   name: 'VHF handheld',                   icon: '📻',  qty: 1,                                    service_months: null, mandatory: true },
-      { kind: 'pyro_inshore',   name: 'Inshore pyrotechnics pack',      icon: '🧨',  qty: 1,                                    service_months: 36, mandatory: true },
-      { kind: 'fire_ext',       name: 'Fire extinguishers',             icon: '🧯',  qty: 2,                                    service_months: 12, mandatory: true },
+      { kind: 'pyrotechnics',   name: 'Inshore pyrotechnics pack',      icon: '🧨',  qty: 1,                                    service_months: 36, mandatory: true },
+      { kind: 'fire_ext_portable',       name: 'Fire extinguishers',             icon: '🧯',  qty: 2,                                    service_months: 12, mandatory: true },
       { kind: 'first_aid_b',    name: 'First aid kit — Cat B',          icon: '🩹',  qty: 1,                                    service_months: 12, mandatory: true },
       { kind: 'anchor',         name: 'Anchor + warp',                  icon: '⚓',  qty: 1,                                    service_months: null, mandatory: true },
       { kind: 'bilge_pump',     name: 'Bilge pump',                     icon: '💧',  qty: 1,                                    service_months: null, mandatory: true }
@@ -107,8 +193,8 @@
       { kind: 'lifejacket',     name: 'Lifejackets (100N+)',            icon: '🦺',  qty: (v) => Math.ceil((v.persons||12) * 1.1), service_months: 12, mandatory: true },
       { kind: 'lifebuoy',       name: 'Lifebuoy with line',             icon: '🛟',  qty: 1,                                    service_months: null, mandatory: true },
       { kind: 'vhf_handheld',   name: 'VHF handheld',                   icon: '📻',  qty: 1,                                    service_months: null, mandatory: true },
-      { kind: 'pyro_handheld',  name: 'Handheld flares',                icon: '🧨',  qty: 1,                                    service_months: 36, mandatory: true, note: '2 red hand, 2 orange smoke' },
-      { kind: 'fire_ext',       name: 'Fire extinguishers',             icon: '🧯',  qty: 1,                                    service_months: 12, mandatory: true },
+      { kind: 'pyrotechnics',  name: 'Handheld flares',                icon: '🧨',  qty: 1,                                    service_months: 36, mandatory: true, note: '2 red hand, 2 orange smoke' },
+      { kind: 'fire_ext_portable',       name: 'Fire extinguishers',             icon: '🧯',  qty: 1,                                    service_months: 12, mandatory: true },
       { kind: 'first_aid_b',    name: 'First aid kit — Cat B',          icon: '🩹',  qty: 1,                                    service_months: 12, mandatory: true },
       { kind: 'anchor',         name: 'Anchor + warp',                  icon: '⚓',  qty: 1,                                    service_months: null, mandatory: true },
       { kind: 'bilge_pump',     name: 'Bilge pump',                     icon: '💧',  qty: 1,                                    service_months: null, mandatory: true }
@@ -116,8 +202,8 @@
     cat6: [
       { kind: 'lifejacket',     name: 'Lifejackets',                    icon: '🦺',  qty: (v) => v.persons||12,                  service_months: 12, mandatory: true },
       { kind: 'lifebuoy',       name: 'Lifebuoy with line',             icon: '🛟',  qty: 1,                                    service_months: null, mandatory: true },
-      { kind: 'pyro_handheld',  name: 'Handheld flares (basic)',        icon: '🧨',  qty: 1,                                    service_months: 36, mandatory: true },
-      { kind: 'fire_ext',       name: 'Fire extinguisher',              icon: '🧯',  qty: 1,                                    service_months: 12, mandatory: true },
+      { kind: 'pyrotechnics',  name: 'Handheld flares (basic)',        icon: '🧨',  qty: 1,                                    service_months: 36, mandatory: true },
+      { kind: 'fire_ext_portable',       name: 'Fire extinguisher',              icon: '🧯',  qty: 1,                                    service_months: 12, mandatory: true },
       { kind: 'first_aid_a',    name: 'First aid kit — Basic',          icon: '🩹',  qty: 1,                                    service_months: 12, mandatory: true },
       { kind: 'anchor',         name: 'Anchor + warp',                  icon: '⚓',  qty: 1,                                    service_months: null, mandatory: true },
       { kind: 'bilge_pump',     name: 'Bailer / bilge pump',            icon: '💧',  qty: 1,                                    service_months: null, mandatory: true }
@@ -496,18 +582,30 @@ A report covers: serious injury, loss of life, structural damage, fire, groundin
     return CREW_REQS[shortIdFromCategory(category)] || [];
   }
 
+  // Helper — every owner declaration applies to every category for now;
+  // present a uniform list to the caller. Filtering by category is
+  // here as a future hook in case the Code distinguishes (e.g. an
+  // export declaration only for Cat 0/1).
+  function requiredOwnerDeclarations(category) {
+    const id = shortIdFromCategory(category);
+    return OWNER_DECLARATIONS.filter((d) => d.required_for.includes(id));
+  }
+
   // Public API
   window.Codes = {
     CATEGORIES,
     VESSEL_CERTS,
     EQUIPMENT,
     CREW_REQS,
+    OWNER_DECLARATIONS,
     SMS_TEMPLATES,
     SMS_SCHEMA,
     getCategory,
     shortIdFromCategory,
     requiredVesselCerts,
     requiredEquipment,
-    requiredCrewQuals
+    requiredCrewQuals,
+    requiredOwnerDeclarations,
+    stabilityRouteFor
   };
 })();

@@ -11,9 +11,37 @@
     return new Date(TODAY.getTime() + days * DAY_MS).toISOString().slice(0, 10);
   }
 
+  // Empty state — what every real account starts from. No vessels, crew,
+  // certs, or surveyors. Their real data flows in via sync.js from Supabase.
+  function buildEmptyState() {
+    return {
+      meta: { seededAt: new Date().toISOString(), version: 2 },
+      session: { user_id: null, mode: 'operator' },
+      users: [],
+      organizations: [],
+      memberships: [],
+      user: null,
+      vessels: [],
+      certs: [],
+      equipment: [],
+      crew: [],
+      crewCerts: [],
+      deficiencies: [],
+      surveyor_grants: [],
+      inspections: [],
+      sms_documents: [],
+      handoff_links: [],
+      jobs: [],
+      invoices: [],
+      review_requests: [],
+      audit_log: []
+    };
+  }
+
   // Seed data is dated relative to "today" so the demo always looks right
-  // regardless of when the user first opens the app.
-  function buildSeed() {
+  // regardless of when the user first opens the app. Only loaded for the
+  // single demo account (mcljd303@icloud.com) — see Store.applyDemoSeed.
+  function buildDemoSeed() {
     return {
       meta: { seededAt: new Date().toISOString(), version: 2 },
 
@@ -26,10 +54,10 @@
       // Users — operators and surveyors all live here.
       users: [
         { id: 'u_jm',  email: 'joseph@codedok.com',     name: 'Joseph McLaughlin', initials: 'JM', kind: 'operator', phone: '+44 7700 900111' },
-        { id: 'u_sv1', email: 'mccollam@example.com',   name: 'McCollam Marine',   initials: 'MM', kind: 'surveyor',
-          surveyor: { qualifications: ['MCA-recognised surveyor', 'Naval Architect MRINA'], certifying_bodies: ['YDSA'], regions: ['Northern Ireland', 'Irish Sea'], company: 'McCollam Marine', phone: '+44 28 9012 3456' } },
-        { id: 'u_rb',  email: 'service@redbayboats.com', name: 'Redbay Boats',     initials: 'RB', kind: 'builder',
-          builder: { company: 'Redbay Boats', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] } },
+        { id: 'u_sv1', email: 'mccollam@example.com',   name: 'Anchor Marine',   initials: 'MM', kind: 'surveyor',
+          surveyor: { qualifications: ['Naval Architect MRINA', 'MCA-recognised surveyor'], certifying_bodies: ['YDSA'], regions: ['Northern Ireland', 'Irish Sea'], company: 'Anchor Marine', tagline: 'Naval Architects · Marine Surveyors', phone: '+44 28 9012 3456', logo: 'icons/mccollam.webp' } },
+        { id: 'u_rb',  email: 'service@redbayboats.com', name: 'Stormrider Marine',     initials: 'RB', kind: 'builder',
+          builder: { company: 'Stormrider Marine', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] } },
         { id: 'u_admin', email: 'admin@codedok.com',    name: 'Joe (CodedOK)',     initials: 'JD', kind: 'admin' }
       ],
 
@@ -46,13 +74,13 @@
       vessels: [
         { id: 'v_silver_sands', org_id: 'org_jm', name: 'Tsunami IV', type: 'Open RIB charter', category: 'Cat 2',
           ssr: '987654', length: 8.5, persons: 10, port: 'Ballycastle', certifier: 'YDSA',
-          icon: '⛵', photo: 'icons/vessels/tsunami.jpg', jurisdictions: ['UK'],
-          make: 'Redbay Stormforce', engine: 'Suzuki 300hp 4-stroke',
+          icon: '⛵', jurisdictions: ['UK'],
+          make: 'Stormrider RIB', engine: 'Suzuki 300hp 4-stroke',
           built_by: 'redbay', hull_number: 'RB-487', built_at: isoOffset(-720) },
         { id: 'v_cormorant',    org_id: 'org_jm', name: 'Lagavulin',    type: 'Cabin RIB charter', category: 'Cat 2',
           ssr: '456789', length: 11.0, persons: 12, port: 'Ballycastle', certifier: 'YDSA',
-          icon: '🚤', photo: 'icons/vessels/lagavulin.jpg', jurisdictions: ['UK'],
-          make: 'Redbay Stormforce Cabin', engine: 'Twin Suzuki 4-stroke',
+          icon: '🚤', jurisdictions: ['UK'],
+          make: 'Stormrider Cabin RIB', engine: 'Twin Suzuki 4-stroke',
           built_by: 'redbay', hull_number: 'RB-512', built_at: isoOffset(-400) }
       ],
 
@@ -63,7 +91,7 @@
         { id: 'c3',  vessel_id: 'v_silver_sands', kind: 'coding',       name: 'YDSA Coding Certificate',icon: '📋', expires_at: isoOffset(18),  category: 'vessel',    issuer: 'YDSA',      number: 'YDSA/2024/TS/4892' },
         { id: 'c4',  vessel_id: 'v_silver_sands', kind: 'pli',          name: 'Public Liability Insurance', icon: '🛡️', expires_at: isoOffset(200), category: 'insurance', issuer: 'Pantaenius', number: 'PL-225887' },
         { id: 'c5',  vessel_id: 'v_silver_sands', kind: 'radio',        name: 'Ship Radio Licence (VHF)',icon: '📡', expires_at: isoOffset(640), category: 'vessel',    issuer: 'Ofcom',     number: 'GBRT-559220' },
-        { id: 'c8',  vessel_id: 'v_silver_sands', kind: 'stability',    name: 'Stability book',         icon: '📋', expires_at: null,            category: 'vessel',    issuer: 'McCollam Marine', number: 'STAB-2022-19' },
+        { id: 'c8',  vessel_id: 'v_silver_sands', kind: 'stability',    name: 'Stability book',         icon: '📋', expires_at: null,            category: 'vessel',    issuer: 'Anchor Marine', number: 'STAB-2022-19' },
         // Lagavulin — all clear
         { id: 'c10', vessel_id: 'v_cormorant',    kind: 'pli',          name: 'P&I Insurance',          icon: '🛡️', expires_at: isoOffset(240), category: 'insurance', issuer: 'Topsail',  number: 'P-118832' },
         { id: 'c11', vessel_id: 'v_cormorant',    kind: 'coding',       name: 'YDSA Coding Certificate',icon: '📋', expires_at: isoOffset(280), category: 'vessel',    issuer: 'YDSA',      number: 'YDSA/2024/LG/4901' },
@@ -175,36 +203,49 @@
     };
   }
 
+  // True if the Store still carries the original hardcoded demo fixtures.
+  // We use this to decide whether a sign-in by a non-demo user should
+  // wipe the local cache. Real users' offline data won't match these IDs.
+  function looksLikeDemo(parsed) {
+    if (!parsed) return false;
+    const u = parsed.users || [];
+    const v = parsed.vessels || [];
+    const o = parsed.organizations || [];
+    return u.some((x) => x.id === 'u_jm' || x.id === 'u_sv1')
+        || v.some((x) => x.id === 'v_silver_sands' || x.id === 'v_cormorant')
+        || o.some((x) => x.id === 'org_jm');
+  }
+
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
       if (!raw) {
-        const seed = buildSeed();
-        localStorage.setItem(KEY, JSON.stringify(seed));
-        return seed;
+        // Cold start: empty Store. Demo fixtures only load via
+        // Store.applyDemoSeed() when the demo account signs in.
+        const fresh = buildEmptyState();
+        localStorage.setItem(KEY, JSON.stringify(fresh));
+        return fresh;
       }
       const parsed = JSON.parse(raw);
-      // Light migration: if old v1 keys are present, drop and reseed.
+      // Light migration: if old v1 keys are present, drop and start clean.
       if (!parsed.session || !parsed.equipment) {
-        const seed = buildSeed();
-        localStorage.setItem(KEY, JSON.stringify(seed));
-        return seed;
+        const fresh = buildEmptyState();
+        localStorage.setItem(KEY, JSON.stringify(fresh));
+        return fresh;
       }
       // Migration: rename legacy seed vessels (Silver Sands -> Tsunami IV,
       // Cormorant -> Lagavulin) and refresh their meta fields. Idempotent —
-      // only fires when the old names are still present.
+      // only fires when the old names are still present. Kept for the
+      // demo account's existing localStorage; harmless on empty Stores.
       let migrated = false;
-      // Tag legacy seeded vessels as built by Redbay so the new builder
-      // dashboard finds them on existing devices.
       (parsed.vessels || []).forEach((v) => {
         if (v.id === 'v_silver_sands' && !v.built_by) { v.built_by = 'redbay'; v.hull_number = v.hull_number || 'RB-487'; migrated = true; }
         if (v.id === 'v_cormorant'    && !v.built_by) { v.built_by = 'redbay'; v.hull_number = v.hull_number || 'RB-512'; migrated = true; }
       });
-      // Add the Redbay builder user if it's missing.
-      if (parsed.users && !parsed.users.find((u) => u.id === 'u_rb')) {
+      if (parsed.users && parsed.users.length && !parsed.users.find((u) => u.id === 'u_rb') && parsed.users.find((u) => u.id === 'u_jm')) {
         parsed.users.push({
-          id: 'u_rb', email: 'service@redbayboats.com', name: 'Redbay Boats', initials: 'RB', kind: 'builder',
-          builder: { company: 'Redbay Boats', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] }
+          id: 'u_rb', email: 'service@redbayboats.com', name: 'Stormrider Marine', initials: 'RB', kind: 'builder',
+          builder: { company: 'Stormrider Marine', town: 'Cushendall, NI', phone: '+44 28 2177 1331', specialties: ['Stormforce RIB', 'Stormforce Cabin'] }
         });
         migrated = true;
       }
@@ -215,7 +256,7 @@
           v.length = 8.5;
           v.persons = 10;
           v.port = 'Ballycastle';
-          v.make = 'Redbay Stormforce';
+          v.make = 'Stormrider RIB';
           v.engine = 'Suzuki 300hp 4-stroke';
           v.photo = v.photo || null;
           migrated = true;
@@ -227,7 +268,7 @@
           v.length = 11.0;
           v.persons = 12;
           v.port = 'Ballycastle';
-          v.make = 'Redbay Stormforce Cabin';
+          v.make = 'Stormrider Cabin RIB';
           v.engine = 'Twin Suzuki 4-stroke';
           v.photo = v.photo || null;
           migrated = true;
@@ -236,10 +277,10 @@
       if (migrated) localStorage.setItem(KEY, JSON.stringify(parsed));
       return parsed;
     } catch (err) {
-      console.warn('Store load failed, reseeding:', err);
-      const seed = buildSeed();
-      localStorage.setItem(KEY, JSON.stringify(seed));
-      return seed;
+      console.warn('Store load failed, resetting to empty:', err);
+      const fresh = buildEmptyState();
+      localStorage.setItem(KEY, JSON.stringify(fresh));
+      return fresh;
     }
   }
 
@@ -497,13 +538,56 @@
     const me = getCurrentUser();
     const orgId = me && me.kind === 'operator' ? 'org_jm' : (state.vessels[0] && state.vessels[0].org_id) || 'org_jm';
     state.audit_log.unshift({ id: uid('a'), org_id: orgId, actor_user_id: me ? me.id : null, action, target_type: targetType, target_id: targetId, at: isoOffset(0), metadata: metadata || {} });
-    if (state.audit_log.length > 100) state.audit_log.length = 100;
+    // Audit trail used to be capped at 100 entries FIFO — meaning a
+    // busy operator silently lost their earliest history after ~100
+    // actions. That fails the basic surveyor test ("show me every
+    // change to this record"). Raised to 5,000 to keep multiple
+    // years of activity in-store without unbounded growth. The
+    // authoritative log lives in Supabase via the audit_log table —
+    // this is just the cached projection for offline rendering.
+    if (state.audit_log.length > 5000) state.audit_log.length = 5000;
   }
 
   function addVessel(input) {
+    // Lazy-create a starter org + membership the first time a real user
+    // adds a vessel. The legacy fallback (input.org_id || 'org_jm') only
+    // worked for the seeded demo account; for everyone else the vessel
+    // would otherwise be orphaned to a non-existent org.
+    let orgId = input.org_id;
+    if (!orgId) {
+      const me = getCurrentUser();
+      const myMembership = me ? state.memberships.find((m) => m.user_id === me.id) : null;
+      if (myMembership) {
+        orgId = myMembership.org_id;
+      } else if (me) {
+        orgId = uid('org');
+        const isSolo = !me.business_name;
+        const orgName = me.business_name
+          || (me.name ? me.name + "'s vessels" : 'My vessels');
+        state.organizations.push({
+          id: orgId,
+          name: orgName,
+          plan: 'trial',
+          trial_ends_at: isoOffset(14),
+          stripe_customer_id: null,
+          // Solo organizations are flagged so the UI can hide team
+          // features (invite members etc.) when there's never going
+          // to be a second person on this account.
+          solo_user_id: isSolo ? me.id : null
+        });
+        state.memberships.push({
+          org_id: orgId, user_id: me.id, role: 'owner',
+          permissions: ['view_all','manage_vessels','manage_crew','manage_certs','manage_sms','manage_team']
+        });
+      } else {
+        // No signed-in user (shouldn't happen in normal flow); fall back to
+        // the demo org so legacy seed paths keep working.
+        orgId = 'org_jm';
+      }
+    }
     const v = {
       id: uid('v'),
-      org_id: input.org_id || 'org_jm',
+      org_id: orgId,
       name: input.name || 'Untitled vessel',
       type: input.type || 'Motor vessel',
       category: input.category || 'Cat 2',
@@ -563,10 +647,20 @@
       issuer: input.issuer || '',
       number: input.number || '',
       file: input.file || null,    // { name, type, size, data_url, added_at }
-      issued_at: input.issued_at || null
+      issued_at: input.issued_at || null,
+      // Audit field — only populated when added via the AI extraction
+      // flow. Carries the raw extraction + any human overrides so a
+      // surveyor can answer "did the AI hallucinate or did the
+      // operator override?" months later.
+      extraction: input.extraction || null
     };
     state.certs.push(c);
-    logAction('cert.added', 'cert', c.id, { name: c.name, hasFile: !!c.file });
+    const audit = { name: c.name, hasFile: !!c.file };
+    if (c.extraction) {
+      audit.aiConfidence = c.extraction.confidence;
+      audit.aiOverrides = (c.extraction.overrides || []).map((o) => o.field);
+    }
+    logAction('cert.added', 'cert', c.id, audit);
     save(state);
     return c;
   }
@@ -626,10 +720,19 @@
       last_service_at: input.last_service_at || null,
       next_service_at: input.next_service_at || null,
       notes: input.notes || '',
-      file: input.file || null
+      file: input.file || null,
+      // Same audit pattern as addCert — populated only when added
+      // via AI extraction. Lets us trace what the AI read vs what
+      // the human entered.
+      extraction: input.extraction || null
     };
     state.equipment.push(e);
-    logAction('equipment.added', 'equipment', e.id, { name: e.name, hasFile: !!e.file });
+    const audit = { name: e.name, hasFile: !!e.file };
+    if (e.extraction) {
+      audit.aiConfidence = e.extraction.confidence;
+      audit.aiOverrides = (e.extraction.overrides || []).map((o) => o.field);
+    }
+    logAction('equipment.added', 'equipment', e.id, audit);
     save(state);
     return e;
   }
@@ -732,10 +835,25 @@
       raised_at: isoOffset(0),
       status: 'open',
       source: input.source || 'self',
-      raised_by: (getCurrentUser() || {}).id || null
+      raised_by: (getCurrentUser() || {}).id || null,
+      // Survey-grade fields — surveyors raising a finding on the
+      // dock need category, Code reference, free-text notes, and
+      // an evidence photo. These used to be absent (deficiencies
+      // were captured via two chained prompt() calls), failing the
+      // basic "show me your audit trail" surveyor test.
+      category: input.category || 'other',
+      code_ref: input.code_ref || null,
+      notes: input.notes || null,
+      photo: input.photo || null
     };
     state.deficiencies.push(d);
-    logAction('deficiency.raised', 'deficiency', d.id, { title: d.title });
+    logAction('deficiency.raised', 'deficiency', d.id, {
+      title: d.title,
+      severity: d.severity,
+      category: d.category,
+      hasPhoto: !!d.photo,
+      hasCodeRef: !!d.code_ref
+    });
     save(state);
     return d;
   }
@@ -769,13 +887,34 @@
     return i;
   }
 
-  function completeInspection(inspectionId, summary) {
+  function completeInspection(inspectionId, payload) {
     const i = state.inspections.find((x) => x.id === inspectionId);
     if (!i) return;
+    // Backwards-compat: a plain string is the old summary-only path.
+    if (typeof payload === 'string' || payload == null) {
+      payload = { summary: payload || '' };
+    }
     i.completed_at = isoOffset(0);
     i.status = 'signed';
-    i.summary = summary || i.summary;
-    logAction('inspection.signed', 'inspection', i.id, { vessel_id: i.vessel_id });
+    i.summary = payload.summary || i.summary;
+    // Evidentiary fields — captured signature, hash, surveyor.
+    // Patricia's surveyor walkthrough: "Wouldn't survive a contested
+    // MAIB enquiry." Now it carries a drawn signature data URL, the
+    // SHA-256 hash of the canonical document body at sign time, and
+    // the user-id of whoever signed. The audit log row stamps the
+    // hash for tamper-evidence.
+    if (payload.signature_data_url) i.signature_data_url = payload.signature_data_url;
+    if (payload.signed_by_user_id)  i.signed_by_user_id  = payload.signed_by_user_id;
+    if (payload.signed_by_name)     i.signed_by_name     = payload.signed_by_name;
+    if (payload.signed_by_role)     i.signed_by_role     = payload.signed_by_role;
+    if (payload.document_hash)      i.document_hash      = payload.document_hash;
+    i.signed_at = i.completed_at;
+    logAction('inspection.signed', 'inspection', i.id, {
+      vessel_id: i.vessel_id,
+      document_hash: i.document_hash || null,
+      has_signature: !!i.signature_data_url,
+      signed_by: i.signed_by_name || null
+    });
     save(state);
     return i;
   }
@@ -856,8 +995,8 @@
 
   // Append a record to the SMS edit log. Used to show audit trail in
   // the builder footer + the inspection-pack PDF — "last edited 12 Sep
-  // by Joseph; reviewed 14 Sep by McCollam Marine" is the surveyor
-  // trust signal Sea-Flux's cloud library can't show.
+  // by Joseph; reviewed 14 Sep by Anchor Marine" is the surveyor
+  // trust signal that a plain cloud document library can't show.
   function appendSmsEdit(docId, info) {
     const d = (state.sms_documents || []).find((x) => x.id === docId);
     if (!d) return null;
@@ -1046,6 +1185,18 @@
     return inv;
   }
 
+  function declineInvoice(invoiceId) {
+    const inv = getInvoice(invoiceId);
+    if (!inv) return;
+    inv.status = 'declined';
+    inv.declined_at = isoOffset(0);
+    const j = getJob(inv.job_id);
+    if (j) j.status = 'declined';
+    logAction('invoice.declined', 'invoice', inv.id, { amount: inv.total });
+    save(state);
+    return inv;
+  }
+
   function declineJob(jobId, reason) {
     const j = getJob(jobId);
     if (!j) return;
@@ -1229,8 +1380,74 @@
   }
 
   function resetToSeed() {
-    state = buildSeed();
+    state = buildDemoSeed();
     save(state);
+  }
+
+  // Load the demo fixtures over the top of the current Store. Only called
+  // by the app for the dedicated demo account on first sign-in (or if
+  // their local cache has been cleared). No-op for everyone else.
+  function applyDemoSeed() {
+    state = buildDemoSeed();
+    save(state);
+  }
+
+  // Swap every reference to the seeded Anchor Marine user (u_sv1) over
+  // to the real auth user's id. Used when the McCollam demo email signs
+  // in: the demo seed is loaded once with hardcoded ids, then this
+  // re-stamps the surveyor side so the signed-in user sees the seeded
+  // grants, jobs, invoices and inspections as their own.
+  function adoptSeededSurveyor(realUserId) {
+    if (!realUserId || realUserId === 'u_sv1') return;
+    const i = state.users.findIndex((u) => u.id === 'u_sv1');
+    if (i >= 0) state.users[i].id = realUserId;
+    (state.surveyor_grants || []).forEach((g) => { if (g.surveyor_user_id === 'u_sv1') g.surveyor_user_id = realUserId; });
+    (state.jobs            || []).forEach((j) => { if (j.surveyor_user_id === 'u_sv1') j.surveyor_user_id = realUserId; });
+    (state.invoices        || []).forEach((iv) => { if (iv.surveyor_user_id === 'u_sv1') iv.surveyor_user_id = realUserId; });
+    (state.inspections     || []).forEach((ins) => { if (ins.surveyor_user_id === 'u_sv1') ins.surveyor_user_id = realUserId; });
+    (state.audit_log       || []).forEach((a) => { if (a.actor_user_id === 'u_sv1') a.actor_user_id = realUserId; });
+    state.session.user_id = realUserId;
+    state.session.mode = 'surveyor';
+    save(state);
+  }
+
+  // Mirror a Supabase users row into the local Store so getCurrentUser,
+  // role-aware UI, and lazy-org-creation on first vessel-add can find
+  // the signed-in user without re-querying Supabase.
+  function attachAuthenticatedUser(user) {
+    if (!user || !user.id) return;
+    const idx = state.users.findIndex((u) => u.id === user.id);
+    if (idx >= 0) {
+      state.users[idx] = Object.assign({}, state.users[idx], user);
+    } else {
+      state.users.push(user);
+    }
+    state.session.user_id = user.id;
+    const k = user.kind;
+    state.session.mode = (k === 'admin' || k === 'surveyor' || k === 'builder') ? k : 'operator';
+    save(state);
+  }
+
+  // Wipe every record back to an empty workspace. Preserves nothing.
+  // Used when a real (non-demo) user signs in on a device that still
+  // has the demo fixtures cached from before.
+  function resetToEmpty() {
+    state = buildEmptyState();
+    save(state);
+  }
+
+  // Clear just the session pointer (user_id + mode). Called on sign-out
+  // so the next sign-in doesn't inherit the previous user's mode — e.g.
+  // signing out as McCollam-surveyor and back in as mcljd-operator would
+  // otherwise see the lingering 'surveyor' mode on boot and route to
+  // the surveyor home before handleSignedIn has a chance to correct it.
+  function resetSession() {
+    state.session = { user_id: null, mode: 'operator' };
+    save(state);
+  }
+
+  function hasDemoFixtures() {
+    return looksLikeDemo(state);
   }
 
   function clearAll() {
@@ -1327,6 +1544,7 @@
     invoicesForSurveyor,
     invoicesForOperator,
     payInvoice,
+    declineInvoice,
     declineJob,
     startJob,
     completeJob,
@@ -1335,6 +1553,12 @@
     surveyorEarnings,
     createHandoff,
     resetToSeed,
+    applyDemoSeed,
+    adoptSeededSurveyor,
+    resetToEmpty,
+    resetSession,
+    hasDemoFixtures,
+    attachAuthenticatedUser,
     clearAll
   };
 })();

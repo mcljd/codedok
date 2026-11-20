@@ -21,12 +21,51 @@
 
 import Anthropic from "npm:@anthropic-ai/sdk@^0.27.0";
 import mammoth from "npm:mammoth@^1.6.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Per-user daily cap. verify_jwt proves the caller is signed in; this
+// stops a signed-in user looping the endpoint and running up the AI
+// bill. Fails CLOSED: no signed-in user (e.g. just the public anon key) or
+// no usage log means no AI call.
+async function rateLimit(req: Request, fn: string, capPerDay: number): Promise<Response | null> {
+  try {
+    const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+    const url = Deno.env.get("SUPABASE_URL");
+    const anon = Deno.env.get("SUPABASE_ANON_KEY");
+    const svc = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const deny = (status: number, error: string) => new Response(JSON.stringify({ error }), { status, headers: { ...cors, "Content-Type": "application/json" } });
+    if (!url || !anon || !svc) return deny(500, "server_misconfigured");
+    if (!token) return deny(401, "sign_in_required");
+    const caller = createClient(url, anon, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: u } = await caller.auth.getUser();
+    const uid = u?.user?.id;
+    // Fail closed: the public anon key passes verify_jwt but is not a user.
+    if (!uid) return deny(401, "sign_in_required");
+    const service = createClient(url, svc, { auth: { persistSession: false, autoRefreshToken: false } });
+    const since = new Date(Date.now() - 86400000).toISOString();
+    const { count } = await service.from("ai_usage_log")
+      .select("id", { count: "exact", head: true })
+      .eq("auth_user_id", uid).eq("fn", fn).gte("at", since);
+    if ((count || 0) >= capPerDay) {
+      return new Response(JSON.stringify({ error: "rate_limited", detail: `Daily limit of ${capPerDay} reached — try again tomorrow.` }),
+        { status: 429, headers: { ...cors, "Content-Type": "application/json" } });
+    }
+    const { error: logErr } = await service.from("ai_usage_log").insert({ auth_user_id: uid, fn });
+    if (logErr) return deny(503, "try_again");
+    return null;
+  } catch (_) {
+    return new Response(JSON.stringify({ error: "try_again" }), { status: 503, headers: { ...cors, "Content-Type": "application/json" } });
+  }
+}
 
 const SYSTEM_PROMPT = `You are a marine compliance document reader for the UK and Ireland.
 
@@ -82,6 +121,11 @@ Deno.serve(async (req) => {
   const image = body.image;
   const mimeType = body.mimeType || "image/jpeg";
   if (!image) return jsonError(400, "Missing 'image' (base64 string)");
+
+  // Abuse cap: 150 cert reads / user / day (~£1.50). Generous for a real
+  // operator, a wall for a loop.
+  const limited = await rateLimit(req, "extract-cert", 150);
+  if (limited) return limited;
 
   // Strip a 'data:application/pdf;base64,' prefix if the caller included it.
   const base64 = String(image).replace(/^data:[^;]+;base64,/, "");

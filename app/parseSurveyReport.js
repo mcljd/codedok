@@ -11,8 +11,12 @@
 (function () {
   'use strict';
 
-  const PDFJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs';
-  const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+  // pdf.js is bundled with the app (pinned, legacy build for older iOS WebViews).
+  // 4.0.x had CVE-2024-4367 — a crafted PDF could run script — so stay on
+  // >= 4.2.67 and keep isEvalSupported off when opening documents.
+  const HERE = (document.currentScript && document.currentScript.src) || location.href;
+  const PDFJS_CDN = new URL('lib/pdfjs-4.10.38/pdf.min.js', HERE).href;
+  const PDFJS_WORKER = new URL('lib/pdfjs-4.10.38/pdf.worker.min.js', HERE).href;
 
   let pdfjsPromise = null;
   function loadPdfJs() {
@@ -28,7 +32,7 @@
   async function extractText(blob) {
     const pdfjs = await loadPdfJs();
     const buf = await blob.arrayBuffer();
-    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    const doc = await pdfjs.getDocument({ data: buf, isEvalSupported: false, disableFontFace: true }).promise;
     const pages = [];
     for (let i = 1; i <= doc.numPages; i++) {
       const page = await doc.getPage(i);

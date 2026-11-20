@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CodedOK icon (mono)">
+  <path d="M14 24 V14 H24"   fill="none" stroke="#1C252B" stroke-width="5" stroke-linecap="square"/>
+  <path d="M40 14 H50 V24"   fill="none" stroke="#1C252B" stroke-width="5" stroke-linecap="square"/>
+  <path d="M50 40 V50 H40"   fill="none" stroke="#1C252B" stroke-width="5" stroke-linecap="square"/>
+  <path d="M24 50 H14 V40"   fill="none" stroke="#1C252B" stroke-width="5" stroke-linecap="square"/>
+  <path d="M22 33 L29 40 L43 23"
+        fill="none" stroke="#1C252B" stroke-width="5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

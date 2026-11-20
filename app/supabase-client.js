@@ -37,44 +37,46 @@
     return;
   }
 
-  // Load supabase-js from CDN on first use. Module-mode import keeps it
-  // off the critical path.
-  // Resilient loader — tries esm.sh first, falls back to jsdelivr if the
-  // primary CDN is blocked (corporate networks, ad-blockers, CDN outages).
-  // If both fail, window.Supa.loadError captures the reason and the rest
-  // of the app continues in localStorage-only mode without crashing.
-  const CDNS = [
-    'https://esm.sh/@supabase/supabase-js@2',
-    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
-  ];
+  // supabase-js is bundled with the app (app/lib, pinned version) rather than
+  // pulled from a public CDN at runtime: whoever serves this file can read every
+  // user's session, so it must not be a third party, and the iPhone app must be
+  // able to sign in without reaching a CDN. Upgrade by replacing the file.
+  const SUPABASE_JS = 'lib/supabase-js-2.118.0.js';
+  // Resolve next to this file, whatever page or app scheme loaded it.
+  const HERE = (document.currentScript && document.currentScript.src) || location.href;
+  function loadLocalScript(src) {
+    return new Promise((resolve, reject) => {
+      if (window.supabase && window.supabase.createClient) return resolve(window.supabase);
+      const s = document.createElement('script');
+      s.src = new URL(src, HERE).href;
+      s.async = true;
+      s.onload = () => (window.supabase && window.supabase.createClient) ? resolve(window.supabase) : reject(new Error('supabase-js loaded but did not register'));
+      s.onerror = () => reject(new Error('Could not load ' + src));
+      document.head.appendChild(s);
+    });
+  }
 
   let loadPromise = null;
   function loadSupabase() {
     if (loadPromise) return loadPromise;
     loadPromise = (async () => {
-      let lastErr;
-      for (const url of CDNS) {
-        try {
-          const mod = await import(url);
-          const { createClient } = mod;
-          const client = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
-            auth: {
-              persistSession: true,
-              autoRefreshToken: true,
-              detectSessionInUrl: true   // handles the magic-link redirect
-            }
-          });
-          window.Supa.client = client;
-          window.Supa.ready = true;
-          return client;
-        } catch (err) {
-          lastErr = err;
-          console.warn('Supabase CDN failed:', url, err && err.message);
-        }
+      try {
+        const { createClient } = await loadLocalScript(SUPABASE_JS);
+        const client = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true   // handles the magic-link redirect
+          }
+        });
+        window.Supa.client = client;
+        window.Supa.ready = true;
+        return client;
+      } catch (err) {
+        window.Supa.loadError = err;
+        console.warn('Supabase failed to load:', err && err.message);
+        throw err;
       }
-      // Both CDNs failed — leave the app in localStorage-only mode.
-      window.Supa.loadError = lastErr;
-      throw lastErr || new Error('Could not load Supabase from any CDN');
     })();
     // Don't let the promise itself surface as unhandled if no one awaits.
     loadPromise.catch(() => {});
@@ -89,6 +91,15 @@
     async signInWithPassword(email, password) {
       const client = await loadSupabase();
       const { data, error } = await client.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      return data;
+    },
+
+    // Sign in with Apple (native iPhone app). `token` is Apple's identity
+    // token and `nonce` the raw value whose SHA-256 was sent to Apple.
+    async signInWithApple(token, nonce) {
+      const client = await loadSupabase();
+      const { data, error } = await client.auth.signInWithIdToken({ provider: 'apple', token, nonce });
       if (error) throw error;
       return data;
     },
@@ -132,16 +143,25 @@
       return data;
     },
 
-    // Send a password-reset link to the user's email. The link returns
-    // to the app with a recovery token in the URL; the auth listener
-    // detects it and surfaces the "set new password" UI.
+    // Send a password-reset email. The email carries a one-time code
+    // ({{ .Token }} in the Supabase "Reset Password" template) which the
+    // user types into the app — no link, so it never leaves the app.
     async sendPasswordReset(email) {
       const client = await loadSupabase();
-      const { error } = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + window.location.pathname
-      });
+      const { error } = await client.auth.resetPasswordForEmail(email);
       if (error) throw error;
       return { sent: true };
+    },
+
+    // Exchange the emailed recovery code for a session, then set the new
+    // password. Returns the signed-in user.
+    async resetPasswordWithCode(email, code, newPassword) {
+      const client = await loadSupabase();
+      const { data, error } = await client.auth.verifyOtp({ email, token: code, type: 'recovery' });
+      if (error) throw error;
+      const upd = await client.auth.updateUser({ password: newPassword });
+      if (upd.error) throw upd.error;
+      return (upd.data && upd.data.user) || (data && data.user) || null;
     },
 
     async signOut() {
