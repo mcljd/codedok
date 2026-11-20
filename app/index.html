@@ -1550,7 +1550,7 @@
       </div>
 
       <div style="padding:14px 16px">
-        <button class="btn btn-sea btn-full" onclick="go('s-export-pack')">📄 Export inspection pack</button>
+        <button class="btn btn-sea btn-full" onclick="go('s-inspection-pack')">Inspection pack</button>
       </div>
       <div class="spacer"></div>
     </div>
@@ -1712,8 +1712,9 @@
 <div class="shell" id="s-crew">
   <div class="sb sb-cd"></div>
   <div class="tbar">
-    <div class="tbar-title">Crew compliance</div>
-    <button class="btn btn-sm btn-sea">+ Add</button>
+    <button class="back" onclick="goBack()">‹ Back</button>
+    <div class="tbar-title">Crew</div>
+    <button class="btn btn-sm btn-sea" onclick="openAddCrewMemberModal('s-crew')" aria-label="Add crew member">+ Add</button>
   </div>
   <div class="scroll">
 
@@ -1812,7 +1813,7 @@
 <div class="shell" id="s-surveys">
   <div class="sb sb-cd"></div>
   <div class="tbar">
-    <button class="back" onclick="goHome()">‹ Home</button>
+    <button class="back" onclick="goBack()">‹ Back</button>
     <div class="tbar-title">Surveys</div>
     <div style="width:60px"></div>
   </div>
@@ -1877,8 +1878,8 @@
 <div class="shell" id="s-inspection-pack">
   <div class="sb sb-cd"></div>
   <div class="tbar">
-    <button class="back" onclick="goHome()">‹ Home</button>
-    <div class="tbar-title">Inspection Pack</div>
+    <button class="back" onclick="goBack()">‹ Back</button>
+    <div class="tbar-title">Inspection pack</div>
     <div style="width:60px"></div>
   </div>
   <div class="scroll pb24">
@@ -2064,8 +2065,8 @@
 <div class="shell" id="s-gap">
   <div class="sb sb-cd"></div>
   <div class="tbar">
-    <button class="back" onclick="go('s-account')">‹ Back</button>
-    <div class="tbar-title">AI Gap Analysis</div>
+    <button class="back" onclick="goBack()">‹ Back</button>
+    <div class="tbar-title">Gap check</div>
     <div style="width:60px"></div>
   </div>
   <div class="scroll pb24">
@@ -2165,7 +2166,14 @@
          removed — it was static HTML, never wired to anything, and read as broken
          to anyone seeing it on the wrong day. Once Stripe is live we'll re-add a
          real, dynamic trial banner driven by the user's actual subscription state. -->
-    <div class="slbl">Choose your plan</div>
+    <div class="acct-profile" id="acct-profile">
+      <div class="acct-av" id="acct-av" aria-hidden="true">·</div>
+      <div class="acct-id">
+        <div class="acct-name" id="acct-name">Your account</div>
+        <div class="acct-mail" id="acct-mail"></div>
+      </div>
+    </div>
+    <div class="slbl">Your plan</div>
 
     <!-- Solo -->
     <div class="card mx" style="margin-bottom:10px">
@@ -2252,7 +2260,9 @@
       <div class="row" onclick="openInviteSurveyorModal()"><div class="row-ic bl">⚓</div><div class="row-body"><div class="row-name">Invite your surveyor</div><div class="row-sub">Free seat per vessel · they sign off inspections in the app</div></div><span class="chev">›</span></div>
       <div class="row" onclick="go('s-notif')"><div class="row-ic bl">🔔</div><div class="row-body"><div class="row-name">Notification settings</div></div><span class="chev">›</span></div>
       <div class="row" onclick="openChangePassword()"><div class="row-ic bl">🔑</div><div class="row-body"><div class="row-name">Change password</div><div class="row-sub">Set a new password for your account</div></div><span class="chev">›</span></div>
-      <div class="row" onclick="openPrivacySheet()"><div class="row-ic bl">🔒</div><div class="row-body"><div class="row-name">Privacy &amp; data</div><div class="row-sub">AI features and the privacy policy</div></div><span class="chev">›</span></div>
+      <div class="row" onclick="openPrivacySheet()"><div class="row-ic bl">🛡</div><div class="row-body"><div class="row-name">Privacy &amp; data</div><div class="row-sub">AI features and the privacy policy</div></div><span class="chev">›</span></div>
+      <div class="row ios-only" style="cursor:default"><div class="row-ic bl">🔒</div><div class="row-body"><div class="row-name" id="acct-lock-name">App Lock</div><div class="row-sub" id="acct-lock-sub">Ask for Face ID when CodedOK opens</div></div><label class="ios-switch"><input type="checkbox" id="acct-lock" aria-labelledby="acct-lock-name" aria-describedby="acct-lock-sub"><span aria-hidden="true"></span></label></div>
+      <div class="row ios-only" style="cursor:default"><div class="row-ic bl">🔔</div><div class="row-body"><div class="row-name" id="acct-ln-name">Renewal alerts on this iPhone</div><div class="row-sub" id="acct-ln-sub">30 days, 7 days and on the day. Works with no signal.</div></div><label class="ios-switch"><input type="checkbox" id="acct-ln" aria-labelledby="acct-ln-name" aria-describedby="acct-ln-sub"><span aria-hidden="true"></span></label></div>
       <div class="row" onclick="openTutorial()"><div class="row-ic bl">🎓</div><div class="row-body"><div class="row-name">Take the tour</div><div class="row-sub">60-second walkthrough of the app</div></div><span class="chev">›</span></div>
       <div class="row"><div class="row-ic bl">❓</div><div class="row-body"><div class="row-name">Help &amp; support</div></div><span class="chev">›</span></div>
       <div class="row" onclick="signOut()"><div class="row-ic rd">↩️</div><div class="row-body"><div class="row-name">Sign out</div><div class="row-sub">Return to the login screen</div></div><span class="chev">›</span></div>
@@ -2514,6 +2524,8 @@
 <script src="native.js" defer></script>
 <script src="icons.js" defer></script>
 <script src="app.js" defer></script>
+<script src="screens.js" defer></script>
+<script src="ios-features.js" defer></script>
 
 
 <!-- ════════════════════════════════════
@@ -2871,8 +2883,8 @@
 <div class="shell" id="s-deficiencies">
   <div class="sb sb-cd"></div>
   <div class="tbar">
-    <button class="back" onclick="go('s-vessel-detail')">‹ Tsunami IV</button>
-    <div class="tbar-title">Deficiency log</div>
+    <button class="back" onclick="goBack()">‹ Back</button>
+    <div class="tbar-title">Deficiencies</div>
     <div style="width:60px"></div>
   </div>
   <div class="scroll">

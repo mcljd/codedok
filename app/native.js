@@ -179,6 +179,11 @@
   async function applyDynamicType() {
     var TZ = plugin('TextZoom');
     if (!isNative || !TZ || typeof TZ.getPreferred !== 'function') return;
+    // Only call through when the native plugin is really in the build: the JS
+    // wrapper's getPreferred() calls itself if the native side is missing,
+    // which would spin forever and freeze the app.
+    var headers = (Cap && Cap.PluginHeaders) || [];
+    if (!headers.some(function (h) { return h && h.name === 'TextZoom'; })) return;
     try {
       var r = await TZ.getPreferred();
       var v = Math.max(1, Math.min(1.35, (r && r.value) || 1));

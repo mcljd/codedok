@@ -7,8 +7,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Cold start from a Home Screen quick action: hand it to the web app
+        // once it loads, and return false so iOS doesn't also call
+        // performActionFor for the same action.
+        if let shortcut = launchOptions?[.shortcutItem] as? UIApplicationShortcutItem {
+            MainViewController.pendingQuickAction = shortcut.type
+            return false
+        }
         return true
+    }
+
+    // Quick action while the app is already running (or in the background).
+    func application(_ application: UIApplication,
+                     performActionFor shortcutItem: UIApplicationShortcutItem,
+                     completionHandler: @escaping (Bool) -> Void) {
+        if let root = window?.rootViewController as? MainViewController {
+            root.runQuickAction(shortcutItem.type)
+            completionHandler(true)
+        } else {
+            MainViewController.pendingQuickAction = shortcutItem.type
+            completionHandler(false)
+        }
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

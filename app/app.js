@@ -698,6 +698,8 @@
 
   function guardMockupScreen(id, shell) {
     if (!shell) return;
+    // Screens with a real, data-driven renderer (screens.js) — for everyone.
+    if (window.CodedokScreens && CodedokScreens.has(id)) { CodedokScreens.render(id); return; }
     const session = loadSession();
     const isDemo = session && session.mode === 'demo';
     if (isDemo) return;   // demo sessions keep the sales mockup
@@ -733,6 +735,18 @@
   // Screens whose top edge is navy (status-bar text must be white).
   const DARK_TOP_SCREENS = new Set(['s-login', 's-vessel-detail']);
 
+  // Back navigation (iOS-style): return to wherever you came from.
+  const TAB_ROOTS = new Set(['s-home', 's-vessels', 's-certs', 's-tools', 's-account', 's-login', 's-land']);
+  const navStack = [];
+  let navBackInFlight = false;
+  function goBack() {
+    const target = navStack.pop();
+    if (target && document.getElementById(target)) { navBackInFlight = true; go(target); }
+    else goHome();
+  }
+  window.goBack = goBack;
+  window.canGoBack = () => navStack.length > 0;
+
   function go(id) {
     // The website only shows the landing (s-land). Any attempt to open
     // an app screen there sends the visitor to the iPhone app instead.
@@ -740,6 +754,11 @@
       goAppStore();
       return;
     }
+    // Navigation history for goBack() / swipe-back. Tab roots start a fresh stack.
+    const prev = document.querySelector('.shell.on');
+    if (TAB_ROOTS.has(id)) navStack.length = 0;
+    else if (prev && prev.id !== id && !navBackInFlight) { navStack.push(prev.id); if (navStack.length > 30) navStack.shift(); }
+    navBackInFlight = false;
     document.querySelectorAll('.shell').forEach(s => s.classList.remove('on'));
     // Status-bar text: white over navy screens, black over light ones.
     try { if (window.CodedokNative && CodedokNative.setStatusBar) CodedokNative.setStatusBar(DARK_TOP_SCREENS.has(id)); } catch (_) {}
@@ -2143,7 +2162,7 @@
         </div>
         <div class="qa-tile" onclick="go('s-surveys')">
           <div class="qa-icon bl">🔍</div>
-          <div style="flex:1"><div class="qa-title">Surveys</div><div class="qa-sub">Book, history, upcoming</div></div>
+          <div style="flex:1"><div class="qa-title">Surveys</div><div class="qa-sub">Next survey due and history</div></div>
           <span class="chev">›</span>
         </div>
       </div>
@@ -2152,7 +2171,7 @@
       <div class="tool-list">
         <div class="qa-tile" onclick="go('s-gap')">
           <div class="qa-icon pu">🤖</div>
-          <div style="flex:1"><div class="qa-title">AI gap analysis</div><div class="qa-sub">Check vessel against full MCA Code</div></div>
+          <div style="flex:1"><div class="qa-title">Gap check</div><div class="qa-sub">What your boat still needs for its Code</div></div>
           <span class="chev">›</span>
         </div>
         <div class="qa-tile" onclick="go('s-deficiencies')">
@@ -2160,23 +2179,13 @@
           <div style="flex:1"><div class="qa-title">Deficiency log</div><div class="qa-sub">${openDef} open${critDef ? ' · ' + critDef + ' critical' : ''}</div></div>
           <span class="chev">›</span>
         </div>
-        <div class="qa-tile" onclick="go('s-jur-dash')">
-          <div class="qa-icon bl">🌍</div>
-          <div style="flex:1"><div class="qa-title">Legal readiness</div><div class="qa-sub">UK &amp; Ireland jurisdiction status</div></div>
-          <span class="chev">›</span>
-        </div>
       </div>
 
       <div class="h-section">Share with a surveyor</div>
       <div class="tool-list">
-        <div class="qa-tile" onclick="exportFleetInspectionPack()">
+        <div class="qa-tile" onclick="go('s-inspection-pack')">
           <div class="qa-icon ok">📄</div>
-          <div style="flex:1"><div class="qa-title">Inspection pack PDF</div><div class="qa-sub">One-tap, surveyor-ready</div></div>
-          <span class="chev">›</span>
-        </div>
-        <div class="qa-tile" onclick="go('s-export-pack')">
-          <div class="qa-icon bl">📦</div>
-          <div style="flex:1"><div class="qa-title">Export packs</div><div class="qa-sub">UK, Ireland, or combined</div></div>
+          <div style="flex:1"><div class="qa-title">Inspection pack</div><div class="qa-sub">Readiness check and a surveyor-ready PDF</div></div>
           <span class="chev">›</span>
         </div>
         <div class="qa-tile" onclick="go('s-handoff')">
@@ -2405,7 +2414,7 @@
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:relative;z-index:1">
           <div style="min-width:0;flex:1">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-              <div class="vcover-emoji" style="width:42pxfont-size:20px">${v.icon || '⛵'}</div>
+              <div class="vcover-emoji" style="width:42px;height:42px;font-size:20px">${v.icon || '⛵'}</div>
               <div style="min-width:0">
                 <div class="h-display" style="font-size:24px">${escapeHtml(v.name)}</div>
                 <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">${escapeHtml(v.type || '')}${v.port ? ' · ' + escapeHtml(v.port) : ''}</div>
@@ -2673,10 +2682,10 @@
         <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">A person on the crew list. Their qualifications (RYA tickets, ENG1, first aid) get added separately once they're on file.</div>
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Name</label>
-        <input class="fi" id="crew-add-name" placeholder="e.g. Sarah Doherty" style="width:100%padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+        <input class="fi" id="crew-add-name" placeholder="e.g. Sarah Doherty" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Role</label>
-        <select class="fs" id="crew-add-role" style="width:100%padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+        <select class="fs" id="crew-add-role" style="width:100%;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
           <option>Skipper</option>
           <option selected>Deck crew</option>
           <option>Mate</option>
@@ -2761,12 +2770,12 @@
         <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">Attach a ticket, medical, or training record to a crew member.</div>
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Crew member</label>
-        <select class="fs" id="cc-add-person" style="width:100%padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+        <select class="fs" id="cc-add-person" style="width:100%;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
           ${crew.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} — ${escapeHtml(p.role || 'Crew')}</option>`).join('')}
         </select>
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Qualification</label>
-        <select class="fs" id="cc-add-name" style="width:100%padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+        <select class="fs" id="cc-add-name" style="width:100%;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
           <optgroup label="Deck (Workboat Code Table A5.1)">
             <option>STCW Master (Workboat &lt;500GT, unlimited)</option>
             <option>STCW Master (Code Vessels &lt;200GT, unlimited)</option>
@@ -2806,13 +2815,13 @@
         </select>
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Issuer / awarding body</label>
-        <input class="fi" id="cc-add-issuer" placeholder="e.g. RYA, MCA, SeaFish" style="width:100%padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+        <input class="fi" id="cc-add-issuer" placeholder="e.g. RYA, MCA, SeaFish" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Certificate number <span style="color:var(--lt);font-weight:400">(optional)</span></label>
-        <input class="fi" id="cc-add-number" placeholder="e.g. RYA-YM-2024-11234" style="width:100%padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+        <input class="fi" id="cc-add-number" placeholder="e.g. RYA-YM-2024-11234" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Expiry date <span style="color:var(--lt);font-weight:400">(leave blank if none)</span></label>
-        <input class="fi" id="cc-add-expires" type="date" style="width:100%padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:18px">
+        <input class="fi" id="cc-add-expires" type="date" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:18px">
 
         <div style="display:flex;gap:10px">
           <button class="btn btn-out" style="flex:1;height:46px" onclick="closeAddCrewCertModal()">Cancel</button>
@@ -5928,7 +5937,7 @@
         </div>
         <div style="position:relative;z-index:1">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-            <div style="width:42pxborder-radius:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:20px">${jobIcon(j.type)}</div>
+            <div style="width:42px;height:42px;border-radius:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:20px">${jobIcon(j.type)}</div>
             <div style="min-width:0">
               <div class="h-display" style="font-size:20px">${escapeHtml(j.title)}</div>
               <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:1px">${escapeHtml(jobTypeLabel(j.type))} · ${escapeHtml(v ? v.name : '')} · ${escapeHtml(op.name || 'Operator')}</div>
@@ -6514,12 +6523,12 @@
         <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">Against <strong>${escapeHtml(v.name)}</strong> · ${escapeHtml(v.category || '')}</div>
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Title</label>
-        <input class="fi" id="def-title" placeholder="e.g. Liferaft service overdue" style="width:100%padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+        <input class="fi" id="def-title" placeholder="e.g. Liferaft service overdue" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
           <div>
             <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Severity</label>
-            <select class="fi" id="def-severity" style="width:100%padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
+            <select class="fi" id="def-severity" style="width:100%;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
               <option value="critical">Critical — fail survey</option>
               <option value="major" selected>Major — fix before issue</option>
               <option value="minor">Minor — observation</option>
@@ -6527,7 +6536,7 @@
           </div>
           <div>
             <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Category</label>
-            <select class="fi" id="def-category" style="width:100%padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
+            <select class="fi" id="def-category" style="width:100%;padding:0 10px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
               <option value="documentation">Documentation</option>
               <option value="equipment">Equipment</option>
               <option value="stability">Stability</option>
@@ -6540,7 +6549,7 @@
         </div>
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Code reference <span style="color:var(--lt);font-weight:500;letter-spacing:0;text-transform:none">(optional)</span></label>
-        <input class="fi" id="def-coderef" placeholder="e.g. SPV Code 2025 §5.2.1 or Workboat Ed.3 Annex L" style="width:100%padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
+        <input class="fi" id="def-coderef" placeholder="e.g. SPV Code 2025 §5.2.1 or Workboat Ed.3 Annex L" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Notes</label>
         <textarea class="fi" id="def-notes" rows="3" placeholder="What did you observe? What corrective action is required? By when?" style="width:100%;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;line-height:1.5;resize:vertical;margin-bottom:14px"></textarea>
@@ -6729,11 +6738,11 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
           <div>
             <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Signed by</label>
-            <input class="fi" id="insp-signed-name" value="${escapeHtml(me.name || '')}" placeholder="Full name" style="width:100%padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
+            <input class="fi" id="insp-signed-name" value="${escapeHtml(me.name || '')}" placeholder="Full name" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
           </div>
           <div>
             <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Role</label>
-            <input class="fi" id="insp-signed-role" value="MCA-recognised surveyor" placeholder="e.g. Certifying Authority surveyor" style="width:100%padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
+            <input class="fi" id="insp-signed-role" value="MCA-recognised surveyor" placeholder="e.g. Certifying Authority surveyor" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px">
           </div>
         </div>
 
@@ -8473,6 +8482,17 @@ ${sectionsHtml}
   function renderAccount() {
     // Lightweight live update for the trial banner.
     const s = Store.snapshot();
+    // Profile header (Apple ID-style card at the top of Account).
+    try {
+      const me = Store.getCurrentUser() || {};
+      const sess = loadSession() || {};
+      const name = me.name || (me.business_name) || 'Your account';
+      const mail = me.email || sess.email || '';
+      const initials = (me.initials || name.split(/\s+/).map((p) => p[0]).join('').slice(0, 2) || '·').toUpperCase();
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set('acct-av', initials); set('acct-name', name);
+      set('acct-mail', [mail, me.business_name && me.business_name !== name ? me.business_name : ''].filter(Boolean).join(' · '));
+    } catch (_) {}
     if (s.user && s.user.trialEndsAt) {
       const days = Store.daysUntil(s.user.trialEndsAt);
       const bar = document.querySelector('#s-account [style*="width:35%"]');
@@ -8795,7 +8815,7 @@ ${sectionsHtml}
             <div class="card" style="padding:18px">
               <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">Add a vessel first</div>
               <div style="font-size:13px;color:var(--mid);line-height:1.55">Your qualifications live on the same account as your vessels. Add at least one vessel to set things up, then come back here.</div>
-              <button class="btn btn-sea" style="margin-top:14pxfont-weight:700" onclick="go('s-onboard')">+ Add a vessel</button>
+              <button class="btn btn-sea" style="margin-top:14px;font-weight:700" onclick="go('s-onboard')">+ Add a vessel</button>
             </div>`;
           return;
         }
@@ -8994,7 +9014,7 @@ ${sectionsHtml}
         <div class="card" style="padding:18px;margin-top:12px">
           <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Add a vessel first</div>
           <div style="font-size:13px;color:var(--mid);line-height:1.55">Your organisation is set up when you add your first vessel — once that's done you can pick a plan here.</div>
-          <button class="btn btn-sea" style="margin-top:14pxfont-weight:700" onclick="go('s-onboard')">+ Add a vessel</button>
+          <button class="btn btn-sea" style="margin-top:14px;font-weight:700" onclick="go('s-onboard')">+ Add a vessel</button>
         </div>`;
       return;
     }
