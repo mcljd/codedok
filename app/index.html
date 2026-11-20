@@ -2496,6 +2496,10 @@
   (function () {
     var gaId = (window.CodedOkConfig || {}).gaId;
     if (!gaId) return;
+    // Website only: no third-party analytics inside the iPhone app
+    // (keeps the App Store privacy label to data the app needs).
+    var C = window.Capacitor;
+    if (C && typeof C.isNativePlatform === 'function' && C.isNativePlatform()) return;
     var s = document.createElement('script');
     s.async = true;
     s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(gaId);
@@ -2514,7 +2518,18 @@
      Activate by pasting your token below (Cloudflare dashboard →
      Analytics → Web Analytics → "Add a site" → copy the token).
      Leave the data-cf-beacon attribute empty to disable. -->
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": ""}'></script>
+<script>
+  (function () {
+    var CF_TOKEN = ''; // paste the Cloudflare Web Analytics token here to enable (website only)
+    var C = window.Capacitor;
+    if (!CF_TOKEN || (C && typeof C.isNativePlatform === 'function' && C.isNativePlatform())) return;
+    var s = document.createElement('script');
+    s.defer = true;
+    s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+    s.setAttribute('data-cf-beacon', JSON.stringify({ token: CF_TOKEN }));
+    document.head.appendChild(s);
+  })();
+</script>
 <script src="init-sentry.js" defer></script>
 <script src="codes.js" defer></script>
 <script src="store.js" defer></script>
