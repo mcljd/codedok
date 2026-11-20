@@ -23,3 +23,19 @@ verify_jwt = true
 [functions.delete-account]
 # Called by a signed-in user to delete their own account + data.
 verify_jwt = true
+
+[functions.revenuecat-webhook]
+# RevenueCat does not send a Supabase JWT; the function checks its own
+# REVENUECAT_WEBHOOK_AUTH header instead (constant-time, fails closed).
+verify_jwt = false
+
+[functions.send-reminders]
+# Called by pg_cron with the service-role key; the function also checks it.
+verify_jwt = true
+
+[functions.send-reminder-emails]
+verify_jwt = true
+
+[functions.admin-user-actions]
+# Signed-in support/admin users only (checked inside the function).
+verify_jwt = true

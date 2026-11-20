@@ -474,6 +474,18 @@
   }
   window.jsAttr = jsAttr;
 
+  // Only allow image sources we expect (Supabase https URLs, local data:/blob:
+  // images). Anything else — javascript:, http:, quotes, brackets — is refused
+  // or percent-encoded so it can't break out of an attribute or CSS url().
+  function safeImgUrl(u) {
+    if (window.CodedokSanitize) return window.CodedokSanitize.safeUrl(u) || '';
+    const t = String(u || '').trim();
+    if (/^\/?[A-Za-z0-9_][A-Za-z0-9_\/.-]*$/.test(t) && !t.includes('..')) return t; // same-app path
+    if (!/^(https:\/\/|data:image\/|blob:)/i.test(t)) return '';
+    return t.replace(/["'<>\\()\s]/g, encodeURIComponent);
+  }
+  window.safeImgUrl = safeImgUrl;
+
   function fmtDate(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
@@ -571,7 +583,7 @@
       // the header layout. onerror drops to the initials placeholder
       // if the image URL is broken.
       const fallback = (me.initials || company.split(/\s+/).map((p) => p[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || 'S').replace(/'/g, "&#39;");
-      return `<img class="sv-brand-logo" alt="${escapeHtml(company)} logo" src="${logo}" style="height:${size}px;width:auto;max-width:${size * 5}px;border-radius:6px;object-fit:contain;background:white;padding:3px 6px;flex-shrink:0;display:block" onerror="this.outerHTML='<div class=\\'sv-brand-placeholder\\' style=&quot;width:${size}px;height:${size}px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-size:${Math.max(10, Math.round(size * 0.4))}px;font-weight:700;flex-shrink:0;border:1px solid rgba(255,255,255,.12)&quot;>${fallback}</div>'">`;
+      return `<img class="sv-brand-logo" alt="${escapeHtml(company)} logo" src="${escapeHtml(safeImgUrl(logo))}" style="height:${size}px;width:auto;max-width:${size * 5}px;border-radius:6px;object-fit:contain;background:white;padding:3px 6px;flex-shrink:0;display:block" onerror="this.outerHTML='<div class=\\'sv-brand-placeholder\\' style=&quot;width:${size}px;height:${size}px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-size:${Math.max(10, Math.round(size * 0.4))}px;font-weight:700;flex-shrink:0;border:1px solid rgba(255,255,255,.12)&quot;>${fallback}</div>'">`;
     }
     const initials = me.initials || company.split(/\s+/).map((p) => p[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || 'S';
     return `<div class="sv-brand-placeholder" style="width:${size}px;height:${size}px;border-radius:6px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-size:${Math.max(10, Math.round(size * 0.4))}px;font-weight:700;flex-shrink:0;border:1px solid rgba(255,255,255,.12)">${escapeHtml(initials)}</div>`;
@@ -1643,7 +1655,7 @@
             : '<span class="ios-pill amber">Due soon</span>';
           return `
             <div class="ios-row" onclick="${openAction}">
-              <div class="ios-row-ic ${a.sev}">${a.icon}</div>
+              <div class="ios-row-ic ${a.sev}">${escapeHtml(a.icon)}</div>
               <div class="ios-row-tx">
                 <div class="ios-row-tt">${a.title}</div>
                 <div class="ios-row-ss">${a.sub}</div>
@@ -2371,8 +2383,8 @@
       // If the operator has uploaded a vessel photo, use it as the
       // hero background. Dark gradient overlay keeps the title +
       // chips legible regardless of the photo's tone.
-      if (v.photo) {
-        header.style.backgroundImage = `linear-gradient(rgba(8,16,32,.55), rgba(8,16,32,.92) 92%), url('${String(v.photo).replace(/'/g, "%27")}')`;
+      if (v.photo && safeImgUrl(v.photo)) {
+        header.style.backgroundImage = `linear-gradient(rgba(8,16,32,.55), rgba(8,16,32,.92) 92%), url("${safeImgUrl(v.photo)}")`;
         header.style.backgroundSize = 'cover';
         header.style.backgroundPosition = 'center';
         header.style.backgroundRepeat = 'no-repeat';
@@ -2518,7 +2530,7 @@
       <div class="ticket" ${clickAttr}>
         <div class="ticket-stripe ${stripe}"></div>
         <div class="ticket-body">
-          <div class="ticket-ic">${item.icon || (kind === 'cert' ? '📋' : '🔧')}</div>
+          <div class="ticket-ic">${escapeHtml(item.icon || (kind === 'cert' ? '📋' : '🔧'))}</div>
           <div class="ticket-text">
             <div class="ticket-name">${escapeHtml(item.name)}${clip}${issuedBy}</div>
             <div class="ticket-sub">${vesselChip}${subParts.join(' · ')}</div>
@@ -4035,7 +4047,7 @@
     const brandCard = logo
       ? `<div class="card" style="padding:14px;display:flex;align-items:center;gap:14px">
            <div style="width:64px;height:64px;border-radius:12px;background:white;border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-             <img alt="${escapeHtml(company)} logo" src="${logo}" style="max-width:100%;max-height:100%;object-fit:contain;padding:4px">
+             <img alt="${escapeHtml(company)} logo" src="${escapeHtml(safeImgUrl(logo))}" style="max-width:100%;max-height:100%;object-fit:contain;padding:4px">
            </div>
            <div style="flex:1;min-width:0">
              <div style="font-size:14px;font-weight:700;color:var(--text)">Your company logo</div>
@@ -4440,8 +4452,8 @@
         <button class="qr-close" type="button" aria-label="Close" onclick="closeQrPopup()">×</button>
         <h3 id="qr-modal-title">Open CodedOK on your phone</h3>
         <p>CodedOK is built for boats — use the QR below to open this app on your phone and add it to your home screen.</p>
-        <img src="${qrSrc}" alt="QR code for ${url}" width="220" height="220">
-        <span class="qr-url">${url}</span>
+        <img src="${escapeHtml(qrSrc)}" alt="QR code for ${escapeHtml(url)}" width="220" height="220">
+        <span class="qr-url">${escapeHtml(url)}</span>
       </div>
     `;
     overlay.addEventListener('click', (e) => { if (e.target === overlay) closeQrPopup(); });
@@ -5073,7 +5085,7 @@
         const id = 'sr-' + g + '-' + i;
         html += `
           <div id="${id}" class="search-row" style="padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;border-bottom:1px solid var(--bdr);background:var(--card)">
-            <div style="width:44px;height:44px;border-radius:11px;background:var(--slate);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${m.icon}</div>
+            <div style="width:44px;height:44px;border-radius:11px;background:var(--slate);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${escapeHtml(m.icon)}</div>
             <div style="flex:1;min-width:0">
               <div style="font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(m.label)}</div>
               <div style="font-size:13px;color:var(--mid);margin-top:2px">${escapeHtml(m.sub)}</div>

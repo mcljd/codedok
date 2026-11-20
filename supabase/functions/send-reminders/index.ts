@@ -198,17 +198,28 @@ function buildBody(items: ExpiringItem[]): { title: string; body: string } {
   return { title, body: preview + more };
 }
 
+// Only the scheduler (or you, with the service key) may run this. pg_cron
+// already sends the service-role key as a Bearer token (migrations 0009/0015);
+// an x-cron-secret header matching CRON_SECRET is also accepted. Everyone else —
+// including anyone holding the public anon key — is refused.
+function safeEqual(a: string, b: string): boolean {
+  if (!a || !b || a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
+}
+function isTrustedCaller(req: Request): boolean {
+  const bearer = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  const svc = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const cronSecret = Deno.env.get("CRON_SECRET") || "";
+  return safeEqual(bearer, svc) || (!!cronSecret && safeEqual(req.headers.get("x-cron-secret") || "", cronSecret));
+}
+
 async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
-  // Optional caller gate. This function ships the anon key in the client,
-  // so without a gate anyone could trigger the reminder fan-out at will.
-  // Fail-open by design: it only enforces once you SET a CRON_SECRET
-  // secret on the function AND have your scheduler send it as the
-  // 'x-cron-secret' header — until then behaviour is unchanged, so this
-  // can't accidentally silence reminders.
-  const cronSecret = Deno.env.get("CRON_SECRET");
-  if (cronSecret && req.headers.get("x-cron-secret") !== cronSecret) {
+  // Caller gate (see isTrustedCaller above). Fails closed.
+  if (!isTrustedCaller(req)) {
     return new Response(JSON.stringify({ error: "forbidden" }), {
       status: 403, headers: { ...cors, "Content-Type": "application/json" },
     });

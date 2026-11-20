@@ -172,6 +172,45 @@
     saveQueue(remaining);
   }
 
+  // ---- Security: sanitise rows coming from the server -------------------
+  // Records are rendered with inline onclick="fn('<id>')" handlers, so an id
+  // (or any *_id) containing a quote could inject script. Another member of
+  // a shared organisation can write rows, so treat server data as untrusted:
+  // ids must be plain tokens, icons plain text, image URLs https/data/blob.
+  const SAFE_ID = /^[A-Za-z0-9_.:-]{1,128}$/;
+  function safeUrl(u) {
+    if (typeof u !== 'string') return u;
+    const t = u.trim();
+    if (/^\/?[A-Za-z0-9_][A-Za-z0-9_\/.-]*$/.test(t) && !t.includes('..')) return t; // same-app path
+    if (/^https:\/\//i.test(t) || /^data:image\/(png|jpe?g|webp|gif|heic|heif);/i.test(t) || /^blob:/i.test(t)) {
+      return t.replace(/["'<>\\()\s]/g, encodeURIComponent);
+    }
+    return null;
+  }
+  function cleanRow(row) {
+    if (!row || typeof row !== 'object') return null;
+    for (const k of Object.keys(row)) {
+      const v = row[k];
+      if ((k === 'id' || /_id$/.test(k)) && v != null && v !== '') {
+        if (typeof v !== 'string' || !SAFE_ID.test(v)) {
+          if (k === 'id' || k === 'vessel_id' || k === 'org_id') return null; // unusable row
+          row[k] = null;
+        }
+      } else if (/_ids$/.test(k) && Array.isArray(v)) {
+        row[k] = v.filter((x) => typeof x === 'string' && SAFE_ID.test(x));
+      } else if (k === 'icon' && typeof v === 'string') {
+        row[k] = v.replace(/[<>"'&`]/g, '').slice(0, 16);
+      } else if ((k === 'photo' || k === 'logo' || /_url$/.test(k)) && typeof v === 'string') {
+        row[k] = safeUrl(v);
+      }
+    }
+    if (row.surveyor && typeof row.surveyor === 'object' && row.surveyor.logo) {
+      row.surveyor.logo = safeUrl(row.surveyor.logo);
+    }
+    return row;
+  }
+  window.CodedokSanitize = { cleanRow, safeUrl, SAFE_ID };
+
   async function pullChanges() {
     if (!window.Supa || !window.Supa.ready || !window.Store) return;
     const client = await window.Supa.getClient();
@@ -200,7 +239,8 @@
           if (!data || data.length === 0) continue;
           const collection = state[localKey] || [];
           const sameMember = (a, b) => a.org_id === b.org_id && a.user_id === b.user_id;
-          for (const row of data) {
+          for (const raw of data) {
+            const row = cleanRow(raw); if (!row) continue;
             const idx = collection.findIndex((x) => sameMember(x, row));
             if (idx >= 0) collection[idx] = row;
             else collection.push(row);
@@ -219,7 +259,8 @@
         if (!data || data.length === 0) continue;
 
         const collection = state[localKey] || [];
-        for (const row of data) {
+        for (const raw of data) {
+          const row = cleanRow(raw); if (!row) continue;
           if (row.deleted_at) {
             // Apply tombstone — remove from local collection.
             const idx = collection.findIndex((x) => x.id === row.id);

@@ -73,7 +73,7 @@ async function assertCallerIsSupport(req: Request): Promise<{ ok: true; userId: 
   if (row.kind !== "support" && row.kind !== "admin") {
     return json({ error: "forbidden", reason: "not_a_support_user" }, 403);
   }
-  return { ok: true, userId: authUserId, email: actorEmail };
+  return { ok: true, userId: authUserId, email: actorEmail, kind: row.kind as string };
 }
 
 // Record a support action to the audit log. Best-effort — a logging
@@ -106,6 +106,7 @@ async function handler(req: Request): Promise<Response> {
   const gate = await assertCallerIsSupport(req);
   if (gate instanceof Response) return gate;
   const actor = { userId: gate.userId, email: gate.email };
+  const actorIsAdmin = gate.kind === "admin";
 
   let body: any = {};
   try { body = await req.json(); } catch (_) { return json({ error: "invalid_json" }, 400); }
@@ -114,6 +115,27 @@ async function handler(req: Request): Promise<Response> {
   const service = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  // Account-level actions on a privileged account (admin/support) are
+  // admin-only, so a support agent can't take over an admin by resetting
+  // their password, email, kind, or banning/deleting them.
+  const ACCOUNT_ACTIONS = new Set(["set_password", "send_magic_link", "delete_user", "change_email", "verify_email", "change_kind", "ban_user"]);
+  if (ACCOUNT_ACTIONS.has(action) && !actorIsAdmin) {
+    let targetAuth = String(body.auth_user_id || "");
+    if (!targetAuth && body.email) {
+      const em = String(body.email).toLowerCase().trim();
+      const { data: list } = await service.auth.admin.listUsers({ perPage: 1000 });
+      targetAuth = (list?.users || []).find((u: any) => (u.email || "").toLowerCase() === em)?.id || "";
+    }
+    if (targetAuth) {
+      if (targetAuth === actor.userId && action !== "send_magic_link") return json({ error: "forbidden", reason: "cannot_modify_self" }, 403);
+      const { data: t } = await service.from("users").select("kind").eq("auth_user_id", targetAuth).maybeSingle();
+      if (t && (t.kind === "admin" || t.kind === "support")) return json({ error: "forbidden", reason: "privileged_target_admin_only" }, 403);
+    }
+    if (action === "change_kind" && ["admin", "support"].includes(String(body.kind || ""))) {
+      return json({ error: "forbidden", reason: "admin_only" }, 403);
+    }
+  }
 
   try {
     switch (action) {
@@ -296,7 +318,7 @@ async function handler(req: Request): Promise<Response> {
         const id = String(body.user_id || "");
         if (!id) return json({ error: "user_id_required" }, 400);
         const { data, error } = await service
-          .from("audit_log")
+          .from("action_log")
           .select("action,target_type,target_id,at,metadata")
           .eq("actor_user_id", id)
           .order("at", { ascending: false })

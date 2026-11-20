@@ -30,14 +30,17 @@ async function rateLimit(req: Request, fn: string, capPerDay: number): Promise<R
     const url = Deno.env.get("SUPABASE_URL");
     const anon = Deno.env.get("SUPABASE_ANON_KEY");
     const svc = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!token || !url || !anon || !svc) return null;
+    const deny = (status: number, error: string) => new Response(JSON.stringify({ error }), { status, headers: { ...cors, "Content-Type": "application/json" } });
+    if (!url || !anon || !svc) return deny(500, "server_misconfigured");
+    if (!token) return deny(401, "sign_in_required");
     const caller = createClient(url, anon, {
       global: { headers: { Authorization: `Bearer ${token}` } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const { data: u } = await caller.auth.getUser();
     const uid = u?.user?.id;
-    if (!uid) return null;
+    // Fail closed: the public anon key passes verify_jwt but is not a user.
+    if (!uid) return deny(401, "sign_in_required");
     const service = createClient(url, svc, { auth: { persistSession: false, autoRefreshToken: false } });
     const since = new Date(Date.now() - 86400000).toISOString();
     const { count } = await service.from("ai_usage_log")
@@ -47,10 +50,11 @@ async function rateLimit(req: Request, fn: string, capPerDay: number): Promise<R
       return new Response(JSON.stringify({ error: "rate_limited", detail: `Daily limit of ${capPerDay} reached — try again tomorrow.` }),
         { status: 429, headers: { ...cors, "Content-Type": "application/json" } });
     }
-    await service.from("ai_usage_log").insert({ auth_user_id: uid, fn });
+    const { error: logErr } = await service.from("ai_usage_log").insert({ auth_user_id: uid, fn });
+    if (logErr) return deny(503, "try_again");
     return null;
   } catch (_) {
-    return null;
+    return new Response(JSON.stringify({ error: "try_again" }), { status: 503, headers: { ...cors, "Content-Type": "application/json" } });
   }
 }
 
