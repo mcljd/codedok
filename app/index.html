@@ -5,7 +5,7 @@
 <!-- Content Security Policy. 'unsafe-inline' is still needed for the app's
      inline handlers; the policy's job here is to stop injected code loading
      outside scripts, sending data to other servers, or framing the app. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://static.cloudflareinsights.com https://browser.sentry-cdn.com; connect-src 'self' https://zftoqqrqsxctehltebad.supabase.co wss://zftoqqrqsxctehltebad.supabase.co https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://cloudflareinsights.com https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io; img-src 'self' data: blob: https://zftoqqrqsxctehltebad.supabase.co https://api.qrserver.com https://*.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; worker-src 'self' blob:; frame-src 'self' data: blob:; media-src 'self' blob: data:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://static.cloudflareinsights.com https://browser.sentry-cdn.com; connect-src 'self' data: blob: https://zftoqqrqsxctehltebad.supabase.co wss://zftoqqrqsxctehltebad.supabase.co https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://cloudflareinsights.com https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io; img-src 'self' data: blob: https://zftoqqrqsxctehltebad.supabase.co https://api.qrserver.com https://*.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; worker-src 'self' blob:; frame-src 'self' data: blob:; media-src 'self' blob: data:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>
   // Retired web-app hosts (app., mobile., demo.) go straight to the
@@ -2317,7 +2317,7 @@
         </div>
         <span class="chev">›</span>
       </div>
-      <div class="row" onclick="window.open('web/index.html', '_blank')">
+      <div class="row desktop-link" onclick="window.open('web/index.html', '_blank')">
         <div class="row-ic bl">🖥️</div>
         <div class="row-body">
           <div class="row-name">Open desktop web app</div>
@@ -2541,6 +2541,7 @@
 <script src="app.js" defer></script>
 <script src="screens.js" defer></script>
 <script src="renew.js" defer></script>
+<script src="files.js" defer></script>
 <script src="ios-features.js" defer></script>
 
 

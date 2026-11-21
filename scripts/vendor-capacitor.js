@@ -26,6 +26,7 @@ const parts = [
   ['@capacitor/local-notifications', 'dist/plugin.js'],
   ['@capacitor/network', 'dist/plugin.js'],
   ['@capacitor/browser', 'dist/plugin.js'],
+  ['@capacitor/filesystem', 'dist/plugin.js'],
   // Face ID wrapper expects a global named `app` (its @capacitor/app import);
   // give it one in a private scope so nothing else can collide with it.
   [null, '(function (app) {'],

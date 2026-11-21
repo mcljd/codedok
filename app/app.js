@@ -398,6 +398,9 @@
   // Open the stored data URL — works for PDFs and images.
   function viewAttachment(dataUrl, name) {
     if (!dataUrl) return;
+    // In-app viewer (files.js). window.open() popups are refused inside the
+    // iPhone app, so the old path below did nothing there.
+    if (window.CodedokFiles) { CodedokFiles.view(String(dataUrl), name); return; }
     // Security: only ever open data:/https:/blob: attachments. A crafted
     // value (e.g. a javascript: URL, or one containing a quote to break
     // out of the attribute) would otherwise run script in the app origin
@@ -1659,8 +1662,12 @@
         'font-family:var(--fn)',
       ].join(';');
       fab.innerHTML = '<span style="margin-top:-4px">+</span>';
-      fab.onmouseenter = () => { fab.style.transform = 'translateY(-2px) scale(1.04)'; };
-      fab.onmouseleave = () => { fab.style.transform = ''; };
+      // Hover lift only where there's a real pointer — on a phone a tap
+      // fires mouseenter and the button stayed enlarged.
+      if (window.matchMedia && matchMedia('(hover: hover)').matches) {
+        fab.onmouseenter = () => { fab.style.transform = 'translateY(-2px) scale(1.04)'; };
+        fab.onmouseleave = () => { fab.style.transform = ''; };
+      }
       // Append to the s-home shell so it auto-disappears when the user
       // navigates away (other shells become display:none, but a body-
       // attached element wouldn't — keeping it home-scoped is safer).
@@ -3276,7 +3283,8 @@
     const sheet = document.createElement('div');
     sheet.id = 'cert-sheet';
     sheet.className = 'bdrop on';
-    const f = c.file;
+    // Local copy, or (added on another device) the cloud copy.
+    const f = c.file || (c.file_url ? { name: 'Certificate file', type: /\.pdf$/i.test(c.file_url) ? 'application/pdf' : 'image/*', size: 0, added_at: c.updated_at || null } : null);
     sheet.innerHTML = `
       <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
         <div class="sh-pull"></div>
@@ -3318,7 +3326,7 @@
                 </div>
               </div>
               <div style="display:flex;gap:8px">
-                <button class="btn btn-xs btn-sea" style="flex:1" onclick="viewAttachment('${f.data_url}','${jsAttr(f.name)}')">👁 View</button>
+                <button class="btn btn-xs btn-sea" style="flex:1" onclick="CodedokFiles.viewCert('${jsAttr(c.id)}')">👁 View</button>
                 <button class="btn btn-xs btn-out" style="flex:1" onclick="attachToExistingCert('${c.id}')">↻ Replace</button>
                 <button class="btn btn-xs btn-out" style="flex:1;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="removeCertFile('${c.id}')">✕ Remove</button>
               </div>
@@ -3353,6 +3361,8 @@
   function removeCertFile(certId) {
     if (!confirm('Remove the attached file? The certificate record stays.')) return;
     Store.detachFileFromCert(certId);
+    const cc = Store.getCert(certId);
+    if (cc && cc.file_url) Store.updateCert(certId, { file_url: null });
     closeCertSheet();
     openCertSheet(certId);
   }
@@ -3741,7 +3751,7 @@
     // a laptop can jump to the full workspace at /web/.
     const desktopBanner = window.innerWidth >= 1024 ? `
       <div style="padding:14px 16px 0">
-        <div class="card" onclick="window.open('web/index.html', '_blank')" style="padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid var(--sea)">
+        <div class="card desktop-link" onclick="window.open('web/index.html', '_blank')" style="padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid var(--sea)">
           <div style="font-size:22px">🖥️</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:700;color:var(--text)">Open the desktop workspace</div>
@@ -4163,7 +4173,7 @@
       <div class="slbl">Desktop workspace</div>
       <div style="padding:0 16px">
         <div class="card">
-          <div class="row" onclick="window.open('web/index.html', '_blank')">
+          <div class="row desktop-link" onclick="window.open('web/index.html', '_blank')">
             <div class="row-ic bl">🖥️</div>
             <div class="row-body">
               <div class="row-name">Open desktop workspace</div>
@@ -8487,9 +8497,15 @@ ${sectionsHtml}
 
     // Word reads HTML with the .doc extension and `application/msword` MIME.
     const blob = new Blob(['﻿', html], { type: 'application/msword' });
+    const safe = title.replace(/[^a-z0-9\-_ ]/gi, '_');
+    // iPhone app: <a download> is ignored, so hand the file to the share
+    // sheet (Save to Files / Mail / AirDrop).
+    if (window.CodedokFiles && window.CodedokNative && CodedokNative.isNative) {
+      CodedokFiles.share(blob, `${safe}.doc`, 'application/msword').catch((e) => { console.warn(e); if (window.toast) toast("Couldn't export the Word file"); });
+      return;
+    }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const safe = title.replace(/[^a-z0-9\-_ ]/gi, '_');
     a.href = url;
     a.download = `${safe}.doc`;
     document.body.appendChild(a);

@@ -4,7 +4,7 @@
 //     get the latest when online, fall back to cache when offline)
 //   - Fonts / icons / images: cache-first (rarely change, big files)
 // Bump CACHE_VERSION whenever you ship — old caches are deleted on activate.
-const CACHE_VERSION = 'codedok-v210';
+const CACHE_VERSION = 'codedok-v212';
 const SHELL = [
   './',
   './index.html',
@@ -19,6 +19,7 @@ const SHELL = [
   './app.js',
   './screens.js',
   './renew.js',
+  './files.js',
   './ios-features.js',
   './lib/supabase-js-2.118.0.js',
   './init-sentry.js',

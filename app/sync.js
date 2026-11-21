@@ -54,8 +54,10 @@
   // cert-files Storage bucket keyed by file_url, not inline in the row.
   // issued_at + extraction now have real columns (migration 0021) and
   // sync like everything else.
+  // renewal_history / renewed_at: kept on the device (no server columns yet);
+  // sending them would make the server reject the whole certificate update.
   const LOCAL_ONLY_FIELDS = {
-    certs:     ['file'],
+    certs:     ['file', 'renewal_history', 'renewed_at'],
     equipment: ['file']
   };
   function forServer(localTable, row) {
@@ -76,7 +78,10 @@
     try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); }
     catch (_) { return []; }
   }
-  function saveQueue(q) { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
+  function saveQueue(q) {
+    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
+    catch (err) { console.error('sync queue save failed', err); }
+  }
   function pushQueue(item) {
     const q = loadQueue();
     // Coalesce: drop earlier writes to the same (table, id) — newest wins.
@@ -91,7 +96,9 @@
   // mutations don't otherwise set it.
   function queueWrite(table, row) {
     if (!row || !row.id) return;
-    const stampedRow = Object.assign({}, row, {
+    // Queue only what the server takes: the base64 attachment etc. stay out,
+    // otherwise the queue itself fills iPhone's 5 MB localStorage.
+    const stampedRow = Object.assign({}, forServer(table, row), {
       updated_at: row.updated_at || new Date().toISOString()
     });
     pushQueue({
@@ -271,6 +278,11 @@
               // Last-write-wins by updated_at.
               const local = collection[idx];
               if (!local.updated_at || new Date(row.updated_at) >= new Date(local.updated_at)) {
+                // Fields that never go to the server (the attachment, its
+                // renewal history) must survive a newer server copy —
+                // replacing the object outright used to drop the photo.
+                const keep = (LOCAL_ONLY_FIELDS[localKey] || []).concat(['renewal_history']);
+                for (const k of keep) if (local[k] !== undefined && row[k] === undefined) row[k] = local[k];
                 collection[idx] = row;
               }
             } else {
@@ -298,9 +310,37 @@
     try {
       await flushQueue();
       await pullChanges();
+      await uploadPendingFiles();
     } finally {
       inFlight = false;
       emitStatus();
+    }
+  }
+
+  // Certificate photos/PDFs → the private `cert-files` bucket, so they
+  // survive a lost phone and appear on other devices. The record keeps the
+  // storage path in `file_url` (a real column), which then syncs.
+  async function uploadPendingFiles() {
+    if (!window.Supa || !window.Supa.ready || !window.Store) return;
+    let client;
+    try { client = await window.Supa.getClient(); } catch (_) { return; }
+    if (!client || !client.storage) return;
+    const todo = (Store.snapshot().certs || []).filter(function (c) {
+      return c.vessel_id && c.file && typeof c.file.data_url === 'string' && !c.file.storage_path;
+    });
+    for (const c of todo.slice(0, 5)) {   // a few per pass keeps sync snappy
+      try {
+        const blob = await (await fetch(c.file.data_url)).blob();
+        const ext = ((blob.type || '').split('/')[1] || 'bin').replace(/[^a-z0-9]/gi, '').slice(0, 5) || 'bin';
+        const path = c.vessel_id + '/' + c.id + '-' + Date.now() + '.' + ext;
+        const { error } = await client.storage.from('cert-files').upload(path, blob, { contentType: blob.type || 'application/octet-stream', upsert: false });
+        if (error) throw error;
+        c.file.storage_path = path;
+        Store.updateCert(c.id, { file_url: path });
+      } catch (e) {
+        console.warn('attachment upload failed', c.id, e && e.message);
+        break;   // try again next sync
+      }
     }
   }
 

@@ -5546,7 +5546,7 @@ details > summary { list-style: none; }
 
 /* Translucent iOS tab bar on phones (desktop keeps the sidebar). */
 @media (max-width:767px){
-  .bnav{background:color-mix(in srgb, var(--card) 85%, transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--bdr);}
+  .bnav{background:rgba(255,255,255,.88);background:color-mix(in srgb, var(--card) 85%, transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--bdr);}
 }
 
 /* Vestigial 'Deadlines by urgency' block — replaced by the hero status;
@@ -5804,6 +5804,7 @@ html.is-native #plans-body { padding-top: 16px !important; }
 .ios-home-head > div > .ios-eyebrow, .ios-home-head .ios-sub { transition: opacity .15s ease, max-height .2s ease, margin .2s ease; max-height: 40px; }
 .ios-home-head.compact {
   padding: 2px 18px 6px; align-items: center;
+  background: rgba(242,242,247,.86);
   background: color-mix(in srgb, var(--page) 82%, transparent);
   -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
   box-shadow: 0 0.5px 0 var(--bdr);
@@ -5830,11 +5831,11 @@ html.is-native #plans-body { padding-top: 16px !important; }
     --purp: #8E86F5; --purpp: rgba(142,134,245,.18);
   }
   html.is-native body, html.is-native .shell { background: var(--page); color: var(--text); }
-  html.is-native .bnav { background: color-mix(in srgb, #1C1C1E 85%, transparent); border-top-color: #38383A; }
+  html.is-native .bnav { background: rgba(28,28,30,.88); background: color-mix(in srgb, #1C1C1E 85%, transparent); border-top-color: #38383A; }
   html.is-native .bni { color: #98989D; }
   html.is-native .bni.on { color: var(--tint); }
   html.is-native .tbar, html.is-native .ios-home-head { background: var(--page); }
-  html.is-native .ios-home-head.compact { background: color-mix(in srgb, #000 78%, transparent); }
+  html.is-native .ios-home-head.compact { background: rgba(0,0,0,.8); background: color-mix(in srgb, #000 78%, transparent); }
   html.is-native .card, html.is-native .ios-group, html.is-native .ticket, html.is-native .sheet,
   html.is-native .qa-tile, html.is-native .scard { background: var(--card); border-color: transparent; }
   html.is-native .fi, html.is-native input, html.is-native select, html.is-native textarea { background: #2C2C2E; color: var(--text); border-color: #38383A; }
@@ -6072,3 +6073,28 @@ html.app-privacy body::after { content: ''; }
    fallback. Tab strips keep their own horizontal scroll. */
 html, body, .shell, .shell > .scroll { overflow-x: hidden; overflow-x: clip; }
 .tabbar { overflow-x: auto; }
+
+/* Attachment viewer (files.js) */
+#fv { position: fixed; inset: 0; z-index: 9000; background: #000; display: flex; flex-direction: column; animation: shup .28s cubic-bezier(.32,.72,0,1); }
+.fv-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 8px; background: rgba(28,28,30,.94); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+.fv-btn { min-height: 44px; min-width: 64px; border: 0; background: none; color: #4A98E0; font: 400 17px/1 -apple-system, var(--fn); cursor: pointer; padding: 0 4px; }
+.fv-btn.fv-strong { font-weight: 600; text-align: right; }
+.fv-title { flex: 1; text-align: center; color: #fff; font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fv-body { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 12px 12px calc(env(safe-area-inset-bottom, 0px) + 16px); }
+.fv-img { max-width: 100%; height: auto; border-radius: 6px; background: #fff; }
+.fv-page { background: #fff; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,.4); max-width: 100%; }
+.fv-msg { color: rgba(255,255,255,.8); font-size: 16px; text-align: center; margin: auto; max-width: 300px; line-height: 1.5; }
+
+/* Desktop web-app links do nothing inside the iPhone app */
+html.is-native .desktop-link { display: none !important; }
+
+/* Native feel: no long-press text selection / image callout on UI chrome
+   (inputs, record text and the attachment viewer stay selectable). */
+html.is-native { -webkit-tap-highlight-color: transparent; }
+html.is-native button, html.is-native .bni, html.is-native .tab, html.is-native .tabbar,
+html.is-native .ios-row-ic, html.is-native .row-ic, html.is-native .qa-icon, html.is-native .chip,
+html.is-native .rs-tag, html.is-native .cb, html.is-native .slbl, html.is-native .tbar,
+html.is-native .ios-home-head, html.is-native .bnav, html.is-native .avatar {
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+html.is-native img:not(.fv-img) { -webkit-touch-callout: none; }
