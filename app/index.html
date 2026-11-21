@@ -1148,12 +1148,14 @@
       <div class="fg"><label class="fl">How far do you go out?</label>
         <div class="fl-help">This sets your MCA category. Not sure? <a href="/which-uk-code-applies" style="color:var(--sea);font-weight:600">Answer 4 quick questions →</a></div>
         <select class="fs" id="onb-cat">
-          <option>Category 6 — Inland / within 3 miles, daylight</option>
-          <option selected>Category 5 — Inland / smooth waters</option>
-          <option>Category 4 — Up to 20 miles, favourable weather</option>
-          <option>Category 3 — Up to 20 miles from safe haven</option>
-          <option>Category 2 — Up to 60 miles from safe haven</option>
-          <option>Category 1 — Up to 150 miles from safe haven</option>
+          <!-- Wording per SPV Code 2025 §3.10.1 -->
+          <option>Category 6 — Within 3 miles of land, good weather, daylight</option>
+          <option selected>Category 5 — Within 3 miles of land, good weather</option>
+          <option>Category 4 — Up to 20 miles from a safe haven, good weather, daylight</option>
+          <option>Category 3 — Up to 20 miles from a safe haven</option>
+          <option>Category 2 — Up to 60 miles from a safe haven</option>
+          <option>Category 1 — Up to 150 miles from a safe haven</option>
+          <option>Category 0 — Unrestricted</option>
         </select>
       </div>
     </div>
@@ -3286,10 +3288,10 @@
       <!-- Pyrotechnics — pack level + flare type -->
       <div class="fg" data-shows-for="pyrotechnics">
         <label class="fl">Pack level</label>
-        <div class="fl-help">SOLAS A is the offshore kit. Inshore is the coastal kit. Pick whichever pack you keep on the boat.</div>
+        <div class="fl-help">Pick whichever pack you keep on the boat. Gap check shows how many flares your category needs (SPV Code Table 14.1.2).</div>
         <select class="fs" id="eq-sub-pyro-pack">
-          <option value="solas_a">SOLAS A pack (offshore — Cat 0-2)</option>
-          <option value="inshore">Inshore pack (coastal — Cat 3-6)</option>
+          <option value="solas_a">SOLAS A pack</option>
+          <option value="inshore">Coastal / inshore pack</option>
           <option value="individual">Individual flare (not part of a pack)</option>
         </select>
       </div>

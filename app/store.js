@@ -577,17 +577,24 @@
     const v = getVessel(vesselId);
     if (!v) return { coveredCerts: [], missingCerts: [], coveredEquip: [], missingEquip: [], recommendations: [] };
 
-    const requiredCerts = window.Codes.requiredVesselCerts(v.category);
+    // Only items the app can hold a record for count as "missing"; the rest
+    // (manuals, signal tables…) are check-on-board items.
+    const C = window.Codes;
+    const trackedCert = (k) => !C.TRACKED_CERT_KINDS || C.TRACKED_CERT_KINDS.includes(k);
+    const trackedEquip = (k) => !C.TRACKED_EQUIPMENT_KINDS || C.TRACKED_EQUIPMENT_KINDS.includes(k);
+    const requiredCerts = C.requiredVesselCerts(v.category, v);
     const heldCerts = vesselCerts(vesselId);
-    const heldKinds = new Set(heldCerts.map((c) => c.kind));
+    // A record counts whichever list it was logged in (e.g. flares saved as a
+    // "certificate" still cover the flares requirement).
+    const heldKinds = new Set(heldCerts.map((c) => c.kind).concat(vesselEquipment(vesselId).map((e) => e.kind)));
     const coveredCerts = requiredCerts.filter((r) => heldKinds.has(r.kind));
-    const missingCerts = requiredCerts.filter((r) => r.required && !heldKinds.has(r.kind));
+    const missingCerts = requiredCerts.filter((r) => r.required && !r.verify && trackedCert(r.kind) && !heldKinds.has(r.kind));
 
-    const requiredEquip = window.Codes.requiredEquipment(v.category, v);
+    const requiredEquip = C.requiredEquipment(v.category, v);
     const heldEquip = vesselEquipment(vesselId);
-    const heldEquipKinds = new Set(heldEquip.map((e) => e.kind));
+    const heldEquipKinds = new Set(heldEquip.map((e) => e.kind).concat(heldCerts.map((c) => c.kind)));
     const coveredEquip = requiredEquip.filter((r) => heldEquipKinds.has(r.kind));
-    const missingEquip = requiredEquip.filter((r) => r.mandatory && !heldEquipKinds.has(r.kind));
+    const missingEquip = requiredEquip.filter((r) => r.mandatory && !r.verify && trackedEquip(r.kind) && !heldEquipKinds.has(r.kind));
 
     return { coveredCerts, missingCerts, coveredEquip, missingEquip };
   }
@@ -692,7 +699,7 @@
   function updateVessel(vesselId, patch) {
     const v = getVessel(vesselId);
     if (!v) return null;
-    const allowed = ['name', 'type', 'category', 'ssr', 'length', 'persons', 'port', 'certifier', 'icon', 'make', 'engine', 'photo'];
+    const allowed = ['name', 'type', 'category', 'code', 'area_category', 'ssr', 'length', 'persons', 'port', 'certifier', 'icon', 'make', 'engine', 'photo'];
     allowed.forEach((k) => {
       if (patch[k] !== undefined) v[k] = patch[k];
     });

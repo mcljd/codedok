@@ -54,10 +54,11 @@
   // cert-files Storage bucket keyed by file_url, not inline in the row.
   // issued_at + extraction now have real columns (migration 0021) and
   // sync like everything else.
-  // renewal_history / renewed_at: kept on the device (no server columns yet);
-  // sending them would make the server reject the whole certificate update.
+  // renewal_history / renewed_at and vessels.code / area_category have server
+  // columns from migration 0028; if that hasn't been run, flushQueue strips
+  // unknown columns and retries, so records still sync.
   const LOCAL_ONLY_FIELDS = {
-    certs:     ['file', 'renewal_history', 'renewed_at'],
+    certs:     ['file'],
     equipment: ['file']
   };
   function forServer(localTable, row) {
@@ -65,6 +66,29 @@
     if (!drop || !row) return row;
     const out = {};
     for (const k in row) { if (!drop.includes(k)) out[k] = row[k]; }
+    return out;
+  }
+
+  // Columns the server has told us it doesn't have (PostgREST PGRST204).
+  // Remembered per device; cleared after a week so new migrations get used.
+  const UNKNOWN_KEY = 'codedok-sync-unknown-cols';
+  function loadUnknown() {
+    try {
+      const u = JSON.parse(localStorage.getItem(UNKNOWN_KEY) || '{}');
+      if (!u.at || Date.now() - u.at > 7 * 86400000) return { at: Date.now(), t: {} };
+      return u;
+    } catch (_) { return { at: Date.now(), t: {} }; }
+  }
+  function rememberUnknown(table, col) {
+    const u = loadUnknown();
+    u.t[table] = Array.from(new Set((u.t[table] || []).concat([col])));
+    try { localStorage.setItem(UNKNOWN_KEY, JSON.stringify(u)); } catch (_) {}
+  }
+  function stripUnknown(table, row) {
+    const cols = loadUnknown().t[table] || [];
+    if (!cols.length) return row;
+    const out = {};
+    for (const k in row) if (!cols.includes(k)) out[k] = row[k];
     return out;
   }
 
@@ -167,8 +191,17 @@
           const { error } = await client.from('memberships').upsert(row, { onConflict: 'org_id,user_id' });
           if (error) throw error;
         } else {
-          const { error } = await client.from(table).upsert(row, { onConflict: 'id' });
-          if (error) throw error;
+          // If the server doesn't have a column yet (a migration not run),
+          // drop that field and retry rather than failing the whole record.
+          let r = stripUnknown(item.table, row);
+          for (let attempt = 0; attempt < 4; attempt++) {
+            const { error } = await client.from(table).upsert(r, { onConflict: 'id' });
+            if (!error) break;
+            const m = /Could not find the '([^']+)' column/i.exec(error.message || '');
+            if (!m || attempt === 3) throw error;
+            rememberUnknown(item.table, m[1]);
+            r = stripUnknown(item.table, r);
+          }
         }
       } catch (err) {
         // Network blip — keep in queue and try again next pass.

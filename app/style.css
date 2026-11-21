@@ -6098,3 +6098,7 @@ html.is-native .ios-home-head, html.is-native .bnav, html.is-native .avatar {
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
 html.is-native img:not(.fv-img) { -webkit-touch-callout: none; }
+/* Code deadline note (Gap check) */
+.rs-note { margin: 18px 16px 0; padding: 14px 16px; border-radius: 14px; background: var(--seap); color: var(--text); font-size: 14px; line-height: 1.5; }
+.rs-note-urgent { background: var(--ampp); }
+.rs-note-btn { display: block; min-height: 40px; margin-top: 6px; font-weight: 600; font-size: 15px; }

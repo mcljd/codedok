@@ -64,27 +64,39 @@
       });
     });
     var out = { certs: [], equip: [], crew: [] };
-    C.requiredVesselCerts(v.category).filter(function (r) { return r.required; }).forEach(function (r) {
-      var have = certs.filter(function (c) { return c.kind === r.kind; });
+    var trackedC = function (k) { return !C.TRACKED_CERT_KINDS || C.TRACKED_CERT_KINDS.indexOf(k) !== -1; };
+    var trackedE = function (k) { return !C.TRACKED_EQUIPMENT_KINDS || C.TRACKED_EQUIPMENT_KINDS.indexOf(k) !== -1; };
+    // Records count whichever list they were logged in.
+    var both = certs.map(function (c) { return { kind: c.kind, expires_at: c.expires_at }; })
+      .concat(equip.map(function (e) { return { kind: e.kind, expires_at: e.next_service_at }; }));
+    C.requiredVesselCerts(v.category, v).filter(function (r) { return r.required; }).forEach(function (r) {
+      var have = both.filter(function (c) { return c.kind === r.kind; });
       var best = have.sort(function (a, b) { return days(b.expires_at) - days(a.expires_at); })[0];
-      var st = !best ? 'missing' : days(best.expires_at) < 0 ? 'expired' : days(best.expires_at) <= 30 ? 'soon' : 'ok';
-      out.certs.push({ name: r.name, sub: r.authority || '', st: st, rec: best });
+      // Items we can't hold a record for, or that the Code is unclear on,
+      // are "check" rather than "missing".
+      var st = !best ? (trackedC(r.kind) && !r.verify ? 'missing' : 'check') : days(best.expires_at) < 0 ? 'expired' : days(best.expires_at) <= 30 ? 'soon' : 'ok';
+      out.certs.push({ name: r.name, sub: r.authority || '', st: st, rec: best, ref: r.ref });
     });
     C.requiredEquipment(v.category, v).filter(function (r) { return r.mandatory; }).forEach(function (r) {
-      var have = equip.filter(function (e) { return e.kind === r.kind; });
-      var best = have.sort(function (a, b) { return days(b.next_service_at) - days(a.next_service_at); })[0];
-      var st = !best ? 'missing' : days(best.next_service_at) < 0 ? 'expired' : days(best.next_service_at) <= 30 ? 'soon' : 'ok';
-      out.equip.push({ name: r.name || r.kind, sub: r.qty_resolved ? 'At least ' + r.qty_resolved : '', st: st, rec: best });
+      var have = both.filter(function (e) { return e.kind === r.kind; });
+      var best = have.sort(function (a, b) { return days(b.expires_at) - days(a.expires_at); })[0];
+      var st = !best ? (trackedE(r.kind) && !r.verify ? 'missing' : 'check') : days(best.expires_at) < 0 ? 'expired' : days(best.expires_at) <= 30 ? 'soon' : 'ok';
+      var q = r.qty_resolved;
+      out.equip.push({ name: r.name || r.kind, sub: typeof q === 'number' ? (q > 1 ? q + ' needed' : '') : (q ? String(q) : ''), st: st, rec: best, ref: r.ref });
     });
-    C.requiredCrewQuals(v.category).filter(function (r) { return r.mandatory; }).forEach(function (r) {
+    C.requiredCrewQuals(v.category, v).filter(function (r) { return r.mandatory; }).forEach(function (r) {
       var want = String(r.cert || '').toLowerCase();
       var keys = CREW_KEYS.filter(function (k) { return want.indexOf(k) !== -1; });
       var met = keys.length && keys.some(function (k) { return crewNames.some(function (n) { return n.indexOf(k) !== -1; }); });
       out.crew.push({ name: r.cert, sub: r.role, st: met ? 'ok' : 'check' });
     });
     var all = out.certs.concat(out.equip, out.crew);
-    out.total = all.length;
-    out.met = all.filter(function (x) { return x.st === 'ok' || x.st === 'soon'; }).length;
+    // Score only what the app can verify from records; "check on board"
+    // items are counted separately so they don't drag the score down.
+    var decided = all.filter(function (x) { return x.st !== 'check'; });
+    out.total = decided.length;
+    out.met = decided.filter(function (x) { return x.st === 'ok' || x.st === 'soon'; }).length;
+    out.toCheck = all.length - decided.length;
     out.problems = all.filter(function (x) { return x.st === 'missing' || x.st === 'expired'; }).length;
     return out;
   }
@@ -104,6 +116,22 @@
     }).join('') + '</div>';
   }
 
+  // Code deadlines that matter right now (from Codes.KEY_DATES).
+  function deadlineNote(v) {
+    var C = window.Codes;
+    if (!C || !C.KEY_DATES) return '';
+    var wb = C.codeFor && C.codeFor(v) === 'workboat';
+    var k = wb ? C.KEY_DATES.workboat : C.KEY_DATES.spv;
+    var hasSms = (Store.snapshot().sms_documents || []).some(function (d) { return d.vessel_id === v.id && (d.status === 'signed' || d.status === 'active'); });
+    var d = days(k.sms_by);
+    var lines = [];
+    if (!hasSms && d >= 0) lines.push('<strong>Safety Management System due by ' + fmt(k.sms_by) + '</strong> (' + d + ' days). ' + (wb ? 'Workboat Code §31.1.1.' : 'SPV Code §30.1.1.'));
+    if (!wb) lines.push('Existing boats move to the new Code at their next renewal examination or by ' + fmt('2028-12-12') + ', whichever is later (Appendix 12).');
+    if (!lines.length) return '';
+    return '<div class="rs-note' + (!hasSms && d >= 0 && d <= 60 ? ' rs-note-urgent' : '') + '">' + lines.join('<br>') +
+      (!hasSms ? '<button type="button" class="rs-link rs-note-btn" onclick="go(\'s-sms\')">Build your SMS ›</button>' : '') + '</div>';
+  }
+
   function renderGap() {
     var sc = scrollOf('s-gap'); if (!sc) return;
     var v = pickVessel(); if (!v) return noBoats(sc);
@@ -114,13 +142,16 @@
       '<div class="rs-hero">' +
         '<div class="rs-ring" style="--p:' + pct + '" role="img" aria-label="' + pct + ' percent of requirements met"><span>' + pct + '%</span></div>' +
         '<div><div class="rs-hero-h">' + (g.problems ? g.problems + ' thing' + (g.problems === 1 ? '' : 's') + ' to sort' : 'Nothing missing') + '</div>' +
-        '<div class="rs-hero-sub">' + g.met + ' of ' + g.total + ' requirements met for ' + esc(v.name) + ' · ' + esc(v.category || '') + '</div></div>' +
+        '<div class="rs-hero-sub">' + g.met + ' of ' + g.total + ' records in place for ' + esc(v.name) + ' · ' + esc(v.category || '') +
+          (g.toCheck ? '<br>Plus ' + g.toCheck + ' item' + (g.toCheck === 1 ? '' : 's') + ' to check on board' : '') + '</div></div>' +
       '</div>' +
       '<div class="slbl">Certificates</div>' + reqRows(g.certs, "go('s-scan')") +
       '<div class="slbl">Safety equipment</div>' + reqRows(g.equip, "setActiveVessel('" + esc(v.id) + "');go('s-equipment-add')") +
       '<div class="slbl">Crew qualifications</div>' + reqRows(g.crew, null) +
-      '<p class="rs-foot">Checked against the Code requirements for ' + esc(v.category || 'this category') +
-      '. “Check” means we couldn\'t match a crew certificate by name. Your surveyor has the final say.</p>';
+      deadlineNote(v) +
+      '<p class="rs-foot">Checked against the ' + (window.Codes.codeFor && window.Codes.codeFor(v) === 'workboat' ? 'Workboat Code Edition 3' : 'Sport or Pleasure Vessel Code 2025') +
+      ' for Area ' + esc(v.category || 'this category') +
+      '. “Check” means it needs checking on board or can\'t be matched to a record automatically. Your Certifying Authority has the final say.</p>';
   }
 
   // ── Deficiency log ───────────────────────────────────────────────────────

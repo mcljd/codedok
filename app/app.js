@@ -66,7 +66,11 @@
     modal.onclick = function (e) { if (e.target === modal) closeEditVessel(); };
     document.body.appendChild(modal);
 
-    const categories = ['Cat 0', 'Cat 1', 'Cat 2', 'Cat 3', 'Cat 4', 'Cat 5', 'Cat 6', 'Workboat'];
+    // Both Codes use area categories 0–6; which Code applies is separate.
+    const categories = ['Cat 0', 'Cat 1', 'Cat 2', 'Cat 3', 'Cat 4', 'Cat 5', 'Cat 6'];
+    const isWb = window.Codes ? Codes.codeFor(v) === 'workboat' : false;
+    const curCat = /^Cat [0-6]$/.test(v.category || '') ? v.category
+      : (v.area_category ? 'Cat ' + String(v.area_category).slice(3) : 'Cat 2');
     modal.innerHTML = `
       <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
         <div class="sh-pull"></div>
@@ -77,10 +81,16 @@
         <div style="padding:0 20px 14px;overflow-y:auto;max-height:70vh">
           <div class="fg"><label class="fl">Vessel name</label><input class="fi" id="ev-name" value="${escapeHtml(v.name || '')}"></div>
           <div class="fg"><label class="fl">Type</label><input class="fi" id="ev-type" value="${escapeHtml(v.type || '')}" placeholder="e.g. Open RIB charter"></div>
+          <div class="fg"><label class="fl" for="ev-code">Which Code?</label>
+            <select class="fi" id="ev-code">
+              <option value="spv" ${isWb ? '' : 'selected'}>Sport or Pleasure Vessel Code 2025 (charter, sailing schools, trips)</option>
+              <option value="workboat" ${isWb ? 'selected' : ''}>Workboat Code Edition 3 (work, pilot, dive, wind farm)</option>
+            </select>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div class="fg"><label class="fl">Category</label>
+            <div class="fg"><label class="fl">Area category</label>
               <select class="fi" id="ev-cat">
-                ${categories.map((c) => `<option value="${c}" ${c === v.category ? 'selected' : ''}>${c}</option>`).join('')}
+                ${categories.map((c) => `<option value="${c}" ${c === curCat ? 'selected' : ''}>${c}</option>`).join('')}
               </select>
             </div>
             <div class="fg"><label class="fl">Persons</label><input class="fi" id="ev-persons" type="number" min="1" value="${v.persons || 12}"></div>
@@ -110,6 +120,7 @@
       name: (document.getElementById('ev-name') || {}).value || '',
       type: (document.getElementById('ev-type') || {}).value || '',
       category: (document.getElementById('ev-cat') || {}).value || '',
+      code: (document.getElementById('ev-code') || {}).value === 'workboat' ? 'workboat' : 'spv',
       persons: parseInt((document.getElementById('ev-persons') || {}).value || '12', 10),
       length: parseFloat((document.getElementById('ev-length') || {}).value || '0') || null,
       ssr: (document.getElementById('ev-ssr') || {}).value || '',
@@ -2587,7 +2598,7 @@
     const unassigned = all.filter((p) => !(p.vessel_ids || []).includes(vesselId));
     const v = Store.getVessel(vesselId);
     const codes = window.Codes;
-    const reqs = codes ? codes.requiredCrewQuals(v.category) : [];
+    const reqs = codes ? codes.requiredCrewQuals(v.category, v) : [];
 
     let html = '<div style="padding:14px 16px 4px">';
 
@@ -2920,8 +2931,9 @@
     const codes = window.Codes;
     const v = Store.getVessel(vesselId);
     const required = codes ? codes.requiredEquipment(v.category, v) : [];
-    const heldKinds = new Set(equipment.map((e) => e.kind));
-    const missing = required.filter((r) => r.mandatory && !heldKinds.has(r.kind));
+    const heldKinds = new Set(equipment.map((e) => e.kind).concat(Store.vesselCerts(vesselId).map((c) => c.kind)));
+    const tracked = (k) => !codes || !codes.TRACKED_EQUIPMENT_KINDS || codes.TRACKED_EQUIPMENT_KINDS.includes(k);
+    const missing = required.filter((r) => r.mandatory && !r.verify && tracked(r.kind) && !heldKinds.has(r.kind));
 
     let html = '<div style="padding:14px 16px 4px">';
 
@@ -6733,9 +6745,9 @@
       wrap.innerHTML = '<div style="padding:24px">Pick a vessel first</div>';
       return;
     }
-    const certs = window.Codes.requiredVesselCerts(v.category);
+    const certs = window.Codes.requiredVesselCerts(v.category, v);
     const equipment = window.Codes.requiredEquipment(v.category, v);
-    const crew = window.Codes.requiredCrewQuals(v.category);
+    const crew = window.Codes.requiredCrewQuals(v.category, v);
     const totalChecks = certs.length + equipment.length + crew.length;
 
     if (!window._inspectionState) window._inspectionState = {};
@@ -7472,7 +7484,8 @@
       { key: 'operation_type', kind: 'options', label: 'What type of operation?',
         opts: ['Passenger charter / day trips', 'Sea angling / fishing trips', 'Diving / instruction', 'Sail training', 'Workboat / safety boat', 'Private use only'] },
       { key: 'operating_area', kind: 'options', label: 'Where do you operate?',
-        opts: ['Cat 0 — Unrestricted', 'Cat 1 — Up to 150nm', 'Cat 2 — Up to 60nm', 'Cat 3 — Up to 20nm', 'Cat 4 — Up to 20nm in favourable weather', 'Cat 5/6 — Smooth & partially-smooth waters'] },
+        // SPV Code 2025 §3.10.1
+        opts: ['Cat 0 — Unrestricted', 'Cat 1 — Up to 150 miles from a safe haven', 'Cat 2 — Up to 60 miles from a safe haven', 'Cat 3 — Up to 20 miles from a safe haven', 'Cat 4 — Up to 20 miles, good weather, daylight', 'Cat 5 — Within 3 miles of land, good weather', 'Cat 6 — Within 3 miles of land, good weather, daylight'] },
       { key: 'passengers_max', kind: 'short', label: 'Max passengers on board?', placeholder: 'e.g. 10' },
       { key: 'crew_size', kind: 'short', label: 'Typical crew (master + mate)?', placeholder: 'e.g. 1 master + 1 mate' },
       { key: 'season', kind: 'options', label: 'Operating season?',
@@ -8458,7 +8471,7 @@ h3 { font-size: 11pt; font-weight: 700; color: #1e3454; margin: 12pt 0 4pt 0; pa
 </div>
 
 <p style="font-size:10pt;color:#475569;font-style:italic;border-left:3pt solid #03203D;padding:6pt 12pt;margin:18pt 0">
-This Safety Management System is built on the requirements of the Sport or Pleasure Vessel Code 2025 (Appendix 7) and the Workboat Code Edition 3 (Appendix on Safety Management). It is the responsibility of the vessel owner/operator to ensure the SMS is implemented, maintained, and reviewed.
+This Safety Management System is built on the requirements of the Sport or Pleasure Vessel Code 2025 (Section 30 and Appendix 7) and the Workboat Code Edition 3 (Section 31 and Appendix 8). It is the responsibility of the vessel owner/operator to ensure the SMS is implemented, maintained, and reviewed.
 </p>
 
 ${sectionsHtml}
@@ -9596,7 +9609,7 @@ ${sectionsHtml}
     const screen = document.getElementById('s-onboard-jur');
     if (!screen) return;
 
-    const required = Codes.requiredVesselCerts(lastVessel.category);
+    const required = Codes.requiredVesselCerts(lastVessel.category, lastVessel);
     const equipment = Codes.requiredEquipment(lastVessel.category, lastVessel);
 
     // Add a one-time preview block
