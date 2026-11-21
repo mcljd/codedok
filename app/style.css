@@ -6043,3 +6043,26 @@ html.app-privacy body::after { content: ''; }
 .rs-cq-none { font-size: 14px; color: var(--mid); }
 @media (prefers-color-scheme: dark) { html.is-native .rs-av { background: #0A6CD6; } }
 #s-account .ios-home-head .avatar { display: none; }
+
+/* Renew card (renew.js) on the certificate sheet */
+.rn-card { border-radius: 16px; padding: 16px; margin: 4px 0 16px; border: 1px solid transparent; }
+.rn-card.rn-rd { background: var(--redp); border-color: rgba(215,0,21,.18); }
+.rn-card.rn-am { background: var(--ampp); border-color: rgba(201,52,0,.18); }
+.rn-head { font-size: 17px; font-weight: 700; margin-bottom: 12px; }
+.rn-rd .rn-head { color: var(--red); }
+.rn-am .rn-head { color: var(--amber); }
+.rn-step { display: flex; gap: 12px; margin-bottom: 12px; }
+.rn-n { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; background: var(--card); color: var(--text); font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+.rn-t { font-size: 15px; font-weight: 600; color: var(--text); }
+.rn-s { font-size: 14px; color: var(--mid); line-height: 1.45; margin-top: 2px; }
+.rn-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.rn-link { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 18px; background: var(--card); color: var(--tint); font-size: 14px; font-weight: 600; text-decoration: none; }
+.rn-go { min-height: 50px; font-size: 17px; margin-top: 4px; }
+.rn-alt { display: block; width: 100%; min-height: 44px; margin-top: 4px; border: 0; background: none; color: var(--tint); font: 500 15px/1.2 var(--fn); cursor: pointer; }
+.rn-swap { display: flex; align-items: center; gap: 12px; background: var(--slate); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+.rn-swap > div:not(.rn-arrow) { flex: 1; }
+.rn-swap span { display: block; font-size: 12px; color: var(--mid); }
+.rn-swap strong { font-size: 15px; color: var(--text); }
+.rn-arrow { font-size: 18px; color: var(--mid); }
+.rn-msg { font-size: 14px; color: var(--mid); line-height: 1.45; margin: 0 0 12px; }
+.rn-what { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 12px; }

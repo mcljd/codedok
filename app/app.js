@@ -1666,9 +1666,13 @@
           const child = it.cert || it.equipment || it.crewCert;
           const vesselId = child && child.vessel_id;
           const setV = vesselId ? `setActiveVessel('${vesselId}');` : '';
+          // A certificate opens straight onto its Renew card; equipment
+          // and crew keep their own screens.
           const openAction = it.crewCert
             ? "go('s-crew')"
-            : `${setV}go('s-vessel-detail')`;
+            : it.cert
+              ? `${setV}openCertSheet('${jsAttr(it.cert.id)}')`
+              : `${setV}go('s-vessel-detail')`;
           const pill = a.sev === 'rd'
             ? '<span class="ios-pill red">Overdue</span>'
             : '<span class="ios-pill amber">Due soon</span>';
@@ -3267,6 +3271,7 @@
         </div>
 
         <div style="padding:0 20px 14px">
+          ${window.CodedokRenew ? CodedokRenew.block(c) : ''}
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
             <div>
               <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em">Status</div>
@@ -3307,8 +3312,8 @@
             </div>`}
 
           <div class="sheet-actions">
-            <button class="sheet-act" onclick="renewCert('${c.id}')"><span style="font-size:18px">↻</span><span>Mark renewed (today + 12 months)</span></button>
-            <button class="sheet-act" onclick="closeCertSheet();go('s-scan')"><span style="font-size:18px">📷</span><span>Scan replacement</span></button>
+            <button class="sheet-act" data-renew="${escapeHtml(c.id)}"><span style="font-size:18px">📷</span><span>Renew: snap the new certificate</span></button>
+            <button class="sheet-act" data-renew-date="${escapeHtml(c.id)}"><span style="font-size:18px">📅</span><span>Renew: type the new expiry date</span></button>
             <button class="sheet-act danger" onclick="confirmDeleteCert('${c.id}')"><span style="font-size:18px">🗑</span><span>Delete certificate</span></button>
           </div>
         </div>
@@ -5251,7 +5256,12 @@
   // button on vessel detail. Accepts image, PDF or DOCX.
   async function pickCertPhoto(vesselId) {
     // AI reads the photo, so ask permission first; "no" goes manual.
-    if (!(await ensureAiConsent('cert'))) { pendingCertVesselId = vesselId || null; openCertManual(); return; }
+    if (!(await ensureAiConsent('cert'))) {
+      // Renewing without AI: just ask for the new date on the same record.
+      const r = window.CodedokRenew && CodedokRenew.active();
+      if (r) { CodedokRenew.openDateSheet(r.id); return; }
+      pendingCertVesselId = vesselId || null; openCertManual(); return;
+    }
     // On the native iOS/Android build, use the real document scanner
     // (VisionKit on iOS): auto edge-detection, de-skew and glare
     // reduction give a far cleaner image for the AI to read. Falls back
@@ -5261,7 +5271,7 @@
     if (N && N.isNative && typeof N.scanDocument === 'function') {
       try {
         const file = await N.scanDocument();
-        if (file === 'cancelled') return;        // user backed out
+        if (file === 'cancelled') { if (window.CodedokRenew) CodedokRenew.cancel(); return; }   // user backed out
         if (file instanceof File) {
           try { N.haptic && N.haptic('success'); } catch (_) {}
           pendingCertVesselId = vesselId || null;
@@ -5334,6 +5344,13 @@
       alert('That file is too big (over 10 MB). Try compressing it or saving as a smaller PDF.');
       return;
     }
+    // Keep the scanned file so the saved record carries it (inspection
+    // pack + renewal history). Previously the AI path dropped the photo.
+    window.__pendingCertFile = null;
+    try {
+      const data_url = await compressImage(file);
+      window.__pendingCertFile = { name: file.name || 'certificate.jpg', type: file.type, size: file.size, data_url, added_at: new Date().toISOString() };
+    } catch (_) {}
     if (!window.Supa || !window.Supa.ready) {
       // Offline / not signed in yet — don't throw the photo away. Keep
       // it and let them type the details; it saves locally and syncs
@@ -5373,6 +5390,16 @@
   // took, stash it as a pending manual scan, and route to the manual
   // form so nothing is lost when extraction can't run.
   async function fallbackToManualCert(file, message) {
+    // Renewing an existing certificate: keep the photo on THAT record and
+    // just ask for the new expiry date — never create a duplicate.
+    const renewing = window.CodedokRenew && CodedokRenew.active();
+    if (renewing) {
+      const f = window.__pendingCertFile;
+      window.__pendingCertFile = null;
+      if (f) Store.attachFileToCert(renewing.id, f);
+      CodedokRenew.openDateSheet(renewing.id, (f ? 'Photo attached. ' : '') + "We couldn't read the dates automatically, so type the new expiry date from the certificate.");
+      return;
+    }
     let stashed = null;
     try {
       const data_url = await compressImage(file);
@@ -5433,14 +5460,15 @@
     document.body.appendChild(modal);
 
     const v = vesselId ? Store.getVessel(vesselId) : null;
-    const isEquip = ex.kind === 'equipment';
+    const renewing = window.CodedokRenew && CodedokRenew.active();
+    const isEquip = !renewing && ex.kind === 'equipment';
     const confColor = ex.confidence === 'high' ? 'var(--green)' : ex.confidence === 'medium' ? 'var(--amber)' : 'var(--red)';
 
     modal.innerHTML = `
       <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
         <div class="sh-pull"></div>
         <div class="sh-head">
-          <div class="sh-title">Review extracted ${isEquip ? 'equipment' : 'certificate'}</div>
+          <div class="sh-title">${renewing ? 'Check the new details' : 'Review extracted ' + (isEquip ? 'equipment' : 'certificate')}</div>
           <button class="sh-x" onclick="closeCertReview()">×</button>
         </div>
         <div style="padding:0 20px 14px;overflow-y:auto;max-height:72vh">
@@ -5449,9 +5477,10 @@
             <div style="font-size:12px;color:var(--mid)">Confidence: <strong style="color:${confColor}">${escapeHtml(ex.confidence || 'unknown')}</strong>${ex.notes ? ' · ' + escapeHtml(ex.notes) : ''}</div>
           </div>
 
-          ${v ? `<div style="font-size:12px;color:var(--mid);margin-bottom:14px">Adding to <strong>${escapeHtml(v.name)}</strong></div>` : ''}
+          ${renewing ? `<div class="rn-swap"><div><span>Was</span><strong>${escapeHtml(renewing.expires_at ? fmtDate(renewing.expires_at) : 'No date')}</strong></div><div class="rn-arrow" aria-hidden="true">→</div><div><span>New expiry</span><strong>${escapeHtml(ex.expires_at ? fmtDate(ex.expires_at) : 'Check below')}</strong></div></div>`
+            : v ? `<div style="font-size:12px;color:var(--mid);margin-bottom:14px">Adding to <strong>${escapeHtml(v.name)}</strong></div>` : ''}
 
-          <div class="fg"><label class="fl">Type</label><input class="fi" id="cer-name" value="${escapeHtml(ex.name || '')}"></div>
+          <div class="fg"><label class="fl">Type</label><input class="fi" id="cer-name" value="${escapeHtml(renewing ? renewing.name : (ex.name || ''))}"></div>
           <div class="fg"><label class="fl">Issuer</label><input class="fi" id="cer-issuer" value="${escapeHtml(ex.issuer || '')}"></div>
           <div class="fg"><label class="fl">Number / serial</label><input class="fi" id="cer-number" value="${escapeHtml(ex.number || '')}"></div>
           ${isEquip ? `
@@ -5462,10 +5491,10 @@
             </div>` : `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
               <div class="fg"><label class="fl">Issued</label><input class="fi" id="cer-issued" type="date" value="${ex.issued_at || ''}"></div>
-              <div class="fg"><label class="fl">Expires</label><input class="fi" id="cer-expires" type="date" value="${ex.expires_at || ''}"></div>
+              <div class="fg"><label class="fl">Expires</label><input class="fi" id="cer-expires" type="date" value="${escapeHtml(ex.expires_at || (renewing ? ex.next_service_at || '' : ''))}"></div>
             </div>`}
 
-          <button class="btn btn-sea btn-full" onclick="saveExtractedCert('${escapeHtml(isEquip ? 'equipment' : 'cert')}','${vesselId || ''}','${escapeHtml(ex.type_hint || '')}')" style="margin-top:10px">${isEquip ? 'Add to equipment' : 'Add to certificates'}</button>
+          <button class="btn btn-sea btn-full" onclick="saveExtractedCert('${escapeHtml(isEquip ? 'equipment' : 'cert')}','${vesselId || ''}','${escapeHtml(ex.type_hint || '')}')" style="margin-top:10px">${renewing ? 'Update certificate' : isEquip ? 'Add to equipment' : 'Add to certificates'}</button>
           <button class="btn btn-out btn-full" onclick="closeCertReview()" style="margin-top:8px">Cancel</button>
         </div>
       </div>`;
@@ -5476,6 +5505,7 @@
     const m = document.getElementById('cert-review-sheet');
     if (m) m.remove();
     pendingCertVesselId = null;
+    if (window.CodedokRenew) CodedokRenew.cancel();
   }
   window.closeCertReview = closeCertReview;
 
@@ -5484,6 +5514,31 @@
     const issuer = (document.getElementById('cer-issuer') || {}).value || '';
     const number = (document.getElementById('cer-number') || {}).value || '';
     if (!name) { alert('Type / name is required.'); return; }
+
+    // Renewal: update the existing certificate instead of adding a new one.
+    const renewing = window.CodedokRenew && CodedokRenew.active();
+    if (renewing) {
+      const expires_at = (document.getElementById('cer-expires') || {}).value || null;
+      if (!expires_at) { alert('Add the new expiry date (it is on the certificate).'); return; }
+      const pendingX = window.__pendingCertExtraction || null;
+      const auditR = pendingX ? buildExtractionAudit(pendingX, {
+        name, issuer, number,
+        issued_at: (document.getElementById('cer-issued') || {}).value || null,
+        expires_at, next_service_at: null, make: '', model: ''
+      }) : null;
+      const file = window.__pendingCertFile || undefined;
+      window.__pendingCertFile = null;
+      window.__pendingCertExtraction = null;
+      const m = document.getElementById('cert-review-sheet');
+      if (m) m.remove();
+      pendingCertVesselId = null;
+      CodedokRenew.apply(renewing.id, {
+        expires_at, issuer, number,
+        issued_at: (document.getElementById('cer-issued') || {}).value || null,
+        file, extraction: auditR || undefined
+      });
+      return;
+    }
     let autoCreatedVessel = false;
     if (!vesselId) {
       const v = (Store.snapshot().vessels || [])[0];
@@ -5521,6 +5576,7 @@
         vessel_id: vesselId, name, kind: typeHint || 'other',
         make, model, serial: number, next_service_at,
         icon: iconForType(typeHint),
+        file: window.__pendingCertFile || null,
         extraction: audit
       });
     } else {
@@ -5531,10 +5587,12 @@
         issuer, number, issued_at, expires_at,
         category: certCategoryForType(typeHint),
         icon: iconForType(typeHint),
+        file: window.__pendingCertFile || null,
         extraction: audit
       });
     }
 
+    window.__pendingCertFile = null;
     window.__pendingCertExtraction = null;
     closeCertReview();
     const overrideMsg = audit && audit.overrides.length
