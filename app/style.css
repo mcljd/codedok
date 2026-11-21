@@ -6066,3 +6066,9 @@ html.app-privacy body::after { content: ''; }
 .rn-arrow { font-size: 18px; color: var(--mid); }
 .rn-msg { font-size: 14px; color: var(--mid); line-height: 1.45; margin: 0 0 12px; }
 .rn-what { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+
+/* Screens never scroll sideways (iOS let scrollIntoView shift the whole
+   page). `clip` blocks programmatic scrolling too; `hidden` is the iOS 15
+   fallback. Tab strips keep their own horizontal scroll. */
+html, body, .shell, .shell > .scroll { overflow-x: hidden; overflow-x: clip; }
+.tabbar { overflow-x: auto; }

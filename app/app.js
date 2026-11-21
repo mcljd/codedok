@@ -877,6 +877,18 @@
   }
   window.selectIEClass = selectIEClass;
 
+  // Screens never scroll sideways. Undo any horizontal offset a browser
+  // API (or a too-wide child) has introduced on the page or the screen.
+  function resetHorizontalScroll() {
+    try {
+      const se = document.scrollingElement || document.documentElement;
+      if (se.scrollLeft) se.scrollLeft = 0;
+      if (document.body.scrollLeft) document.body.scrollLeft = 0;
+      document.querySelectorAll('.shell.on, .shell.on > .scroll').forEach((el) => { if (el.scrollLeft) el.scrollLeft = 0; });
+    } catch (_) {}
+  }
+  window.resetHorizontalScroll = resetHorizontalScroll;
+
   function switchTab(btn, tabId) {
     const screen = btn.closest('.shell');
     screen.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
@@ -889,7 +901,16 @@
     // Vessel, Equipment, Crew, Insurance) which don't all fit — the
     // Insurance tab was sitting off-screen right with no scroll
     // indicator, and users didn't know it existed.
-    try { btn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch (_) {}
+    // Scroll ONLY the tab strip. scrollIntoView() also scrolls every
+    // scrollable ancestor — on iPhone that slid the whole screen sideways.
+    try {
+      const strip = btn.closest('.tabbar');
+      if (strip) {
+        const left = btn.offsetLeft - (strip.clientWidth - btn.offsetWidth) / 2;
+        strip.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+      }
+    } catch (_) {}
+    resetHorizontalScroll();
   }
   window.switchTab = switchTab;
 
