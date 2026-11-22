@@ -27,7 +27,8 @@
     "@capacitor/app": "^6.0.3",
     "@capacitor/browser": "^6.0.6",
     "@aparajita/capacitor-biometric-auth": "8.0.2",
-    "@capacitor/filesystem": "^6.0.3"
+    "@capacitor/filesystem": "^6.0.3",
+    "@capacitor/barcode-scanner": "1.0.4"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.2.0"

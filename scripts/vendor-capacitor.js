@@ -27,6 +27,11 @@ const parts = [
   ['@capacitor/network', 'dist/plugin.js'],
   ['@capacitor/browser', 'dist/plugin.js'],
   ['@capacitor/filesystem', 'dist/plugin.js'],
+  // QR scanner: its web fallback expects a global html5Qrcode library we
+  // don't ship (iPhone uses the native scanner) — give it an empty stand-in.
+  [null, '(function (html5Qrcode) {'],
+  ['@capacitor/barcode-scanner', 'dist/plugin.js'],
+  [null, 'window.capacitorOSBarcode = capacitorOSBarcode; })({ Html5QrcodeSupportedFormats: { QR_CODE: 0 }, Html5Qrcode: function () {} });'],
   // Face ID wrapper expects a global named `app` (its @capacitor/app import);
   // give it one in a private scope so nothing else can collide with it.
   [null, '(function (app) {'],
