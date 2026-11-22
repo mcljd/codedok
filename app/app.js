@@ -654,30 +654,31 @@
 
   function actionLine(item) {
     if (item.cert) {
-      const v = item.vessel ? ` — ${escapeHtml(item.vessel.name)}` : '';
+      // Boat name goes on the second line so the item name isn't cut off.
+      const v = item.vessel ? `${escapeHtml(item.vessel.name)} · ` : '';
       const itemIcon = item.cert.icon || '📋';
       if (item.days < 0) {
         return {
           sev: 'rd', icon: itemIcon,
-          title: `${escapeHtml(item.cert.name)}${v}`,
-          sub: `Expired ${Math.abs(item.days)} day${Math.abs(item.days) === 1 ? '' : 's'} ago`,
+          title: escapeHtml(item.cert.name),
+          sub: `${v}Expired ${Math.abs(item.days)} day${Math.abs(item.days) === 1 ? '' : 's'} ago`,
           btn: '<button class="btn btn-xs btn-red">Fix</button>'
         };
       }
       return {
         sev: 'am', icon: itemIcon,
-        title: `${escapeHtml(item.cert.name)}${v}`,
-        sub: `Due in ${item.days} day${item.days === 1 ? '' : 's'}`,
+        title: escapeHtml(item.cert.name),
+        sub: `${v}Due in ${item.days} day${item.days === 1 ? '' : 's'}`,
         btn: '<button class="btn btn-xs btn-out" onclick="go(\'s-surveys\')">Book</button>'
       };
     }
     if (item.equipment) {
-      const v = item.vessel ? ` — ${escapeHtml(item.vessel.name)}` : '';
+      const v = item.vessel ? `${escapeHtml(item.vessel.name)} · ` : '';
       const sev = item.days < 0 ? 'rd' : 'am';
       return {
         sev, icon: item.equipment.icon || '🔧',
-        title: `${escapeHtml(item.equipment.name)} service${v}`,
-        sub: item.days < 0 ? `Service overdue ${Math.abs(item.days)} days` : `Service due in ${item.days} days`,
+        title: `${escapeHtml(item.equipment.name)} service`,
+        sub: v + (item.days < 0 ? `Service overdue ${Math.abs(item.days)} days` : `Service due in ${item.days} days`),
         btn: '<button class="btn btn-xs btn-out" onclick="go(\'s-equipment-list\')">View</button>'
       };
     }
@@ -1259,7 +1260,7 @@
             ${v ? `
               <div class="card" style="padding:14px;margin-bottom:14px">
                 <div style="font-size:14px;font-weight:700;color:var(--text)">${escapeHtml(v.name)}</div>
-                <div style="font-size:11px;color:var(--lt);margin-top:2px">${escapeHtml(v.category)} · ${escapeHtml(v.type)}</div>
+                <div style="font-size:11px;color:var(--lt);margin-top:2px">${escapeHtml(vesselCodeLabel(v))} · ${escapeHtml(v.type)}</div>
                 <div style="margin-top:8px;font-size:11px;color:var(--mid);line-height:1.7">
                   SSR: ${escapeHtml(v.ssr || '—')}<br>
                   Persons: ${v.persons || '—'}<br>
@@ -1833,7 +1834,12 @@
       // Convert the static container — drop card chrome on this one.
       vesselsEl.className = '';
       vesselsEl.style.cssText = 'padding:0 16px;display:flex;flex-direction:column;gap:10px';
-      if (s.vessels.length === 0) {
+      const boatsLabel = document.getElementById('home-boats-label');
+      // The Vessel Pass at the top already shows every boat — don't list
+      // them twice.
+      const passShown = !!document.querySelector('#home-status.home-passes .vp');
+      if (boatsLabel) boatsLabel.style.display = (s.vessels.length === 0 || passShown) ? 'none' : '';
+      if (s.vessels.length === 0 || passShown) {
         // First run: the welcome card already offers "Add a boat manually".
         vesselsEl.innerHTML = '';
       } else {
@@ -1854,6 +1860,9 @@
     } else if (counts.due30 > 0) {
       state = 'warn'; badgeIcon = '⏳';
       statusText = `${counts.due30} due soon`;
+    } else if (!Store.vesselCerts(v.id).length && !Store.vesselEquipment(v.id).length) {
+      state = 'warn'; badgeIcon = '+';
+      statusText = 'No records yet — add a certificate';
     } else {
       state = 'good'; badgeIcon = '✓';
       statusText = 'Ready for survey';
@@ -1871,7 +1880,7 @@
               <div class="vcover-name">${escapeHtml(v.name)}</div>
               <div class="vcover-meta">${escapeHtml(v.type || '')}${v.port ? ' · ' + escapeHtml(v.port) : ''}</div>
               <div style="margin-top:4px;display:flex;gap:5px;align-items:center">
-                <span class="cat-pill">${escapeHtml(v.category || '')}</span>
+                <span class="cat-pill">${escapeHtml(vesselCodeLabel(v))}</span>
               </div>
             </div>
           </div>
@@ -2414,6 +2423,17 @@
 
   // ---------- Vessel detail ----------
 
+  // "SPV · Area 3" instead of the stored "cat3" / "Cat 2".
+  function vesselCodeLabel(v) {
+    const C = window.Codes;
+    if (!v) return '';
+    if (!C || !C.areaFor) return v.category || '';
+    const cat = C.areaFor(v.category, v);
+    if (!/^cat[0-6]$/.test(cat || '')) return v.category || '';
+    return (C.codeFor && C.codeFor(v) === 'workboat' ? 'Workboat' : 'SPV') + ' · Area ' + cat.slice(3);
+  }
+  window.vesselCodeLabel = vesselCodeLabel;
+
   function renderVesselDetail() {
     if (!window.Store) return;
     const v = Store.getVessel(activeVesselId) || Store.snapshot().vessels[0];
@@ -2472,7 +2492,7 @@
               </div>
             </div>
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
-              <span class="cat-pill">${escapeHtml(v.category || '')}</span>
+              <span class="cat-pill">${escapeHtml(vesselCodeLabel(v))}</span>
               ${v.ssr ? `<span class="cat-pill" style="background:rgba(255,255,255,.04)">SSR ${escapeHtml(v.ssr)}</span>` : ''}
               ${v.length ? `<span class="cat-pill" style="background:rgba(255,255,255,.04)">${escapeHtml(v.length)}m</span>` : ''}
               ${v.certifier ? `<span class="cat-pill" style="background:rgba(255,255,255,.04)">${escapeHtml(v.certifier)}</span>` : ''}
@@ -2504,13 +2524,72 @@
       });
       const crewCounts = countByDays(allCrewCerts);
       const insurance = certs.filter((c) => c.category === 'insurance');
-      const insOk = insurance.every((c) => Store.daysUntil(c.expires_at) >= 0);
+      const insOk = insurance.length > 0 && insurance.every((c) => Store.daysUntil(c.expires_at) >= 0);
+      const insCard = !insurance.length
+        ? `<div class="scard" onclick="go('s-scan')" style="cursor:pointer"><div class="scard-lbl">Insurance</div><div class="scard-val am">—</div><div class="scard-sub">Not added yet</div></div>`
+        : `<div class="scard"><div class="scard-lbl">Insurance</div><div class="scard-val ${insOk ? 'ok' : 'rd'}">${insOk ? '✓' : '✗'}</div><div class="scard-sub">${insOk ? 'Valid policy' : 'Expired'}</div></div>`;
 
       sgrid.innerHTML = `
         <div class="scard"><div class="scard-lbl">Vessel certs</div><div class="scard-val ${certCounts.overdue ? 'rd' : (certCounts.due30 ? 'am' : 'ok')}">${certCounts.valid + certCounts.due30 + certCounts.due60}/${certs.length}</div><div class="scard-sub">${certCounts.overdue} overdue</div></div>
         <div class="scard"><div class="scard-lbl">Equipment</div><div class="scard-val ${equipCounts.overdue ? 'rd' : (equipCounts.due30 ? 'am' : 'ok')}">${equipCounts.valid + equipCounts.due30 + equipCounts.due60}/${equipment.length}</div><div class="scard-sub">${equipCounts.overdue} ${equipCounts.overdue === 1 ? 'issue' : 'issues'}</div></div>
         <div class="scard"><div class="scard-lbl">Crew certs</div><div class="scard-val ${crewCounts.overdue ? 'rd' : (crewCounts.due30 ? 'am' : 'ok')}">${crewCounts.valid + crewCounts.due30 + crewCounts.due60}/${allCrewCerts.length}</div><div class="scard-sub">${crewCounts.due30 ? crewCounts.due30 + ' due soon' : 'All current'}</div></div>
-        <div class="scard"><div class="scard-lbl">Insurance</div><div class="scard-val ${insOk ? 'ok' : 'rd'}">${insOk ? '✓' : '✗'}</div><div class="scard-sub">${insurance.length ? 'Valid policy' : 'Missing'}</div></div>`;
+        ${insCard}`;
+    }
+
+    // Needs attention — the boat's own overdue / due-soon records.
+    const urgentEl = document.getElementById('vd-urgent');
+    if (urgentEl) {
+      const items = Store.vesselCerts(v.id).map((c) => ({ name: c.name, d: Store.daysUntil(c.expires_at), date: c.expires_at, open: `openCertSheet('${c.id}')`, what: 'certificate' }))
+        .concat(Store.vesselEquipment(v.id).map((e) => ({ name: e.name, d: Store.daysUntil(e.next_service_at), date: e.next_service_at, open: `setActiveEquipment('${e.id}');go('s-equipment-detail')`, what: 'service' })))
+        .filter((i) => i.d !== Infinity && !isNaN(i.d) && i.d <= 30)
+        .sort((a, b) => a.d - b.d);
+      urgentEl.innerHTML = !items.length ? '' : `
+        <div class="slbl">Needs attention</div>
+        <div class="card mx">${items.slice(0, 5).map((i) => `
+          <div class="gap-item" role="button" tabindex="0" style="cursor:pointer" onclick="${i.open}">
+            <div class="gap-sev ${i.d < 0 ? 'rd' : 'am'}"></div>
+            <div>
+              <div class="gap-title">${escapeHtml(i.name)} — ${i.d < 0 ? (i.what === 'service' ? 'service overdue' : 'expired') : 'due in ' + i.d + ' day' + (i.d === 1 ? '' : 's')}</div>
+              <div class="gap-desc">${i.d < 0 ? 'Ran out ' + fmtDate(i.date) + ' · tap to renew' : 'Due ' + fmtDate(i.date) + ' · tap to see renewal steps'}</div>
+            </div>
+          </div>`).join('')}
+        </div>`;
+    }
+
+    // Key dates — coding certificate history and the Code deadlines that
+    // apply to this boat (from codes.js KEY_DATES, checked against the Codes).
+    const tlEl = document.getElementById('vd-timeline');
+    if (tlEl) {
+      const rows = [];
+      const coding = Store.vesselCerts(v.id).filter((c) => c.kind === 'coding');
+      coding.forEach((c) => {
+        (c.renewal_history || []).forEach((h) => {
+          if (h && h.expires_at) rows.push({ date: h.expires_at, title: 'Coding certificate — previous expiry', sub: 'Renewed' + (h.renewed_at ? ' ' + fmtDate(h.renewed_at) : ''), dot: 'ok' });
+        });
+        if (c.expires_at) {
+          const d = Store.daysUntil(c.expires_at);
+          rows.push({ date: c.expires_at, title: 'Coding certificate ' + (d < 0 ? 'expired' : 'renewal due'), sub: d < 0 ? 'Book a renewal examination now' : d + ' days · book the examination early', dot: d < 0 ? 'rd' : d <= 60 ? 'am' : 'up' });
+        }
+      });
+      const C = window.Codes;
+      if (C && C.KEY_DATES) {
+        const wb = C.codeFor && C.codeFor(v) === 'workboat';
+        const k = wb ? C.KEY_DATES.workboat : C.KEY_DATES.spv;
+        const hasSms = (Store.snapshot().sms_documents || []).some((d) => d.vessel_id === v.id && (d.status === 'signed' || d.status === 'active'));
+        rows.push({ date: k.sms_by, title: 'Safety Management System in place', sub: hasSms ? 'Done' : (wb ? 'Workboat Code §31.1.1' : 'SPV Code §30.1.1'), dot: hasSms ? 'ok' : (Store.daysUntil(k.sms_by) <= 60 ? 'am' : 'up') });
+        if (!wb) {
+          rows.push({ date: '2028-12-12', title: 'Move to the SPV Code 2025', sub: 'At next renewal examination or this date, whichever is later', dot: 'up' });
+          rows.push({ date: k.courses_by, title: 'Crew training courses complete', sub: 'SPV Code §28.10', dot: 'up' });
+        }
+      }
+      rows.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      tlEl.innerHTML = !rows.length ? '' : `
+        <div class="slbl">Key dates</div>
+        <div class="card mx"><div class="tl">${rows.map((r) => `
+          <div class="tli"><div class="tl-dot ${r.dot}">${r.dot === 'ok' ? '✓' : ''}</div><div>
+            <div class="tl-title"${r.dot === 'rd' ? ' style="color:var(--red)"' : r.dot === 'am' ? ' style="color:var(--amber)"' : ''}>${escapeHtml(r.title)}</div>
+            <div class="tl-date">${fmtDate(r.date)} · ${escapeHtml(r.sub)}</div></div></div>`).join('')}
+        </div></div>`;
     }
 
     // Replace certs tab body with live data
@@ -2657,7 +2736,7 @@
     }
 
     if (reqs.length > 0) {
-      html += `<div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin:14px 0 8px">Required for ${escapeHtml(v.category)}</div>`;
+      html += `<div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin:14px 0 8px">Required for ${escapeHtml(vesselCodeLabel(v))}</div>`;
       html += '<div class="card">';
       reqs.forEach((r) => {
         html += `
@@ -2950,7 +3029,7 @@
         <div style="background:linear-gradient(135deg,rgba(220,38,38,.08) 0%,rgba(220,38,38,.02) 100%);border:1px solid rgba(220,38,38,.18);border-radius:14px;padding:14px 16px;margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
             <span style="font-size:18px">⚠️</span>
-            <div style="font-size:13px;font-weight:700;color:var(--red)">Missing required equipment for ${escapeHtml(v.category)}</div>
+            <div style="font-size:13px;font-weight:700;color:var(--red)">Missing required equipment for ${escapeHtml(vesselCodeLabel(v))}</div>
           </div>
           <div style="font-size:11px;color:var(--mid);line-height:1.7">${missing.map((m) => '• ' + escapeHtml(m.name)).join('<br>')}</div>
         </div>`;
@@ -3878,7 +3957,7 @@
                   <div style="font-size:15px;font-weight:700;color:var(--text)">${escapeHtml(v.name)}</div>
                   ${ready ? '<span class="chip chip-ok">Ready</span>' : `<span class="chip chip-rd">${counts.overdue} ov.</span>`}
                 </div>
-                <div style="font-size:11px;color:var(--lt)">${escapeHtml(v.category)} · ${escapeHtml(v.type)} · Last inspection ${last ? fmtDate(last.completed_at) : '—'}</div>
+                <div style="font-size:11px;color:var(--lt)">${escapeHtml(vesselCodeLabel(v))} · ${escapeHtml(v.type)} · Last inspection ${last ? fmtDate(last.completed_at) : '—'}</div>
               </div>
               <div style="position:relative;width:44px;height:44px;flex-shrink:0">
                 <svg width="44" height="44" viewBox="0 0 44 44">
@@ -6531,7 +6610,7 @@
             <div class="h-display" style="font-size:24px">${escapeHtml(v.name)}</div>
             <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">${escapeHtml(v.type)} · SSR ${escapeHtml(v.ssr || '—')}</div>
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
-              <span class="cat-pill">${escapeHtml(v.category)}</span>
+              <span class="cat-pill">${escapeHtml(vesselCodeLabel(v))}</span>
               <span class="cat-pill" style="background:rgba(30,64,175,.3)">Surveyor view</span>
             </div>
           </div>
@@ -6629,7 +6708,7 @@
     modal.innerHTML = `
       <div class="card" style="max-width:480px;width:100%;padding:22px;border-radius:18px;background:var(--card,#fff);max-height:92vh;overflow-y:auto">
         <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:var(--fn-display);letter-spacing:-.3px">Raise a deficiency</div>
-        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">Against <strong>${escapeHtml(v.name)}</strong> · ${escapeHtml(v.category || '')}</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">Against <strong>${escapeHtml(v.name)}</strong> · ${escapeHtml(vesselCodeLabel(v))}</div>
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Title</label>
         <input class="fi" id="def-title" placeholder="e.g. Liferaft service overdue" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
@@ -6789,7 +6868,7 @@
 
     wrap.innerHTML = `
       <div style="padding:14px 16px 4px">
-        <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em">${escapeHtml(v.name)} · ${escapeHtml(v.category)}</div>
+        <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em">${escapeHtml(v.name)} · ${escapeHtml(vesselCodeLabel(v))}</div>
         <div style="font-size:18px;font-weight:700;color:var(--text);margin-top:2px">Code-driven inspection</div>
         <div style="font-size:12px;color:var(--lt);margin-top:4px;line-height:1.6">Walk the vessel and confirm each required item.</div>
       </div>
@@ -7351,7 +7430,7 @@
           <div style="background:var(--ink);color:white;border-radius:18px;padding:28px 24px;margin-bottom:18px;background-image:radial-gradient(circle at 80% 0%, rgba(3,32,61,.22), transparent 60%)">
             <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Safety Management System · read-only</div>
             <div style="font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.15">${escapeHtml(v ? v.name : (doc.title || 'SMS'))}</div>
-            <div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:6px">v${doc.version}${doc.signed_at ? ' · signed ' + fmtDate(doc.signed_at) : ''}${v && v.category ? ' · ' + escapeHtml(v.category) : ''}</div>
+            <div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:6px">v${doc.version}${doc.signed_at ? ' · signed ' + fmtDate(doc.signed_at) : ''}${v && v.category ? ' · ' + escapeHtml(vesselCodeLabel(v)) : ''}</div>
             <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:14px">Shared by the operator via CodedOK. This is a read-only snapshot — changes won't sync.</div>
           </div>
 
@@ -7517,7 +7596,7 @@
             ${vessels.map((v) => `
               <button onclick="smsAiSelect('vessel_id', '${v.id}')" class="qa-tile" style="text-align:left;width:100%;border:${smsAiInputs.vessel_id === v.id ? '2px solid var(--sea)' : '1px solid var(--bdr)'}">
                 <div class="qa-icon bl">${v.icon || '⛵'}</div>
-                <div style="flex:1"><div class="qa-title">${escapeHtml(v.name)}</div><div class="qa-sub">${escapeHtml(v.type || '')} · ${escapeHtml(v.category || '')}</div></div>
+                <div style="flex:1"><div class="qa-title">${escapeHtml(v.name)}</div><div class="qa-sub">${escapeHtml(v.type || '')} · ${escapeHtml(vesselCodeLabel(v))}</div></div>
               </button>`).join('')}
           </div>`;
     } else if (s.kind === 'options') {
@@ -8472,7 +8551,7 @@ h3 { font-size: 11pt; font-weight: 700; color: #1e3454; margin: 12pt 0 4pt 0; pa
   <div class="cover-title">Safety Management System</div>
   <div class="cover-vessel">${escapeHtml(v ? v.name : 'Vessel')}</div>
   <div class="cover-meta">
-    ${v ? `${escapeHtml(v.category || '')} · ${escapeHtml(v.type || '')}<br>SSR ${escapeHtml(v.ssr || '—')} · ${escapeHtml(v.port || '')}<br><br>` : ''}
+    ${v ? `${escapeHtml(vesselCodeLabel(v))} · ${escapeHtml(v.type || '')}<br>SSR ${escapeHtml(v.ssr || '—')} · ${escapeHtml(v.port || '')}<br><br>` : ''}
     Issue date: ${escapeHtml(today)}<br>
     Generated by CodedOK · codedok.com
   </div>
@@ -9802,7 +9881,7 @@ ${sectionsHtml}
             <tr><th style="width:30%">Vessel name</th><td>${escapeHtml(v.name)}</td></tr>
             <tr><th>Type</th><td>${escapeHtml(v.type || '')}</td></tr>
             <tr><th>SSR / Official No.</th><td>${escapeHtml(v.ssr || '—')}</td></tr>
-            <tr><th>Coding category</th><td>${escapeHtml(v.category || '')}</td></tr>
+            <tr><th>Coding category</th><td>${escapeHtml(vesselCodeLabel(v))}</td></tr>
             <tr><th>Length</th><td>${v.length ? v.length + ' m' : '—'}</td></tr>
             <tr><th>Persons capacity</th><td>${v.persons || '—'}</td></tr>
             <tr><th>Port of registry</th><td>${escapeHtml(v.port || '—')}</td></tr>
@@ -9994,7 +10073,7 @@ ${sectionsHtml}
     if (!badge) {
       badge = document.createElement('div');
       badge.id = 'sync-badge';
-      badge.style.cssText = 'position:fixed;right:14px;bottom:calc(70px + env(safe-area-inset-bottom));z-index:9000;display:none;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;color:white;box-shadow:0 4px 14px rgba(0,0,0,.18);font-family:var(--fn);pointer-events:none;letter-spacing:-.1px';
+      badge.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);white-space:nowrap;bottom:calc(var(--sync-badge-bottom, 70px) + env(safe-area-inset-bottom));z-index:9000;display:none;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;color:white;box-shadow:0 4px 14px rgba(0,0,0,.18);font-family:var(--fn);pointer-events:none;letter-spacing:-.1px';
       document.body.appendChild(badge);
     }
     const { online, inFlight, pending } = detail;
@@ -11421,7 +11500,7 @@ ${sectionsHtml}
           ${rows.map((v) => `
             <div style="padding:10px 12px;background:var(--slate);border-radius:10px">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-                <div style="min-width:0"><div style="font-weight:600;color:var(--text);font-size:13px">${escapeHtml(v.name)}</div><div style="font-size:11px;color:var(--lt)">${escapeHtml(v.type || '')} · ${escapeHtml(v.category || '')} · ${escapeHtml(v.port || '—')}</div></div>
+                <div style="min-width:0"><div style="font-weight:600;color:var(--text);font-size:13px">${escapeHtml(v.name)}</div><div style="font-size:11px;color:var(--lt)">${escapeHtml(v.type || '')} · ${escapeHtml(vesselCodeLabel(v))} · ${escapeHtml(v.port || '—')}</div></div>
                 <div style="display:flex;gap:6px;flex-shrink:0">
                   <button class="btn btn-out btn-xs" style="min-height:32px" onclick="supportEditVessel('${escapeHtml(v.id)}','${jsAttr(v.name)}')">✎ Edit</button>
                   <button class="btn btn-out btn-xs" style="min-height:32px" onclick="supportVesselCerts('${escapeHtml(v.id)}','${jsAttr(v.name)}')">📋 Certs</button>

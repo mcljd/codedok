@@ -142,7 +142,7 @@
       '<div class="rs-hero">' +
         '<div class="rs-ring" style="--p:' + pct + '" role="img" aria-label="' + pct + ' percent of requirements met"><span>' + pct + '%</span></div>' +
         '<div><div class="rs-hero-h">' + (g.problems ? g.problems + ' thing' + (g.problems === 1 ? '' : 's') + ' to sort' : 'Nothing missing') + '</div>' +
-        '<div class="rs-hero-sub">' + g.met + ' of ' + g.total + ' records in place for ' + esc(v.name) + ' · ' + esc(v.category || '') +
+        '<div class="rs-hero-sub">' + g.met + ' of ' + g.total + ' records in place for ' + esc(v.name) + ' · ' + esc(window.vesselCodeLabel ? vesselCodeLabel(v) : (v.category || '')) +
           (g.toCheck ? '<br>Plus ' + g.toCheck + ' item' + (g.toCheck === 1 ? '' : 's') + ' to check on board' : '') + '</div></div>' +
       '</div>' +
       '<div class="slbl">Certificates</div>' + reqRows(g.certs, "go('s-scan')") +
@@ -150,7 +150,7 @@
       '<div class="slbl">Crew qualifications</div>' + reqRows(g.crew, null) +
       deadlineNote(v) +
       '<p class="rs-foot">Checked against the ' + (window.Codes.codeFor && window.Codes.codeFor(v) === 'workboat' ? 'Workboat Code Edition 3' : 'Sport or Pleasure Vessel Code 2025') +
-      ' for Area ' + esc(v.category || 'this category') +
+      ' for Area ' + esc(String(window.Codes.areaFor(v.category, v) || '').replace('cat', '') || 'this category') +
       '. “Check” means it needs checking on board or can\'t be matched to a record automatically. Your Certifying Authority has the final say.</p>';
   }
 

@@ -109,6 +109,8 @@
 
   function render() {
     var vs = (Store.snapshot().vessels || []).slice();
+    // Team members only see the boats they were given access to.
+    if (window.filterByVesselScope && Store.getCurrentUser && Store.getCurrentUser()) vs = filterByVesselScope(vs);
     if (!vs.length) return '';
     // Boat that needs attention first.
     var RANK = { bad: 0, warn: 1, empty: 2, good: 3 };

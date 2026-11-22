@@ -6249,3 +6249,6 @@ html.is-native img:not(.fv-img) { -webkit-touch-callout: none; }
   html.is-native .vp { filter: none; }
 }
 @media (prefers-reduced-motion: reduce) { .vp, .vp-cta { transition: none; } }
+
+/* Sync pill sits centred just above the floating tab bar, clear of the scan button. */
+html:has(.bnav-float) { --sync-badge-bottom: 86px; }

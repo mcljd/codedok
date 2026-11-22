@@ -686,7 +686,7 @@
       length: input.length || null,
       persons: input.persons || 12,
       port: input.port || '',
-      certifier: input.certifier || 'YDSA',
+      certifier: input.certifier || '',
       icon: input.icon || '⛵',
       jurisdictions: input.jurisdictions || ['UK']
     };

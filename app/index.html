@@ -1410,50 +1410,12 @@
       <!-- Compliance breakdown -->
       <div class="slbl">Compliance breakdown</div>
       <div class="sgrid">
-        <div class="scard"><div class="scard-lbl">Vessel certs</div><div class="scard-val ok">8/9</div><div class="scard-sub">1 overdue</div></div>
-        <div class="scard"><div class="scard-lbl">Equipment</div><div class="scard-val rd">4/6</div><div class="scard-sub">2 issues</div></div>
-        <div class="scard"><div class="scard-lbl">Crew certs</div><div class="scard-val am">3/4</div><div class="scard-sub">1 due soon</div></div>
-        <div class="scard"><div class="scard-lbl">Insurance</div><div class="scard-val ok">✓</div><div class="scard-sub">Valid to Nov</div></div>
+        
       </div>
 
-      <!-- Urgent items -->
-      <div class="slbl">Urgent items</div>
-      <div class="card mx">
-        <div class="gap-item">
-          <div class="gap-sev rd"></div>
-          <div>
-            <div class="gap-title">Cat C Pyrotechnics — Expired</div>
-            <div class="gap-desc">Expired 10 Apr 2025 · Must replace before commercial use · Carries fine risk</div>
-          </div>
-        </div>
-        <div class="gap-item">
-          <div class="gap-sev rd"></div>
-          <div>
-            <div class="gap-title">Life raft service overdue</div>
-            <div class="gap-desc">Last serviced Sep 2023 · 24-month maximum · Book service urgently</div>
-          </div>
-        </div>
-        <div class="gap-item">
-          <div class="gap-sev am"></div>
-          <div>
-            <div class="gap-title">Annual survey due in 18 days</div>
-            <div class="gap-desc">Certifying authority · Anchor Marine recommended</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Survey timeline -->
-      <div class="slbl">Survey timeline</div>
-      <div class="card mx">
-        <div class="tl">
-          <div class="tli"><div class="tl-dot ok">✓</div><div><div class="tl-title">Initial coding survey — Passed</div><div class="tl-date">June 2022 · Anchor Marine · Certificate issued</div></div></div>
-          <div class="tli"><div class="tl-dot ok">✓</div><div><div class="tl-title">Annual renewal — Passed</div><div class="tl-date">June 2023 · 1 minor deficiency resolved</div></div></div>
-          <div class="tli"><div class="tl-dot ok">✓</div><div><div class="tl-title">Annual renewal — Passed</div><div class="tl-date">June 2024 · No deficiencies</div></div></div>
-          <div class="tli"><div class="tl-dot am"></div><div><div class="tl-title" style="color:var(--amber)">Annual renewal — Due</div><div class="tl-date" style="color:var(--amber);font-weight:600">3 May 2025 · Book now</div></div></div>
-          <div class="tli"><div class="tl-dot up"></div><div><div class="tl-title">Mid-term survey</div><div class="tl-date">June 2026 · Required</div></div></div>
-          <div class="tli"><div class="tl-dot up"></div><div><div class="tl-title">5-year renewal survey</div><div class="tl-date">June 2027 · Full inspection required</div></div></div>
-        </div>
-      </div>
+      <!-- Needs attention + key dates — populated by renderVesselDetail -->
+      <div id="vd-urgent"></div>
+      <div id="vd-timeline"></div>
 
       <!-- Actions -->
       <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
@@ -1468,20 +1430,7 @@
     </div>
 
     <!-- Certificates tab -->
-    <div id="vd-certs" class="tc">
-      <div style="height:12px"></div>
-      <div class="card mx">
-        <div class="row"><div class="row-ic rd">🚨</div><div class="row-body"><div class="row-name">Cat C Pyrotechnics</div><div class="row-sub">Expired 10 Apr 2025</div></div><div><span class="chip chip-rd">Expired</span></div><span class="chev">›</span></div>
-        <div class="row"><div class="row-ic am">📋</div><div class="row-body"><div class="row-name">Coding Certificate</div><div class="row-sub">Due 3 May 2025 · 18 days</div></div><div><span class="chip chip-am">Due</span></div><span class="chev">›</span></div>
-        <div class="row"><div class="row-ic ok">🛡️</div><div class="row-body"><div class="row-name">Public Liability Insurance</div><div class="row-sub">Valid to 1 Nov 2025</div></div><div><span class="chip chip-ok">Valid</span></div><span class="chev">›</span></div>
-        <div class="row"><div class="row-ic ok">📡</div><div class="row-body"><div class="row-name">VHF Radio Licence</div><div class="row-sub">Valid to Jan 2027</div></div><div><span class="chip chip-ok">Valid</span></div><span class="chev">›</span></div>
-        <div class="row"><div class="row-ic ok">🚒</div><div class="row-body"><div class="row-name">Fire extinguisher service</div><div class="row-sub">Serviced Mar 2025 · Valid to Mar 2026</div></div><div><span class="chip chip-ok">Valid</span></div><span class="chev">›</span></div>
-      </div>
-      <div style="padding:14px 16px">
-        <button class="btn btn-sea btn-full" onclick="go('s-scan')">📷 Scan new certificate</button>
-      </div>
-      <div class="spacer"></div>
-    </div>
+    <div id="vd-certs" class="tc"></div>
 
     <!-- Equipment tab — populated by renderVesselDetail -->
     <div id="vd-equipment" class="tc">
