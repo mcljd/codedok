@@ -1477,6 +1477,14 @@
             <button class="ss-btn ss-btn-primary" onclick="scanCertWithAI()">Add a certificate</button>
             <button class="ss-btn ss-btn-ghost" onclick="go('s-calendar')">What's coming up</button>
           </div>`;
+        // Signature Home element: the Vessel Pass (home.js) replaces the
+        // plain status card when available.
+        if (window.CodedokHome) {
+          try {
+            const passHtml = CodedokHome.render();
+            if (passHtml) { statusEl.className = 'home-passes'; statusEl.style.cssText = ''; statusEl.innerHTML = passHtml; }
+          } catch (e) { console.error('vessel pass', e); }
+        }
       }
     }
 
