@@ -10087,15 +10087,10 @@ ${sectionsHtml}
         ? `Offline · ${pending} change${pending === 1 ? '' : 's'} queued`
         : 'Offline';
       badge.style.display = 'block';
-    } else if (inFlight && pending > 0) {
-      badge.style.background = '#f59e0b';
-      badge.textContent = `Syncing ${pending}…`;
-      badge.style.display = 'block';
-    } else if (pending > 0) {
-      badge.style.background = '#f59e0b';
-      badge.textContent = `${pending} pending`;
-      badge.style.display = 'block';
     } else {
+      // Online: saving happens quietly in the background. A count of
+      // waiting changes means nothing to the person using the app, so the
+      // pill only ever appears to say the phone is offline.
       badge.style.display = 'none';
     }
   }
