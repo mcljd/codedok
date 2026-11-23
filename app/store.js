@@ -284,11 +284,95 @@
     }
   }
 
-  function save(state) {
-    localStorage.setItem(KEY, JSON.stringify(state));
+  // ---------- Attachments live in IndexedDB, not localStorage ----------
+  // localStorage is capped at ~5 MB on iPhone. Certificate photos and PDFs
+  // stored inline as base64 filled it after a handful of scans, after which
+  // every save threw and nothing persisted. The records stay in
+  // localStorage; each file's data_url goes to IndexedDB (far larger quota)
+  // and is referenced by `file.idb`. In memory the objects keep data_url,
+  // so the rest of the app is unchanged.
+  const FILE_DB = 'codedok-files', FILE_OS = 'files', BIG = 4096;
+  let fileDb = null, fileDbReady = false;
+  const persistedFiles = new Set();
+  function openFileDb() {
+    if (fileDb) return fileDb;
+    fileDb = new Promise(function (resolve, reject) {
+      try {
+        if (!window.indexedDB) return reject(new Error('no IndexedDB'));
+        const r = indexedDB.open(FILE_DB, 1);
+        r.onupgradeneeded = function () { r.result.createObjectStore(FILE_OS); };
+        r.onsuccess = function () { fileDbReady = true; resolve(r.result); };
+        r.onerror = function () { reject(r.error); };
+      } catch (e) { reject(e); }
+    });
+    fileDb.catch(function () { fileDb = null; });
+    return fileDb;
+  }
+  function fileTx(mode, fn) {
+    return openFileDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        const tx = db.transaction(FILE_OS, mode);
+        const req = fn(tx.objectStore(FILE_OS));
+        tx.oncomplete = function () { resolve(req && req.result); };
+        tx.onerror = function () { reject(tx.error); };
+        tx.onabort = function () { reject(tx.error); };
+      });
+    });
+  }
+  // Visit every object in the state tree that holds a file.
+  function eachFileObj(obj, fn, depth) {
+    if (!obj || typeof obj !== 'object' || (depth || 0) > 6) return;
+    if (Array.isArray(obj)) { for (let i = 0; i < obj.length; i++) eachFileObj(obj[i], fn, (depth || 0) + 1); return; }
+    if (typeof obj.data_url === 'string' || typeof obj.idb === 'string') fn(obj);
+    for (const k in obj) { const v = obj[k]; if (v && typeof v === 'object') eachFileObj(v, fn, (depth || 0) + 1); }
+  }
+  function newFileKey() { return 'f_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  function save(st) {
+    const offload = fileDbReady;  // only strip files once IndexedDB is known to work
+    const toWrite = [];
+    if (offload) {
+      eachFileObj(st, function (f) {
+        if (typeof f.data_url === 'string' && f.data_url.length > BIG) {
+          if (!f.idb) f.idb = newFileKey();
+          if (!persistedFiles.has(f.idb)) toWrite.push([f.idb, f.data_url]);
+        }
+      });
+    }
+    const json = JSON.stringify(st, function (k, v) {
+      if (offload && k === 'data_url' && typeof v === 'string' && v.length > BIG && this && this.idb) return undefined;
+      return v;
+    });
+    // Files first, so a record never points at a file that wasn't written.
+    toWrite.forEach(function (pair) {
+      persistedFiles.add(pair[0]);
+      fileTx('readwrite', function (os) { return os.put(pair[1], pair[0]); })
+        .catch(function (e) { persistedFiles.delete(pair[0]); console.warn('attachment save failed', e); });
+    });
+    try {
+      localStorage.setItem(KEY, json);
+    } catch (err) {
+      console.error('Store save failed', err);
+      try { window.dispatchEvent(new CustomEvent('codedok:save-failed', { detail: String(err && err.name || err) })); } catch (_) {}
+    }
+  }
+
+  // Load attachment contents back into memory after start-up.
+  function hydrateFiles() {
+    const refs = [];
+    eachFileObj(state, function (f) { if (f.idb && typeof f.data_url !== 'string') refs.push(f); else if (f.idb) persistedFiles.add(f.idb); });
+    if (!refs.length) { try { window.dispatchEvent(new Event('codedok:files-ready')); } catch (_) {} return Promise.resolve(); }
+    return Promise.all(refs.map(function (f) {
+      return fileTx('readonly', function (os) { return os.get(f.idb); })
+        .then(function (val) { if (typeof val === 'string') { f.data_url = val; persistedFiles.add(f.idb); } })
+        .catch(function () {});
+    })).then(function () { try { window.dispatchEvent(new Event('codedok:files-ready')); } catch (_) {} });
   }
 
   let state = load();
+  // Open the file database, pull attachments into memory, then re-save so
+  // any legacy inline base64 moves out of localStorage.
+  openFileDb().then(function () { return hydrateFiles(); }).then(function () { save(state); }).catch(function () {});
 
   // ---------- Computed helpers ----------
 
@@ -493,17 +577,24 @@
     const v = getVessel(vesselId);
     if (!v) return { coveredCerts: [], missingCerts: [], coveredEquip: [], missingEquip: [], recommendations: [] };
 
-    const requiredCerts = window.Codes.requiredVesselCerts(v.category);
+    // Only items the app can hold a record for count as "missing"; the rest
+    // (manuals, signal tables…) are check-on-board items.
+    const C = window.Codes;
+    const trackedCert = (k) => !C.TRACKED_CERT_KINDS || C.TRACKED_CERT_KINDS.includes(k);
+    const trackedEquip = (k) => !C.TRACKED_EQUIPMENT_KINDS || C.TRACKED_EQUIPMENT_KINDS.includes(k);
+    const requiredCerts = C.requiredVesselCerts(v.category, v);
     const heldCerts = vesselCerts(vesselId);
-    const heldKinds = new Set(heldCerts.map((c) => c.kind));
+    // A record counts whichever list it was logged in (e.g. flares saved as a
+    // "certificate" still cover the flares requirement).
+    const heldKinds = new Set(heldCerts.map((c) => c.kind).concat(vesselEquipment(vesselId).map((e) => e.kind)));
     const coveredCerts = requiredCerts.filter((r) => heldKinds.has(r.kind));
-    const missingCerts = requiredCerts.filter((r) => r.required && !heldKinds.has(r.kind));
+    const missingCerts = requiredCerts.filter((r) => r.required && !r.verify && trackedCert(r.kind) && !heldKinds.has(r.kind));
 
-    const requiredEquip = window.Codes.requiredEquipment(v.category, v);
+    const requiredEquip = C.requiredEquipment(v.category, v);
     const heldEquip = vesselEquipment(vesselId);
-    const heldEquipKinds = new Set(heldEquip.map((e) => e.kind));
+    const heldEquipKinds = new Set(heldEquip.map((e) => e.kind).concat(heldCerts.map((c) => c.kind)));
     const coveredEquip = requiredEquip.filter((r) => heldEquipKinds.has(r.kind));
-    const missingEquip = requiredEquip.filter((r) => r.mandatory && !heldEquipKinds.has(r.kind));
+    const missingEquip = requiredEquip.filter((r) => r.mandatory && !r.verify && trackedEquip(r.kind) && !heldEquipKinds.has(r.kind));
 
     return { coveredCerts, missingCerts, coveredEquip, missingEquip };
   }
@@ -595,7 +686,7 @@
       length: input.length || null,
       persons: input.persons || 12,
       port: input.port || '',
-      certifier: input.certifier || 'YDSA',
+      certifier: input.certifier || '',
       icon: input.icon || '⛵',
       jurisdictions: input.jurisdictions || ['UK']
     };
@@ -608,7 +699,7 @@
   function updateVessel(vesselId, patch) {
     const v = getVessel(vesselId);
     if (!v) return null;
-    const allowed = ['name', 'type', 'category', 'ssr', 'length', 'persons', 'port', 'certifier', 'icon', 'make', 'engine', 'photo'];
+    const allowed = ['name', 'type', 'category', 'code', 'area_category', 'ssr', 'length', 'persons', 'port', 'certifier', 'icon', 'make', 'engine', 'photo'];
     allowed.forEach((k) => {
       if (patch[k] !== undefined) v[k] = patch[k];
     });
@@ -1470,6 +1561,7 @@
   // ---------- Public API ----------
 
   window.Store = {
+    _persist: save,   // sync.js writes through this (keeps files out of localStorage)
     snapshot,
     daysUntil,
     bucket,

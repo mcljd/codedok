@@ -54,6 +54,9 @@
   // cert-files Storage bucket keyed by file_url, not inline in the row.
   // issued_at + extraction now have real columns (migration 0021) and
   // sync like everything else.
+  // renewal_history / renewed_at and vessels.code / area_category have server
+  // columns from migration 0028; if that hasn't been run, flushQueue strips
+  // unknown columns and retries, so records still sync.
   const LOCAL_ONLY_FIELDS = {
     certs:     ['file'],
     equipment: ['file']
@@ -63,6 +66,29 @@
     if (!drop || !row) return row;
     const out = {};
     for (const k in row) { if (!drop.includes(k)) out[k] = row[k]; }
+    return out;
+  }
+
+  // Columns the server has told us it doesn't have (PostgREST PGRST204).
+  // Remembered per device; cleared after a week so new migrations get used.
+  const UNKNOWN_KEY = 'codedok-sync-unknown-cols';
+  function loadUnknown() {
+    try {
+      const u = JSON.parse(localStorage.getItem(UNKNOWN_KEY) || '{}');
+      if (!u.at || Date.now() - u.at > 7 * 86400000) return { at: Date.now(), t: {} };
+      return u;
+    } catch (_) { return { at: Date.now(), t: {} }; }
+  }
+  function rememberUnknown(table, col) {
+    const u = loadUnknown();
+    u.t[table] = Array.from(new Set((u.t[table] || []).concat([col])));
+    try { localStorage.setItem(UNKNOWN_KEY, JSON.stringify(u)); } catch (_) {}
+  }
+  function stripUnknown(table, row) {
+    const cols = loadUnknown().t[table] || [];
+    if (!cols.length) return row;
+    const out = {};
+    for (const k in row) if (!cols.includes(k)) out[k] = row[k];
     return out;
   }
 
@@ -76,7 +102,10 @@
     try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); }
     catch (_) { return []; }
   }
-  function saveQueue(q) { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
+  function saveQueue(q) {
+    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
+    catch (err) { console.error('sync queue save failed', err); }
+  }
   function pushQueue(item) {
     const q = loadQueue();
     // Coalesce: drop earlier writes to the same (table, id) — newest wins.
@@ -91,7 +120,9 @@
   // mutations don't otherwise set it.
   function queueWrite(table, row) {
     if (!row || !row.id) return;
-    const stampedRow = Object.assign({}, row, {
+    // Queue only what the server takes: the base64 attachment etc. stay out,
+    // otherwise the queue itself fills iPhone's 5 MB localStorage.
+    const stampedRow = Object.assign({}, forServer(table, row), {
       updated_at: row.updated_at || new Date().toISOString()
     });
     pushQueue({
@@ -160,8 +191,17 @@
           const { error } = await client.from('memberships').upsert(row, { onConflict: 'org_id,user_id' });
           if (error) throw error;
         } else {
-          const { error } = await client.from(table).upsert(row, { onConflict: 'id' });
-          if (error) throw error;
+          // If the server doesn't have a column yet (a migration not run),
+          // drop that field and retry rather than failing the whole record.
+          let r = stripUnknown(item.table, row);
+          for (let attempt = 0; attempt < 4; attempt++) {
+            const { error } = await client.from(table).upsert(r, { onConflict: 'id' });
+            if (!error) break;
+            const m = /Could not find the '([^']+)' column/i.exec(error.message || '');
+            if (!m || attempt === 3) throw error;
+            rememberUnknown(item.table, m[1]);
+            r = stripUnknown(item.table, r);
+          }
         }
       } catch (err) {
         // Network blip — keep in queue and try again next pass.
@@ -271,6 +311,11 @@
               // Last-write-wins by updated_at.
               const local = collection[idx];
               if (!local.updated_at || new Date(row.updated_at) >= new Date(local.updated_at)) {
+                // Fields that never go to the server (the attachment, its
+                // renewal history) must survive a newer server copy —
+                // replacing the object outright used to drop the photo.
+                const keep = (LOCAL_ONLY_FIELDS[localKey] || []).concat(['renewal_history']);
+                for (const k of keep) if (local[k] !== undefined && row[k] === undefined) row[k] = local[k];
                 collection[idx] = row;
               }
             } else {
@@ -298,9 +343,37 @@
     try {
       await flushQueue();
       await pullChanges();
+      await uploadPendingFiles();
     } finally {
       inFlight = false;
       emitStatus();
+    }
+  }
+
+  // Certificate photos/PDFs → the private `cert-files` bucket, so they
+  // survive a lost phone and appear on other devices. The record keeps the
+  // storage path in `file_url` (a real column), which then syncs.
+  async function uploadPendingFiles() {
+    if (!window.Supa || !window.Supa.ready || !window.Store) return;
+    let client;
+    try { client = await window.Supa.getClient(); } catch (_) { return; }
+    if (!client || !client.storage) return;
+    const todo = (Store.snapshot().certs || []).filter(function (c) {
+      return c.vessel_id && c.file && typeof c.file.data_url === 'string' && !c.file.storage_path;
+    });
+    for (const c of todo.slice(0, 5)) {   // a few per pass keeps sync snappy
+      try {
+        const blob = await (await fetch(c.file.data_url)).blob();
+        const ext = ((blob.type || '').split('/')[1] || 'bin').replace(/[^a-z0-9]/gi, '').slice(0, 5) || 'bin';
+        const path = c.vessel_id + '/' + c.id + '-' + Date.now() + '.' + ext;
+        const { error } = await client.storage.from('cert-files').upload(path, blob, { contentType: blob.type || 'application/octet-stream', upsert: false });
+        if (error) throw error;
+        c.file.storage_path = path;
+        Store.updateCert(c.id, { file_url: path });
+      } catch (e) {
+        console.warn('attachment upload failed', c.id, e && e.message);
+        break;   // try again next sync
+      }
     }
   }
 

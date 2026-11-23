@@ -66,7 +66,11 @@
     modal.onclick = function (e) { if (e.target === modal) closeEditVessel(); };
     document.body.appendChild(modal);
 
-    const categories = ['Cat 0', 'Cat 1', 'Cat 2', 'Cat 3', 'Cat 4', 'Cat 5', 'Cat 6', 'Workboat'];
+    // Both Codes use area categories 0–6; which Code applies is separate.
+    const categories = ['Cat 0', 'Cat 1', 'Cat 2', 'Cat 3', 'Cat 4', 'Cat 5', 'Cat 6'];
+    const isWb = window.Codes ? Codes.codeFor(v) === 'workboat' : false;
+    const curCat = /^Cat [0-6]$/.test(v.category || '') ? v.category
+      : (v.area_category ? 'Cat ' + String(v.area_category).slice(3) : 'Cat 2');
     modal.innerHTML = `
       <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
         <div class="sh-pull"></div>
@@ -77,10 +81,16 @@
         <div style="padding:0 20px 14px;overflow-y:auto;max-height:70vh">
           <div class="fg"><label class="fl">Vessel name</label><input class="fi" id="ev-name" value="${escapeHtml(v.name || '')}"></div>
           <div class="fg"><label class="fl">Type</label><input class="fi" id="ev-type" value="${escapeHtml(v.type || '')}" placeholder="e.g. Open RIB charter"></div>
+          <div class="fg"><label class="fl" for="ev-code">Which Code?</label>
+            <select class="fi" id="ev-code">
+              <option value="spv" ${isWb ? '' : 'selected'}>Sport or Pleasure Vessel Code 2025 (charter, sailing schools, trips)</option>
+              <option value="workboat" ${isWb ? 'selected' : ''}>Workboat Code Edition 3 (work, pilot, dive, wind farm)</option>
+            </select>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div class="fg"><label class="fl">Category</label>
+            <div class="fg"><label class="fl">Area category</label>
               <select class="fi" id="ev-cat">
-                ${categories.map((c) => `<option value="${c}" ${c === v.category ? 'selected' : ''}>${c}</option>`).join('')}
+                ${categories.map((c) => `<option value="${c}" ${c === curCat ? 'selected' : ''}>${c}</option>`).join('')}
               </select>
             </div>
             <div class="fg"><label class="fl">Persons</label><input class="fi" id="ev-persons" type="number" min="1" value="${v.persons || 12}"></div>
@@ -110,6 +120,7 @@
       name: (document.getElementById('ev-name') || {}).value || '',
       type: (document.getElementById('ev-type') || {}).value || '',
       category: (document.getElementById('ev-cat') || {}).value || '',
+      code: (document.getElementById('ev-code') || {}).value === 'workboat' ? 'workboat' : 'spv',
       persons: parseInt((document.getElementById('ev-persons') || {}).value || '12', 10),
       length: parseFloat((document.getElementById('ev-length') || {}).value || '0') || null,
       ssr: (document.getElementById('ev-ssr') || {}).value || '',
@@ -398,6 +409,9 @@
   // Open the stored data URL — works for PDFs and images.
   function viewAttachment(dataUrl, name) {
     if (!dataUrl) return;
+    // In-app viewer (files.js). window.open() popups are refused inside the
+    // iPhone app, so the old path below did nothing there.
+    if (window.CodedokFiles) { CodedokFiles.view(String(dataUrl), name); return; }
     // Security: only ever open data:/https:/blob: attachments. A crafted
     // value (e.g. a javascript: URL, or one containing a quote to break
     // out of the attribute) would otherwise run script in the app origin
@@ -640,30 +654,31 @@
 
   function actionLine(item) {
     if (item.cert) {
-      const v = item.vessel ? ` — ${escapeHtml(item.vessel.name)}` : '';
+      // Boat name goes on the second line so the item name isn't cut off.
+      const v = item.vessel ? `${escapeHtml(item.vessel.name)} · ` : '';
       const itemIcon = item.cert.icon || '📋';
       if (item.days < 0) {
         return {
           sev: 'rd', icon: itemIcon,
-          title: `${escapeHtml(item.cert.name)}${v}`,
-          sub: `Expired ${Math.abs(item.days)} day${Math.abs(item.days) === 1 ? '' : 's'} ago`,
+          title: escapeHtml(item.cert.name),
+          sub: `${v}Expired ${Math.abs(item.days)} day${Math.abs(item.days) === 1 ? '' : 's'} ago`,
           btn: '<button class="btn btn-xs btn-red">Fix</button>'
         };
       }
       return {
         sev: 'am', icon: itemIcon,
-        title: `${escapeHtml(item.cert.name)}${v}`,
-        sub: `Due in ${item.days} day${item.days === 1 ? '' : 's'}`,
+        title: escapeHtml(item.cert.name),
+        sub: `${v}Due in ${item.days} day${item.days === 1 ? '' : 's'}`,
         btn: '<button class="btn btn-xs btn-out" onclick="go(\'s-surveys\')">Book</button>'
       };
     }
     if (item.equipment) {
-      const v = item.vessel ? ` — ${escapeHtml(item.vessel.name)}` : '';
+      const v = item.vessel ? `${escapeHtml(item.vessel.name)} · ` : '';
       const sev = item.days < 0 ? 'rd' : 'am';
       return {
         sev, icon: item.equipment.icon || '🔧',
-        title: `${escapeHtml(item.equipment.name)} service${v}`,
-        sub: item.days < 0 ? `Service overdue ${Math.abs(item.days)} days` : `Service due in ${item.days} days`,
+        title: `${escapeHtml(item.equipment.name)} service`,
+        sub: v + (item.days < 0 ? `Service overdue ${Math.abs(item.days)} days` : `Service due in ${item.days} days`),
         btn: '<button class="btn btn-xs btn-out" onclick="go(\'s-equipment-list\')">View</button>'
       };
     }
@@ -877,6 +892,18 @@
   }
   window.selectIEClass = selectIEClass;
 
+  // Screens never scroll sideways. Undo any horizontal offset a browser
+  // API (or a too-wide child) has introduced on the page or the screen.
+  function resetHorizontalScroll() {
+    try {
+      const se = document.scrollingElement || document.documentElement;
+      if (se.scrollLeft) se.scrollLeft = 0;
+      if (document.body.scrollLeft) document.body.scrollLeft = 0;
+      document.querySelectorAll('.shell.on, .shell.on > .scroll').forEach((el) => { if (el.scrollLeft) el.scrollLeft = 0; });
+    } catch (_) {}
+  }
+  window.resetHorizontalScroll = resetHorizontalScroll;
+
   function switchTab(btn, tabId) {
     const screen = btn.closest('.shell');
     screen.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
@@ -889,7 +916,16 @@
     // Vessel, Equipment, Crew, Insurance) which don't all fit — the
     // Insurance tab was sitting off-screen right with no scroll
     // indicator, and users didn't know it existed.
-    try { btn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch (_) {}
+    // Scroll ONLY the tab strip. scrollIntoView() also scrolls every
+    // scrollable ancestor — on iPhone that slid the whole screen sideways.
+    try {
+      const strip = btn.closest('.tabbar');
+      if (strip) {
+        const left = btn.offsetLeft - (strip.clientWidth - btn.offsetWidth) / 2;
+        strip.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+      }
+    } catch (_) {}
+    resetHorizontalScroll();
   }
   window.switchTab = switchTab;
 
@@ -1224,7 +1260,7 @@
             ${v ? `
               <div class="card" style="padding:14px;margin-bottom:14px">
                 <div style="font-size:14px;font-weight:700;color:var(--text)">${escapeHtml(v.name)}</div>
-                <div style="font-size:11px;color:var(--lt);margin-top:2px">${escapeHtml(v.category)} · ${escapeHtml(v.type)}</div>
+                <div style="font-size:11px;color:var(--lt);margin-top:2px">${escapeHtml(vesselCodeLabel(v))} · ${escapeHtml(v.type)}</div>
                 <div style="margin-top:8px;font-size:11px;color:var(--mid);line-height:1.7">
                   SSR: ${escapeHtml(v.ssr || '—')}<br>
                   Persons: ${v.persons || '—'}<br>
@@ -1442,6 +1478,14 @@
             <button class="ss-btn ss-btn-primary" onclick="scanCertWithAI()">Add a certificate</button>
             <button class="ss-btn ss-btn-ghost" onclick="go('s-calendar')">What's coming up</button>
           </div>`;
+        // Signature Home element: the Vessel Pass (home.js) replaces the
+        // plain status card when available.
+        if (window.CodedokHome) {
+          try {
+            const passHtml = CodedokHome.render();
+            if (passHtml) { statusEl.className = 'home-passes'; statusEl.style.cssText = ''; statusEl.innerHTML = passHtml; }
+          } catch (e) { console.error('vessel pass', e); }
+        }
       }
     }
 
@@ -1638,8 +1682,12 @@
         'font-family:var(--fn)',
       ].join(';');
       fab.innerHTML = '<span style="margin-top:-4px">+</span>';
-      fab.onmouseenter = () => { fab.style.transform = 'translateY(-2px) scale(1.04)'; };
-      fab.onmouseleave = () => { fab.style.transform = ''; };
+      // Hover lift only where there's a real pointer — on a phone a tap
+      // fires mouseenter and the button stayed enlarged.
+      if (window.matchMedia && matchMedia('(hover: hover)').matches) {
+        fab.onmouseenter = () => { fab.style.transform = 'translateY(-2px) scale(1.04)'; };
+        fab.onmouseleave = () => { fab.style.transform = ''; };
+      }
       // Append to the s-home shell so it auto-disappears when the user
       // navigates away (other shells become display:none, but a body-
       // attached element wouldn't — keeping it home-scoped is safer).
@@ -1666,9 +1714,13 @@
           const child = it.cert || it.equipment || it.crewCert;
           const vesselId = child && child.vessel_id;
           const setV = vesselId ? `setActiveVessel('${vesselId}');` : '';
+          // A certificate opens straight onto its Renew card; equipment
+          // and crew keep their own screens.
           const openAction = it.crewCert
             ? "go('s-crew')"
-            : `${setV}go('s-vessel-detail')`;
+            : it.cert
+              ? `${setV}openCertSheet('${jsAttr(it.cert.id)}')`
+              : `${setV}go('s-vessel-detail')`;
           const pill = a.sev === 'rd'
             ? '<span class="ios-pill red">Overdue</span>'
             : '<span class="ios-pill amber">Due soon</span>';
@@ -1746,6 +1798,7 @@
       } else if (smsActive && smsActive.status === 'signed') {
         icon = '✓'; color = 'var(--green)';
         line = `Signed${smsActive.signed_by_user_id ? ' by your surveyor' : ''} · in your inspection pack`;
+        if (Store.isSmsReviewDue && Store.isSmsReviewDue(smsActive)) { color = 'var(--amber)'; line = 'Yearly review due · takes a couple of minutes'; cta = 'Review →'; }
         cta  = 'View signed SMS →';
       } else if (smsActive) {
         icon = '📋'; color = 'var(--sea)';
@@ -1758,8 +1811,8 @@
         cta  = 'Resume SMS →';
       } else {
         icon = '🛡️'; color = 'var(--purp)';
-        line = 'MCA-aligned in 11 guided sections · submit to CodedOK for AI polish';
-        cta  = 'Build your SMS →';
+        line = 'Answer a few plain questions and we write it for you · about 10 minutes';
+        cta  = 'Start →';
       }
       // Deliberately plain: one row, no icon tile, no second CTA line.
       // It sits under the "needs doing" list and must not compete with it.
@@ -1782,7 +1835,12 @@
       // Convert the static container — drop card chrome on this one.
       vesselsEl.className = '';
       vesselsEl.style.cssText = 'padding:0 16px;display:flex;flex-direction:column;gap:10px';
-      if (s.vessels.length === 0) {
+      const boatsLabel = document.getElementById('home-boats-label');
+      // The Vessel Pass at the top already shows every boat — don't list
+      // them twice.
+      const passShown = !!document.querySelector('#home-status.home-passes .vp');
+      if (boatsLabel) boatsLabel.style.display = (s.vessels.length === 0 || passShown) ? 'none' : '';
+      if (s.vessels.length === 0 || passShown) {
         // First run: the welcome card already offers "Add a boat manually".
         vesselsEl.innerHTML = '';
       } else {
@@ -1803,6 +1861,9 @@
     } else if (counts.due30 > 0) {
       state = 'warn'; badgeIcon = '⏳';
       statusText = `${counts.due30} due soon`;
+    } else if (!Store.vesselCerts(v.id).length && !Store.vesselEquipment(v.id).length) {
+      state = 'warn'; badgeIcon = '+';
+      statusText = 'No records yet — add a certificate';
     } else {
       state = 'good'; badgeIcon = '✓';
       statusText = 'Ready for survey';
@@ -1820,7 +1881,7 @@
               <div class="vcover-name">${escapeHtml(v.name)}</div>
               <div class="vcover-meta">${escapeHtml(v.type || '')}${v.port ? ' · ' + escapeHtml(v.port) : ''}</div>
               <div style="margin-top:4px;display:flex;gap:5px;align-items:center">
-                <span class="cat-pill">${escapeHtml(v.category || '')}</span>
+                <span class="cat-pill">${escapeHtml(vesselCodeLabel(v))}</span>
               </div>
             </div>
           </div>
@@ -2363,6 +2424,17 @@
 
   // ---------- Vessel detail ----------
 
+  // "SPV · Area 3" instead of the stored "cat3" / "Cat 2".
+  function vesselCodeLabel(v) {
+    const C = window.Codes;
+    if (!v) return '';
+    if (!C || !C.areaFor) return v.category || '';
+    const cat = C.areaFor(v.category, v);
+    if (!/^cat[0-6]$/.test(cat || '')) return v.category || '';
+    return (C.codeFor && C.codeFor(v) === 'workboat' ? 'Workboat' : 'SPV') + ' · Area ' + cat.slice(3);
+  }
+  window.vesselCodeLabel = vesselCodeLabel;
+
   function renderVesselDetail() {
     if (!window.Store) return;
     const v = Store.getVessel(activeVesselId) || Store.snapshot().vessels[0];
@@ -2421,7 +2493,7 @@
               </div>
             </div>
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
-              <span class="cat-pill">${escapeHtml(v.category || '')}</span>
+              <span class="cat-pill">${escapeHtml(vesselCodeLabel(v))}</span>
               ${v.ssr ? `<span class="cat-pill" style="background:rgba(255,255,255,.04)">SSR ${escapeHtml(v.ssr)}</span>` : ''}
               ${v.length ? `<span class="cat-pill" style="background:rgba(255,255,255,.04)">${escapeHtml(v.length)}m</span>` : ''}
               ${v.certifier ? `<span class="cat-pill" style="background:rgba(255,255,255,.04)">${escapeHtml(v.certifier)}</span>` : ''}
@@ -2453,13 +2525,72 @@
       });
       const crewCounts = countByDays(allCrewCerts);
       const insurance = certs.filter((c) => c.category === 'insurance');
-      const insOk = insurance.every((c) => Store.daysUntil(c.expires_at) >= 0);
+      const insOk = insurance.length > 0 && insurance.every((c) => Store.daysUntil(c.expires_at) >= 0);
+      const insCard = !insurance.length
+        ? `<div class="scard" onclick="go('s-scan')" style="cursor:pointer"><div class="scard-lbl">Insurance</div><div class="scard-val am">—</div><div class="scard-sub">Not added yet</div></div>`
+        : `<div class="scard"><div class="scard-lbl">Insurance</div><div class="scard-val ${insOk ? 'ok' : 'rd'}">${insOk ? '✓' : '✗'}</div><div class="scard-sub">${insOk ? 'Valid policy' : 'Expired'}</div></div>`;
 
       sgrid.innerHTML = `
         <div class="scard"><div class="scard-lbl">Vessel certs</div><div class="scard-val ${certCounts.overdue ? 'rd' : (certCounts.due30 ? 'am' : 'ok')}">${certCounts.valid + certCounts.due30 + certCounts.due60}/${certs.length}</div><div class="scard-sub">${certCounts.overdue} overdue</div></div>
         <div class="scard"><div class="scard-lbl">Equipment</div><div class="scard-val ${equipCounts.overdue ? 'rd' : (equipCounts.due30 ? 'am' : 'ok')}">${equipCounts.valid + equipCounts.due30 + equipCounts.due60}/${equipment.length}</div><div class="scard-sub">${equipCounts.overdue} ${equipCounts.overdue === 1 ? 'issue' : 'issues'}</div></div>
         <div class="scard"><div class="scard-lbl">Crew certs</div><div class="scard-val ${crewCounts.overdue ? 'rd' : (crewCounts.due30 ? 'am' : 'ok')}">${crewCounts.valid + crewCounts.due30 + crewCounts.due60}/${allCrewCerts.length}</div><div class="scard-sub">${crewCounts.due30 ? crewCounts.due30 + ' due soon' : 'All current'}</div></div>
-        <div class="scard"><div class="scard-lbl">Insurance</div><div class="scard-val ${insOk ? 'ok' : 'rd'}">${insOk ? '✓' : '✗'}</div><div class="scard-sub">${insurance.length ? 'Valid policy' : 'Missing'}</div></div>`;
+        ${insCard}`;
+    }
+
+    // Needs attention — the boat's own overdue / due-soon records.
+    const urgentEl = document.getElementById('vd-urgent');
+    if (urgentEl) {
+      const items = Store.vesselCerts(v.id).map((c) => ({ name: c.name, d: Store.daysUntil(c.expires_at), date: c.expires_at, open: `openCertSheet('${c.id}')`, what: 'certificate' }))
+        .concat(Store.vesselEquipment(v.id).map((e) => ({ name: e.name, d: Store.daysUntil(e.next_service_at), date: e.next_service_at, open: `setActiveEquipment('${e.id}');go('s-equipment-detail')`, what: 'service' })))
+        .filter((i) => i.d !== Infinity && !isNaN(i.d) && i.d <= 30)
+        .sort((a, b) => a.d - b.d);
+      urgentEl.innerHTML = !items.length ? '' : `
+        <div class="slbl">Needs attention</div>
+        <div class="card mx">${items.slice(0, 5).map((i) => `
+          <div class="gap-item" role="button" tabindex="0" style="cursor:pointer" onclick="${i.open}">
+            <div class="gap-sev ${i.d < 0 ? 'rd' : 'am'}"></div>
+            <div>
+              <div class="gap-title">${escapeHtml(i.name)} — ${i.d < 0 ? (i.what === 'service' ? 'service overdue' : 'expired') : 'due in ' + i.d + ' day' + (i.d === 1 ? '' : 's')}</div>
+              <div class="gap-desc">${i.d < 0 ? 'Ran out ' + fmtDate(i.date) + ' · tap to renew' : 'Due ' + fmtDate(i.date) + ' · tap to see renewal steps'}</div>
+            </div>
+          </div>`).join('')}
+        </div>`;
+    }
+
+    // Key dates — coding certificate history and the Code deadlines that
+    // apply to this boat (from codes.js KEY_DATES, checked against the Codes).
+    const tlEl = document.getElementById('vd-timeline');
+    if (tlEl) {
+      const rows = [];
+      const coding = Store.vesselCerts(v.id).filter((c) => c.kind === 'coding');
+      coding.forEach((c) => {
+        (c.renewal_history || []).forEach((h) => {
+          if (h && h.expires_at) rows.push({ date: h.expires_at, title: 'Coding certificate — previous expiry', sub: 'Renewed' + (h.renewed_at ? ' ' + fmtDate(h.renewed_at) : ''), dot: 'ok' });
+        });
+        if (c.expires_at) {
+          const d = Store.daysUntil(c.expires_at);
+          rows.push({ date: c.expires_at, title: 'Coding certificate ' + (d < 0 ? 'expired' : 'renewal due'), sub: d < 0 ? 'Book a renewal examination now' : d + ' days · book the examination early', dot: d < 0 ? 'rd' : d <= 60 ? 'am' : 'up' });
+        }
+      });
+      const C = window.Codes;
+      if (C && C.KEY_DATES) {
+        const wb = C.codeFor && C.codeFor(v) === 'workboat';
+        const k = wb ? C.KEY_DATES.workboat : C.KEY_DATES.spv;
+        const hasSms = (Store.snapshot().sms_documents || []).some((d) => d.vessel_id === v.id && (d.status === 'signed' || d.status === 'active'));
+        rows.push({ date: k.sms_by, title: 'Safety Management System in place', sub: hasSms ? 'Done' : (wb ? 'Workboat Code §31.1.1' : 'SPV Code §30.1.1'), dot: hasSms ? 'ok' : (Store.daysUntil(k.sms_by) <= 60 ? 'am' : 'up') });
+        if (!wb) {
+          rows.push({ date: '2028-12-12', title: 'Move to the SPV Code 2025', sub: 'At next renewal examination or this date, whichever is later', dot: 'up' });
+          rows.push({ date: k.courses_by, title: 'Crew training courses complete', sub: 'SPV Code §28.10', dot: 'up' });
+        }
+      }
+      rows.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      tlEl.innerHTML = !rows.length ? '' : `
+        <div class="slbl">Key dates</div>
+        <div class="card mx"><div class="tl">${rows.map((r) => `
+          <div class="tli"><div class="tl-dot ${r.dot}">${r.dot === 'ok' ? '✓' : ''}</div><div>
+            <div class="tl-title"${r.dot === 'rd' ? ' style="color:var(--red)"' : r.dot === 'am' ? ' style="color:var(--amber)"' : ''}>${escapeHtml(r.title)}</div>
+            <div class="tl-date">${fmtDate(r.date)} · ${escapeHtml(r.sub)}</div></div></div>`).join('')}
+        </div></div>`;
     }
 
     // Replace certs tab body with live data
@@ -2555,7 +2686,7 @@
     const unassigned = all.filter((p) => !(p.vessel_ids || []).includes(vesselId));
     const v = Store.getVessel(vesselId);
     const codes = window.Codes;
-    const reqs = codes ? codes.requiredCrewQuals(v.category) : [];
+    const reqs = codes ? codes.requiredCrewQuals(v.category, v) : [];
 
     let html = '<div style="padding:14px 16px 4px">';
 
@@ -2606,7 +2737,7 @@
     }
 
     if (reqs.length > 0) {
-      html += `<div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin:14px 0 8px">Required for ${escapeHtml(v.category)}</div>`;
+      html += `<div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin:14px 0 8px">Required for ${escapeHtml(vesselCodeLabel(v))}</div>`;
       html += '<div class="card">';
       reqs.forEach((r) => {
         html += `
@@ -2888,8 +3019,9 @@
     const codes = window.Codes;
     const v = Store.getVessel(vesselId);
     const required = codes ? codes.requiredEquipment(v.category, v) : [];
-    const heldKinds = new Set(equipment.map((e) => e.kind));
-    const missing = required.filter((r) => r.mandatory && !heldKinds.has(r.kind));
+    const heldKinds = new Set(equipment.map((e) => e.kind).concat(Store.vesselCerts(vesselId).map((c) => c.kind)));
+    const tracked = (k) => !codes || !codes.TRACKED_EQUIPMENT_KINDS || codes.TRACKED_EQUIPMENT_KINDS.includes(k);
+    const missing = required.filter((r) => r.mandatory && !r.verify && tracked(r.kind) && !heldKinds.has(r.kind));
 
     let html = '<div style="padding:14px 16px 4px">';
 
@@ -2898,7 +3030,7 @@
         <div style="background:linear-gradient(135deg,rgba(220,38,38,.08) 0%,rgba(220,38,38,.02) 100%);border:1px solid rgba(220,38,38,.18);border-radius:14px;padding:14px 16px;margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
             <span style="font-size:18px">⚠️</span>
-            <div style="font-size:13px;font-weight:700;color:var(--red)">Missing required equipment for ${escapeHtml(v.category)}</div>
+            <div style="font-size:13px;font-weight:700;color:var(--red)">Missing required equipment for ${escapeHtml(vesselCodeLabel(v))}</div>
           </div>
           <div style="font-size:11px;color:var(--mid);line-height:1.7">${missing.map((m) => '• ' + escapeHtml(m.name)).join('<br>')}</div>
         </div>`;
@@ -3251,7 +3383,8 @@
     const sheet = document.createElement('div');
     sheet.id = 'cert-sheet';
     sheet.className = 'bdrop on';
-    const f = c.file;
+    // Local copy, or (added on another device) the cloud copy.
+    const f = c.file || (c.file_url ? { name: 'Certificate file', type: /\.pdf$/i.test(c.file_url) ? 'application/pdf' : 'image/*', size: 0, added_at: c.updated_at || null } : null);
     sheet.innerHTML = `
       <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
         <div class="sh-pull"></div>
@@ -3267,6 +3400,7 @@
         </div>
 
         <div style="padding:0 20px 14px">
+          ${window.CodedokRenew ? CodedokRenew.block(c) : ''}
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
             <div>
               <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em">Status</div>
@@ -3292,7 +3426,7 @@
                 </div>
               </div>
               <div style="display:flex;gap:8px">
-                <button class="btn btn-xs btn-sea" style="flex:1" onclick="viewAttachment('${f.data_url}','${jsAttr(f.name)}')">👁 View</button>
+                <button class="btn btn-xs btn-sea" style="flex:1" onclick="CodedokFiles.viewCert('${jsAttr(c.id)}')">👁 View</button>
                 <button class="btn btn-xs btn-out" style="flex:1" onclick="attachToExistingCert('${c.id}')">↻ Replace</button>
                 <button class="btn btn-xs btn-out" style="flex:1;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="removeCertFile('${c.id}')">✕ Remove</button>
               </div>
@@ -3307,8 +3441,8 @@
             </div>`}
 
           <div class="sheet-actions">
-            <button class="sheet-act" onclick="renewCert('${c.id}')"><span style="font-size:18px">↻</span><span>Mark renewed (today + 12 months)</span></button>
-            <button class="sheet-act" onclick="closeCertSheet();go('s-scan')"><span style="font-size:18px">📷</span><span>Scan replacement</span></button>
+            <button class="sheet-act" data-renew="${escapeHtml(c.id)}"><span style="font-size:18px">📷</span><span>Renew: snap the new certificate</span></button>
+            <button class="sheet-act" data-renew-date="${escapeHtml(c.id)}"><span style="font-size:18px">📅</span><span>Renew: type the new expiry date</span></button>
             <button class="sheet-act danger" onclick="confirmDeleteCert('${c.id}')"><span style="font-size:18px">🗑</span><span>Delete certificate</span></button>
           </div>
         </div>
@@ -3327,6 +3461,8 @@
   function removeCertFile(certId) {
     if (!confirm('Remove the attached file? The certificate record stays.')) return;
     Store.detachFileFromCert(certId);
+    const cc = Store.getCert(certId);
+    if (cc && cc.file_url) Store.updateCert(certId, { file_url: null });
     closeCertSheet();
     openCertSheet(certId);
   }
@@ -3715,7 +3851,7 @@
     // a laptop can jump to the full workspace at /web/.
     const desktopBanner = window.innerWidth >= 1024 ? `
       <div style="padding:14px 16px 0">
-        <div class="card" onclick="window.open('web/index.html', '_blank')" style="padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid var(--sea)">
+        <div class="card desktop-link" onclick="window.open('web/index.html', '_blank')" style="padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid var(--sea)">
           <div style="font-size:22px">🖥️</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:700;color:var(--text)">Open the desktop workspace</div>
@@ -3822,7 +3958,7 @@
                   <div style="font-size:15px;font-weight:700;color:var(--text)">${escapeHtml(v.name)}</div>
                   ${ready ? '<span class="chip chip-ok">Ready</span>' : `<span class="chip chip-rd">${counts.overdue} ov.</span>`}
                 </div>
-                <div style="font-size:11px;color:var(--lt)">${escapeHtml(v.category)} · ${escapeHtml(v.type)} · Last inspection ${last ? fmtDate(last.completed_at) : '—'}</div>
+                <div style="font-size:11px;color:var(--lt)">${escapeHtml(vesselCodeLabel(v))} · ${escapeHtml(v.type)} · Last inspection ${last ? fmtDate(last.completed_at) : '—'}</div>
               </div>
               <div style="position:relative;width:44px;height:44px;flex-shrink:0">
                 <svg width="44" height="44" viewBox="0 0 44 44">
@@ -4137,7 +4273,7 @@
       <div class="slbl">Desktop workspace</div>
       <div style="padding:0 16px">
         <div class="card">
-          <div class="row" onclick="window.open('web/index.html', '_blank')">
+          <div class="row desktop-link" onclick="window.open('web/index.html', '_blank')">
             <div class="row-ic bl">🖥️</div>
             <div class="row-body">
               <div class="row-name">Open desktop workspace</div>
@@ -5251,7 +5387,12 @@
   // button on vessel detail. Accepts image, PDF or DOCX.
   async function pickCertPhoto(vesselId) {
     // AI reads the photo, so ask permission first; "no" goes manual.
-    if (!(await ensureAiConsent('cert'))) { pendingCertVesselId = vesselId || null; openCertManual(); return; }
+    if (!(await ensureAiConsent('cert'))) {
+      // Renewing without AI: just ask for the new date on the same record.
+      const r = window.CodedokRenew && CodedokRenew.active();
+      if (r) { CodedokRenew.openDateSheet(r.id); return; }
+      pendingCertVesselId = vesselId || null; openCertManual(); return;
+    }
     // On the native iOS/Android build, use the real document scanner
     // (VisionKit on iOS): auto edge-detection, de-skew and glare
     // reduction give a far cleaner image for the AI to read. Falls back
@@ -5261,7 +5402,7 @@
     if (N && N.isNative && typeof N.scanDocument === 'function') {
       try {
         const file = await N.scanDocument();
-        if (file === 'cancelled') return;        // user backed out
+        if (file === 'cancelled') { if (window.CodedokRenew) CodedokRenew.cancel(); return; }   // user backed out
         if (file instanceof File) {
           try { N.haptic && N.haptic('success'); } catch (_) {}
           pendingCertVesselId = vesselId || null;
@@ -5334,6 +5475,13 @@
       alert('That file is too big (over 10 MB). Try compressing it or saving as a smaller PDF.');
       return;
     }
+    // Keep the scanned file so the saved record carries it (inspection
+    // pack + renewal history). Previously the AI path dropped the photo.
+    window.__pendingCertFile = null;
+    try {
+      const data_url = await compressImage(file);
+      window.__pendingCertFile = { name: file.name || 'certificate.jpg', type: file.type, size: file.size, data_url, added_at: new Date().toISOString() };
+    } catch (_) {}
     if (!window.Supa || !window.Supa.ready) {
       // Offline / not signed in yet — don't throw the photo away. Keep
       // it and let them type the details; it saves locally and syncs
@@ -5373,6 +5521,16 @@
   // took, stash it as a pending manual scan, and route to the manual
   // form so nothing is lost when extraction can't run.
   async function fallbackToManualCert(file, message) {
+    // Renewing an existing certificate: keep the photo on THAT record and
+    // just ask for the new expiry date — never create a duplicate.
+    const renewing = window.CodedokRenew && CodedokRenew.active();
+    if (renewing) {
+      const f = window.__pendingCertFile;
+      window.__pendingCertFile = null;
+      if (f) Store.attachFileToCert(renewing.id, f);
+      CodedokRenew.openDateSheet(renewing.id, (f ? 'Photo attached. ' : '') + "We couldn't read the dates automatically, so type the new expiry date from the certificate.");
+      return;
+    }
     let stashed = null;
     try {
       const data_url = await compressImage(file);
@@ -5433,14 +5591,15 @@
     document.body.appendChild(modal);
 
     const v = vesselId ? Store.getVessel(vesselId) : null;
-    const isEquip = ex.kind === 'equipment';
+    const renewing = window.CodedokRenew && CodedokRenew.active();
+    const isEquip = !renewing && ex.kind === 'equipment';
     const confColor = ex.confidence === 'high' ? 'var(--green)' : ex.confidence === 'medium' ? 'var(--amber)' : 'var(--red)';
 
     modal.innerHTML = `
       <div class="sheet" style="padding-bottom:calc(var(--safe) + 14px)">
         <div class="sh-pull"></div>
         <div class="sh-head">
-          <div class="sh-title">Review extracted ${isEquip ? 'equipment' : 'certificate'}</div>
+          <div class="sh-title">${renewing ? 'Check the new details' : 'Review extracted ' + (isEquip ? 'equipment' : 'certificate')}</div>
           <button class="sh-x" onclick="closeCertReview()">×</button>
         </div>
         <div style="padding:0 20px 14px;overflow-y:auto;max-height:72vh">
@@ -5449,9 +5608,10 @@
             <div style="font-size:12px;color:var(--mid)">Confidence: <strong style="color:${confColor}">${escapeHtml(ex.confidence || 'unknown')}</strong>${ex.notes ? ' · ' + escapeHtml(ex.notes) : ''}</div>
           </div>
 
-          ${v ? `<div style="font-size:12px;color:var(--mid);margin-bottom:14px">Adding to <strong>${escapeHtml(v.name)}</strong></div>` : ''}
+          ${renewing ? `<div class="rn-swap"><div><span>Was</span><strong>${escapeHtml(renewing.expires_at ? fmtDate(renewing.expires_at) : 'No date')}</strong></div><div class="rn-arrow" aria-hidden="true">→</div><div><span>New expiry</span><strong>${escapeHtml(ex.expires_at ? fmtDate(ex.expires_at) : 'Check below')}</strong></div></div>`
+            : v ? `<div style="font-size:12px;color:var(--mid);margin-bottom:14px">Adding to <strong>${escapeHtml(v.name)}</strong></div>` : ''}
 
-          <div class="fg"><label class="fl">Type</label><input class="fi" id="cer-name" value="${escapeHtml(ex.name || '')}"></div>
+          <div class="fg"><label class="fl">Type</label><input class="fi" id="cer-name" value="${escapeHtml(renewing ? renewing.name : (ex.name || ''))}"></div>
           <div class="fg"><label class="fl">Issuer</label><input class="fi" id="cer-issuer" value="${escapeHtml(ex.issuer || '')}"></div>
           <div class="fg"><label class="fl">Number / serial</label><input class="fi" id="cer-number" value="${escapeHtml(ex.number || '')}"></div>
           ${isEquip ? `
@@ -5462,10 +5622,10 @@
             </div>` : `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
               <div class="fg"><label class="fl">Issued</label><input class="fi" id="cer-issued" type="date" value="${ex.issued_at || ''}"></div>
-              <div class="fg"><label class="fl">Expires</label><input class="fi" id="cer-expires" type="date" value="${ex.expires_at || ''}"></div>
+              <div class="fg"><label class="fl">Expires</label><input class="fi" id="cer-expires" type="date" value="${escapeHtml(ex.expires_at || (renewing ? ex.next_service_at || '' : ''))}"></div>
             </div>`}
 
-          <button class="btn btn-sea btn-full" onclick="saveExtractedCert('${escapeHtml(isEquip ? 'equipment' : 'cert')}','${vesselId || ''}','${escapeHtml(ex.type_hint || '')}')" style="margin-top:10px">${isEquip ? 'Add to equipment' : 'Add to certificates'}</button>
+          <button class="btn btn-sea btn-full" onclick="saveExtractedCert('${escapeHtml(isEquip ? 'equipment' : 'cert')}','${vesselId || ''}','${escapeHtml(ex.type_hint || '')}')" style="margin-top:10px">${renewing ? 'Update certificate' : isEquip ? 'Add to equipment' : 'Add to certificates'}</button>
           <button class="btn btn-out btn-full" onclick="closeCertReview()" style="margin-top:8px">Cancel</button>
         </div>
       </div>`;
@@ -5476,6 +5636,7 @@
     const m = document.getElementById('cert-review-sheet');
     if (m) m.remove();
     pendingCertVesselId = null;
+    if (window.CodedokRenew) CodedokRenew.cancel();
   }
   window.closeCertReview = closeCertReview;
 
@@ -5484,6 +5645,31 @@
     const issuer = (document.getElementById('cer-issuer') || {}).value || '';
     const number = (document.getElementById('cer-number') || {}).value || '';
     if (!name) { alert('Type / name is required.'); return; }
+
+    // Renewal: update the existing certificate instead of adding a new one.
+    const renewing = window.CodedokRenew && CodedokRenew.active();
+    if (renewing) {
+      const expires_at = (document.getElementById('cer-expires') || {}).value || null;
+      if (!expires_at) { alert('Add the new expiry date (it is on the certificate).'); return; }
+      const pendingX = window.__pendingCertExtraction || null;
+      const auditR = pendingX ? buildExtractionAudit(pendingX, {
+        name, issuer, number,
+        issued_at: (document.getElementById('cer-issued') || {}).value || null,
+        expires_at, next_service_at: null, make: '', model: ''
+      }) : null;
+      const file = window.__pendingCertFile || undefined;
+      window.__pendingCertFile = null;
+      window.__pendingCertExtraction = null;
+      const m = document.getElementById('cert-review-sheet');
+      if (m) m.remove();
+      pendingCertVesselId = null;
+      CodedokRenew.apply(renewing.id, {
+        expires_at, issuer, number,
+        issued_at: (document.getElementById('cer-issued') || {}).value || null,
+        file, extraction: auditR || undefined
+      });
+      return;
+    }
     let autoCreatedVessel = false;
     if (!vesselId) {
       const v = (Store.snapshot().vessels || [])[0];
@@ -5521,6 +5707,7 @@
         vessel_id: vesselId, name, kind: typeHint || 'other',
         make, model, serial: number, next_service_at,
         icon: iconForType(typeHint),
+        file: window.__pendingCertFile || null,
         extraction: audit
       });
     } else {
@@ -5531,10 +5718,12 @@
         issuer, number, issued_at, expires_at,
         category: certCategoryForType(typeHint),
         icon: iconForType(typeHint),
+        file: window.__pendingCertFile || null,
         extraction: audit
       });
     }
 
+    window.__pendingCertFile = null;
     window.__pendingCertExtraction = null;
     closeCertReview();
     const overrideMsg = audit && audit.overrides.length
@@ -6422,7 +6611,7 @@
             <div class="h-display" style="font-size:24px">${escapeHtml(v.name)}</div>
             <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">${escapeHtml(v.type)} · SSR ${escapeHtml(v.ssr || '—')}</div>
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
-              <span class="cat-pill">${escapeHtml(v.category)}</span>
+              <span class="cat-pill">${escapeHtml(vesselCodeLabel(v))}</span>
               <span class="cat-pill" style="background:rgba(30,64,175,.3)">Surveyor view</span>
             </div>
           </div>
@@ -6520,7 +6709,7 @@
     modal.innerHTML = `
       <div class="card" style="max-width:480px;width:100%;padding:22px;border-radius:18px;background:var(--card,#fff);max-height:92vh;overflow-y:auto">
         <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:var(--fn-display);letter-spacing:-.3px">Raise a deficiency</div>
-        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">Against <strong>${escapeHtml(v.name)}</strong> · ${escapeHtml(v.category || '')}</div>
+        <div style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:18px">Against <strong>${escapeHtml(v.name)}</strong> · ${escapeHtml(vesselCodeLabel(v))}</div>
 
         <label style="display:block;font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Title</label>
         <input class="fi" id="def-title" placeholder="e.g. Liferaft service overdue" style="width:100%;padding:0 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--card,#fff);color:var(--text);font-family:var(--fn);font-size:14px;margin-bottom:14px">
@@ -6644,9 +6833,9 @@
       wrap.innerHTML = '<div style="padding:24px">Pick a vessel first</div>';
       return;
     }
-    const certs = window.Codes.requiredVesselCerts(v.category);
+    const certs = window.Codes.requiredVesselCerts(v.category, v);
     const equipment = window.Codes.requiredEquipment(v.category, v);
-    const crew = window.Codes.requiredCrewQuals(v.category);
+    const crew = window.Codes.requiredCrewQuals(v.category, v);
     const totalChecks = certs.length + equipment.length + crew.length;
 
     if (!window._inspectionState) window._inspectionState = {};
@@ -6680,7 +6869,7 @@
 
     wrap.innerHTML = `
       <div style="padding:14px 16px 4px">
-        <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em">${escapeHtml(v.name)} · ${escapeHtml(v.category)}</div>
+        <div style="font-size:11px;color:var(--lt);font-weight:700;text-transform:uppercase;letter-spacing:.07em">${escapeHtml(v.name)} · ${escapeHtml(vesselCodeLabel(v))}</div>
         <div style="font-size:18px;font-weight:700;color:var(--text);margin-top:2px">Code-driven inspection</div>
         <div style="font-size:12px;color:var(--lt);margin-top:4px;line-height:1.6">Walk the vessel and confirm each required item.</div>
       </div>
@@ -6951,7 +7140,7 @@
     scroll.querySelectorAll('[data-dyn="sms"]').forEach((n) => n.remove());
 
     const html = `
-      <div data-dyn="sms" style="padding:14px 16px 6px">
+      <div data-dyn="sms" style="padding:14px 16px 6px${window.QuickSms ? ';display:none' : ''}">
         <div class="hero" style="padding:18px">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;position:relative;z-index:1">
             <div style="font-size:12px;font-weight:600;color:var(--seal)">MCA-aligned</div>
@@ -6983,6 +7172,9 @@
           </div>
         </div>`;
       })()}
+
+      ${window.QuickSms ? `<div data-dyn="sms" style="padding:14px 16px 10px">${QuickSms.hubCard()}</div>
+      <div data-dyn="sms" class="h-section">Other ways to build one</div>` : ''}
 
       <div data-dyn="sms" style="padding:0 16px 6px">
         <div class="card" onclick="openSmsAiWizard()" style="padding:16px;cursor:pointer;border-left:4px solid var(--purp);background:linear-gradient(135deg, rgba(124,58,237,.06), rgba(3,32,61,.06))">
@@ -7242,7 +7434,7 @@
           <div style="background:var(--ink);color:white;border-radius:18px;padding:28px 24px;margin-bottom:18px;background-image:radial-gradient(circle at 80% 0%, rgba(3,32,61,.22), transparent 60%)">
             <div style="font-size:11px;font-weight:700;color:var(--seal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Safety Management System · read-only</div>
             <div style="font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.15">${escapeHtml(v ? v.name : (doc.title || 'SMS'))}</div>
-            <div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:6px">v${doc.version}${doc.signed_at ? ' · signed ' + fmtDate(doc.signed_at) : ''}${v && v.category ? ' · ' + escapeHtml(v.category) : ''}</div>
+            <div style="font-size:14px;color:rgba(255,255,255,.65);margin-top:6px">v${doc.version}${doc.signed_at ? ' · signed ' + fmtDate(doc.signed_at) : ''}${v && v.category ? ' · ' + escapeHtml(vesselCodeLabel(v)) : ''}</div>
             <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:14px">Shared by the operator via CodedOK. This is a read-only snapshot — changes won't sync.</div>
           </div>
 
@@ -7383,7 +7575,8 @@
       { key: 'operation_type', kind: 'options', label: 'What type of operation?',
         opts: ['Passenger charter / day trips', 'Sea angling / fishing trips', 'Diving / instruction', 'Sail training', 'Workboat / safety boat', 'Private use only'] },
       { key: 'operating_area', kind: 'options', label: 'Where do you operate?',
-        opts: ['Cat 0 — Unrestricted', 'Cat 1 — Up to 150nm', 'Cat 2 — Up to 60nm', 'Cat 3 — Up to 20nm', 'Cat 4 — Up to 20nm in favourable weather', 'Cat 5/6 — Smooth & partially-smooth waters'] },
+        // SPV Code 2025 §3.10.1
+        opts: ['Cat 0 — Unrestricted', 'Cat 1 — Up to 150 miles from a safe haven', 'Cat 2 — Up to 60 miles from a safe haven', 'Cat 3 — Up to 20 miles from a safe haven', 'Cat 4 — Up to 20 miles, good weather, daylight', 'Cat 5 — Within 3 miles of land, good weather', 'Cat 6 — Within 3 miles of land, good weather, daylight'] },
       { key: 'passengers_max', kind: 'short', label: 'Max passengers on board?', placeholder: 'e.g. 10' },
       { key: 'crew_size', kind: 'short', label: 'Typical crew (master + mate)?', placeholder: 'e.g. 1 master + 1 mate' },
       { key: 'season', kind: 'options', label: 'Operating season?',
@@ -7407,7 +7600,7 @@
             ${vessels.map((v) => `
               <button onclick="smsAiSelect('vessel_id', '${v.id}')" class="qa-tile" style="text-align:left;width:100%;border:${smsAiInputs.vessel_id === v.id ? '2px solid var(--sea)' : '1px solid var(--bdr)'}">
                 <div class="qa-icon bl">${v.icon || '⛵'}</div>
-                <div style="flex:1"><div class="qa-title">${escapeHtml(v.name)}</div><div class="qa-sub">${escapeHtml(v.type || '')} · ${escapeHtml(v.category || '')}</div></div>
+                <div style="flex:1"><div class="qa-title">${escapeHtml(v.name)}</div><div class="qa-sub">${escapeHtml(v.type || '')} · ${escapeHtml(vesselCodeLabel(v))}</div></div>
               </button>`).join('')}
           </div>`;
     } else if (s.kind === 'options') {
@@ -8362,14 +8555,14 @@ h3 { font-size: 11pt; font-weight: 700; color: #1e3454; margin: 12pt 0 4pt 0; pa
   <div class="cover-title">Safety Management System</div>
   <div class="cover-vessel">${escapeHtml(v ? v.name : 'Vessel')}</div>
   <div class="cover-meta">
-    ${v ? `${escapeHtml(v.category || '')} · ${escapeHtml(v.type || '')}<br>SSR ${escapeHtml(v.ssr || '—')} · ${escapeHtml(v.port || '')}<br><br>` : ''}
+    ${v ? `${escapeHtml(vesselCodeLabel(v))} · ${escapeHtml(v.type || '')}<br>SSR ${escapeHtml(v.ssr || '—')} · ${escapeHtml(v.port || '')}<br><br>` : ''}
     Issue date: ${escapeHtml(today)}<br>
     Generated by CodedOK · codedok.com
   </div>
 </div>
 
 <p style="font-size:10pt;color:#475569;font-style:italic;border-left:3pt solid #03203D;padding:6pt 12pt;margin:18pt 0">
-This Safety Management System is built on the requirements of the Sport or Pleasure Vessel Code 2025 (Appendix 7) and the Workboat Code Edition 3 (Appendix on Safety Management). It is the responsibility of the vessel owner/operator to ensure the SMS is implemented, maintained, and reviewed.
+This Safety Management System is built on the requirements of the Sport or Pleasure Vessel Code 2025 (Section 30 and Appendix 7) and the Workboat Code Edition 3 (Section 31 and Appendix 8). It is the responsibility of the vessel owner/operator to ensure the SMS is implemented, maintained, and reviewed.
 </p>
 
 ${sectionsHtml}
@@ -8408,9 +8601,15 @@ ${sectionsHtml}
 
     // Word reads HTML with the .doc extension and `application/msword` MIME.
     const blob = new Blob(['﻿', html], { type: 'application/msword' });
+    const safe = title.replace(/[^a-z0-9\-_ ]/gi, '_');
+    // iPhone app: <a download> is ignored, so hand the file to the share
+    // sheet (Save to Files / Mail / AirDrop).
+    if (window.CodedokFiles && window.CodedokNative && CodedokNative.isNative) {
+      CodedokFiles.share(blob, `${safe}.doc`, 'application/msword').catch((e) => { console.warn(e); if (window.toast) toast("Couldn't export the Word file"); });
+      return;
+    }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const safe = title.replace(/[^a-z0-9\-_ ]/gi, '_');
     a.href = url;
     a.download = `${safe}.doc`;
     document.body.appendChild(a);
@@ -9501,7 +9700,7 @@ ${sectionsHtml}
     const screen = document.getElementById('s-onboard-jur');
     if (!screen) return;
 
-    const required = Codes.requiredVesselCerts(lastVessel.category);
+    const required = Codes.requiredVesselCerts(lastVessel.category, lastVessel);
     const equipment = Codes.requiredEquipment(lastVessel.category, lastVessel);
 
     // Add a one-time preview block
@@ -9686,7 +9885,7 @@ ${sectionsHtml}
             <tr><th style="width:30%">Vessel name</th><td>${escapeHtml(v.name)}</td></tr>
             <tr><th>Type</th><td>${escapeHtml(v.type || '')}</td></tr>
             <tr><th>SSR / Official No.</th><td>${escapeHtml(v.ssr || '—')}</td></tr>
-            <tr><th>Coding category</th><td>${escapeHtml(v.category || '')}</td></tr>
+            <tr><th>Coding category</th><td>${escapeHtml(vesselCodeLabel(v))}</td></tr>
             <tr><th>Length</th><td>${v.length ? v.length + ' m' : '—'}</td></tr>
             <tr><th>Persons capacity</th><td>${v.persons || '—'}</td></tr>
             <tr><th>Port of registry</th><td>${escapeHtml(v.port || '—')}</td></tr>
@@ -9878,7 +10077,7 @@ ${sectionsHtml}
     if (!badge) {
       badge = document.createElement('div');
       badge.id = 'sync-badge';
-      badge.style.cssText = 'position:fixed;right:14px;bottom:calc(70px + env(safe-area-inset-bottom));z-index:9000;display:none;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;color:white;box-shadow:0 4px 14px rgba(0,0,0,.18);font-family:var(--fn);pointer-events:none;letter-spacing:-.1px';
+      badge.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);white-space:nowrap;bottom:calc(var(--sync-badge-bottom, 70px) + env(safe-area-inset-bottom));z-index:9000;display:none;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;color:white;box-shadow:0 4px 14px rgba(0,0,0,.18);font-family:var(--fn);pointer-events:none;letter-spacing:-.1px';
       document.body.appendChild(badge);
     }
     const { online, inFlight, pending } = detail;
@@ -11305,7 +11504,7 @@ ${sectionsHtml}
           ${rows.map((v) => `
             <div style="padding:10px 12px;background:var(--slate);border-radius:10px">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-                <div style="min-width:0"><div style="font-weight:600;color:var(--text);font-size:13px">${escapeHtml(v.name)}</div><div style="font-size:11px;color:var(--lt)">${escapeHtml(v.type || '')} · ${escapeHtml(v.category || '')} · ${escapeHtml(v.port || '—')}</div></div>
+                <div style="min-width:0"><div style="font-weight:600;color:var(--text);font-size:13px">${escapeHtml(v.name)}</div><div style="font-size:11px;color:var(--lt)">${escapeHtml(v.type || '')} · ${escapeHtml(vesselCodeLabel(v))} · ${escapeHtml(v.port || '—')}</div></div>
                 <div style="display:flex;gap:6px;flex-shrink:0">
                   <button class="btn btn-out btn-xs" style="min-height:32px" onclick="supportEditVessel('${escapeHtml(v.id)}','${jsAttr(v.name)}')">✎ Edit</button>
                   <button class="btn btn-out btn-xs" style="min-height:32px" onclick="supportVesselCerts('${escapeHtml(v.id)}','${jsAttr(v.name)}')">📋 Certs</button>
