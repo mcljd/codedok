@@ -149,6 +149,51 @@
     };
   }
 
+
+  // Pre-departure checklist for this boat (Annex B1). One list feeds both the
+  // printed form and the tap-to-log check, so they can never disagree.
+  function checkItems(a, v) {
+    var yes = function (k) { return a[k] === 'y'; };
+    var S = function (k) { return (a.systems || []).indexOf(k) >= 0; };
+    var rib = a.boatKind === 'rib_open' || a.boatKind === 'rib_cabin';
+    var cabin = a.boatKind === 'rib_cabin' || a.boatKind === 'motor' || a.boatKind === 'sail';
+    var max = maxPersons(a, v);
+    return [
+      'Weather forecast, sea state, visibility and tides checked against the limits (5.2)',
+      'Route, landing places and alternatives reviewed',
+      'Certificate in date; persons on board will not exceed ' + (max || 'the certificate limit'),
+      'Master and crew fit, rested and qualified',
+      a.fuel === 'electric' ? 'Battery charge sufficient plus reserve' : 'Engine(s): oil, coolant, belts, no leaks; fuel sufficient plus reserve',
+      'Bilges dry; bilge pump tested',
+      'Steering tested hard over to hard over; engine controls ahead and astern',
+      rib || yes('singleHanded') ? 'Kill cord fitted and tested' : '',
+      rib ? 'Tube pressures and condition' : cabin ? 'Doors, windows and hatches close and seal' : '',
+      'Navigation lights' + (yes('vhfFixed') || yes('vhfHandheld') ? ', VHF' : '') + (S('plotter') ? ', plotter' : '') + ' working',
+      'Lifejackets (all sizes), lifebuoy' + (yes('liferaft') ? ', liferaft' : '') + ', flares' + (yes('beacon') ? ', beacon' : '') + ', first-aid kit in place and in date',
+      'Fire extinguishers in place and charged; fuel shut-offs reachable',
+      'Seats and handholds secure',
+      'Person ashore told the trip details',
+      'No open Category A defects'
+    ].filter(Boolean);
+  }
+  function maxPersons(a, v) {
+    var pax = Number(a.pax) || 0, crew = Number(a.crewMax) || 0;
+    return pax && crew ? pax + crew : (Number(v && v.persons) || 0);
+  }
+
+  // Drill schedule (Part 6.15). `every` is days between drills.
+  function drillTypes(a) {
+    var rib = a.boatKind === 'rib_open' || a.boatKind === 'rib_cabin';
+    return [
+      { k: 'mob', label: 'Man overboard', every: 31 },
+      { k: 'fire', label: 'Fire', every: 31 },
+      { k: 'abandon', label: 'Abandon ship / evacuation', every: 92 },
+      { k: 'flood', label: rib ? 'Flooding / tube damage' : 'Flooding', every: 92 },
+      { k: 'power', label: 'Loss of propulsion or steering', every: 92 },
+      { k: 'shore', label: 'Shoreside emergency plan', every: 366 }
+    ];
+  }
+
   // ───────────────────────── Document generator ─────────────────────────
 
   // Certificate limits by area category — SPV Code 3.10.1 and Table 3.10.2.
@@ -630,26 +675,26 @@
     // ── Annex B ──
     P('Annex B – Forms and Records',
       '<h3>B1 Pre-departure checklist – ' + name + '</h3><p>Date: ________ &nbsp; Master: ________________ &nbsp; Engine hours: ______</p>' +
-      table(['Check', '✓ / defect'], [
-        'Weather forecast, sea state, visibility and tides checked against the limits (5.2)',
-        'Route, landing places and alternatives reviewed',
-        'Certificate in date; persons on board will not exceed ' + totalTxt,
-        'Master and crew fit, rested and qualified',
-        a.fuel === 'electric' ? 'Battery charge sufficient plus reserve' : 'Engine(s): oil, coolant, belts, no leaks; fuel sufficient plus reserve',
-        'Bilges dry; bilge pump tested',
-        'Steering tested hard over to hard over; engine controls ahead and astern',
-        rib || single ? 'Kill cord fitted and tested' : '',
-        rib ? 'Tube pressures and condition' : cabin ? 'Doors, windows and hatches close and seal' : '',
-        'Navigation lights' + (yes('vhfFixed') || yes('vhfHandheld') ? ', VHF' : '') + (S('plotter') ? ', plotter' : '') + ' working',
-        'Lifejackets (all sizes), lifebuoy' + (yes('liferaft') ? ', liferaft' : '') + ', flares' + (yes('beacon') ? ', beacon' : '') + ', first-aid kit in place and in date',
-        'Fire extinguishers in place and charged; fuel shut-offs reachable',
-        'Seats and handholds secure',
-        'Person ashore told the trip details',
-        'No open Category A defects'
-      ].filter(Boolean).map(function (c) { return [c, '']; })) +
+      table(['Check', '✓ / defect'], checkItems(a, v).map(function (c) { return [esc(c), '']; })) +
       '<h3>B2 Drill / exercise record</h3>' + table(['Date', 'Drill', 'Who took part (names)', 'Lessons / actions'], [['&nbsp;', '', '', ''], ['&nbsp;', '', '', ''], ['&nbsp;', '', '', '']]) +
       '<h3>B3 Incident / near-miss report</h3>' + kv([['Date, time and place', '&nbsp;'], ['People involved', ''], ['What happened', '<br><br>'], ['Injuries or damage', ''], ['Immediate cause', ''], ['What will stop it happening again', '<br>'], ['Reported to (MAIB / Certifying Authority / Coastguard)', ''], ['Completed by', '']]) +
       '<h3>B4 Familiarisation record</h3>' + table(['Name', 'Role', 'Date completed (all items in 4.2)', 'Signed off by'], [['&nbsp;', '', '', ''], ['&nbsp;', '', '', '']]));
+
+    var lg = (doc && doc.sections && doc.sections.quick && doc.sections.quick.logs) || [];
+    if (lg.length) {
+      var drills = lg.filter(function (l) { return l.kind === 'drill'; });
+      var incs = lg.filter(function (l) { return l.kind === 'incident'; });
+      var checks = lg.filter(function (l) { return l.kind === 'check'; });
+      P('Annex C – Records',
+        '<p>Records logged in CodedOK under this SMS, newest first.</p>' +
+        '<h3>C1 Drills and exercises (Appendix 7, 7.5)</h3>' +
+        (drills.length ? table(['Date', 'Drill', 'Who took part', 'Lessons / actions'], drills.map(function (l) { return [esc(fmt(l.at)), esc(l.label), esc(l.who || '–'), esc(l.notes || '–')]; })) : '<p>None recorded yet.</p>') +
+        '<h3>C2 Accidents, incidents and near misses (Appendix 7, 8.3)</h3>' +
+        (incs.length ? table(['Date', 'What happened', 'Injury / damage', 'Action to prevent it'], incs.map(function (l) { return [esc(fmt(l.at)) + (l.where ? '<br>' + esc(l.where) : ''), esc(l.what || '–'), esc(l.harm || 'None'), esc(l.action || '–')]; })) : '<p>None recorded.</p>') +
+        '<h3>C3 Pre-departure checks</h3>' +
+        (checks.length ? '<p>' + checks.length + ' check' + (checks.length === 1 ? '' : 's') + ' recorded. Most recent:</p>' +
+          table(['Date', 'Master', 'Persons on board', 'Result'], checks.slice(0, 30).map(function (l) { return [esc(fmt(l.at)), esc(l.by || '–'), esc(l.pob == null ? '–' : l.pob), l.defect ? 'Defect noted: ' + esc(l.defect) : 'All checks passed']; })) : '<p>None recorded yet.</p>'));
+    }
 
     var body = front + parts.map(function (p) { return '<h2>' + esc(p.title) + '</h2>' + p.html; }).join('') +
       '<p class="qs-foot">Prepared with CodedOK from the answers given by the owner / operator. The owner / operator is responsible for making sure this SMS is accurate, put into practice and kept under review. The Certifying Authority reviews it against Appendix 7 (Code 30.1.3).</p>';
@@ -670,7 +715,7 @@
         title: 'Safety Management System – ' + (v.name || 'Vessel') });
     }
     var q = (d.sections && d.sections.quick) || {};
-    var patch = { sections: { quick: { answers: st.a, code: 'spv2025', signed_name: wasSigned ? null : (q.signed_name || null) } }, updated_at: new Date().toISOString() };
+    var patch = { sections: { quick: { answers: st.a, code: 'spv2025', signed_name: wasSigned ? null : (q.signed_name || null), logs: q.logs || [] } }, updated_at: new Date().toISOString() };
     if (wasSigned) {
       // An approved SMS that changes becomes a new draft issue; the crew
       // read it again (document control, Part 12.2).
@@ -799,6 +844,7 @@
           '<div class="qs-row"><button type="button" class="qs-btn" data-qs="review-ok" data-id="' + esc(d.id) + '">Nothing has changed</button><button type="button" class="qs-btn qs-btn-2" data-qs="edit" data-id="' + esc(d.id) + '">Update it</button></div></div>' : '') +
         (g.todo.length ? '<div class="qs-card"><strong>Still to fill in</strong>' + g.todo.map(function (t) {
           return '<button type="button" class="qs-todo-row" data-qs="edit" data-id="' + esc(d.id) + '" data-step="' + t.step + '"><span>' + esc(t.label) + '</span><em>Add</em></button>'; }).join('') + '</div>' : '') +
+        useCard(d) +
         '<div class="qs-actions">' +
           (!signed ? '<button type="button" class="qs-btn" data-qs="sign" data-id="' + esc(d.id) + '">Approve and sign</button>' : '') +
           '<button type="button" class="qs-btn qs-btn-2" data-qs="edit" data-id="' + esc(d.id) + '">Change answers</button>' +
@@ -860,6 +906,198 @@
     setTimeout(function () { window.print(); }, 80);
   }
 
+
+  // ───────────────────────── Using the SMS: checks, drills, incidents ─────────────────────────
+  //
+  // The records a Certifying Authority asks to see (Appendix 7, 7.5 drills
+  // with names; 8.3 incidents and near misses; 6.1.1 testing before a
+  // passage). Stored with the SMS document so they sync with it and print in
+  // Annex C.
+
+  var MAX_LOGS = 600;
+  function logsOf(d) { return (d && d.sections && d.sections.quick && d.sections.quick.logs) || []; }
+  function addLog(docId, entry) {
+    var d = findDoc(docId); if (!d) return;
+    var q = d.sections.quick;
+    entry.id = 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    entry.at = entry.at || new Date().toISOString();
+    var logs = [entry].concat(q.logs || []).sort(function (x, y) { return String(y.at).localeCompare(String(x.at)); }).slice(0, MAX_LOGS);
+    Store.updateSmsDocument(docId, { sections: { quick: { answers: q.answers, code: q.code, signed_name: q.signed_name || null, logs: logs } }, updated_at: new Date().toISOString() });
+  }
+  function daysSince(iso) { return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); }
+  function drillStatus(d) {
+    var logs = logsOf(d).filter(function (l) { return l.kind === 'drill'; });
+    return drillTypes(d.sections.quick.answers).map(function (t) {
+      var last = logs.filter(function (l) { return l.drill === t.k; })[0];
+      var since = last ? daysSince(last.at) : null;
+      return { k: t.k, label: t.label, every: t.every, last: last ? last.at : null, due: since == null || since > t.every };
+    });
+  }
+  function docFor(vesselId) {
+    var docs = (Store.snapshot().sms_documents || []).filter(isQuick);
+    if (vesselId) return docs.filter(function (d) { return d.vessel_id === vesselId; })[0] || null;
+    return docs[0] || null;
+  }
+  function names(d) {
+    var a = d.sections.quick.answers, out = [];
+    String(a.masters || '').split(',').concat(String(a.crewNames || '').split(',')).forEach(function (n) { n = n.trim(); if (n && out.indexOf(n) < 0) out.push(n); });
+    (Store.vesselCrew(d.vessel_id) || []).forEach(function (c) { if (c.name && out.indexOf(c.name) < 0) out.push(c.name); });
+    return out;
+  }
+  function localNow() { var n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset()); return n.toISOString().slice(0, 16); }
+
+  var L = null; // open log form: { kind, docId, ... }
+
+  function useCard(d) {
+    var st = drillStatus(d), due = st.filter(function (x) { return x.due; });
+    var logs = logsOf(d), lastCheck = logs.filter(function (l) { return l.kind === 'check'; })[0];
+    return '<div class="qs-card qs-use"><strong>Use it</strong>' +
+      '<button type="button" class="qs-use-row" data-ql="check" data-id="' + esc(d.id) + '"><span>Pre-departure check<small>' + (lastCheck ? 'Last done ' + esc(fmt(lastCheck.at)) : 'Tick it off before you sail') + '</small></span><em>Start</em></button>' +
+      '<button type="button" class="qs-use-row" data-ql="drill" data-id="' + esc(d.id) + '"><span>Log a drill<small class="' + (due.length ? 'qs-warn' : '') + '">' +
+        (due.length ? esc(due.length === st.length ? 'No drills logged yet' : due.length > 2 ? due.length + ' drills due' : 'Due: ' + due.map(function (x) { return x.label.toLowerCase(); }).join(', ')) : 'All drills up to date') + '</small></span><em>Log</em></button>' +
+      '<button type="button" class="qs-use-row" data-ql="incident" data-id="' + esc(d.id) + '"><span>Report an incident or near miss<small>Something went wrong, or nearly did</small></span><em>Report</em></button>' +
+      (logs.length ? '<div class="qs-recs"><div class="qs-recs-h">Recent records · ' + logs.length + '</div>' + logs.slice(0, 5).map(function (l) {
+        var what = l.kind === 'check' ? 'Pre-departure check' + (l.defect ? ' – defect noted' : '') : l.kind === 'drill' ? 'Drill: ' + l.label : (l.near ? 'Near miss' : 'Incident') + ': ' + (l.what || '').slice(0, 60);
+        return '<div class="qs-rec"><span>' + esc(what) + '</span><small>' + esc(fmt(l.at)) + '</small></div>'; }).join('') + '</div>' : '') +
+      '</div>';
+  }
+
+  function logShell(title, inner, saveLabel) {
+    var el = overlay('qs-log');
+    el.innerHTML = '<div class="qs-bar"><button type="button" class="qs-x" data-ql="cancel">Cancel</button><div class="qs-bar-t">' + esc(title) + '</div><span class="qs-bar-r"></span></div>' +
+      '<div class="qs-body">' + inner + '</div><div class="qs-foot-bar"><button type="button" class="qs-btn" data-ql="save">' + esc(saveLabel) + '</button></div>';
+    return el;
+  }
+  function chipRow(label, key, options, multi) {
+    return '<div class="qs-field"><div class="qs-label">' + esc(label) + '</div><div class="qs-chips" role="group" aria-label="' + esc(label) + '">' + options.map(function (o) {
+      var on = multi ? (L[key] || []).indexOf(o[0]) >= 0 : L[key] === o[0];
+      return '<button type="button" class="qs-chip' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-ql-k="' + key + '" data-ql-v="' + esc(o[0]) + '" data-ql-multi="' + (multi ? 1 : 0) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div></div>';
+  }
+  function input(label, key, ph, type, hint) {
+    var v = L[key] == null ? '' : L[key];
+    return '<div class="qs-field"><label class="qs-label" for="ql-' + key + '">' + esc(label) + '</label>' +
+      (type === 'area' ? '<textarea class="qs-input" id="ql-' + key + '" rows="3" data-ql-in="' + key + '" placeholder="' + esc(ph || '') + '">' + esc(v) + '</textarea>'
+        : '<input class="qs-input" id="ql-' + key + '" data-ql-in="' + key + '" type="' + (type === 'when' ? 'datetime-local' : 'text') + '"' + (type === 'number' ? ' inputmode="numeric" pattern="[0-9]*"' : '') + ' placeholder="' + esc(ph || '') + '" value="' + esc(v) + '">') +
+      (hint ? '<div class="qs-hint">' + hint + '</div>' : '') + '</div>';
+  }
+
+  function renderLog() {
+    var d = findDoc(L.docId); if (!d) return;
+    var a = d.sections.quick.answers, v = Store.getVessel(d.vessel_id) || {};
+    var who = names(d).map(function (n) { return [n, n]; });
+    if (L.kind === 'check') {
+      var items = checkItems(a, v), max = maxPersons(a, v), pob = Number(L.pob), over = max && pob > max;
+      logShell('Pre-departure check',
+        '<h2 class="qs-h">' + esc(v.name || 'Before you sail') + '</h2><p class="qs-sub">Tap each line as you check it.</p>' +
+        (who.length ? chipRow('Who is skippering?', 'by', who) : input('Who is skippering?', 'by', 'Name')) +
+        input('People on board, including crew', 'pob', max ? 'Up to ' + max : 'Number', 'number', over ? '<span class="qs-warn">That is more than the ' + max + ' this boat may carry. Do not sail over the limit.</span>' : (max ? 'This boat may carry up to ' + max + '.' : '')) +
+        '<div class="qs-field"><div class="qs-check-head"><span class="qs-label">Checks</span><button type="button" class="qs-link" data-ql="all">' + (L.ok.length === items.length ? 'Clear all' : 'Tick all') + '</button></div>' +
+        items.map(function (it, i) { var on = L.ok.indexOf(i) >= 0;
+          return '<button type="button" class="qs-tickrow' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + on + '" data-ql-tick="' + i + '"><i aria-hidden="true"></i><span>' + esc(it) + '</span></button>'; }).join('') + '</div>' +
+        input('Anything wrong? (optional)', 'defect', 'Describe any defect or item you could not check', 'area', 'A safety-critical defect means the boat does not sail with passengers until it is fixed (Part 9.3).'),
+        L.ok.length === items.length ? 'Save check' : 'Save (' + L.ok.length + ' of ' + items.length + ' ticked)');
+    } else if (L.kind === 'drill') {
+      var types = drillStatus(d);
+      logShell('Log a drill',
+        '<h2 class="qs-h">Which drill?</h2><p class="qs-sub">The Code asks for drills to be recorded with the names of everyone who took part.</p>' +
+        chipRow('Drill', 'drill', types.map(function (t) { return [t.k, t.label + (t.due ? ' · due' : '')]; })) +
+        input('When', 'when', '', 'when') +
+        (who.length ? chipRow('Who took part?', 'who', who, true) : '') +
+        input(who.length ? 'Anyone else' : 'Who took part?', 'whoOther', 'Names') +
+        input('What did you learn? (optional)', 'notes', 'e.g. Recovery sling took too long to rig – now kept at the helm', 'area'),
+        'Save drill');
+    } else {
+      logShell('Report an incident',
+        '<div class="qs-urgent"><strong>Is anyone hurt or in danger right now?</strong> Call the Coastguard first: VHF Channel 16, or 999.</div>' +
+        '<h2 class="qs-h">What happened?</h2><p class="qs-sub">Near misses count. Reports are for learning, not blame.</p>' +
+        chipRow('Type', 'near', [['n', 'Incident or accident'], ['y', 'Near miss']]) +
+        input('When', 'when', '', 'when') + input('Where', 'where', 'e.g. Half a mile north of the harbour') +
+        input('What happened', 'what', 'Describe it in your own words', 'area') +
+        input('Who was involved', 'people', 'Names') +
+        input('Any injury or damage', 'harm', 'Leave blank if none', 'area') +
+        input('What will stop it happening again', 'action', 'You can add this later', 'area') +
+        '<div class="qs-card qs-report"><strong>Does it need reporting?</strong><p>Accidents must be reported to the Marine Accident Investigation Branch by the quickest means. That includes someone seriously hurt or lost overboard, and collision, grounding, fire, flooding or loss of control. If in doubt, phone and ask.</p>' +
+        '<a class="qs-btn qs-btn-2 qs-tel" href="tel:+442380232527">Call MAIB · 023 8023 2527</a>' +
+        '<p>If the boat is damaged in a way that affects its safety, tell your Certifying Authority as soon as you can (Code 3.6.2).</p></div>',
+        'Save report');
+    }
+  }
+
+  function openLog(kind, docId) {
+    var d = docId ? findDoc(docId) : docFor();
+    if (!d) { if (window.toast) toast('Write your SMS first, then you can log checks and drills.'); return start(); }
+    var who = names(d);
+    L = { kind: kind, docId: d.id, when: localNow(), ok: [], by: who.length === 1 ? who[0] : '', who: [], near: 'n' };
+    renderLog();
+  }
+
+  document.addEventListener('input', function (e) {
+    var k = e.target && e.target.getAttribute && e.target.getAttribute('data-ql-in');
+    if (!k || !L) return;
+    L[k] = e.target.value;
+    if (k === 'pob') { // live over-limit warning without losing focus
+      var d = findDoc(L.docId), max = d ? maxPersons(d.sections.quick.answers, Store.getVessel(d.vessel_id)) : 0;
+      var hint = e.target.parentNode.querySelector('.qs-hint');
+      if (hint && max) hint.innerHTML = Number(L.pob) > max ? '<span class="qs-warn">That is more than the ' + max + ' this boat may carry. Do not sail over the limit.</span>' : 'This boat may carry up to ' + max + '.';
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('[data-ql],[data-ql-k],[data-ql-tick]');
+    if (!t) return;
+    if (t.hasAttribute('data-ql-tick')) {
+      var i = Number(t.getAttribute('data-ql-tick')), at = L.ok.indexOf(i);
+      if (at >= 0) L.ok.splice(at, 1); else L.ok.push(i);
+      return keepScroll(renderLog);
+    }
+    if (t.hasAttribute('data-ql-k')) {
+      var k = t.getAttribute('data-ql-k'), val = t.getAttribute('data-ql-v');
+      if (t.getAttribute('data-ql-multi') === '1') { var arr = (L[k] || []).slice(), ix = arr.indexOf(val); if (ix >= 0) arr.splice(ix, 1); else arr.push(val); L[k] = arr; }
+      else L[k] = val;
+      return keepScroll(renderLog);
+    }
+    var act = t.getAttribute('data-ql');
+    if (act === 'check' || act === 'drill' || act === 'incident') return openLog(act, t.getAttribute('data-id'));
+    if (act === 'cancel') { closeOv('qs-log'); L = null; return; }
+    if (act === 'all') {
+      var d0 = findDoc(L.docId), n = checkItems(d0.sections.quick.answers, Store.getVessel(d0.vessel_id) || {}).length;
+      L.ok = L.ok.length === n ? [] : Array.apply(null, { length: n }).map(function (_, j) { return j; });
+      return keepScroll(renderLog);
+    }
+    if (act === 'save') {
+      var d = findDoc(L.docId), a = d.sections.quick.answers, v = Store.getVessel(d.vessel_id) || {};
+      var say = function (m) { if (window.toast) toast(m); };
+      if (L.kind === 'check') {
+        var items = checkItems(a, v), max = maxPersons(a, v), pob = L.pob === '' || L.pob == null ? null : Number(L.pob);
+        if (max && pob > max) return say('Too many people on board – the limit is ' + max);
+        var missed = items.filter(function (_, j) { return L.ok.indexOf(j) < 0; });
+        if (missed.length && !String(L.defect || '').trim()) return say('Tick every line, or say what is wrong');
+        addLog(d.id, { kind: 'check', by: L.by || '', pob: pob, total: items.length, ok: L.ok.length,
+          defect: [String(L.defect || '').trim(), missed.length ? 'Not ticked: ' + missed.join('; ') : ''].filter(Boolean).join(' · ') });
+        say(missed.length || L.defect ? 'Check saved with a defect noted' : 'Check saved – safe trip');
+      } else if (L.kind === 'drill') {
+        var ty = drillTypes(a).filter(function (x) { return x.k === L.drill; })[0];
+        if (!ty) return say('Pick which drill');
+        var who = (L.who || []).concat(String(L.whoOther || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean));
+        if (!who.length) return say('Add who took part');
+        addLog(d.id, { kind: 'drill', drill: ty.k, label: ty.label, at: new Date(L.when || Date.now()).toISOString(), who: who.join(', '), notes: String(L.notes || '').trim() });
+        say('Drill logged');
+      } else {
+        if (!String(L.what || '').trim()) return say('Say what happened');
+        addLog(d.id, { kind: 'incident', near: L.near === 'y', at: new Date(L.when || Date.now()).toISOString(), where: String(L.where || '').trim(), what: String(L.what).trim(),
+          people: String(L.people || '').trim(), harm: String(L.harm || '').trim(), action: String(L.action || '').trim() });
+        say('Report saved');
+      }
+      if (window.CodedokNative && CodedokNative.haptic) { try { CodedokNative.haptic('success'); } catch (_) {} }
+      var id = L.docId; closeOv('qs-log'); L = null;
+      if (document.getElementById('qs-view')) view(id); else refresh();
+    }
+  });
+  function keepScroll(fn) {
+    var b = document.querySelector('#qs-log .qs-body'), y = b ? b.scrollTop : 0;
+    fn(); b = document.querySelector('#qs-log .qs-body'); if (b) b.scrollTop = y;
+  }
+
   // Re-draw the screen underneath so it reflects what just changed.
   function refresh() {
     var cur = document.querySelector('.shell.on');
@@ -905,7 +1143,7 @@
       if (!nm.trim()) { if (window.toast) toast('Type your name to sign'); return; }
       var doc = findDoc(id), q = doc.sections.quick, due = new Date(); due.setFullYear(due.getFullYear() + 1);
       Store.updateSmsDocument(id, { status: 'signed', signed_at: new Date().toISOString(), review_due_at: due.toISOString().slice(0, 10), last_reviewed_at: today(),
-        sections: { quick: { answers: q.answers, code: q.code, signed_name: nm.trim() } } });
+        sections: { quick: { answers: q.answers, code: q.code, signed_name: nm.trim(), logs: q.logs || [] } } });
       Store.updateSmsDocument(id, { body: plain(docHtmlForExport(findDoc(id))) });
       if (Store.appendSmsEdit) Store.appendSmsEdit(id, { note: 'Approved and signed by ' + nm.trim() });
       closeOv('qs-sign'); view(id); if (window.toast) toast('SMS approved');
@@ -953,5 +1191,6 @@
       '<div class="qs-hub-s">' + sub + '</div><span class="qs-hub-go">' + (docs.length ? 'Open' : draft ? 'Continue' : 'Start') + '</span></div>';
   }
 
-  window.QuickSms = { start: start, view: view, isQuick: isQuick, generate: generate, hubCard: hubCard, defaults: defaults, STEPS: STEPS };
+  window.QuickSms = { start: start, view: view, isQuick: isQuick, generate: generate, hubCard: hubCard, defaults: defaults, STEPS: STEPS,
+    log: openLog, docFor: docFor, drillStatus: drillStatus };
 })();

@@ -134,6 +134,8 @@
       '<div class="vp-track' + (vs.length > 1 ? ' vp-multi' : '') + '">' + vs.map(pass).join('') + '</div>' +
       (vs.length > 1 ? '<div class="vp-dots" aria-hidden="true">' + vs.map(function (_, i) { return '<span class="' + (i === 0 ? 'on' : '') + '"></span>'; }).join('') + '</div>' : '') +
       cta +
+      // Daily use: once a boat has its SMS, the pre-departure check is one tap away.
+      (window.QuickSms && QuickSms.docFor(vs[0].id) ? '<button type="button" class="vp-cta vp-cta-2" onclick="QuickSms.log(\'check\', QuickSms.docFor(\'' + esc(vs[0].id) + '\').id)">Pre-departure check</button>' : '') +
       (empty ? '' : '<button type="button" class="vp-alt" onclick="scanCertWithAI()">Add a certificate</button>');
   }
 
