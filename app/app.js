@@ -1798,6 +1798,7 @@
       } else if (smsActive && smsActive.status === 'signed') {
         icon = '✓'; color = 'var(--green)';
         line = `Signed${smsActive.signed_by_user_id ? ' by your surveyor' : ''} · in your inspection pack`;
+        if (Store.isSmsReviewDue && Store.isSmsReviewDue(smsActive)) { color = 'var(--amber)'; line = 'Yearly review due · takes a couple of minutes'; cta = 'Review →'; }
         cta  = 'View signed SMS →';
       } else if (smsActive) {
         icon = '📋'; color = 'var(--sea)';
@@ -1810,8 +1811,8 @@
         cta  = 'Resume SMS →';
       } else {
         icon = '🛡️'; color = 'var(--purp)';
-        line = 'MCA-aligned in 11 guided sections · submit to CodedOK for AI polish';
-        cta  = 'Build your SMS →';
+        line = 'Answer a few plain questions and we write it for you · about 10 minutes';
+        cta  = 'Start →';
       }
       // Deliberately plain: one row, no icon tile, no second CTA line.
       // It sits under the "needs doing" list and must not compete with it.
@@ -7139,7 +7140,7 @@
     scroll.querySelectorAll('[data-dyn="sms"]').forEach((n) => n.remove());
 
     const html = `
-      <div data-dyn="sms" style="padding:14px 16px 6px">
+      <div data-dyn="sms" style="padding:14px 16px 6px${window.QuickSms ? ';display:none' : ''}">
         <div class="hero" style="padding:18px">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;position:relative;z-index:1">
             <div style="font-size:12px;font-weight:600;color:var(--seal)">MCA-aligned</div>
@@ -7171,6 +7172,9 @@
           </div>
         </div>`;
       })()}
+
+      ${window.QuickSms ? `<div data-dyn="sms" style="padding:14px 16px 10px">${QuickSms.hubCard()}</div>
+      <div data-dyn="sms" class="h-section">Other ways to build one</div>` : ''}
 
       <div data-dyn="sms" style="padding:0 16px 6px">
         <div class="card" onclick="openSmsAiWizard()" style="padding:16px;cursor:pointer;border-left:4px solid var(--purp);background:linear-gradient(135deg, rgba(124,58,237,.06), rgba(3,32,61,.06))">
