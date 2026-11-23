@@ -6362,3 +6362,9 @@ textarea.qs-input { resize: vertical; }
 .qs-tel { display: flex; align-items: center; justify-content: center; text-decoration: none; }
 .vp-cta-2 { margin-top: 10px; background: var(--card); color: var(--tint); box-shadow: none; border: 1px solid var(--bdr-strong, #c7c7cc); }
 @media (prefers-color-scheme: dark) { html.is-native .vp-cta-2 { background: #1C1C1E; border-color: #3A3A3C; } }
+
+/* Account: quiet save status under the email */
+.acct-sync { font-size: 13px; color: var(--mid); margin-top: 3px; }
+.acct-sync:empty { display: none; }
+.acct-sync::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: #34C759; vertical-align: 1px; }
+.acct-sync.acct-sync-wait::before { background: var(--amber); }
