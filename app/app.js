@@ -10081,21 +10081,25 @@ ${sectionsHtml}
       document.body.appendChild(badge);
     }
     const { online, inFlight, pending } = detail;
+    // The save status lives quietly on the Account screen.
+    const line = document.getElementById('acct-sync');
+    if (line) {
+      line.textContent = !detail.ready ? ''
+        : !online ? (pending > 0 ? `Offline · ${pending} change${pending === 1 ? '' : 's'} will save when you're back online` : 'Offline')
+        : pending > 0 ? `Saving ${pending} change${pending === 1 ? '' : 's'}…`
+        : 'All changes saved';
+      line.classList.toggle('acct-sync-wait', !online || pending > 0);
+    }
     if (!online) {
       badge.style.background = '#ef4444';
       badge.textContent = pending > 0
         ? `Offline · ${pending} change${pending === 1 ? '' : 's'} queued`
         : 'Offline';
       badge.style.display = 'block';
-    } else if (inFlight && pending > 0) {
-      badge.style.background = '#f59e0b';
-      badge.textContent = `Syncing ${pending}…`;
-      badge.style.display = 'block';
-    } else if (pending > 0) {
-      badge.style.background = '#f59e0b';
-      badge.textContent = `${pending} pending`;
-      badge.style.display = 'block';
     } else {
+      // Online: saving happens quietly in the background. A count of
+      // waiting changes means nothing to the person using the app, so the
+      // pill only ever appears to say the phone is offline.
       badge.style.display = 'none';
     }
   }

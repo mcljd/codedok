@@ -106,6 +106,17 @@
     try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
     catch (err) { console.error('sync queue save failed', err); }
   }
+  // Rows the server refused for good. Kept (without their contents) so a
+  // support session can see what was set aside and why.
+  const REFUSED_KEY = QUEUE_KEY + '_refused';
+  function setAside(item, err) {
+    try {
+      const list = JSON.parse(localStorage.getItem(REFUSED_KEY) || '[]');
+      list.push({ table: item.table, id: item.id, at: new Date().toISOString(), why: String((err && err.message) || '').slice(0, 160) });
+      localStorage.setItem(REFUSED_KEY, JSON.stringify(list.slice(-50)));
+    } catch (_) {}
+  }
+
   function pushQueue(item) {
     const q = loadQueue();
     // Coalesce: drop earlier writes to the same (table, id) — newest wins.
@@ -204,9 +215,17 @@
           }
         }
       } catch (err) {
-        // Network blip — keep in queue and try again next pass.
         console.warn('sync push failed for', item.table, item.id, err.message);
-        remaining.push(item);
+        // A network blip is retried next pass. A row the server refuses on
+        // its rules (not allowed, broken reference, failed check) will be
+        // refused every time: after a few tries set it aside instead of
+        // retrying every minute forever. The record itself stays on the
+        // device, and editing it queues it again.
+        item.tries = (item.tries || 0) + 1;
+        const code = String((err && err.code) || '');
+        const refused = code === '42501' || code === '23503' || code === '23514' || (err && err.status === 403);
+        if (refused && item.tries >= 5) setAside(item, err);
+        else remaining.push(item);
       }
     }
     saveQueue(remaining);
