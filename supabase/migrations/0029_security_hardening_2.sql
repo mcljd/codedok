@@ -12,8 +12,7 @@
 -- Idempotent: safe to run more than once.
 
 -- ─── 1. Not signed in = no table access at all ───────────────────────────────
--- (`workshops` is left as it was: it belongs to a separate site and is
---  handled on its own.)
+-- (`workshops` is not part of CodedOK; it is closed in section 4.)
 do $$
 declare r record;
 begin
@@ -230,3 +229,13 @@ update storage.buckets
    set public = false,
        allowed_mime_types = array['image/jpeg','image/png','image/webp','image/heic','image/heif','application/pdf']
  where id = 'cert-files';
+
+-- ─── 4. The open `workshops` table ───────────────────────────────────────────
+-- Not part of CodedOK, and it was readable and writable by anyone on the
+-- internet. Closed to API callers; its rules and data are left in place so
+-- access can be granted back if a site turns out to need it.
+do $$ begin
+  if to_regclass('public.workshops') is not null then
+    revoke all on public.workshops from anon, authenticated;
+  end if;
+end $$;
