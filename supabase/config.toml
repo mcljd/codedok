@@ -39,3 +39,9 @@ verify_jwt = true
 [functions.admin-user-actions]
 # Signed-in support/admin users only (checked inside the function).
 verify_jwt = true
+
+[functions.waitlist-notify]
+# Called by a database trigger when someone joins the founding list. It
+# only ever emails the team about a real, fresh, un-notified sign-up, so
+# it needs no JWT (see the function header).
+verify_jwt = false
