@@ -806,6 +806,7 @@
       table(['', 'Name', 'Signature', 'Date'], [['Owner / operator', signedName ? esc(signedName) : '&nbsp;', '', doc && doc.signed_at ? esc(fmt(doc.signed_at)) : ''], ['Master', '&nbsp;', '', '']]) +
       '<p class="qs-foot">Prepared with CodedOK from the answers given by the owner / operator, who is responsible for checking each line against the boat and how she is used.</p>';
     if (wb) { body = toWorkboat(body, workers); ra = toWorkboat(ra, workers); }
+    if (workers) todo.forEach(function (t) { t.label = t.label.replace(' with passengers', '').replace('passengers sit', 'people sit'); });
     return { html: body, todo: todo, ra: ra };
   }
 
