@@ -690,6 +690,12 @@
       icon: input.icon || '⛵',
       jurisdictions: input.jurisdictions || ['UK']
     };
+    // Which Code applies. Onboarding offers "Workboat" as a boat type; without
+    // this the boat was saved under the Sport or Pleasure Vessel Code and got
+    // the wrong requirements and deadlines.
+    if (input.code === 'workboat' || (!input.code && /work\s*boat|pilot boat/i.test(String(input.type || '')))) v.code = 'workboat';
+    if (input.make) v.make = input.make;
+    if (input.engine) v.engine = input.engine;
     state.vessels.push(v);
     logAction('vessel.added', 'vessel', v.id, { name: v.name });
     save(state);
