@@ -10087,14 +10087,20 @@ ${sectionsHtml}
       document.body.appendChild(badge);
     }
     const { online, inFlight, pending } = detail;
+    const refused = detail.refused || 0;
+    // The demo account's sample boats are refused by the server on purpose.
+    let demoAcct = false;
+    try { const se = loadSession(); demoAcct = !!(se && se.email && isDemoOperatorEmail(se.email)); } catch (_) {}
     // The save status lives quietly on the Account screen.
     const line = document.getElementById('acct-sync');
     if (line) {
       line.textContent = !detail.ready ? ''
         : !online ? (pending > 0 ? `Offline · ${pending} change${pending === 1 ? '' : 's'} will save when you're back online` : 'Offline')
         : pending > 0 ? `Saving ${pending} change${pending === 1 ? '' : 's'}…`
+        : refused > 0 ? (demoAcct ? 'Demo account · sample data stays on this phone'
+                                  : `${refused} change${refused === 1 ? '' : 's'} could not be saved to the cloud. Contact support.`)
         : 'All changes saved';
-      line.classList.toggle('acct-sync-wait', !online || pending > 0);
+      line.classList.toggle('acct-sync-wait', !online || pending > 0 || (refused > 0 && !demoAcct));
     }
     if (!online) {
       badge.style.background = '#ef4444';
