@@ -698,7 +698,27 @@
 
     var body = front + parts.map(function (p) { return '<h2>' + esc(p.title) + '</h2>' + p.html; }).join('') +
       '<p class="qs-foot">Prepared with CodedOK from the answers given by the owner / operator. The owner / operator is responsible for making sure this SMS is accurate, put into practice and kept under review. The Certifying Authority reviews it against Appendix 7 (Code 30.1.3).</p>';
-    return { html: body, todo: todo };
+    // The risk assessment on its own – the Certifying Authority asks to see it
+    // before a certificate is issued or renewed (Code 3.13.1).
+    var p3 = parts.filter(function (p) { return p.title.indexOf('Part 3') === 0; })[0];
+    var ra =
+      '<div class="qs-cover"><div class="qs-cover-co">' + co + '</div><h1>Risk Assessment</h1><div class="qs-cover-v">' + NAME + '</div></div>' +
+      kv([
+        ['Vessel', name + ' – ' + boatDesc],
+        ['Operation', opLabel],
+        ['Area category of operation', areaTxt],
+        ['Persons on board (maximum)', totalTxt],
+        ['Standard applied', 'MCA Sport or Pleasure Vessel Code 2025 – Section 3.13' + (planing ? ' and 25.7.2' : '') + '; Appendix 7, element 3'],
+        ['Assessed by', signedName ? esc(signedName) + ' for ' + co : co],
+        ['Issue', 'Issue ' + issue + (doc && doc.signed_at ? ' – approved ' + esc(fmt(doc.signed_at)) : ' – draft for approval')],
+        ['Next review', (doc && doc.review_due_at ? esc(fmt(doc.review_due_at)) + ', or sooner ' : 'Every year, or sooner ') + 'after an incident or a change to the area, use or equipment (Code 3.13.2)']
+      ]) +
+      '<p class="qs-note">This risk assessment forms Part 3 of the Safety Management System for ' + name + '. Section and Part numbers refer to that document.</p>' +
+      (p3 ? p3.html : '') +
+      '<h3>Sign-off</h3>' +
+      table(['', 'Name', 'Signature', 'Date'], [['Owner / operator', signedName ? esc(signedName) : '&nbsp;', '', doc && doc.signed_at ? esc(fmt(doc.signed_at)) : ''], ['Master', '&nbsp;', '', '']]) +
+      '<p class="qs-foot">Prepared with CodedOK from the answers given by the owner / operator, who is responsible for checking each line against the boat and how she is used.</p>';
+    return { html: body, todo: todo, ra: ra };
   }
 
   // ───────────────────────── Saving ─────────────────────────
@@ -851,6 +871,8 @@
           '<button type="button" class="qs-btn qs-btn-2" data-qs="word" data-id="' + esc(d.id) + '">Share as Word</button>' +
           '<button type="button" class="qs-btn qs-btn-2" data-qs="print" data-id="' + esc(d.id) + '">Print or save PDF</button>' +
         '</div>' +
+        '<div class="qs-card"><strong>Risk assessment on its own</strong><p class="qs-card-p">Your surveyor asks to see this before a certificate is issued or renewed. Same content as Part 3, as a separate document.</p>' +
+          '<div class="qs-row"><button type="button" class="qs-btn qs-btn-2" data-qs="word-ra" data-id="' + esc(d.id) + '">Share as Word</button><button type="button" class="qs-btn qs-btn-2" data-qs="print-ra" data-id="' + esc(d.id) + '">Print or save PDF</button></div></div>' +
         (signed ? '<div class="qs-card"><strong>Crew have read it · ' + crew.filter(function (c) { return acked(c.id); }).length + ' of ' + crew.length + '</strong>' +
           (crew.length ? crew.map(function (c) {
             return '<div class="qs-crew"><span>' + esc(c.name) + '<small>' + esc(acked(c.id) ? 'Confirmed ' + fmt((acks.filter(function (k) { return k.crew_id === c.id; })[0] || {}).at) : (c.role || 'Crew')) + '</small></span>' +
@@ -874,20 +896,21 @@
     setTimeout(function () { var i = document.getElementById('qs-sign-name'); if (i) i.focus(); }, 50);
   }
 
-  function docHtmlForExport(d) {
+  function docHtmlForExport(d, which) {
     var v = Store.getVessel(d.vessel_id) || { name: 'Vessel' };
-    return generate(d.sections.quick.answers, v, d).html;
+    var g = generate(d.sections.quick.answers, v, d);
+    return which === 'ra' ? g.ra : g.html;
   }
   var EXPORT_CSS = 'body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.45;color:#111}h1{font-size:26pt;color:#03203D;margin:0 0 6pt}h2{font-size:15pt;color:#03203D;border-bottom:1pt solid #9aa7b4;padding-bottom:3pt;margin:20pt 0 8pt;page-break-after:avoid}h3{font-size:12pt;color:#1e3454;margin:14pt 0 4pt;page-break-after:avoid}' +
     'table{border-collapse:collapse;width:100%;margin:6pt 0 10pt}th{background:#e2e8f0;color:#03203D;font-weight:bold;text-align:left;font-size:10pt;padding:4pt 6pt;border:1pt solid #9aa7b4}td{border:1pt solid #9aa7b4;padding:4pt 6pt;vertical-align:top;font-size:10pt}' +
     '.qs-cover{text-align:center;padding:50pt 0 30pt}.qs-cover-co{font-size:14pt;color:#475569}.qs-cover-v{font-size:20pt;font-weight:bold;color:#1e3454}.qs-box{border:1.5pt solid #03203D;padding:8pt 10pt;margin:10pt 0}.qs-note{font-size:9.5pt;color:#475569;font-style:italic}mark.qs-todo{background:#fff200}.qs-foot{font-size:9pt;color:#64748b;border-top:1pt solid #cbd5e1;margin-top:24pt;padding-top:8pt}';
 
-  function exportWord(docId) {
+  function exportWord(docId, which) {
     var d = findDoc(docId); if (!d) return;
     var v = Store.getVessel(d.vessel_id) || { name: 'Vessel' };
-    var title = 'Safety Management System - ' + (v.name || 'Vessel');
+    var title = (which === 'ra' ? 'Risk Assessment - ' : 'Safety Management System - ') + (v.name || 'Vessel');
     var html = '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>' + esc(title) + '</title>' +
-      '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]--><style>@page{size:A4;margin:22mm 20mm}' + EXPORT_CSS + '</style></head><body>' + docHtmlForExport(d) + '</body></html>';
+      '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]--><style>@page{size:A4;margin:22mm 20mm}' + EXPORT_CSS + '</style></head><body>' + docHtmlForExport(d, which) + '</body></html>';
     var blob = new Blob(['﻿', html], { type: 'application/msword' });
     var file = title.replace(/[^a-z0-9\-_ ]/gi, '_') + '.doc';
     if (window.CodedokFiles && window.CodedokNative && CodedokNative.isNative) {
@@ -899,10 +922,10 @@
     setTimeout(function () { a.remove(); URL.revokeObjectURL(url); }, 300);
   }
 
-  function printDoc(docId) {
+  function printDoc(docId, which) {
     var d = findDoc(docId), target = document.getElementById('print-pack'); if (!d || !target) return;
     target.innerHTML = '<style>.print-pack .qs-doc{font-family:Arial,sans-serif}' + EXPORT_CSS.replace(/(^|})([^{}]+)\{/g, function (m, close, sel) {
-      return close + sel.split(',').map(function (x) { return '.print-pack .qs-doc ' + (x.trim() === 'body' ? '' : x.trim()); }).join(',') + '{'; }) + '</style><div class="qs-doc">' + docHtmlForExport(d) + '</div>';
+      return close + sel.split(',').map(function (x) { return '.print-pack .qs-doc ' + (x.trim() === 'body' ? '' : x.trim()); }).join(',') + '{'; }) + '</style><div class="qs-doc">' + docHtmlForExport(d, which) + '</div>';
     setTimeout(function () { window.print(); }, 80);
   }
 
@@ -1160,6 +1183,8 @@
     }
     else if (act === 'word') { exportWord(id); }
     else if (act === 'print') { printDoc(id); }
+    else if (act === 'word-ra') { exportWord(id, 'ra'); }
+    else if (act === 'print-ra') { printDoc(id, 'ra'); }
     else if (act === 'delete') {
       if (!confirm('Delete this Safety Management System? This cannot be undone.')) return;
       if (Store.updateSmsDocument) Store.updateSmsDocument(id, { deleted_at: new Date().toISOString(), status: 'draft' });
