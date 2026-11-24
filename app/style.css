@@ -6227,7 +6227,7 @@ html.is-native img:not(.fv-img) { -webkit-touch-callout: none; }
            mask: radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat; }
 .vp-stub { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 6px 14px 16px; background: var(--card); border-radius: 0 0 22px 22px; color: var(--text); }
 .vp-stub > div { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
-.vp-stub .vp-lbl { color: var(--mid); font-size: 10px; }
+.vp-stub .vp-lbl { color: var(--mid); font-size: 11px; letter-spacing: .05em; white-space: nowrap; }
 .vp-stub b { font-size: 15px; font-weight: 800; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .vp-bad .vp-st { color: var(--red); }
 .vp-warn .vp-st { color: var(--amber); }
