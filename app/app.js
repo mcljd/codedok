@@ -770,6 +770,9 @@
       goAppStore();
       return;
     }
+    // The iPhone app never shows the marketing landing page (it carries
+    // website pricing and "Get the app" buttons): signed out means sign in.
+    if (id === 's-land' && isNativeApp()) id = 's-login';
     // Navigation history for goBack() / swipe-back. Tab roots start a fresh stack.
     const prev = document.querySelector('.shell.on');
     if (TAB_ROOTS.has(id)) navStack.length = 0;
@@ -9204,6 +9207,16 @@ ${sectionsHtml}
   async function renderPlans() {
     const body = document.getElementById('plans-body');
     if (!body) return;
+    // iPhone app without Apple subscriptions: nothing is for sale, so show
+    // no prices and no pointer to buying elsewhere (App Store 3.1.1).
+    if (isNativeApp() && !(window.CodedokNative && CodedokNative.iap && CodedokNative.iap.available())) {
+      body.innerHTML = `
+        <div class="card" style="margin:16px;padding:24px 20px;text-align:center">
+          <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">Everything is included</div>
+          <div style="font-size:14px;color:var(--mid);line-height:1.55">All of CodedOK's features are available on your account. There is nothing to buy.</div>
+        </div>`;
+      return;
+    }
     body.innerHTML = `<div style="opacity:.6;font-size:13px;color:var(--mid);padding:12px 0">Loading…</div>`;
 
     let currentPlan = 'trial';
@@ -9654,6 +9667,10 @@ ${sectionsHtml}
     if (!host) return;
     let banner = document.getElementById('account-trial-banner');
     if (banner) banner.remove();
+
+    // iPhone app with no Apple subscriptions switched on: nothing is for
+    // sale, so say nothing about trials or plans (App Store 3.1.1).
+    if (isNativeApp() && !(window.CodedokNative && CodedokNative.iap && CodedokNative.iap.available())) return;
 
     if (!window.Supa || !window.Supa.ready) return;
     try {
