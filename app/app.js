@@ -5477,7 +5477,9 @@
   // scanner (pickCertPhoto below), so both paths behave identically.
   async function processCertFile(file) {
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
+    // Photos are resized before they are stored or sent, so a full-size
+    // camera photo is fine; documents go as they are and need the cap.
+    if (file.size > (/^image\//i.test(file.type || '') ? 40 : 10) * 1024 * 1024) {
       alert('That file is too big (over 10 MB). Try compressing it or saving as a smaller PDF.');
       return;
     }
@@ -5505,9 +5507,19 @@
     const kind = /pdf/i.test(file.type) ? 'PDF' : /word|officedocument/i.test(file.type) ? 'Word document' : 'photo';
     showCertSpinner(`Reading your ${kind}…`);
     try {
-      const base64 = await readFileAsBase64(file);
+      let base64, mimeType = file.type || 'image/jpeg';
+      // The AI accepts JPEG/PNG/WebP/GIF up to 5 MB. A full-size iPhone
+      // photo can be bigger, and HEIC isn't accepted at all — send a
+      // 2000px copy instead (more detail than the AI uses anyway).
+      const isImage = /^image\//i.test(mimeType);
+      if (isImage && (file.size > 3.5 * 1024 * 1024 || !/^image\/(jpeg|png|webp|gif)$/i.test(mimeType))) {
+        const resized = await compressImage(file, { maxEdge: 2000, quality: 0.85 });
+        const m = /^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/i.exec(String(resized || ''));
+        if (m) { mimeType = m[1]; base64 = m[2]; }
+      }
+      if (!base64) base64 = await readFileAsBase64(file);
       const { data, error } = await Supa.client.functions.invoke('extract-cert', {
-        body: { image: base64, mimeType: file.type || 'image/jpeg' }
+        body: { image: base64, mimeType }
       });
       hideCertSpinner();
       if (error) throw new Error(error.message || 'extraction failed');
