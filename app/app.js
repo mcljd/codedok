@@ -2231,7 +2231,7 @@
 
       <div class="h-section">Check &amp; fix</div>
       <div class="tool-list">
-        <div class="qa-tile" onclick="go('s-ready')">
+        <div class="qa-tile" onclick="CodedokScreens.openReady()">
           <div class="qa-icon ok">🧭</div>
           <div style="flex:1"><div class="qa-title">Ready for the new Code?</div><div class="qa-sub">What changed, the dates, and where your boat stands</div></div>
           <span class="chev">›</span>

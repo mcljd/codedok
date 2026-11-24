@@ -159,6 +159,22 @@
   // The headline changes each Code brought in, the date each one bites, and
   // where this boat stands, worked out from her own records. Dates come from
   // Codes.KEY_DATES; section numbers are checked against the Code texts.
+  var readyOpenOn = null; // set by openReady(): the boat to show first
+  function openReady(vesselId) {
+    readyOpenOn = vesselId || (window.getActiveVesselId ? getActiveVesselId() : null);
+    if (window.go) go('s-ready');
+  }
+  // A Code date within 60 days (or already past) with no signed SMS: the one
+  // line Home shows so the owner does not have to go looking for it.
+  function codeWarning(v) {
+    var C = window.Codes; if (!C || !C.KEY_DATES) return null;
+    var wb = C.codeFor && C.codeFor(v) === 'workboat';
+    var k = wb ? C.KEY_DATES.workboat : C.KEY_DATES.spv, d = days(k.sms_by);
+    if (!(d <= 60)) return null;
+    var has = (Store.snapshot().sms_documents || []).some(function (x) { return x.vessel_id === v.id && (x.status === 'signed' || x.status === 'active'); });
+    if (has) return null;
+    return { days: d, date: k.sms_by, text: 'Safety Management System ' + (d < 0 ? 'was needed by ' + fmt(k.sms_by) : d === 0 ? 'is needed today' : 'needed in ' + d + ' day' + (d === 1 ? '' : 's')) };
+  }
   function readyFor(v) {
     var C = window.Codes, Q = window.QuickSms;
     var wb = C.codeFor && C.codeFor(v) === 'workboat';
@@ -211,6 +227,7 @@
   }
   function renderReady() {
     var sc = scrollOf('s-ready'); if (!sc) return;
+    if (readyOpenOn) { current = readyOpenOn; readyOpenOn = null; }
     var v = pickVessel(); if (!v) return noBoats(sc);
     if (!window.Codes || !Codes.KEY_DATES) { sc.innerHTML = '<div class="rs-empty"><div class="rs-empty-h">Requirements unavailable</div></div>'; return; }
     var r = readyFor(v), k = r.k;
@@ -483,6 +500,7 @@
     's-surveys': renderSurveys
   };
   window.CodedokScreens = {
+    openReady: openReady, codeWarning: codeWarning,
     has: function (id) { return !!RENDER[id]; },
     render: function (id) { var r = RENDER[id]; if (r) { try { r(); } catch (e) { console.error('screen ' + id, e); } } }
   };
