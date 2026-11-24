@@ -130,10 +130,19 @@
       : overdue
       ? '<button type="button" class="vp-cta" onclick="go(\'s-certs\')">Sort ' + overdue + ' overdue item' + (overdue === 1 ? '' : 's') + '</button>'
       : '<button type="button" class="vp-cta" onclick="go(\'s-inspection-pack\')">Create inspection pack</button>';
+    // A Code deadline close enough to act on (e.g. Workboat SMS by 13 Dec 2026).
+    var warn = '';
+    if (window.CodedokScreens && CodedokScreens.codeWarning) {
+      for (var wi = 0; wi < vs.length && !warn; wi++) {
+        var cw = CodedokScreens.codeWarning(vs[wi]);
+        if (cw) warn = '<button type="button" class="vp-warn" onclick="CodedokScreens.openReady(\'' + esc(vs[wi].id) + '\')"><span><strong>' + esc(cw.text) + '</strong>' +
+          (vs.length > 1 ? esc(vs[wi].name) + ' · ' : '') + 'See what the new Code asks for</span><em aria-hidden="true">›</em></button>';
+      }
+    }
     return '<div class="vp-head-row"><span class="vp-section">' + (vs.length > 1 ? 'Your fleet' : 'Your boat') + '</span>' + chip + '</div>' +
       '<div class="vp-track' + (vs.length > 1 ? ' vp-multi' : '') + '">' + vs.map(pass).join('') + '</div>' +
       (vs.length > 1 ? '<div class="vp-dots" aria-hidden="true">' + vs.map(function (_, i) { return '<span class="' + (i === 0 ? 'on' : '') + '"></span>'; }).join('') + '</div>' : '') +
-      cta +
+      warn + cta +
       // Daily use: once a boat has its SMS, the pre-departure check is one tap away.
       (window.QuickSms && QuickSms.docFor(vs[0].id) ? '<button type="button" class="vp-cta vp-cta-2" onclick="QuickSms.log(\'check\', QuickSms.docFor(\'' + esc(vs[0].id) + '\').id)">Pre-departure check</button>' : '') +
       (empty ? '' : '<button type="button" class="vp-alt" onclick="scanCertWithAI()">Add a certificate</button>');
