@@ -45,3 +45,9 @@ verify_jwt = true
 # only ever emails the team about a real, fresh, un-notified sign-up, so
 # it needs no JWT (see the function header).
 verify_jwt = false
+
+[functions.security-alert]
+# Called by a database trigger and the hourly security scan. Takes no input
+# and only emails the team about real, un-notified security events, at most
+# once every 10 minutes, so it needs no JWT (see the function header).
+verify_jwt = false

@@ -55,6 +55,13 @@ Deno.serve(async (req) => {
   const row = rows && rows[0];
   if (!row) return json(200, { ok: true, sent: false });
 
+  // Flood guard: someone scripting the public sign-up form must not be able
+  // to bury the inbox. After 20 emails in an hour, sign-ups still save but
+  // no more emails go out (the hourly security scan reports the flood).
+  const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const sentLately = await db.from("waitlist").select("id", { count: "exact", head: true }).gte("notified_at", hourAgo);
+  if ((sentLately.count || 0) > 20) return json(200, { ok: true, sent: false, reason: "throttled" });
+
   const { count } = await db.from("waitlist").select("id", { count: "exact", head: true });
 
   const lines: [string, unknown][] = [
