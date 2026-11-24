@@ -129,7 +129,8 @@
     if (!wb) lines.push('Existing boats move to the new Code at their next renewal examination or by ' + fmt('2028-12-12') + ', whichever is later (Appendix 12).');
     if (!lines.length) return '';
     return '<div class="rs-note' + (!hasSms && d >= 0 && d <= 60 ? ' rs-note-urgent' : '') + '">' + lines.join('<br>') +
-      (!hasSms ? '<button type="button" class="rs-link rs-note-btn" onclick="go(\'s-sms\')">Build your SMS ›</button>' : '') + '</div>';
+      (!hasSms ? '<button type="button" class="rs-link rs-note-btn" onclick="go(\'s-sms\')">Build your SMS ›</button>' : '') +
+      '<button type="button" class="rs-link rs-note-btn" onclick="go(\'s-ready\')">Am I ready for the new Code? ›</button></div>';
   }
 
   function renderGap() {
@@ -152,6 +153,99 @@
       '<p class="rs-foot">Checked against the ' + (window.Codes.codeFor && window.Codes.codeFor(v) === 'workboat' ? 'Workboat Code Edition 3' : 'Sport or Pleasure Vessel Code 2025') +
       ' for Area ' + esc(String(window.Codes.areaFor(v.category, v) || '').replace('cat', '') || 'this category') +
       '. “Check” means it needs checking on board or can\'t be matched to a record automatically. Your Certifying Authority has the final say.</p>';
+  }
+
+  // ── Ready for the new Code ───────────────────────────────────────────────
+  // The headline changes each Code brought in, the date each one bites, and
+  // where this boat stands, worked out from her own records. Dates come from
+  // Codes.KEY_DATES; section numbers are checked against the Code texts.
+  function readyFor(v) {
+    var C = window.Codes, Q = window.QuickSms;
+    var wb = C.codeFor && C.codeFor(v) === 'workboat';
+    var k = wb ? C.KEY_DATES.workboat : C.KEY_DATES.spv;
+    var doc = Q && Q.docFor ? Q.docFor(v.id) : null;
+    var a = doc ? doc.sections.quick.answers : null;
+    var signed = !!doc && doc.status === 'signed';
+    var other = !doc && (Store.snapshot().sms_documents || []).some(function (d) { return d.vessel_id === v.id && (d.status === 'signed' || d.status === 'active'); });
+    var sms = "QuickSms.start('" + esc(v.id) + "')";
+    var by = function (d) { return 'Needed by ' + fmt(d); };
+    var items = [];
+    items.push({ name: 'Safety Management System, written and signed', due: k.sms_by,
+      sub: by(k.sms_by) + (wb ? ' · Code 31.1.1' : ' · Code 30.1.1'),
+      st: signed || other ? 'ok' : doc ? 'soon' : 'missing', tag: signed || other ? 'Done' : doc ? 'Sign it' : 'Start', act: sms });
+    items.push({ name: 'Risk assessment to show your surveyor',
+      sub: 'Before a certificate is issued or renewed · Code ' + (wb ? '3.14.1' : '3.13.1'),
+      st: doc ? 'ok' : 'missing', tag: doc ? 'Done' : 'Start', act: sms });
+    var rib = /rib/i.test(String(v.type || ''));
+    if (a ? a.planing === 'y' : rib) items.push({ name: wb ? 'High-speed operation assessed; a proper seat for everyone' : 'Passengers at planing speed assessed',
+      sub: wb ? 'At your next renewal or ' + fmt(k.sms_by) + ', whichever is later · Code 25.4' : 'Six points the Code lists · Code 25.7.2',
+      st: a ? (a.fwdSeats ? 'ok' : 'soon') : 'missing', tag: a ? (a.fwdSeats ? 'Done' : 'Finish') : 'Start', act: sms });
+    items.push({ name: 'Cyber security measures written down', due: wb ? k.sms_by : null,
+      sub: wb ? by(k.sms_by) + ' · Code 31.3' : 'Part of the SMS · Appendix 7, 10',
+      st: doc ? 'ok' : 'missing', tag: doc ? 'Done' : 'Start', act: sms });
+    var drills = doc && Q.drillStatus ? Q.drillStatus(doc) : null;
+    var due = drills ? drills.filter(function (x) { return x.due; }).length : 0;
+    items.push({ name: 'Drills recorded, with the names of who took part',
+      sub: (drills ? (due ? due + ' of ' + drills.length + ' due now' : 'All up to date') : 'Logged from your SMS') + ' · Appendix ' + (wb ? '8, 10.5' : '7, 7.5'),
+      st: !doc ? 'missing' : due ? 'soon' : 'ok', tag: !doc ? 'Start' : due ? 'Log a drill' : 'Done',
+      act: doc ? "QuickSms.log('drill','" + esc(doc.id) + "')" : sms });
+    var crew = Store.vesselCrew(v.id) || [], acks = (doc && doc.acknowledgements) || [];
+    var read = crew.filter(function (c) { return acks.some(function (x) { return x.crew_id === c.id; }); }).length;
+    if (crew.length) items.push({ name: 'Crew have read the SMS',
+      sub: read + ' of ' + crew.length + ' confirmed',
+      st: !signed ? 'missing' : read < crew.length ? 'soon' : 'ok', tag: !signed ? 'After signing' : read < crew.length ? 'Confirm' : 'Done',
+      act: doc ? "openSmsDoc('" + esc(doc.id) + "')" : sms });
+    var snap = Store.snapshot(), fire = false;
+    crew.forEach(function (p) { (snap.crewCerts || []).forEach(function (cc) { if (cc.person_id === p.id && /fire/i.test(String(cc.name || '')) && days(cc.expires_at) >= 0) fire = true; }); });
+    items.push({ name: 'One-day firefighting course', due: wb ? null : k.courses_by,
+      sub: wb ? (Number(v.length) >= 15 ? 'All crew' : 'At least one crew member') + ' · Appendix 5, Table A5.3'
+              : (Number(v.length) >= 15 ? 'Master and one crew member' : 'Master or one crew member') + ' by ' + fmt(k.courses_by) + ' · Code 28.10',
+      st: fire ? 'ok' : 'check', tag: fire ? 'On file' : 'Check', act: "go('s-crew')" });
+    var g = gapFor(v);
+    if (g) items.push({ name: 'Certificates and safety equipment on record',
+      sub: g.problems ? g.problems + ' missing or expired' : g.met + ' of ' + g.total + ' in place',
+      st: g.problems ? 'missing' : 'ok', tag: g.problems ? 'Sort' : 'Done', act: "go('s-gap')" });
+    var coding = Store.vesselCerts(v.id).filter(function (c) { return c.kind === 'coding' && c.expires_at; })
+      .sort(function (x, y) { return days(y.expires_at) - days(x.expires_at); })[0];
+    return { wb: wb, k: k, items: items, coding: coding };
+  }
+  function renderReady() {
+    var sc = scrollOf('s-ready'); if (!sc) return;
+    var v = pickVessel(); if (!v) return noBoats(sc);
+    if (!window.Codes || !Codes.KEY_DATES) { sc.innerHTML = '<div class="rs-empty"><div class="rs-empty-h">Requirements unavailable</div></div>'; return; }
+    var r = readyFor(v), k = r.k;
+    var counted = r.items.filter(function (x) { return x.st !== 'check'; });
+    var done = counted.filter(function (x) { return x.st === 'ok'; }).length;
+    var pct = counted.length ? Math.round(done / counted.length * 100) : 100;
+    // The nearest dated item that is not done drives the headline.
+    var next = r.items.filter(function (x) { return x.due && x.st !== 'ok' && x.st !== 'check'; }).sort(function (x, y) { return days(x.due) - days(y.due); })[0];
+    var nd = next ? days(next.due) : null;
+    var head = !next ? (done === counted.length ? 'Ready' : (counted.length - done) + ' to finish')
+      : nd < 0 ? 'Past the date' : nd === 0 ? 'Due today' : nd + ' day' + (nd === 1 ? '' : 's') + ' left';
+    var rows = '<div class="ios-group">' + r.items.map(function (x) {
+      var s = ST[x.st];
+      return '<div class="ios-row rs-req" role="button" tabindex="0" onclick="' + x.act + '">' +
+        '<div class="rs-dot ' + s[0] + '" aria-hidden="true">' + (x.st === 'ok' ? '✓' : x.st === 'check' ? '?' : '!') + '</div>' +
+        '<div class="ios-row-tx"><div class="ios-row-tt">' + esc(x.name) + '</div><div class="ios-row-ss">' + esc(x.sub) + '</div></div>' +
+        '<span class="rs-tag ' + s[0] + '">' + esc(x.tag) + '</span></div>';
+    }).join('') + '</div>';
+    var codeName = r.wb ? 'Workboat Code Edition 3' : 'Sport or Pleasure Vessel Code 2025';
+    var cut = r.wb ? k.sms_by : '2028-12-12';
+    var when = r.coding && days(r.coding.expires_at) > days(cut)
+      ? 'Your coding certificate on file runs to ' + fmt(r.coding.expires_at) + ', so for ' + esc(v.name) + ' the date is the renewal examination around then.'
+      : r.coding ? 'Your coding certificate on file runs out before then, so for ' + esc(v.name) + ' the date is ' + fmt(cut) + '.' : '';
+    sc.innerHTML = vesselSwitcher('s-ready') +
+      '<div class="rs-hero">' +
+        '<div class="rs-ring" style="--p:' + pct + '" role="img" aria-label="' + done + ' of ' + counted.length + ' ready"><span>' + done + '/' + counted.length + '</span></div>' +
+        '<div><div class="rs-hero-h">' + esc(head) + '</div>' +
+        '<div class="rs-hero-sub">' + (next ? esc(next.name.split(',')[0]) + ' · by ' + fmt(next.due) + '<br>' : '') + esc(v.name) + ' · ' + esc(codeName) + '</div></div>' +
+      '</div>' +
+      (next && nd >= 0 && nd <= 60 ? '<div class="rs-note rs-note-urgent"><strong>' + esc(next.name.split(',')[0]) + ' is needed by ' + fmt(next.due) + '.</strong> ' + (next.st === 'soon' ? 'Your draft is written. Check it and sign.' : 'It takes about 10 minutes to write here.') +
+        '<button type="button" class="rs-link rs-note-btn" onclick="' + next.act + '">' + (next.st === 'soon' ? 'Open it ›' : 'Start now ›') + '</button></div>' : '') +
+      '<div class="slbl">What the new Code asks for</div>' + rows +
+      '<div class="rs-note"><strong>When it applies to an existing boat.</strong> A boat coded under the old rules meets the new Code at her next renewal examination or by ' + fmt(cut) + ', whichever is later (Appendix ' + (r.wb ? '9' : '12') + '). ' + when + '</div>' +
+      '<p class="rs-foot">The ' + codeName + ' came into force on ' + fmt(k.in_force) + '. This list covers the main new duties for an owner, not every technical change to the boat. ' +
+      '“Check” means the app cannot tell from your records. Your Certifying Authority has the final say.</p>';
   }
 
   // ── Deficiency log ───────────────────────────────────────────────────────
@@ -383,6 +477,7 @@
   var RENDER = {
     's-crew': renderCrew,
     's-gap': renderGap,
+    's-ready': renderReady,
     's-deficiencies': renderDeficiencies,
     's-inspection-pack': renderPack,
     's-surveys': renderSurveys

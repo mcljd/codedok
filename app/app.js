@@ -708,6 +708,7 @@
     's-jur-dash':        'Legal readiness',
     's-ie-licence':      'Irish PBL licence',
     's-deficiencies':    'Deficiency log',
+    's-ready':           'Ready for the new Code',
     's-export-pack':     'Export packs'
   };
 
@@ -841,7 +842,7 @@
     vessels: ['s-vessels', 's-vessel-detail', 's-onboard', 's-onboard-jur'],
     records: ['s-certs', 's-records', 's-scan', 's-scan-confirm',
               's-equipment-list', 's-equipment-detail', 's-equipment-add'],
-    tools:   ['s-tools', 's-calendar', 's-gap', 's-surveys', 's-deficiencies',
+    tools:   ['s-tools', 's-calendar', 's-gap', 's-ready', 's-surveys', 's-deficiencies',
               's-jur-dash', 's-ie-licence', 's-inspection-pack', 's-export-pack',
               's-sms', 's-sms-builder', 's-handoff', 's-my-quals'],
     account: ['s-account', 's-notif', 's-plans', 's-support']
@@ -2230,6 +2231,11 @@
 
       <div class="h-section">Check &amp; fix</div>
       <div class="tool-list">
+        <div class="qa-tile" onclick="go('s-ready')">
+          <div class="qa-icon ok">🧭</div>
+          <div style="flex:1"><div class="qa-title">Ready for the new Code?</div><div class="qa-sub">What changed, the dates, and where your boat stands</div></div>
+          <span class="chev">›</span>
+        </div>
         <div class="qa-tile" onclick="go('s-gap')">
           <div class="qa-icon pu">🤖</div>
           <div style="flex:1"><div class="qa-title">Gap check</div><div class="qa-sub">What your boat still needs for its Code</div></div>
