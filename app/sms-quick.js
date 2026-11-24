@@ -11,7 +11,8 @@
 // half-finished SMS never looks finished.
 //
 // Works offline; nothing is sent anywhere. Workboat-coded boats use the
-// existing builder (Workboat Code Appendix 8 has a different structure).
+// existing builder. Workboat Code boats get the same document re-referenced to
+// Section 31 and Appendix 8 (see toWorkboat).
 (function () {
   'use strict';
 
@@ -47,6 +48,15 @@
     ['bareboat', 'Bareboat charter or hire'],
     ['other', 'Something else']
   ];
+  var WB_OPERATIONS = [
+    ['crew', 'Crew or personnel transfer'],
+    ['survey', 'Survey and inspection work'],
+    ['support', 'Safety boat or dive support'],
+    ['cargo', 'Carrying cargo or stores'],
+    ['tow', 'Towing or pushing'],
+    ['pax', 'Passenger trips (12 or fewer)'],
+    ['other', 'Something else']
+  ];
   var BOAT_KINDS = [
     ['rib_open', 'Open RIB'],
     ['rib_cabin', 'Cabin RIB'],
@@ -67,23 +77,26 @@
   var STEPS = [
     { id: 'op', title: 'What do you do?', sub: 'Pick the closest. You can change anything later.', fields: [
       { k: 'company', label: 'Business or owner name', type: 'text', ph: 'e.g. Bay Boat Trips Ltd' },
-      { k: 'operation', label: 'Type of work', type: 'chips', options: OPERATIONS },
-      { k: 'operationOther', label: 'Describe it', type: 'text', ph: 'e.g. Film support', showIf: function (a) { return a.operation === 'other'; } },
-      { k: 'routes', label: 'Where do you usually go?', type: 'area', ph: 'e.g. Ballycastle to Rathlin; trips along the north coast', hint: 'A line or two is enough. Mention any places you land passengers.' }
+      { k: 'operation', label: 'Type of work', type: 'chips', options: OPERATIONS, wb: { options: WB_OPERATIONS } },
+      { k: 'carries', label: 'Who do you carry besides crew?', type: 'chips', wbOnly: true, options: [['workers', 'Workers / industrial personnel'], ['pax', 'Passengers'], ['none', 'Nobody – crew only']] },
+      { k: 'operationOther', label: 'Describe it', type: 'text', ph: 'e.g. Film support', wb: { ph: 'e.g. Mooring maintenance' }, showIf: function (a) { return a.operation === 'other'; } },
+      { k: 'routes', label: 'Where do you usually go?', type: 'area', ph: 'e.g. Ballycastle to Rathlin; trips along the north coast', hint: 'A line or two is enough. Mention any places you land passengers.',
+        wb: { ph: 'e.g. Harbour and approaches; transfers to the wind farm', hint: 'A line or two is enough. Mention any places or structures you put people onto.' } }
     ] },
     { id: 'boat', title: 'About the boat', sub: 'We filled in what we already know.', fields: [
       { k: 'boatKind', label: 'Kind of boat', type: 'chips', options: BOAT_KINDS },
       { k: 'engines', label: 'Engines', type: 'text', ph: 'e.g. 2 × Suzuki 200 hp outboards' },
       { k: 'fuel', label: 'Fuel', type: 'chips', options: [['petrol', 'Petrol'], ['diesel', 'Diesel'], ['electric', 'Electric']] },
-      { k: 'pax', label: 'Most passengers you carry', type: 'number', ph: 'e.g. 12' },
+      { k: 'pax', label: 'Most passengers you carry', type: 'number', ph: 'e.g. 12', wb: { label: 'Most people you carry, not counting crew', hint: 'Enter 0 if you only ever carry crew.' } },
       { k: 'crewMax', label: 'Crew on board (including the skipper)', type: 'number', ph: 'e.g. 2' },
-      { k: 'planing', label: 'Do you carry passengers at planing speed?', type: 'yn', hint: 'The Code asks for a specific risk assessment if you do.' },
-      { k: 'fwdSeats', label: 'At speed, where do passengers sit?', type: 'chips', showIf: function (a) { return a.planing === 'y'; },
+      { k: 'planing', label: 'Do you carry passengers at planing speed?', type: 'yn', hint: 'The Code asks for a specific risk assessment if you do.', wb: { label: 'Do you run at high speed or on the plane?' } },
+      { k: 'fwdSeats', label: 'At speed, where do passengers sit?', wb: { label: 'At speed, where do people sit?' }, type: 'chips', showIf: function (a) { return a.planing === 'y'; },
         options: [['none', 'Nobody in the front third'], ['slow', 'Front seats used, but we slow down'], ['all', 'All seats used']], hint: 'The front of the boat slams hardest, so the Code asks how you manage it.' },
       { k: 'night', label: 'Do you operate at night?', type: 'yn' }
     ] },
     { id: 'kit', title: 'What is on board?', sub: 'So the procedures match your boat.', fields: [
       { k: 'liferaft', label: 'Liferaft carried', type: 'yn' },
+      { k: 'lifting', label: 'Crane, davit or other lifting gear', type: 'yn', wbOnly: true },
       { k: 'fixedFire', label: 'Fixed fire system in the engine space', type: 'yn' },
       { k: 'gas', label: 'Gas (LPG) on board', type: 'yn' },
       { k: 'toilet', label: 'Toilet on board', type: 'yn' },
@@ -106,7 +119,7 @@
       { k: 'deputyPhone', label: 'Stand-in phone', type: 'tel', ph: 'Phone number', showIf: function (a) { return !!a.deputyName; } },
       { k: 'mobile', label: 'Mobile carried on the boat', type: 'tel', ph: 'Phone number' }
     ] },
-    { id: 'limits', title: 'Your limits with passengers', sub: 'When do you say "we are not going"? These must be within your certificate. You can always set lower limits on the day.', fields: [
+    { id: 'limits', wb: { title: 'Your working limits' }, title: 'Your limits with passengers', sub: 'When do you say "we are not going"? These must be within your certificate. You can always set lower limits on the day.', fields: [
       { k: 'limWind', label: 'Strongest wind you sail in (Beaufort force)', type: 'chips', options: [['3', 'F3'], ['4', 'F4'], ['5', 'F5'], ['6', 'F6'], ['7', 'F7'], ['8', 'F8']] },
       { k: 'limWave', label: 'Biggest waves (metres)', type: 'chips', options: [['0.5', '0.5 m'], ['1', '1 m'], ['1.5', '1.5 m'], ['2', '2 m'], ['2.5', '2.5 m'], ['3', '3 m'], ['4', '4 m']] },
       { k: 'limVis', label: 'Least visibility', type: 'chips', options: [['0.25', '¼ mile'], ['0.5', '½ mile'], ['1', '1 mile'], ['2', '2 miles']] }
@@ -135,7 +148,7 @@
     var area = areaOf(v);
     var certWind = /cat[456]/.test(area) ? '6' : '8';
     return {
-      company: org.name || '', operation: '', operationOther: '', routes: '',
+      company: org.name || '', operation: '', operationOther: '', routes: '', carries: '', lifting: '',
       boatKind: kind, engines: '', fuel: '', pax: v.persons ? String(Math.max(0, v.persons - 2)) : '', crewMax: '2',
       planing: /rib/.test(t) ? 'y' : '', fwdSeats: '', night: /cat[46]/.test(area) ? 'n' : '',
       liferaft: '', fixedFire: '', gas: '', toilet: '', vhfFixed: 'y', vhfHandheld: '', beacon: '',
@@ -207,6 +220,44 @@
     cat6: ['Within 3 miles of land and 3 miles of the departure point, in favourable weather and daylight', 'Up to 6', 'Up to 2 m']
   };
 
+  // The document is written once, against the Sport or Pleasure Vessel Code.
+  // For a Workboat Code boat every reference is moved to its Workboat Code
+  // Edition 3 equivalent (checked against the Code text). A reference with no
+  // checked equivalent is removed rather than guessed.
+  var WB_APP = { '1.1': '1.1', '2.3': '4.2', '2.4': '4.3', '3.1': '3.1', '4.2.1': '5.2', '4.3.1': '5.3', '4.7': '6.1', '5.2': '7.2', '6.1': '8.1',
+    '6.2.1': '9.1', '6.2.2': '9.2', '7.1': '10.1', '7.1.11': '10.1.11', '7.2': '10.2', '7.3': '10.3', '7.5': '10.5', '7.6': '10.6',
+    '8.2': '11.2', '8.3': '11.3', '9.1': '12.1', '9.2': '12.2', '11.1': '13.1' };
+  var WB_CODE = { '14.2': '14.2', '14.4': '14.4', '14.4.9': '14.4.9', '14.7': '14.7', '14.8.1': '14.8.1', '16': '16', '25.7': '25.4', '25.7.1': '25.4.1', '25.7.2': '25.4.2',
+    '28': '28', '28.7': '28.3', '28.7.2': '28.3.2', '3.10.1': '3.10.1', '3.10.3': '3.10.3', '3.13': '3.14', '3.13.1': '3.14.1', '3.13.2': '3.14.2', '3.13.3': '3.14.3',
+    '3.5': '3.5', '3.6': '3.6', '3.6.1': '3.6.1', '3.6.2': '3.6.2', '30.2.1.1': '31.2.1' };
+  var WB_CYBER = { '10.2': '31.3.2', '10.3': '31.3.3', '10.4': '31.3.4', '10.5': '31.3.5' };
+  function toWorkboat(html, workers) {
+    var Z = '\u2205';
+    html = html.replace(/Sport or Pleasure Vessel Code 2025/g, 'Workboat Code Edition 3').replace(/Sport or Pleasure Vessel Code/g, 'Workboat Code')
+      .replace(/Appendix 7, 4\.2\.1 and 4\.4\.3/g, 'Appendix 7, 4.2.1')
+      .replace(/Appendix 7, 10\b(?!\.\d)/g, '§§31.3')
+      .replace(/Appendix 7, (\d+(?:\.\d+)*)/g, function (m, n) { return WB_APP[n] ? 'Appendix 8, ' + WB_APP[n] : Z; })
+      .replace(/Appendix 7/g, 'Appendix 8')
+      .replace(/Code 28\.10\b/g, 'Appendix 5, Table A5.3')
+      .replace(/Code (\d+(?:\.\d+)*)(?:–\d+(?:\.\d+)*)?/g, function (m, n) { return WB_CODE[n] ? '§§' + WB_CODE[n] : Z; })
+      .replace(/\((10\.\d)((?:\.\d)?)(?:–10\.2\.(\d))?\)/g, function (m, n, sub, to) { return WB_CYBER[n] ? '(§§' + WB_CYBER[n] + sub + (to ? '–' + WB_CYBER[n] + '.' + to : '') + ')' : ''; })
+      .replace(/MIN 724/g, 'MIN 698').replace(/<td>\.\d /g, '<td>')
+      .replace('<td>28.7, Appendix 5</td>', '<td>28.1, Appendix 5</td>').replace('<td>28.10.2</td>', '<td>Appendix 5, Table A5.3</td>')
+      .replace('<td>28.10.1</td>', '<td>Appendix 8, 7.2</td>').replace('<td>25.7</td>', '<td>25.4</td>').replace(/ \(item \.2\)/g, '');
+    // Tidy up where a reference was removed.
+    html = html.replace(new RegExp('\\(' + Z + '; ', 'g'), '(').replace(new RegExp('; ' + Z + '\\)', 'g'), ')').replace(new RegExp('; ' + Z + ';', 'g'), ';')
+      .replace(new RegExp(' ?\\((?:see )?' + Z + '\\)', 'g'), '').replace(new RegExp(Z, 'g'), '').replace(/ \(\)/g, '').replace(/§§/g, 'Code ');
+    if (workers) {
+      html = html.replace(/ at booking and in the safety briefing/g, ' in the safety briefing').replace(/at booking and briefing/g, 'before the job and at the briefing')
+        .replace(/at booking and before boarding/g, 'before boarding').replace(/, including fitting children’s lifejackets/g, '').replace(/Sizes for adults and children; /g, '')
+        .replace(/, children and older passengers are/g, ' are').replace(/including helping passengers and children/g, 'including helping others')
+        .replace(/her passengers and crew/g, 'her crew and the people she carries').replace(/passenger injury/g, 'injury to personnel').replace(/planing passenger operation/g, 'planing operation')
+        .replace(/passenger lists/g, 'personnel lists').replace(/Passenger lists/g, 'Personnel lists').replace(/Passengers’/g, 'Personnel’s').replace(/passengers’/g, 'personnel’s')
+        .replace(/Passengers/g, 'Personnel').replace(/passengers/g, 'personnel').replace(/Passenger/g, 'Person').replace(/passenger/g, 'person');
+    }
+    return html;
+  }
+
   function generate(a, v, doc) {
     var todo = [];
     function need(val, label, step) {
@@ -223,6 +274,8 @@
     function kv(rows) { return table(['', ''], rows).replace('<thead><tr><th></th><th></th></tr></thead>', '').replace('<table>', '<table class="qs-kv">'); }
 
     var yes = function (k) { return a[k] === 'y'; };
+    var wb = !isSpv(v);                      // Workboat Code Edition 3: Section 31 and Appendix 8
+    var workers = wb && a.carries !== 'pax'; // carries workers or crew only, not fare-paying passengers
     var name = esc(v.name || 'the vessel');
     var NAME = esc(String(v.name || 'the vessel').toUpperCase());
     var co = need(a.company, 'Business or owner name', 0);
@@ -237,10 +290,11 @@
     var single = yes('singleHanded');
     var bare = a.operation === 'bareboat';
     var pax = Number(a.pax) || 0, crewMax = Number(a.crewMax) || 0;
-    var paxTxt = pax ? String(pax) : need('', 'Most passengers carried', 1);
-    var totalTxt = pax && crewMax ? String(pax + crewMax) : (v.persons ? esc(v.persons) : need('', 'Maximum persons on board', 1));
+    var paxGiven = a.pax != null && String(a.pax).trim() !== '' && !isNaN(Number(a.pax));
+    var paxTxt = paxGiven ? String(pax) : need('', wb ? 'Most people carried' : 'Most passengers carried', 1);
+    var totalTxt = paxGiven && crewMax ? String(pax + crewMax) : (v.persons ? esc(v.persons) : need('', 'Maximum persons on board', 1));
     var opLabel = a.operation === 'other' ? need(a.operationOther, 'Type of work', 0)
-      : need((OPERATIONS.filter(function (o) { return o[0] === a.operation; })[0] || [])[1], 'Type of work', 0);
+      : need(((wb ? WB_OPERATIONS : OPERATIONS).filter(function (o) { return o[0] === a.operation; })[0] || [])[1], 'Type of work', 0);
     var kindLabel = (BOAT_KINDS.filter(function (o) { return o[0] === a.boatKind; })[0] || [])[1];
     var boatDesc = [v.length ? esc(v.length) + ' m' : '', kindLabel ? esc(kindLabel.toLowerCase().replace('rib', 'RIB')) : esc(v.type || '')].filter(Boolean).join(' ') || need('', 'Kind of boat', 1);
     var hs = need(a.hsName, 'Person responsible for health and safety', 3);
@@ -263,7 +317,7 @@
       kv([
         ['Vessel', name + ' – ' + boatDesc],
         ['Operation', opLabel],
-        ['Standard applied', 'MCA Sport or Pleasure Vessel Code 2025 – Section 30 and Appendix 7'],
+        ['Standard applied', wb ? 'MCA Workboat Code Edition 3 – Section 31 and Appendix 8' : 'MCA Sport or Pleasure Vessel Code 2025 – Section 30 and Appendix 7'],
         ['Document owner', co],
         ['Responsible on board', 'Master (skipper)'],
         ['Issue', 'Issue ' + issue + (doc && doc.signed_at ? ' – approved ' + esc(fmt(doc.signed_at)) + (signedName ? ' by ' + esc(signedName) : '') : ' – draft for approval')],
@@ -278,7 +332,7 @@
       '<p>This Safety Management System (SMS) sets out how ' + co + ' manages the safety of ' + name + ', her passengers and crew, and how it prevents pollution. It applies to everything the boat does, at sea and ashore, including piers, pontoons, slipways and places where passengers wait (Code 30.2.1.1).</p>' +
       '<p>The SMS is proportionate to a single ' + boatDesc + ' carrying up to ' + paxTxt + ' passengers, and follows the elements required by Appendix 7, 1.1 of the Sport or Pleasure Vessel Code. Annex A cross-references each Code requirement to the section of this SMS that covers it.</p>' +
       '<p>The SMS shall be made available to the Certifying Authority at each compliance and renewal examination (Code 30.1.2).</p>' +
-      (single ? '<p><strong>Single-handed operation.</strong> ' + name + ' is at times operated by one person. Where a requirement cannot apply because there is no second crew member, this is stated in the relevant section together with the alternative arrangement (Appendix 7, 12.1).</p>' : '') +
+      (single ? '<p><strong>Single-handed operation.</strong> ' + name + ' is at times operated by one person. Where a requirement cannot apply because there is no second crew member, this is stated in the relevant section together with the alternative arrangement (Appendix 7, 12.1).' + (wb ? ' Single-handed operation takes place only as permitted by the Certifying Authority, within Area Category 3 to 6, and never when towing, transferring personnel at sea, acting as a diving platform, in restricted visibility or on a voyage of more than 8 hours (§§28.2).' : '') + '</p>' : '') +
       (bare ? '<p><strong>Bareboat charter.</strong> The owner / operator meets the requirements of this SMS. A charterer is not subject to Appendix 7 sections 9 to 11 (Code 30.2.2.2; Appendix 7, 4.5).</p>' : '') +
       '<h3>Vessel particulars</h3>' +
       kv([
@@ -397,9 +451,14 @@
       ['Loss of propulsion or steering', '2×4=8', 'Pre-departure steering and engine test; maintenance to makers’ schedule; anchor ready; emergency towing procedure' + (sail ? '; sails available' : '') + '.', '1×4=4'],
       rib ? ['Tube damage / loss of buoyancy', '2×4=8', 'Tubes checked before departure; separate tube compartments; repair kit; flooding procedure.', '1×4=4'] : ['Flooding', '2×5=10', 'Seacocks and hoses inspected; bilge pumps and alarm tested before departure; flooding procedure.', '1×5=5'],
       sail ? ['Sailing hazards – boom, winches, lines under load, going forward', '3×4=12', 'Briefing before sailing; passengers kept clear of the boom and loaded lines; reef early; harness and jackstays in rough weather or at night.', '2×3=6'] : null,
-      a.operation === 'dive' ? ['Divers in the water – propeller injury, lost diver', '2×5=10', 'Engine in neutral / stopped with divers near the stern; dive flag shown; diver count out and in; recall signal agreed; lookout kept.', '1×5=5'] : null,
+      a.operation === 'dive' || a.operation === 'support' ? ['Divers in the water – propeller injury, lost diver', '2×5=10', 'Engine in neutral / stopped with divers near the stern; dive flag shown; diver count out and in; recall signal agreed; lookout kept.', '1×5=5'] : null,
+      wb && a.operation === 'crew' ? ['Personnel transfer at sea – falls, crushing between the vessel and a structure or another vessel', '3×5=15', 'Transfer only on the Master’s word and when the vessel is steady; lifejackets and suitable protective equipment worn; one person at a time with hands free; crew at the transfer point; transfers stopped when swell or movement is too great.', '2×5=10'] : null,
+      wb && a.operation === 'tow' ? ['Towing or pushing – girting (capsize by the tow line), line parting, snap-back', '2×5=10', 'Tow point and quick release checked before each tow; tow line tended and kept clear of people; snap-back zones kept clear; speed and course changed gradually; towing within the limits on the certificate.', '1×5=5'] : null,
+      wb && a.operation === 'cargo' ? ['Cargo and stores – shifting, overloading, loss of stability', '2×5=10', 'Loads within the maximum on the certificate and the stability information; cargo secured before departure; freeing ports kept clear; weight kept low.', '1×5=5'] : null,
+      wb && yes('lifting') ? ['Lifting operations – dropped load, loss of stability', '2×5=10', 'Lifting gear examined and used within its marked safe working load; loads within the stability information; people kept clear of suspended loads; lifting stopped in unsuitable sea states.', '1×5=5'] : null,
       a.operation === 'angling' ? ['Fishing gear – hooks, knives, weights', '3×2=6', 'Briefing on casting and handling; first-aid kit; deck kept tidy.', '2×2=4'] : null,
       ['Passenger medical emergency / seasickness', '3×3=9', 'Medical questions at booking and briefing; first-aid trained crew; first-aid kit; evacuation through the Coastguard.', '2×3=6'],
+      workers ? ['People more likely to be injured by the work – existing injuries, reduced mobility, inexperience afloat (Code 3.13.3)', '3×4=12', 'Ask before the job; lifejackets that fit; seating chosen with care; extra help from crew; Master may decline to carry' + (planing ? ' at high speed' : '') + '.', '2×3=6'] :
       ['Passengers more likely to be injured – children, older people, reduced mobility, pregnancy (Code 3.13.3)', '3×4=12', 'Ask at booking; suitable lifejackets including child sizes; seating chosen with care; extra help from crew; Master may decline to carry' + (planing ? ' at high speed' : '') + '.', '2×3=6'],
       ['Violent or disruptive passenger', '2×4=8', 'Refuse boarding to intoxicated or aggressive people; violent-act procedure (6.6).', '1×4=4'],
       a.fuel === 'electric' ? ['Battery fire or electrical fault', '2×5=10', 'Charging to the maker’s instructions; battery monitoring; isolators known; suitable extinguisher.', '1×5=5']
@@ -422,8 +481,8 @@
       table(['Hazard', 'Before controls', 'Controls', 'After controls'], risks) +
       (planing ?
         '<h3>3.3 High-speed / planing operation (Code 25.7.2)</h3>' +
-        '<p>' + name + ' carries passengers at planing speed. Code 25.7.2 requires a risk assessment covering at least the items below, set out in the SMS. The certificate notes that passengers are carried at high speed and the minimum number of crew (Code 25.7).</p>' +
-        table(['25.7.2 item', 'How ' + name + ' manages it'], [
+        (wb ? '<p>' + name + ' operates at high speed or in planing mode. §§25.4.2 requires a risk assessment for all such operations. Everyone on board has an individual inboard seat that lets them brace and gives lateral support (§§25.4.3), and stays seated unless moving about for a specific purpose (§§25.4.4)' + (rib ? '; nobody sits on the tubes or the gunwale (§§25.4.5)' : '') + '.</p>' : '<p>' + name + ' carries passengers at planing speed. Code 25.7.2 requires a risk assessment covering at least the items below, set out in the SMS. The certificate notes that passengers are carried at high speed and the minimum number of crew (Code 25.7).</p>') +
+        table([wb ? 'What is assessed' : '25.7.2 item', 'How ' + name + ' manages it'], [
           ['.1 Suitable speeds for the sea state, weather and light', 'The Master sets the speed so the boat does not fall off waves or slam, and slows down whenever any passenger is uncomfortable. In rough water: displacement speed only, or do not sail.' + (yes('night') ? ' At night or in poor visibility, speed is reduced so the boat can stop within the distance that can be seen.' : '')],
           ['.2 Passengers’ physical ability to cope with the forces', 'Questions at booking and before boarding about back or neck problems, recent surgery, pregnancy, osteoporosis and mobility. Higher-risk passengers are seated aft and the trip run at reduced speed, or the Master declines to carry them.'],
           ['.3 Passengers’ ability to brace in the seating provided', 'Everyone ' + seated + ' while underway; standing' + (open ? ' away from a seat' : '') + ' is not allowed. The briefing shows the correct bracing position and use of handholds.'],
@@ -446,7 +505,7 @@
         ['Radio operator’s certificate', 'Master', 'Appendix 5'],
         ['First aid', 'Master, and crew as Appendix 5 requires', 'Appendix 5'],
         ['Sea survival', 'Master, and crew as Appendix 5 requires', 'Appendix 5'],
-        ['Firefighting course (MCA-approved one-day course or STCW Fire Prevention and Fire Fighting)', 'Master or at least one crew member', '28.10.2'],
+        ['Firefighting course (MCA-approved one-day course or STCW Fire Prevention and Fire Fighting)', wb && Number(v.length) >= 15 ? 'All crew' : 'Master or at least one crew member', '28.10.2'],
         ['Familiarisation with this vessel’s firefighting equipment', 'Everyone', '28.10.1'],
         planing ? ['High-speed handling – competent and experienced in this vessel', 'Master', '25.7'] : null
       ]) +
@@ -672,6 +731,34 @@
         planing ? ['25.7', 'High-speed / planing passenger operation', '3.3'] : null
       ]));
 
+    if (wb) {
+      // Appendix 8 does not ask for a cross-reference statement, but the table
+      // still shows the surveyor where each element is covered.
+      parts[parts.length - 1] = { title: 'Annex A – Code Cross-Reference', html:
+        '<p>This table shows where each element of Appendix 8, and the related sections of the Workboat Code, is covered in this SMS.</p>' +
+        table(['Code reference', 'Requirement', 'SMS section'], [
+          ['31.2.1', 'SMS proportionate to the vessel and operation; shore and sea', 'Introduction'],
+          ['App 8, 2', 'Safety and Environmental Protection Policy', 'Part 1'],
+          ['App 8, 3; §§3.14', 'Risk assessments for safe working; persons more susceptible to injury', 'Part 3'],
+          ['App 8, 4', 'Health and Safety Protection Policy; competent person; alcohol and drugs policy', 'Part 1'],
+          ['App 8, 5', 'Responsibilities of the Master and personnel; Master’s authority', 'Part 2'],
+          ['App 8, 6', 'Person ashore', 'Part 7'],
+          ['App 8, 7; §§28', 'Training and familiarisation', 'Part 4'],
+          ['App 8, 8', 'Procedures for safe operation (all eight items)', 'Part 5'],
+          ['App 8, 9', 'Safety briefings – everyone, and a second person', '5.9'],
+          ['App 8, 10', 'Emergency procedures, roles, communications, exercises recorded with names', 'Part 6; 5.8'],
+          ['App 8, 11; §§3.6', 'Reporting of accidents', 'Part 8'],
+          ['App 8, 12; §§3.5', 'Maintenance of the vessel and equipment; records', 'Part 9'],
+          ['App 8, 13', 'Review at least every three years', 'Part 12'],
+          ['31.3', 'Cyber security measures; risk assessment; remote access log', 'Part 10'],
+          single ? ['28.2', 'Single-handed operation – only as permitted by the Certifying Authority', 'Introduction; 5.9'] : null,
+          ['14.7', 'Recovery of persons from the water', '6.9; 4.2'],
+          ['14.8', 'Training manual', '4.3'],
+          ['14.11', 'Drills, training and recording of drills', '6.15'],
+          planing ? ['25.4', 'High-speed / planing operation', '3.3'] : null
+        ]) };
+    }
+
     // ── Annex B ──
     P('Annex B – Forms and Records',
       '<h3>B1 Pre-departure checklist – ' + name + '</h3><p>Date: ________ &nbsp; Master: ________________ &nbsp; Engine hours: ______</p>' +
@@ -708,7 +795,7 @@
         ['Operation', opLabel],
         ['Area category of operation', areaTxt],
         ['Persons on board (maximum)', totalTxt],
-        ['Standard applied', 'MCA Sport or Pleasure Vessel Code 2025 – Section 3.13' + (planing ? ' and 25.7.2' : '') + '; Appendix 7, element 3'],
+        ['Standard applied', wb ? 'MCA Workboat Code Edition 3 – Section 3.14' + (planing ? ' and 25.4' : '') + '; Appendix 8, element 3' : 'MCA Sport or Pleasure Vessel Code 2025 – Section 3.13' + (planing ? ' and 25.7.2' : '') + '; Appendix 7, element 3'],
         ['Assessed by', signedName ? esc(signedName) + ' for ' + co : co],
         ['Issue', 'Issue ' + issue + (doc && doc.signed_at ? ' – approved ' + esc(fmt(doc.signed_at)) : ' – draft for approval')],
         ['Next review', (doc && doc.review_due_at ? esc(fmt(doc.review_due_at)) + ', or sooner ' : 'Every year, or sooner ') + 'after an incident or a change to the area, use or equipment (Code 3.13.2)']
@@ -718,6 +805,7 @@
       '<h3>Sign-off</h3>' +
       table(['', 'Name', 'Signature', 'Date'], [['Owner / operator', signedName ? esc(signedName) : '&nbsp;', '', doc && doc.signed_at ? esc(fmt(doc.signed_at)) : ''], ['Master', '&nbsp;', '', '']]) +
       '<p class="qs-foot">Prepared with CodedOK from the answers given by the owner / operator, who is responsible for checking each line against the boat and how she is used.</p>';
+    if (wb) { body = toWorkboat(body, workers); ra = toWorkboat(ra, workers); }
     return { html: body, todo: todo, ra: ra };
   }
 
@@ -735,7 +823,7 @@
         title: 'Safety Management System – ' + (v.name || 'Vessel') });
     }
     var q = (d.sections && d.sections.quick) || {};
-    var patch = { sections: { quick: { answers: st.a, code: 'spv2025', signed_name: wasSigned ? null : (q.signed_name || null), logs: q.logs || [] } }, updated_at: new Date().toISOString() };
+    var patch = { sections: { quick: { answers: st.a, code: isSpv(Store.getVessel(st.vesselId) || {}) ? 'spv2025' : 'wbc3', signed_name: wasSigned ? null : (q.signed_name || null), logs: q.logs || [] } }, updated_at: new Date().toISOString() };
     if (wasSigned) {
       // An approved SMS that changes becomes a new draft issue; the crew
       // read it again (document control, Part 12.2).
@@ -764,7 +852,7 @@
   function spvVessels() {
     var vs = Store.snapshot().vessels || [];
     if (window.filterByVesselScope && Store.getCurrentUser && Store.getCurrentUser()) vs = filterByVesselScope(vs);
-    return vs.filter(isSpv);
+    return vs;
   }
 
   function start(vesselId, docId, step) {
@@ -773,14 +861,14 @@
     var vs = spvVessels();
     if (!vs.length) {
       var any = (Store.snapshot().vessels || []).length;
-      if (window.toast) toast(any ? 'Quick SMS is for boats under the Sport or Pleasure Vessel Code. Use the builder below for Workboat Code boats.' : 'Add your boat first, then come back.');
+      if (window.toast) toast('Add your boat first, then come back.');
       if (!any && window.go) go('s-onboard');
       return;
     }
     var v = vesselId ? Store.getVessel(vesselId) : null;
-    if (!v || !isSpv(v)) {
+    if (!v) {
       var active = window.getActiveVesselId ? Store.getVessel(getActiveVesselId()) : null;
-      v = (active && isSpv(active)) ? active : (vs.length === 1 ? vs[0] : null);
+      v = active || (vs.length === 1 ? vs[0] : null);
     }
     if (!v) return pickVessel(vs);
     // An SMS already exists for this boat → open it rather than start again.
@@ -824,12 +912,16 @@
   function renderWizard() {
     var el = document.getElementById('qs-wiz') || overlay('qs-wiz');
     var s = STEPS[W.step], v = Store.getVessel(W.vesselId), last = W.step === STEPS.length - 1;
+    var wb = !!v && !isSpv(v);
+    var forCode = function (o) { if (!wb || !o.wb) return o; var c = {}, k; for (k in o) c[k] = o[k]; for (k in o.wb) c[k] = o.wb[k]; return c; };
+    var fields = s.fields.filter(function (f) { return wb || !f.wbOnly; }).map(forCode);
+    s = forCode(s);
     el.innerHTML =
       '<div class="qs-bar"><button type="button" class="qs-x" data-qs="close">Close</button>' +
         '<div class="qs-bar-t">' + esc(v ? v.name : 'Quick SMS') + '</div><span class="qs-bar-r">' + (W.step + 1) + ' of ' + STEPS.length + '</span></div>' +
       '<div class="qs-prog" role="progressbar" aria-valuemin="1" aria-valuemax="' + STEPS.length + '" aria-valuenow="' + (W.step + 1) + '"><i style="width:' + Math.round((W.step + 1) / STEPS.length * 100) + '%"></i></div>' +
       '<div class="qs-body"><h2 class="qs-h">' + esc(s.title) + '</h2><p class="qs-sub">' + esc(s.sub) + '</p>' +
-        s.fields.map(function (f) { return fieldHtml(f, W.a); }).join('') +
+        fields.map(function (f) { return fieldHtml(f, W.a); }).join('') +
         '<p class="qs-skip">Not sure? Leave it blank. We will mark it “to confirm” so you can fill it in later.</p></div>' +
       '<div class="qs-foot-bar">' + (W.step > 0 ? '<button type="button" class="qs-btn qs-btn-2" data-qs="back">Back</button>' : '') +
         '<button type="button" class="qs-btn" data-qs="next">' + (last ? 'Write my SMS' : 'Next') + '</button></div>';
@@ -1210,7 +1302,7 @@
     var draft = null; try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (_) {}
     var sub = docs.length ? 'Open, update or share the SMS for your boat.'
       : draft ? 'You are part-way through. Pick up where you left off.'
-      : 'Answer a few plain questions. We write the whole document to the Sport or Pleasure Vessel Code, ready to sign.';
+      : 'Answer a few plain questions. We write the whole document to your boat’s Code, ready to sign.';
     return '<div class="qs-hub" role="button" tabindex="0" onclick="QuickSms.start()">' +
       '<div class="qs-hub-k">About 10 minutes</div><div class="qs-hub-t">' + (docs.length ? 'Your Safety Management System' : draft ? 'Finish your SMS' : 'Write my SMS for me') + '</div>' +
       '<div class="qs-hub-s">' + sub + '</div><span class="qs-hub-go">' + (docs.length ? 'Open' : draft ? 'Continue' : 'Start') + '</span></div>';
