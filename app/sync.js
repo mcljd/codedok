@@ -223,7 +223,9 @@
         // device, and editing it queues it again.
         item.tries = (item.tries || 0) + 1;
         const code = String((err && err.code) || '');
-        const refused = code === '42501' || code === '23503' || code === '23514' || (err && err.status === 403);
+        // 42501 not allowed; 22xxx bad value (e.g. a local id where the server
+        // wants a UUID); 23xxx broken reference, missing value or failed check.
+        const refused = code === '42501' || /^2[23]/.test(code) || (err && err.status === 403);
         if (refused && item.tries >= 5) setAside(item, err);
         else remaining.push(item);
       }
