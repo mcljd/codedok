@@ -112,8 +112,20 @@
   function setAside(item, err) {
     try {
       const list = JSON.parse(localStorage.getItem(REFUSED_KEY) || '[]');
-      list.push({ table: item.table, id: item.id, at: new Date().toISOString(), why: String((err && err.message) || '').slice(0, 160) });
-      localStorage.setItem(REFUSED_KEY, JSON.stringify(list.slice(-50)));
+      const rest = list.filter((x) => !(x.table === item.table && x.id === item.id));
+      rest.push({ table: item.table, id: item.id, at: new Date().toISOString(), why: String((err && err.message) || '').slice(0, 160) });
+      localStorage.setItem(REFUSED_KEY, JSON.stringify(rest.slice(-50)));
+    } catch (_) {}
+  }
+  function refusedCount() {
+    try { return JSON.parse(localStorage.getItem(REFUSED_KEY) || '[]').length; } catch (_) { return 0; }
+  }
+  // A row that saves after all (rules changed, record fixed) is no longer refused.
+  function clearRefused(item) {
+    try {
+      const list = JSON.parse(localStorage.getItem(REFUSED_KEY) || '[]');
+      const rest = list.filter((x) => !(x.table === item.table && x.id === item.id));
+      if (rest.length !== list.length) localStorage.setItem(REFUSED_KEY, JSON.stringify(rest));
     } catch (_) {}
   }
 
@@ -214,6 +226,7 @@
             r = stripUnknown(item.table, r);
           }
         }
+        clearRefused(item);
       } catch (err) {
         console.warn('sync push failed for', item.table, item.id, err.message);
         // A network blip is retried next pass. A row the server refuses on
@@ -408,6 +421,7 @@
           online,
           inFlight,
           pending: loadQueue().length,
+          refused: refusedCount(),
           ready: !!(window.Supa && window.Supa.ready),
           lastPullAt: localStorage.getItem(LAST_PULL_KEY)
         }
