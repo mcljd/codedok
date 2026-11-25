@@ -1216,6 +1216,8 @@
 
   // Re-draw the screen underneath so it reflects what just changed.
   function refresh() {
+    // A log, a signature or a crew confirmation may have earned a milestone.
+    if (window.CodedokMilestones) setTimeout(function () { try { CodedokMilestones.check(); } catch (_) {} }, 300);
     var cur = document.querySelector('.shell.on');
     if (cur && window.go && /^s-(sms|home|vessel-detail)$/.test(cur.id)) go(cur.id);
   }

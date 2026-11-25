@@ -6376,3 +6376,23 @@ textarea.qs-input { resize: vertical; }
 .vp-warn em { font-style: normal; font-size: 22px; color: var(--mid); }
 /* Readiness rows: let the date and Code reference wrap instead of cutting off */
 #s-ready .rs-req .ios-row-ss { white-space: normal; overflow: visible; text-overflow: clip; }
+
+/* Milestones */
+.ms-strip { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; margin: 14px 0 4px; padding: 12px 14px; border: .5px solid var(--bdr); border-radius: 16px; background: var(--card); color: var(--text); font: 400 13px/1.35 var(--fn); text-align: left; cursor: pointer; }
+.ms-ic { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--ampp); color: #9A5B00; }
+.ms-tx { flex: 1; min-width: 0; display: block; }
+.ms-tx strong { display: block; font-size: 15px; font-weight: 700; }
+.ms-tx small { display: block; color: var(--mid); font-size: 13px; }
+.ms-strip em, .ms-row em { font-style: normal; font-size: 22px; color: var(--mid); }
+.ms-list { padding: 0 16px 8px; overflow-y: auto; max-height: 68vh; }
+.ms-lead { margin: 0 4px 10px; font-size: 14px; color: var(--mid); }
+.ms-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 10px 4px; border: 0; border-bottom: .5px solid var(--bdr); background: none; color: var(--text); font: 400 13px/1.35 var(--fn); text-align: left; cursor: pointer; }
+.ms-row:last-child { border-bottom: 0; }
+.ms-row:not(.done) .ms-ic { background: var(--bg); color: var(--mid); }
+.ms-row.done { cursor: default; opacity: 1; }
+.ms-row.done .ms-ic { background: var(--grnp); color: #1C7130; }
+.ms-row.done small { color: #1C7130; font-weight: 600; }
+.ms-bar { display: block; height: 6px; margin: 6px 0 2px; border-radius: 3px; background: var(--bg); overflow: hidden; }
+.ms-bar i { display: block; height: 100%; border-radius: 3px; background: var(--tint); }
+.ms-n { font-size: 12px !important; }
+html.is-native .ms-row.done .ms-ic, html.is-native .ms-row.done small { color: var(--green); }

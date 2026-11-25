@@ -500,7 +500,7 @@
     's-surveys': renderSurveys
   };
   window.CodedokScreens = {
-    openReady: openReady, codeWarning: codeWarning,
+    openReady: openReady, codeWarning: codeWarning, gapFor: gapFor,
     has: function (id) { return !!RENDER[id]; },
     render: function (id) { var r = RENDER[id]; if (r) { try { r(); } catch (e) { console.error('screen ' + id, e); } } }
   };

@@ -139,13 +139,17 @@
           (vs.length > 1 ? esc(vs[wi].name) + ' · ' : '') + 'See what the new Code asks for</span><em aria-hidden="true">›</em></button>';
       }
     }
+    // Announce any milestone earned since Home was last drawn.
+    if (window.CodedokMilestones) setTimeout(function () { try { CodedokMilestones.check(); } catch (_) {} }, 400);
     return '<div class="vp-head-row"><span class="vp-section">' + (vs.length > 1 ? 'Your fleet' : 'Your boat') + '</span>' + chip + '</div>' +
       '<div class="vp-track' + (vs.length > 1 ? ' vp-multi' : '') + '">' + vs.map(pass).join('') + '</div>' +
       (vs.length > 1 ? '<div class="vp-dots" aria-hidden="true">' + vs.map(function (_, i) { return '<span class="' + (i === 0 ? 'on' : '') + '"></span>'; }).join('') + '</div>' : '') +
       warn + cta +
       // Daily use: once a boat has its SMS, the pre-departure check is one tap away.
       (window.QuickSms && QuickSms.docFor(vs[0].id) ? '<button type="button" class="vp-cta vp-cta-2" onclick="QuickSms.log(\'check\', QuickSms.docFor(\'' + esc(vs[0].id) + '\').id)">Pre-departure check</button>' : '') +
-      (empty ? '' : '<button type="button" class="vp-alt" onclick="scanCertWithAI()">Add a certificate</button>');
+      (empty ? '' : '<button type="button" class="vp-alt" onclick="scanCertWithAI()">Add a certificate</button>') +
+      // Progress worth showing: what this boat's owner has done so far.
+      (window.CodedokMilestones ? CodedokMilestones.strip(vs[0]) : '');
   }
 
   // Tap a pass → that boat. Keep the dots in step with the swipe.
