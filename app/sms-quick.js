@@ -207,6 +207,36 @@
     ];
   }
 
+  // Routine inspection and maintenance schedule (Part 9.1). One list feeds the
+  // printed table and the tap-to-log screen, so they can never disagree. The
+  // intervals are the owner's to set (Appendix 7, 9.2 / Workboat Appendix 8,
+  // 12.2); these are sensible starting points. `every` is days.
+  function routineChecks(a) {
+    var yes = function (k) { return a[k] === 'y'; };
+    var rib = a.boatKind === 'rib_open' || a.boatKind === 'rib_cabin';
+    var sail = a.boatKind === 'sail', elec = a.fuel === 'electric';
+    return [
+      elec ? null : { k: 'fuel', every: 7, label: 'Fuel filter and water separator' },
+      { k: 'batt', every: 7, label: 'Batteries and terminals' },
+      { k: 'hoses', every: 7, label: elec ? 'Cables, connectors and motor mounts' : 'Hose clips and engine mounts' },
+      { k: 'bilge', every: 7, label: 'Bilge clean and dry' },
+      sail ? { k: 'rig', every: 7, label: 'Standing and running rigging' } : null,
+      rib ? { k: 'tubes', every: 31, label: 'Tube seams and valves' } : null,
+      { k: 'seats', every: 31, label: 'Seats, handholds and fixings' },
+      { k: 'hull', every: 31, label: 'Through-hull fittings' },
+      { k: 'pumps', every: 31, label: 'Bilge pumps and switches' },
+      yes('gas') ? { k: 'gas', every: 31, label: 'Gas system and detector' } : null,
+      yes('beacon') ? { k: 'beacon', every: 31, label: 'Beacon self-test and battery date' } : null,
+      { k: 'firstaid', every: 31, label: 'First-aid kit contents in date' },
+      { k: 'engine', every: 366, label: elec ? 'Full motor and battery service by a competent engineer' : 'Full engine service by a competent engineer' },
+      { k: 'hullout', every: 366, label: 'Hull inspection out of the water, and seacocks' },
+      { k: 'steer', every: 366, label: 'Steering system' },
+      { k: 'points', every: 366, label: 'Towing and lifting points' },
+      sail ? { k: 'mast', every: 366, label: 'Mast and rigging inspection' } : null
+    ].filter(Boolean);
+  }
+  var ROUTINE_GROUPS = [[7, 'Weekly in season'], [31, 'Monthly'], [366, 'Yearly']];
+
   // ───────────────────────── Document generator ─────────────────────────
 
   // Certificate limits by area category — SPV Code 3.10.1 and Table 3.10.2.
@@ -644,15 +674,21 @@
       '<h3>8.3 Investigation and corrective action</h3><p>The investigation is in proportion to how serious the event was. It considers: what happened; the conditions; the state of the vessel; whether procedures existed, were followed and were good enough; equipment, training, fatigue and communication; and what will prevent it happening again. Each action has an owner and a date.</p>');
 
     // ── Part 9 ──
+    var routine = routineChecks(a);
+    var routineRow = function (every) {
+      var g = ROUTINE_GROUPS.filter(function (x) { return x[0] === every; })[0];
+      return [g[1], routine.filter(function (r) { return r.every === every; }).map(function (r, n) { return n ? r.label.charAt(0).toLowerCase() + r.label.slice(1) : r.label; }).join('; ')];
+    };
     P('Part 9 – Maintenance of the Vessel and Equipment',
       '<p>' + name + ' and her equipment are maintained in line with the makers’ recommendations (Code 3.5; Appendix 7, 9.1). The owner / operator sets the inspection and maintenance intervals below, and all inspections and maintenance are recorded (Appendix 7, 9.2). Service dates, certificates and reminders are kept in CodedOK.</p>' +
       '<h3>9.1 Vessel and machinery</h3>' +
+      '<p class="qs-note">Each weekly, monthly and yearly item below is ticked off in the CodedOK app when it is done; the record prints in Annex C.</p>' +
       table(['When', 'What'], [
         ['Before every departure', 'Annex B1 checklist: engine(s), fuel, steering, bilges, ' + (rib ? 'tubes, ' : '') + 'lights, radio, safety equipment'],
-        ['Weekly in season', 'Fuel filter / water separator; batteries; hose clips; engine mounts; bilge' + (sail ? '; standing and running rigging' : '')],
+        routineRow(7),
         ['To the engine maker’s schedule', need(a.engines, 'Engines', 1) + ' – oil and filters, fuel filters, cooling system, belts, anodes. Engine hours recorded.'],
-        ['Monthly', (rib ? 'Tube seams and valves; ' : '') + 'seats, handholds and fixings; through-hull fittings; bilge pumps and switches' + (yes('gas') ? '; gas system and detector' : '')],
-        ['Yearly', 'Full engine service by a competent engineer; hull inspection out of the water; seacocks; steering system; towing and lifting points' + (sail ? '; mast and rigging inspection' : '')]
+        routineRow(31),
+        routineRow(366)
       ]) +
       '<h3>9.2 Safety equipment</h3>' +
       table(['Item', 'Requirement', 'Record'], [
@@ -772,6 +808,7 @@
       var drills = lg.filter(function (l) { return l.kind === 'drill'; });
       var incs = lg.filter(function (l) { return l.kind === 'incident'; });
       var checks = lg.filter(function (l) { return l.kind === 'check'; });
+      var routs = lg.filter(function (l) { return l.kind === 'routine'; });
       P('Annex C – Records',
         '<p>Records logged in CodedOK under this SMS, newest first.</p>' +
         '<h3>C1 Drills and exercises (Appendix 7, 7.5)</h3>' +
@@ -780,7 +817,10 @@
         (incs.length ? table(['Date', 'What happened', 'Injury / damage', 'Action to prevent it'], incs.map(function (l) { return [esc(fmt(l.at)) + (l.where ? '<br>' + esc(l.where) : ''), esc(l.what || '–'), esc(l.harm || 'None'), esc(l.action || '–')]; })) : '<p>None recorded.</p>') +
         '<h3>C3 Pre-departure checks</h3>' +
         (checks.length ? '<p>' + checks.length + ' check' + (checks.length === 1 ? '' : 's') + ' recorded. Most recent:</p>' +
-          table(['Date', 'Master', 'Persons on board', 'Result'], checks.slice(0, 30).map(function (l) { return [esc(fmt(l.at)), esc(l.by || '–'), esc(l.pob == null ? '–' : l.pob), l.defect ? 'Defect noted: ' + esc(l.defect) : 'All checks passed']; })) : '<p>None recorded yet.</p>'));
+          table(['Date', 'Master', 'Persons on board', 'Result'], checks.slice(0, 30).map(function (l) { return [esc(fmt(l.at)), esc(l.by || '–'), esc(l.pob == null ? '–' : l.pob), l.defect ? 'Defect noted: ' + esc(l.defect) : 'All checks passed']; })) : '<p>None recorded yet.</p>') +
+        '<h3>C4 Routine inspection and maintenance (Appendix 7, 9.2)</h3>' +
+        (routs.length ? '<p>' + routs.length + ' record' + (routs.length === 1 ? '' : 's') + '. Most recent:</p>' +
+          table(['Date', 'Check', 'Done by', 'Note'], routs.slice(0, 40).map(function (l) { return [esc(fmt(l.at)), esc(l.label), esc(l.by || '–'), esc(l.note || '–')]; })) : '<p>None recorded yet.</p>'));
     }
 
     var body = front + parts.map(function (p) { return '<h2>' + esc(p.title) + '</h2>' + p.html; }).join('') +
@@ -824,7 +864,7 @@
         title: 'Safety Management System – ' + (v.name || 'Vessel') });
     }
     var q = (d.sections && d.sections.quick) || {};
-    var patch = { sections: { quick: { answers: st.a, code: isSpv(Store.getVessel(st.vesselId) || {}) ? 'spv2025' : 'wbc3', signed_name: wasSigned ? null : (q.signed_name || null), logs: q.logs || [] } }, updated_at: new Date().toISOString() };
+    var patch = { sections: { quick: { answers: st.a, code: isSpv(Store.getVessel(st.vesselId) || {}) ? 'spv2025' : 'wbc3', signed_name: wasSigned ? null : (q.signed_name || null), logs: q.logs || [], laid_up: !!q.laid_up } }, updated_at: new Date().toISOString() };
     if (wasSigned) {
       // An approved SMS that changes becomes a new draft issue; the crew
       // read it again (document control, Part 12.2).
@@ -1030,15 +1070,38 @@
   // passage). Stored with the SMS document so they sync with it and print in
   // Annex C.
 
-  var MAX_LOGS = 600;
+  var MAX_LOGS = 600, MAX_ROUTINE = 500;
   function logsOf(d) { return (d && d.sections && d.sections.quick && d.sections.quick.logs) || []; }
   function addLog(docId, entry) {
     var d = findDoc(docId); if (!d) return;
     var q = d.sections.quick;
     entry.id = 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     entry.at = entry.at || new Date().toISOString();
-    var logs = [entry].concat(q.logs || []).sort(function (x, y) { return String(y.at).localeCompare(String(x.at)); }).slice(0, MAX_LOGS);
-    Store.updateSmsDocument(docId, { sections: { quick: { answers: q.answers, code: q.code, signed_name: q.signed_name || null, logs: logs } }, updated_at: new Date().toISOString() });
+    var logs = [entry].concat(q.logs || []).sort(function (x, y) { return String(y.at).localeCompare(String(x.at)); });
+    // Routine checks are frequent. Cap them on their own so they can never
+    // push drills, incidents or pre-departure checks out of the record.
+    var nr = 0;
+    logs = logs.filter(function (l) { return l.kind !== 'routine' || ++nr <= MAX_ROUTINE; }).slice(0, MAX_LOGS + MAX_ROUTINE);
+    writeQuick(d, { logs: logs });
+  }
+  function writeQuick(d, change) {
+    var q = d.sections.quick;
+    var next = { answers: q.answers, code: q.code, signed_name: q.signed_name || null, logs: q.logs || [], laid_up: !!q.laid_up };
+    for (var k in change) next[k] = change[k];
+    Store.updateSmsDocument(d.id, { sections: { quick: next }, updated_at: new Date().toISOString() });
+  }
+  // Where each routine check stands. While the boat is laid up, weekly and
+  // monthly checks are not chased; yearly ones still are.
+  function routineStatus(d) {
+    var q = d.sections.quick, logs = logsOf(d).filter(function (l) { return l.kind === 'routine'; });
+    return routineChecks(q.answers).map(function (r) {
+      var last = logs.filter(function (l) { return l.k === r.k; })[0];
+      var since = last ? daysSince(last.at) : null;
+      var paused = !!q.laid_up && r.every < 366;
+      var left = since == null ? null : r.every - since;
+      var st = paused ? 'paused' : since == null ? 'never' : left < 0 ? 'overdue' : left <= Math.max(1, Math.round(r.every * 0.2)) ? 'soon' : 'ok';
+      return { k: r.k, label: r.label, every: r.every, last: last ? last.at : null, by: last ? last.by : null, since: since, left: left, st: st, due: st === 'never' || st === 'overdue' };
+    });
   }
   function daysSince(iso) { return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); }
   function drillStatus(d) {
@@ -1046,9 +1109,78 @@
     return drillTypes(d.sections.quick.answers).map(function (t) {
       var last = logs.filter(function (l) { return l.drill === t.k; })[0];
       var since = last ? daysSince(last.at) : null;
-      return { k: t.k, label: t.label, every: t.every, last: last ? last.at : null, due: since == null || since > t.every };
+      var paused = !!d.sections.quick.laid_up && t.every < 366;
+      return { k: t.k, label: t.label, every: t.every, last: last ? last.at : null, since: since, due: !paused && (since == null || since > t.every) };
     });
   }
+  // ── Routine checks screen ──
+  var R = null; // { docId, filter, by }
+  function ago(n) { return n === 0 ? 'today' : n === 1 ? 'yesterday' : n + 'd ago'; }
+  function renderRoutine() {
+    var d = findDoc(R.docId); if (!d) { closeOv('qs-routine'); R = null; return; }
+    var el = document.getElementById('qs-routine') || overlay('qs-routine');
+    var v = Store.getVessel(d.vessel_id) || {}, rs = routineStatus(d), who = names(d);
+    if (!R.by) R.by = who[0] || '';
+    var n = { all: rs.length, due: rs.filter(function (x) { return x.due; }).length, soon: rs.filter(function (x) { return x.st === 'soon'; }).length };
+    var show = rs.filter(function (x) { return R.filter === 'due' ? x.due : R.filter === 'soon' ? x.st === 'soon' : true; });
+    var chip = function (k, label) { return '<button type="button" class="qs-chip' + (R.filter === k ? ' on' : '') + '" aria-pressed="' + (R.filter === k) + '" data-qr="filter" data-v="' + k + '">' + label + ' ' + n[k] + '</button>'; };
+    var tag = function (x) {
+      return x.st === 'paused' ? ['qr-mu', 'Laid up'] : x.st === 'never' ? ['qr-mu', 'Not logged yet'] : x.st === 'overdue' ? ['qr-rd', 'Overdue ' + (-x.left) + 'd']
+        : x.st === 'soon' ? ['qr-am', x.left === 0 ? 'Due today' : 'Due in ' + x.left + 'd'] : ['qr-ok', 'Done ' + ago(x.since)];
+    };
+    var groups = ROUTINE_GROUPS.map(function (g) {
+      var items = show.filter(function (x) { return x.every === g[0]; });
+      if (!items.length) return '';
+      return '<div class="qr-h">' + esc(g[1]) + '</div><div class="qr-group">' + items.map(function (x) {
+        var t = tag(x), doneToday = x.since === 0;
+        return '<div class="qr-row"><div class="qr-tx"><strong>' + esc(x.label) + '</strong><span class="qr-tag ' + t[0] + '">' + esc(t[1]) + '</span>' +
+          (x.last && x.by ? '<small>Last by ' + esc(x.by) + '</small>' : '') + '</div>' +
+          (doneToday ? '<button type="button" class="qs-btn qs-btn-s qs-btn-2" data-qr="undo" data-k="' + esc(x.k) + '" aria-label="Undo ' + esc(x.label) + '">Undo</button>'
+                     : '<button type="button" class="qs-btn qs-btn-s" data-qr="done" data-k="' + esc(x.k) + '" aria-label="Mark ' + esc(x.label) + ' done">Done</button>') + '</div>';
+      }).join('') + '</div>';
+    }).join('');
+    el.innerHTML = '<div class="qs-bar"><button type="button" class="qs-x" data-qr="close">Done</button><div class="qs-bar-t">Routine checks</div><span class="qs-bar-r">' + esc(v.name || '') + '</span></div>' +
+      '<div class="qs-body"><p class="qs-sub">Tap Done when you have checked it. Found a problem? Log it as a defect or an incident as well.</p>' +
+      '<div class="qs-chips qr-filters" role="group" aria-label="Show">' + chip('all', 'All') + chip('due', 'Due') + chip('soon', 'Soon') + '</div>' +
+      (who.length > 1 ? '<div class="qs-field"><div class="qs-label">Done by</div><div class="qs-chips" role="group" aria-label="Done by">' + who.map(function (w) {
+        return '<button type="button" class="qs-chip' + (R.by === w ? ' on' : '') + '" aria-pressed="' + (R.by === w) + '" data-qr="by" data-v="' + esc(w) + '">' + esc(w) + '</button>'; }).join('') + '</div></div>' : '') +
+      (groups || '<p class="qs-sub">Nothing ' + (R.filter === 'due' ? 'due' : 'due soon') + '.</p>') +
+      '<label class="qr-laid"><input type="checkbox" data-qr="laid"' + (d.sections.quick.laid_up ? ' checked' : '') + '><span><strong>Boat is laid up</strong><small>Pauses weekly and monthly checks, and drill reminders, until you untick it.</small></span></label>' +
+      '</div>';
+  }
+  function openRoutine(docId) {
+    var d = docId ? findDoc(docId) : docFor(); if (!d) return;
+    R = { docId: d.id, filter: 'all', by: '' };
+    renderRoutine();
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('[data-qr]'); if (!t) return;
+    var act = t.getAttribute('data-qr');
+    if (act === 'open') return openRoutine(t.getAttribute('data-id'));
+    if (!R) return;
+    var d = findDoc(R.docId); if (!d) return;
+    if (act === 'close') { closeOv('qs-routine'); R = null; return refresh(); }
+    if (act === 'filter') { R.filter = t.getAttribute('data-v'); return keepRoutineScroll(); }
+    if (act === 'by') { R.by = t.getAttribute('data-v'); return keepRoutineScroll(); }
+    if (act === 'laid') { writeQuick(d, { laid_up: !!t.checked }); return keepRoutineScroll(); }
+    var k = t.getAttribute('data-k'), item = routineChecks(d.sections.quick.answers).filter(function (r) { return r.k === k; })[0];
+    if (!item) return;
+    if (act === 'done') {
+      addLog(R.docId, { kind: 'routine', k: k, label: item.label, by: R.by || null });
+      try { if (window.CodedokNative && CodedokNative.haptic) CodedokNative.haptic('light'); } catch (_) {}
+    } else if (act === 'undo') {
+      // Only today's own entry can be taken back; older records stand.
+      var logs = logsOf(d), ix = logs.findIndex(function (l) { return l.kind === 'routine' && l.k === k && daysSince(l.at) === 0; });
+      if (ix >= 0) writeQuick(d, { logs: logs.slice(0, ix).concat(logs.slice(ix + 1)) });
+    }
+    keepRoutineScroll();
+  });
+  function keepRoutineScroll() {
+    var b = document.querySelector('#qs-routine .qs-body'), y = b ? b.scrollTop : 0;
+    renderRoutine();
+    b = document.querySelector('#qs-routine .qs-body'); if (b) b.scrollTop = y;
+  }
+
   function docFor(vesselId) {
     var docs = (Store.snapshot().sms_documents || []).filter(isQuick);
     if (vesselId) return docs.filter(function (d) { return d.vessel_id === vesselId; })[0] || null;
@@ -1071,9 +1203,13 @@
       '<button type="button" class="qs-use-row" data-ql="check" data-id="' + esc(d.id) + '"><span>Pre-departure check<small>' + (lastCheck ? 'Last done ' + esc(fmt(lastCheck.at)) : 'Tick it off before you sail') + '</small></span><em>Start</em></button>' +
       '<button type="button" class="qs-use-row" data-ql="drill" data-id="' + esc(d.id) + '"><span>Log a drill<small class="' + (due.length ? 'qs-warn' : '') + '">' +
         (due.length ? esc(due.length === st.length ? 'No drills logged yet' : due.length > 2 ? due.length + ' drills due' : 'Due: ' + due.map(function (x) { return x.label.toLowerCase(); }).join(', ')) : 'All drills up to date') + '</small></span><em>Log</em></button>' +
+      (function () { var rs = routineStatus(d), rd = rs.filter(function (x) { return x.due; }).length;
+        var none = rs.every(function (x) { return x.st === 'never' || x.st === 'paused'; });
+        return '<button type="button" class="qs-use-row" data-qr="open" data-id="' + esc(d.id) + '"><span>Routine checks<small class="' + (rd && !none ? 'qs-warn' : '') + '">' +
+          (d.sections.quick.laid_up ? 'Boat laid up · yearly checks only' : none ? 'Weekly, monthly and yearly jobs to tick off' : rd ? rd + ' of ' + rs.length + ' due' : 'All ' + rs.length + ' up to date') + '</small></span><em>Open</em></button>'; })() +
       '<button type="button" class="qs-use-row" data-ql="incident" data-id="' + esc(d.id) + '"><span>Report an incident or near miss<small>Something went wrong, or nearly did</small></span><em>Report</em></button>' +
       (logs.length ? '<div class="qs-recs"><div class="qs-recs-h">Recent records · ' + logs.length + '</div>' + logs.slice(0, 5).map(function (l) {
-        var what = l.kind === 'check' ? 'Pre-departure check' + (l.defect ? ' – defect noted' : '') : l.kind === 'drill' ? 'Drill: ' + l.label : (l.near ? 'Near miss' : 'Incident') + ': ' + (l.what || '').slice(0, 60);
+        var what = l.kind === 'check' ? 'Pre-departure check' + (l.defect ? ' – defect noted' : '') : l.kind === 'drill' ? 'Drill: ' + l.label : l.kind === 'routine' ? 'Routine: ' + l.label : (l.near ? 'Near miss' : 'Incident') + ': ' + (l.what || '').slice(0, 60);
         return '<div class="qs-rec"><span>' + esc(what) + '</span><small>' + esc(fmt(l.at)) + '</small></div>'; }).join('') + '</div>' : '') +
       '</div>';
   }
@@ -1261,7 +1397,7 @@
       if (!nm.trim()) { if (window.toast) toast('Type your name to sign'); return; }
       var doc = findDoc(id), q = doc.sections.quick, due = new Date(); due.setFullYear(due.getFullYear() + 1);
       Store.updateSmsDocument(id, { status: 'signed', signed_at: new Date().toISOString(), review_due_at: due.toISOString().slice(0, 10), last_reviewed_at: today(),
-        sections: { quick: { answers: q.answers, code: q.code, signed_name: nm.trim(), logs: q.logs || [] } } });
+        sections: { quick: { answers: q.answers, code: q.code, signed_name: nm.trim(), logs: q.logs || [], laid_up: !!q.laid_up } } });
       Store.updateSmsDocument(id, { body: plain(docHtmlForExport(findDoc(id))) });
       if (Store.appendSmsEdit) Store.appendSmsEdit(id, { note: 'Approved and signed by ' + nm.trim() });
       closeOv('qs-sign'); view(id); if (window.toast) toast('SMS approved');
@@ -1312,5 +1448,5 @@
   }
 
   window.QuickSms = { start: start, view: view, isQuick: isQuick, generate: generate, hubCard: hubCard, defaults: defaults, STEPS: STEPS,
-    log: openLog, docFor: docFor, drillStatus: drillStatus };
+    log: openLog, docFor: docFor, drillStatus: drillStatus, routine: openRoutine, routineStatus: routineStatus };
 })();

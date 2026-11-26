@@ -205,6 +205,12 @@
       sub: (drills ? (due ? due + ' of ' + drills.length + ' due now' : 'All up to date') : 'Logged from your SMS') + ' · Appendix ' + (wb ? '8, 10.5' : '7, 7.5'),
       st: !doc ? 'missing' : due ? 'soon' : 'ok', tag: !doc ? 'Start' : due ? 'Log a drill' : 'Done',
       act: doc ? "QuickSms.log('drill','" + esc(doc.id) + "')" : sms });
+    var rout = doc && Q.routineStatus ? Q.routineStatus(doc) : null;
+    var routDue = rout ? rout.filter(function (x) { return x.due; }).length : 0;
+    items.push({ name: 'Inspections and maintenance recorded',
+      sub: (rout ? (routDue ? routDue + ' of ' + rout.length + ' routine checks due' : 'All routine checks up to date') : 'Ticked off from your SMS') + ' · Appendix ' + (wb ? '8, 12.2' : '7, 9.2'),
+      st: !doc ? 'missing' : routDue ? 'soon' : 'ok', tag: !doc ? 'Start' : routDue ? 'Open' : 'Done',
+      act: doc ? "QuickSms.routine('" + esc(doc.id) + "')" : sms });
     var crew = Store.vesselCrew(v.id) || [], acks = (doc && doc.acknowledgements) || [];
     var read = crew.filter(function (c) { return acks.some(function (x) { return x.crew_id === c.id; }); }).length;
     if (crew.length) items.push({ name: 'Crew have read the SMS',
