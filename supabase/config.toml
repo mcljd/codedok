@@ -51,3 +51,8 @@ verify_jwt = false
 # and only emails the team about real, un-notified security events, at most
 # once every 10 minutes, so it needs no JWT (see the function header).
 verify_jwt = false
+
+[functions.weekly-report]
+# Called by the Monday cron job, which has no user JWT. The function checks
+# its own shared secret (x-report-secret) in constant time and fails closed.
+verify_jwt = false
